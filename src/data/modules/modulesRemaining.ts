@@ -463,8 +463,159 @@ jobs:
       'Wprowadzenie do architektury mikrousług i skalowania horyzontalnego',
     ],
     projectBrief: 'Projekt modułu: Aplikacja czatu realtime z pokojami, wskaźnikiem pisania i buforowaniem wiadomości w Redis.',
-    lessons: [],
-  },
+    lessons: [
+      {
+        id: 'next-1',
+        moduleId: 14,
+        moduleTitle: 'Zaawansowany Full Stack — Next.js, WebSockets i Cache',
+        title: 'Next.js App Router: React Server Components, SSR i Server Actions',
+        slug: 'nextjs-app-router-server-components-actions',
+        durationMinutes: 50,
+        xpReward: 100,
+        order: 1,
+        summary: 'Poznaj światowy standard frameworków Full Stack: Next.js App Router. Dowiedz się, dlaczego React Server Components (RSC) nie wysyłają kodu JavaScript do przeglądarki, jak działa Server-Side Rendering oraz jak Server Actions zastępują tradycyjne endpointy API.',
+        objectives: [
+          'Rozumieć architekturę React Server Components (RSC) i granicę "use client"',
+          'Wdrażać strategie renderowania: Static Site (SSG), Dynamic SSR oraz Streaming z Suspense',
+          'Wykonywać bezpośrednie mutacje bazy danych za pomocą funkcji Server Actions',
+        ],
+        prerequisites: ['Moduł 7: React', 'Moduł 8: Backend', 'Moduł 9: Bazy Danych'],
+        theoryMarkdown: `**Next.js** to wiodący produkcyjny framework Reacta rozwijany przez firmę Vercel. Wraz z wprowadzeniem katalogu \`app/\` (App Router) zrewolucjonizował architekturę aplikacji internetowych.
+
+**1. React Server Components (RSC) vs Client Components:**
+- **Server Components (Domyślne):** Renderują się wyłącznie na serwerze i zwracają czysty strumień HTML. Ich kod (np. biblioteki \`prisma\`, ciężkie formatowania dat) **nigdy nie trafia do przeglądarki klienta**, dzięki czemu pakiet JS ma rozmiar 0 KB!
+- **Client Components (\`'use client'\`):** Wymagane tylko wtedy, gdy komponent potrzebuje interaktywności w przeglądarce (\`useState\`, \`useEffect\`, nasłuchiwacze zdarzeń \`onClick\`, API przeglądarki \`window\`).
+
+**2. Pobieranie danych bezpośrednio w komponencie serwerowym:**
+\`\`\`tsx
+// app/dashboard/page.tsx - Server Component
+import { prisma } from '@/lib/db';
+
+export default async function DashboardPage() {
+  // Bezpośrednie zapytanie asynchroniczne bez useState i useEffect!
+  const stats = await prisma.user.aggregate({ _sum: { xp: true } });
+
+  return (
+    <main className="p-8">
+      <h1 className="text-2xl font-bold">Łączne XP: {stats._sum.xp}</h1>
+    </main>
+  );
+}
+\`\`\`
+
+**3. Server Actions (Mutacje danych bez API endpointu):**
+\`\`\`tsx
+// Akcja wykonywana bezpośrednio po stronie Node.js na serwerze:
+async function addLessonAction(formData: FormData) {
+  'use server';
+  const title = formData.get('title') as string;
+  await prisma.lesson.create({ data: { title } });
+  revalidatePath('/lessons'); // Błyskawiczne odświeżenie cache!
+}
+
+export function NewLessonForm() {
+  return (
+    <form action={addLessonAction}>
+      <input name="title" required />
+      <button type="submit">Zapisz lekcję</button>
+    </form>
+  );
+}
+\`\`\``,
+        codeExamples: [
+          {
+            title: 'Granica między Server i Client Component w Next.js',
+            language: 'tsx',
+            code: `// LikeButton.tsx - Komponent interaktywny
+'use client';
+import { useState } from 'react';
+
+export function LikeButton({ initialLikes }: { initialLikes: number }) {
+  const [likes, setLikes] = useState(initialLikes);
+  return (
+    <button onClick={() => setLikes(l => l + 1)} className="btn">
+      ❤️ {likes} polubień
+    </button>
+  );
+}`,
+            explanation: 'Zasada dobrej architektury w Next.js: przesuwaj dyrektywę "use client" na same końce drzewa komponentów (liście), zachowując całą resztę jako Server Components.',
+          },
+        ],
+        stepByStepGuide: [
+          { step: 1, title: 'Utwórz strukturę tras w app/', description: 'Foldery tworzą segmenty URL (np. app/courses/[id]/page.tsx).' },
+          { step: 2, title: 'Wydziel komponenty interaktywne', description: 'Oznaczaj tylko przyciski i formularze dyrektywą "use client".' },
+          { step: 3, title: 'Użyj Server Actions', description: 'Mutuj dane bezpośrednio z "use server" z automatyczną rewalidacją.' },
+        ],
+        interactiveExercise: {
+          id: 'ex-nxt-1',
+          title: 'Komponent wizualizacji statusu Next.js SSR',
+          instructions: 'Zaprojektuj wizualny widżet architektury Next.js: utwórz kontener z klasą next-status, wskaźnik Server Component "RSC: Zero JS Bundle", oraz czas renderu "SSR Render: 12ms".',
+          task: 'Utwórz element next-status z tekstami RSC: Zero JS Bundle i SSR Render: 12ms.',
+          starterCode: {
+            html: '<!-- Zbuduj widok wskaźnika Next.js poniżej -->\n',
+            css: '.next-status { background: #000; border: 1px solid #262626; padding: 14px 18px; border-radius: 10px; font-family: monospace; color: #ededed; display: flex; flex-direction: column; gap: 6px; }\n.rsc-tag { color: #38bdf8; font-weight: bold; }',
+            js: 'console.log("Next.js App Router gotowy.");',
+          },
+          solutionCode: {
+            html: '<div class="next-status">\n  <div>RSC: Zero JS Bundle</div>\n  <div>SSR Render: 12ms</div>\n</div>',
+            css: '.next-status { background: #000; border: 1px solid #262626; padding: 14px 18px; border-radius: 10px; font-family: monospace; color: #ededed; display: flex; flex-direction: column; gap: 6px; }\n.rsc-tag { color: #38bdf8; font-weight: bold; }',
+            js: 'console.log("Next.js App Router gotowy.");',
+          },
+          hints: [
+            'Użyj kontenera <div class="next-status">.',
+            'Wstaw <div>RSC: Zero JS Bundle</div>.',
+            'Wstaw <div>SSR Render: 12ms</div>.',
+          ],
+          rules: [
+            { id: 'r1', description: 'Klasa next-status obecna', ruleType: 'html_contains', target: 'next-status' },
+            { id: 'r2', description: 'Tekst RSC: Zero JS Bundle obecny', ruleType: 'html_contains', target: 'RSC: Zero JS Bundle' },
+            { id: 'r3', description: 'Tekst SSR Render: 12ms obecny', ruleType: 'html_contains', target: 'SSR Render: 12ms' },
+          ],
+        },
+        independentTask: {
+          title: 'Migracja z Client-Side Fetching do RSC',
+          instructions: 'Zastąp schemat useEffect + useState bezpośrednim asynchronicznym wywołaniem fetch w Server Component.',
+          expectedOutcome: 'Drastyczne skrócenie czasu Time to Interactive (TTI) oraz eliminacja migania ekranu (layout shift).',
+          starterHint: 'async function Page() { const res = await fetch("..."); return ... }',
+        },
+        quiz: [
+        {
+          id: 'q-nxt1-1',
+          question: 'Dlaczego React Server Components (RSC) w Next.js są tak rewolucyjną zmianą dla wydajności aplikacji?',
+          options: [
+            'Ponieważ ich kod źródłowy i biblioteki pomocnicze wykonują się wyłącznie na serwerze i nie są dołączane do paczki JavaScript pobieranej przez przeglądarkę',
+            'Ponieważ wyłączają konieczność używania CSS',
+            'Zastępują protokół TCP/IP protokołem Bluetooth',
+            'Wymagają instalacji specjalnego programu na komputerze użytkownika',
+          ],
+          correctAnswer: 0,
+          explanation: 'Brak kodu Server Components w bundle klienta oznacza znacznie lżejszą stronę, szybsze ładowanie na urządzeniach mobilnych i wyższe pozycje w Google SEO.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Dodawanie "use client" na samej górze pliku układu (layout.tsx) lub strony głównej',
+          whyItHappens: 'Próba szybkiego naprawienia błędu z użyciem useState.',
+          howToFix: 'Umieszczenie "use client" w pliku bazowym zamienia całe poddrzewo w Client Components, tracąc wszystkie zalety RSC. Wydzielaj do Client Components tylko drobne interaktywne widżety.',
+          badCode: '// app/layout.tsx\n"use client"; // Błąd: cała aplikacja traci zalety RSC!',
+          goodCode: '// Zostaw layout jako RSC, a do navbaru z dropdownem dodaj "use client"',
+        },
+      ],
+      practicalTask: {
+        title: 'Analiza architektury Next.js',
+        instructions: 'Zbadaj strukturę App Router i porównaj czas ładowania strony renderowanej na serwerze z tradycyjnym SPA.',
+        brief: 'Przeanalizuj strumieniowanie danych z React Suspense.',
+        steps: ['Porównaj HTML zwrócony przez curl z React SPA', 'Zobacz natychmiastową dostępność treści bez JS', 'Oceń wpływ na SEO'],
+        deliverable: 'Głębokie zrozumienie nowoczesnego renderowania hybrydowego.',
+      },
+      completionCriteria: [
+        'Zrozumienie React Server Components i Server Actions w Next.js',
+        'Prawidłowe rozwiązanie ćwiczenia interaktywnego',
+        'Zaliczenie quizu z wynikiem minimum 80%',
+      ],
+    },
+  ],
+},
   {
     id: 15,
     title: 'Portfolio, Rozmowy Rekrutacyjne i Kariera',
@@ -484,6 +635,141 @@ jobs:
       'Gdzie szukać pracy, jak rozmawiać z rekruterami i jak negocjować warunki zatrudnienia',
     ],
     projectBrief: 'Projekt końcowy akademii: Prezentacja kompletnego, wdrożonego produkcyjnie portfolio ze zrealizowanymi projektami komercyjnymi.',
-    lessons: [],
+    lessons: [
+      {
+        id: 'career-1',
+        moduleId: 15,
+        moduleTitle: 'Portfolio, Rozmowy Rekrutacyjne i Kariera',
+        title: 'Zwycięskie Portfolio Full Stack, techniczne CV i Live Coding',
+        slug: 'portfolio-cv-live-coding-rekrutacja-it',
+        durationMinutes: 45,
+        xpReward: 90,
+        order: 1,
+        summary: 'Przekuj wiedzę techniczną w pierwszą ofertę pracy jako Junior Full Stack Developer! Dowiedz się, co naprawdę sprawdzają rekruterzy i Team Leaderzy w portfolio, jak opisać projekty językiem korzyści oraz jak bez stresu przejść zadania Live Coding.',
+        objectives: [
+          'Zbudować profesjonalne portfolio z działającymi wdrożeniami na Vercel/VPS oraz czytelnymi README na GitHub',
+          'Sformatować techniczne CV zgodne z systemami ATS z wyeksponowanym stosem TypeScript/React/Node',
+          'Stosować metodologię myślenia na głos (Think Out Loud) podczas technicznych zadań rekrutacyjnych',
+        ],
+        prerequisites: ['Ukończenie modułów frontendowych i backendowych'],
+        theoryMarkdown: `Na rynku pracy IT rywalizuje wielu początkujących programistów. To, co wyróżnia wybranego kandydata spośród 200 innych aplikacji, to **jakość projektów w portfolio** i **dojrzałość inżynierska**.
+
+**1. Trzy filary skutecznego Portfolio:**
+- **Nie rób kolejnego klona TodoListy:** Zbuduj 2-3 rozbudowane, unikalne projekty Full Stack (np. platforma e-commerce z autoryzacją, koszykiem i płatnościami testowymi; aplikacja monitoringu serwerów z WebSockets; system rezerwacji z kalendarzem).
+- **Działający link produkcyjny:** Rekruter nie pobiera kodu na swój komputer, aby go uruchomić. Każdy projekt musi posiadać działający link demonstracyjny (Vercel, Render, VPS) oraz link do repozytorium na GitHub.
+- **Wzorcowe README.md:** Każde repozytorium musi zawierać zrzut ekranu lub GIF z działania, listę technologii, instrukcję uruchomienia (\`npm install && npm run dev\`) oraz opis wyzwań architektonicznych, które rozwiązałeś.
+
+**2. Anatomia technicznego CV:**
+- **Jedna strona:** Zwięzłe, bez lania wody.
+- **Sekcja Umiejętności (Tech Stack):** Podzielona na Frontend (TypeScript, React, Tailwind), Backend (Node.js, Express, REST API), Bazy Danych (PostgreSQL, Prisma), Narzędzia (Git, Docker, Vitest).
+- **Opis projektów:** Format STAR (Situation, Task, Action, Result) z metrykami: *"Zoptymalizowałem czas ładowania zapytań o 40% dzięki indeksacji w PostgreSQL"*.
+
+**3. Zasady podczas Live Codingu:**
+1. Zanim napiszesz linijkę kodu, sparafrazuj zadanie własnymi słowami i zadaj pytania doprecyzowujące (np. *"Czy dane wejściowe mogą być puste?", "Jaki jest limit rozmiaru tablicy?"*).
+2. **Myśl na głos:** Rekruter bada Twój proces myślowy i umiejętność komunikacji, a nie tylko suchą składnię.
+3. Napisz najpierw rozwiązanie działające (brute-force), a następnie zaproponuj optymalizację złożoności obliczeniowej (Big-O).`,
+        codeExamples: [
+          {
+            title: 'Wzorcowy plik README.md dla projektu w portfolio',
+            language: 'markdown',
+            code: `# 🚀 Full Stack SaaS Platform
+
+A fully-featured SaaS dashboard built with **React**, **TypeScript**, **Express**, and **PostgreSQL**.
+
+## 🌟 Key Features
+- **Authentication:** Secure JWT authentication with HttpOnly cookies and role-based access (RBAC).
+- **Real-Time Data:** Live telemetry dashboard with WebSocket updates.
+- **Anti-Bot Security:** Intelligent honeypot trap and heuristic timing verification.
+- **Database:** PostgreSQL modeled with Prisma ORM and automated migrations.
+
+## 🛠️ Tech Stack
+- Frontend: React 18, TypeScript, Tailwind CSS, Vite
+- Backend: Node.js, Express, Prisma ORM
+- Database: PostgreSQL
+- Testing: Vitest, Playwright
+
+## ⚡ Getting Started
+\`\`\`bash
+git clone https://github.com/username/project.git
+npm install
+npm run dev
+\`\`\``,
+            explanation: 'Tak przygotowane repozytorium natychmiast buduje zaufanie u osoby prowadzącej rekrutację techniczną.',
+          },
+        ],
+        stepByStepGuide: [
+          { step: 1, title: 'Wybierz 2 najlepsze projekty', description: 'Skup się na jakości i głębi, nie na ilości miniaturek.' },
+          { step: 2, title: 'Opublikuj na GitHubie z README', description: 'Upewnij się, że kod jest czysty, sformatowany i przetestowany.' },
+          { step: 3, title: 'Przygotuj profil na LinkedIn', description: 'Napisz post podsumowujący zbudowany projekt z krótkim wideo demo.' },
+        ],
+        interactiveExercise: {
+          id: 'ex-car-1',
+          title: 'Komponent wizualizacji profilu kandydata IT (Junior Profile Card)',
+          instructions: 'Zaprojektuj wizytówkę portfolio kandydata: utwórz kontener z klasą candidate-card, stanowisko "Junior Full Stack Developer", oraz kluczowy stack "Stack: TypeScript, React, Node, PostgreSQL".',
+          task: 'Utwórz element candidate-card z informacją o stanowisku i stosie technologicznym.',
+          starterCode: {
+            html: '<!-- Zbuduj wizytówkę kandydata poniżej -->\n',
+            css: '.candidate-card { background: #0f172a; border: 1px solid #38bdf8; padding: 18px; border-radius: 12px; font-family: sans-serif; color: #f8fafc; max-width: 420px; }\n.role-title { font-size: 1.1rem; font-weight: bold; color: #38bdf8; margin-bottom: 6px; }\n.stack-info { font-size: 0.85rem; color: #94a3b8; }',
+            js: 'console.log("Candidate Profile Card załadowana.");',
+          },
+          solutionCode: {
+            html: '<div class="candidate-card">\n  <div class="role-title">Junior Full Stack Developer</div>\n  <div class="stack-info">Stack: TypeScript, React, Node, PostgreSQL</div>\n</div>',
+            css: '.candidate-card { background: #0f172a; border: 1px solid #38bdf8; padding: 18px; border-radius: 12px; font-family: sans-serif; color: #f8fafc; max-width: 420px; }\n.role-title { font-size: 1.1rem; font-weight: bold; color: #38bdf8; margin-bottom: 6px; }\n.stack-info { font-size: 0.85rem; color: #94a3b8; }',
+            js: 'console.log("Candidate Profile Card załadowana.");',
+          },
+          hints: [
+            'Użyj kontenera <div class="candidate-card">.',
+            'Wstaw tekst Junior Full Stack Developer.',
+            'Wstaw tekst Stack: TypeScript, React, Node, PostgreSQL.',
+          ],
+          rules: [
+            { id: 'r1', description: 'Klasa candidate-card obecna', ruleType: 'html_contains', target: 'candidate-card' },
+            { id: 'r2', description: 'Stanowisko Junior Full Stack Developer obecne', ruleType: 'html_contains', target: 'Junior Full Stack Developer' },
+            { id: 'r3', description: 'Stack: TypeScript, React, Node, PostgreSQL obecny', ruleType: 'html_contains', target: 'Stack: TypeScript, React, Node, PostgreSQL' },
+          ],
+        },
+        independentTask: {
+          title: 'Symulacja zadania Live Coding: Odwrócenie ciągu i palindrom',
+          instructions: 'Napisz funkcję isPalindrome(str) ignorującą wielkość liter i białe znaki, objaśniając złożoność czasową O(n).',
+          expectedOutcome: 'Płynna demonstracja wiedzy algorytmicznej i czystego stylu pisania kodu.',
+          starterHint: 'const clean = str.toLowerCase().replace(/[^a-z0-9]/g, ""); return clean === clean.split("").reverse().join("");',
+        },
+        quiz: [
+          {
+            id: 'q-car1-1',
+            question: 'Co jest najważniejszą rzeczą, którą ocenia Tech Lead / Senior Developer podczas przeglądania repozytorium kandydata na GitHubie?',
+            options: [
+              'Czytelność kodu, podział na moduły, obecność testów, obsługa błędów brzegowych oraz jakość dokumentacji w README z działającym linkiem demonstracyjnym',
+              'Liczba gwiazdek kupionych na forach internetowych',
+              'Czy kandydat używa wyłącznie ciemnego motywu w edytorze kodu',
+              'Czy repozytorium ma więcej niż 5000 commitów zrobionych w jeden dzień',
+            ],
+            correctAnswer: 0,
+            explanation: 'Dojrzałość inżynierska objawia się w dbałości o czysty kod, testy, architekturę i czytelną dokumentację.',
+          },
+        ],
+        commonMistakes: [
+          {
+            mistake: 'Wysyłanie linków do projektów na GitHubie, które nie mają działającego linku demo ani instrukcji instalacji',
+            whyItHappens: 'Założenie, że rekruter sklonuje repozytorium i sam skonfiguruje bazę danych.',
+            howToFix: 'Rekruter przegląda dziesiątki aplikacji w ciągu godziny. Jeśli nie ma działającego demo na Vercel/Render, projekt często jest całkowicie pomijany.',
+            badCode: '# Projekt\nKod w załączniku.',
+            goodCode: 'Zobacz działające wdrożenie na żywo: https://twoj-projekt.vercel.app',
+          },
+        ],
+        practicalTask: {
+          title: 'Generowanie Certyfikatu Ukończenia Akademii',
+          instructions: 'Przejdź do zakładki "Certyfikat" w aplikacji i zobacz oficjalny dokument poświadczający kompetencje Full Stack.',
+          brief: 'Zweryfikuj odblokowanie certyfikatu absolwenta.',
+          steps: ['Otwórz widok Certyfikatu', 'Sprawdź swoje imię i nazwisko', 'Pobierz lub zachowaj certyfikat'],
+          deliverable: 'Oficjalne potwierdzenie kwalifikacji inżynierskich.',
+        },
+        completionCriteria: [
+          'Zrozumienie wymagań rekrutacyjnych i budowy profesjonalnego portfolio',
+          'Prawidłowe rozwiązanie ćwiczenia interaktywnego',
+          'Zaliczenie quizu z wynikiem minimum 80%',
+        ],
+      },
+    ],
   },
 ];

@@ -11,6 +11,9 @@ import { CertificateView } from './components/CertificateView';
 import { ReviewCenterView } from './components/ReviewCenterView';
 import { AdminPanelView } from './components/AdminPanelView';
 import { DeploymentGuideView } from './components/DeploymentGuideView';
+import { TerminalSimulator } from './components/TerminalSimulator';
+import { SqlStudioView } from './components/SqlStudioView';
+import { MockInterviewView } from './components/MockInterviewView';
 import { AuthModal } from './components/AuthModal';
 import { LivesModal } from './components/LivesModal';
 import { SubscriptionModal } from './components/SubscriptionModal';
@@ -70,6 +73,9 @@ const MainContent: React.FC = () => {
           {activeTab === 'projects' && <ProjectsView />}
           {activeTab === 'reviews' && <ReviewCenterView />}
           {activeTab === 'certificate' && <CertificateView />}
+          {activeTab === 'terminal' && <TerminalSimulator />}
+          {activeTab === 'sql_studio' && <SqlStudioView />}
+          {activeTab === 'interview' && <MockInterviewView />}
           {activeTab === 'admin' && <AdminPanelView />}
           {activeTab === 'deployment' && <DeploymentGuideView />}
         </main>

@@ -87,7 +87,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
       </div>
 
       {/* Code Body with Syntax Highlighting */}
-      <div className="relative flex font-mono text-xs leading-relaxed overflow-x-auto bg-slate-950/95">
+      <div className="relative flex font-mono text-xs leading-relaxed overflow-x-auto bg-slate-950/95 min-w-0 max-w-full">
         {showLineNumbers && (
           <div className="select-none py-3 px-3 text-right text-slate-600 bg-slate-950/80 border-r border-slate-800/60 shrink-0 font-mono text-[11px] leading-relaxed">
             {lines.map((_, i) => {
@@ -105,7 +105,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
           </div>
         )}
 
-        <pre className="p-3 text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed flex-1 m-0">
+        <pre className="p-3 text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed flex-1 min-w-0 max-w-full m-0">
           <code 
             className={`language-${language}`}
             dangerouslySetInnerHTML={{ __html: highlightedHtml }}

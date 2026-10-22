@@ -1,4 +1,5 @@
 export type UserRole = 'student' | 'admin';
+export type UserStatus = 'active' | 'suspended' | 'pending_verification' | 'banned';
 
 export interface User {
   id: string;
@@ -25,7 +26,24 @@ export interface User {
   proPlan?: 'monthly' | 'yearly' | 'lifetime' | null;
   proExpiresAt?: string;
   streakFreezes: number; // shields protecting streak from resetting
+  // Account Status & Anti-Bot Protection
+  status: UserStatus;
+  banReason?: string;
+  antiBotVerified: boolean;
+  antiBotScore?: number; // 0 - 100
+  password?: string;
+  bio?: string;
+  lastLoginAt?: string;
   createdAt: string;
+}
+
+export interface UserFilters {
+  searchQuery: string;
+  role: 'all' | UserRole;
+  proStatus: 'all' | 'pro' | 'free';
+  status: 'all' | UserStatus;
+  livesStatus: 'all' | 'zero' | 'partial' | 'full';
+  sortBy: 'xp_desc' | 'xp_asc' | 'streak_desc' | 'created_desc' | 'name_asc' | 'lessons_desc';
 }
 
 export interface QuizQuestion {
@@ -91,7 +109,7 @@ export interface Lesson {
   theoryMarkdown: string;
   codeExamples: {
     title: string;
-    language: 'html' | 'css' | 'javascript' | 'typescript' | 'sql' | 'bash';
+    language: 'html' | 'css' | 'javascript' | 'typescript' | 'tsx' | 'jsx' | 'sql' | 'bash' | 'markdown' | 'json' | 'prisma';
     code: string;
     explanation: string;
   }[];
@@ -113,6 +131,7 @@ export interface Lesson {
   practicalTask: {
     title: string;
     brief: string;
+    instructions?: string;
     steps: string[];
     deliverable: string;
   };

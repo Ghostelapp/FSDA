@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, UserRole, Announcement, Lesson, ReviewItem } from '../types';
+import { User, UserRole, UserStatus, Announcement, Lesson, ReviewItem } from '../types';
 import { MODULES_DATA } from '../data/modulesData';
 import { PROJECTS_DATA } from '../data/projectsData';
 import { DEFAULT_ANNOUNCEMENTS } from '../data/defaultAnnouncements';
+import { soundManager } from '../utils/audioFx';
 import { 
   calculateLevel, 
   updateStreak, 
@@ -31,7 +32,10 @@ export type AppTab =
   | 'reviews' 
   | 'certificate' 
   | 'admin' 
-  | 'deployment';
+  | 'deployment'
+  | 'terminal'
+  | 'sql_studio'
+  | 'interview';
 
 interface AppContextType {
   currentUser: User;
@@ -56,10 +60,24 @@ interface AppContextType {
   togglePro: (enable: boolean, plan?: 'monthly' | 'yearly') => void;
   toggleTheme: () => void;
   setActiveTab: (tab: AppTab, lessonId?: string, projectId?: string) => void;
-  loginUser: (email: string) => boolean;
-  registerUser: (name: string, email: string, role: UserRole) => User;
+  loginUser: (email: string, password?: string) => { success: boolean; error?: string };
+  registerUser: (params: {
+    name: string;
+    email: string;
+    password?: string;
+    role: UserRole;
+    antiBotPassed: boolean;
+    antiBotScore?: number;
+    bio?: string;
+  }) => { success: boolean; user?: User; error?: string };
   switchUser: (userId: string) => void;
   logout: () => void;
+  deleteUser: (userId: string) => void;
+  setUserStatus: (userId: string, status: UserStatus, reason?: string) => void;
+  resetUserPassword: (email: string, newPassword?: string) => { success: boolean; message: string };
+  verifyUserAntiBot: (userId: string) => void;
+  giveProByAdmin: (userId: string, isPro: boolean, plan?: 'monthly' | 'yearly') => void;
+  refillUserLivesByAdmin: (userId: string) => void;
   completeLesson: (lessonId: string, xpReward: number) => void;
   saveQuizScore: (lessonId: string, scorePercent: number) => void;
   saveCodeSnippet: (exerciseId: string, code: { html: string; css: string; js: string }) => void;
@@ -70,82 +88,69 @@ interface AppContextType {
   dismissToast: () => void;
   weakAreas: ReviewItem[];
   allLessons: Lesson[];
+  isSoundMuted: boolean;
+  toggleSound: () => void;
 }
 
-const STORAGE_KEY_USER = 'fsda_current_user_v2';
-const STORAGE_KEY_USERS = 'fsda_all_users_v2';
-const STORAGE_KEY_ANNOUNCEMENTS = 'fsda_announcements_v2';
-const STORAGE_KEY_THEME = 'fsda_theme_v2';
+const STORAGE_KEY_USER = 'fsda_current_user_v5';
+const STORAGE_KEY_USERS = 'fsda_all_users_v5';
+const STORAGE_KEY_ANNOUNCEMENTS = 'fsda_announcements_v5';
+const STORAGE_KEY_THEME = 'fsda_theme_v5';
 
 const DEFAULT_USERS: User[] = [
   {
-    id: 'user-jan',
-    name: 'Jan Kowalski',
-    email: 'jan.kowalski@example.com',
-    role: 'student',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    xp: 220,
-    level: 2,
-    streakDays: 3,
-    lastActiveDate: new Date().toISOString().split('T')[0],
-    weeklyGoalMinutes: 180,
-    weeklySpentMinutes: 75,
-    completedLessons: ['fund-1'],
-    completedProjects: [],
-    quizScores: { 'fund-1': 100 },
-    unlockedBadges: ['first-step', 'quiz-ace', 'streak-3'],
-    savedCode: {},
-    lives: 5,
-    maxLives: 5,
-    isPro: false,
-    streakFreezes: 1,
-    createdAt: '2026-10-15',
-  },
-  {
-    id: 'user-anna',
-    name: 'Anna Nowak',
-    email: 'anna.nowak@example.com',
-    role: 'student',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-    xp: 680,
-    level: 3,
-    streakDays: 6,
-    lastActiveDate: new Date().toISOString().split('T')[0],
-    weeklyGoalMinutes: 240,
-    weeklySpentMinutes: 190,
-    completedLessons: ['fund-1', 'html-1', 'html-2', 'html-3'],
-    completedProjects: ['proj-1'],
-    quizScores: { 'fund-1': 100, 'html-1': 100, 'html-2': 85, 'html-3': 70 },
-    unlockedBadges: ['first-step', 'quiz-ace', 'streak-3', 'xp-500', 'project-first'],
-    savedCode: {},
-    lives: 5,
-    maxLives: 5,
-    isPro: false,
-    streakFreezes: 2,
-    createdAt: '2026-10-10',
-  },
-  {
     id: 'user-admin',
-    name: 'Marek Architekt (Instruktor Główny)',
-    email: 'admin@academy.dev',
+    name: 'Administrator (Zordon)',
+    email: 'zordonzordon1@gmail.com',
     role: 'admin',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    status: 'active',
+    antiBotVerified: true,
+    antiBotScore: 100,
+    password: 'admin123',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     xp: 9999,
     level: 10,
     streakDays: 45,
     lastActiveDate: new Date().toISOString().split('T')[0],
     weeklyGoalMinutes: 300,
     weeklySpentMinutes: 280,
-    completedLessons: ['fund-1', 'html-1', 'html-2', 'html-3', 'html-4', 'html-5'],
+    completedLessons: [
+      'fund-1', 'html-1', 'html-2', 'html-3', 'html-4', 'html-5',
+      'css-1', 'js-1', 'react-1', 'react-2', 'node-1', 'db-1', 'sec-1'
+    ],
     completedProjects: ['proj-1', 'proj-2', 'proj-3', 'proj-4'],
-    quizScores: { 'fund-1': 100, 'html-1': 100, 'html-2': 100, 'html-3': 100, 'html-4': 100, 'html-5': 100 },
-    unlockedBadges: ['first-step', 'html-master', 'quiz-ace', 'streak-3', 'streak-7', 'xp-500', 'xp-1500', 'project-first'],
+    quizScores: {
+      'fund-1': 100,
+      'html-1': 100,
+      'html-2': 100,
+      'html-3': 100,
+      'html-4': 100,
+      'html-5': 100,
+      'css-1': 100,
+      'js-1': 100,
+      'react-1': 100,
+      'react-2': 100,
+      'node-1': 100,
+      'db-1': 100,
+      'sec-1': 100,
+    },
+    unlockedBadges: [
+      'first-step',
+      'html-master',
+      'quiz-ace',
+      'streak-3',
+      'streak-7',
+      'xp-500',
+      'xp-1500',
+      'project-first'
+    ],
     savedCode: {},
     lives: 5,
     maxLives: 5,
     isPro: true,
     proPlan: 'lifetime',
     streakFreezes: 5,
+    bio: 'Główny Administrator i Architekt Akademii Full Stack Developer.',
     createdAt: '2026-09-01',
   },
 ];
@@ -197,6 +202,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>('html-1');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>('proj-1');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'badge' | 'danger' } | null>(null);
+
+  const [isSoundMuted, setIsSoundMuted] = useState<boolean>(() => soundManager.getIsMuted());
+
+  const toggleSound = () => {
+    const next = soundManager.toggleMute();
+    setIsSoundMuted(next);
+  };
 
   // Gamification & Subscription modals
   const [isLivesModalOpen, setIsLivesModalOpen] = useState(false);
@@ -306,6 +318,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setLivesInfo(calculateRegeneratedLives(result.updatedUser));
 
     const remaining = result.updatedUser.lives;
+    soundManager.playHeartLost();
     showToast(
       reason || `Tracisz 1 serce! Zostało: ${remaining}/5. Ucz się na błędach!`,
       remaining === 0 ? 'danger' : 'info'
@@ -393,23 +406,74 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const loginUser = (email: string): boolean => {
+  const loginUser = (email: string, password?: string): { success: boolean; error?: string } => {
     const found = allUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (found) {
-      setCurrentUser(found);
-      showToast(`Witaj ponownie, ${found.name}! Zalogowano pomyślnie.`, 'success');
-      return true;
+    if (!found) {
+      return { success: false, error: 'Nie znaleziono konta z tym adresem e-mail.' };
     }
-    return false;
+
+    if (found.status === 'banned') {
+      return {
+        success: false,
+        error: `Konto zostało zablokowane. Powód: ${found.banReason || 'Naruszenie regulaminu platformy.'}`,
+      };
+    }
+
+    if (found.status === 'suspended') {
+      return {
+        success: false,
+        error: `Konto zostało tymczasowo zawieszone. Powód: ${found.banReason || 'Weryfikacja bezpieczeństwa przez anty-bota.'}`,
+      };
+    }
+
+    if (found.status === 'pending_verification') {
+      return {
+        success: false,
+        error: 'Konto oczekuje na weryfikację anty-botem. Skontaktuj się z administratorem lub zaloguj jako człowiek.',
+      };
+    }
+
+    if (password && found.password && found.password !== password) {
+      return {
+        success: false,
+        error: 'Nieprawidłowe hasło dostępowe. Sprawdź poprawność lub skorzystaj z resetu hasła.',
+      };
+    }
+
+    const updatedUser = {
+      ...found,
+      lastLoginAt: new Date().toISOString(),
+    };
+    setCurrentUser(updatedUser);
+    setAllUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    showToast(`Witaj ponownie, ${found.name}! Zalogowano pomyślnie.`, 'success');
+    return { success: true };
   };
 
-  const registerUser = (name: string, email: string, role: UserRole): User => {
+  const registerUser = (params: {
+    name: string;
+    email: string;
+    password?: string;
+    role: UserRole;
+    antiBotPassed: boolean;
+    antiBotScore?: number;
+    bio?: string;
+  }): { success: boolean; user?: User; error?: string } => {
+    const existing = allUsers.find((u) => u.email.toLowerCase() === params.email.toLowerCase());
+    if (existing) {
+      return { success: false, error: 'Konto z podanym adresem e-mail już istnieje w systemie.' };
+    }
+
     const newUser: User = {
       id: `user-${Date.now()}`,
-      name,
-      email,
-      role,
-      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`,
+      name: params.name,
+      email: params.email,
+      role: params.role,
+      status: params.antiBotPassed ? 'active' : 'pending_verification',
+      antiBotVerified: params.antiBotPassed,
+      antiBotScore: params.antiBotScore ?? (params.antiBotPassed ? 100 : 30),
+      password: params.password || 'password123',
+      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(params.name)}`,
       xp: 0,
       level: 1,
       streakDays: 1,
@@ -425,14 +489,115 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       maxLives: 5,
       isPro: false,
       streakFreezes: 1,
+      bio: params.bio || 'Nowy kursant Akademii Full Stack.',
+      lastLoginAt: new Date().toISOString(),
       createdAt: new Date().toISOString().split('T')[0],
     };
 
     const updated = [...allUsers, newUser];
     setAllUsers(updated);
     setCurrentUser(newUser);
-    showToast(`Konto zostało utworzone! Witamy w Akademii, ${name}.`, 'success');
-    return newUser;
+
+    if (params.antiBotPassed) {
+      showToast(`Konto zostało pomyślnie utworzone i zweryfikowane anty-botem! Witaj, ${params.name}.`, 'success');
+    } else {
+      showToast(`Konto utworzone, lecz oczekuje na pełną weryfikację anty-botem.`, 'info');
+    }
+
+    return { success: true, user: newUser };
+  };
+
+  const deleteUser = (userId: string) => {
+    const userToDelete = allUsers.find((u) => u.id === userId);
+    if (!userToDelete) return;
+
+    if (userId === 'user-admin') {
+      showToast('Nie można usunąć głównego konta administratora.', 'danger');
+      return;
+    }
+
+    const updated = allUsers.filter((u) => u.id !== userId);
+    setAllUsers(updated);
+
+    if (currentUser.id === userId) {
+      const fallback = updated[0] || DEFAULT_USERS[0];
+      setCurrentUser(fallback);
+    }
+
+    showToast(`Konto ${userToDelete.name} zostało usunięte z bazy danych.`, 'info');
+  };
+
+  const setUserStatus = (userId: string, status: UserStatus, reason?: string) => {
+    setAllUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          const updated = { ...u, status, banReason: reason };
+          if (currentUser.id === userId) {
+            setCurrentUser(updated);
+          }
+          return updated;
+        }
+        return u;
+      })
+    );
+
+    const actionText = status === 'active' ? 'odblokowane i aktywne' : status === 'suspended' ? 'zawieszone' : 'zablokowane';
+    showToast(`Status konta został zmieniony: ${actionText}.`, status === 'active' ? 'success' : 'danger');
+  };
+
+  const resetUserPassword = (email: string, newPassword: string = 'noweHaslo2026!'): { success: boolean; message: string } => {
+    const found = allUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    if (!found) {
+      return { success: false, message: 'Nie znaleziono konta z podanym adresem e-mail.' };
+    }
+
+    setAllUsers((prev) =>
+      prev.map((u) => (u.id === found.id ? { ...u, password: newPassword } : u))
+    );
+    showToast(`Hasło dla ${found.name} zostało zresetowane na: ${newPassword}`, 'badge');
+    return { success: true, message: `Nowe hasło zostało ustawione: ${newPassword}` };
+  };
+
+  const verifyUserAntiBot = (userId: string) => {
+    setAllUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, antiBotVerified: true, antiBotScore: 100, status: 'active' } : u))
+    );
+    if (currentUser.id === userId) {
+      setCurrentUser((prev) => ({ ...prev, antiBotVerified: true, antiBotScore: 100, status: 'active' }));
+    }
+    showToast('Konto zostało zweryfikowane przez system anty-bot (100% human score).', 'success');
+  };
+
+  const giveProByAdmin = (userId: string, isPro: boolean, plan: 'monthly' | 'yearly' = 'yearly') => {
+    setAllUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          const updated = setProStatus(u, isPro, plan);
+          if (currentUser.id === userId) {
+            setCurrentUser(updated);
+          }
+          return updated;
+        }
+        return u;
+      })
+    );
+    showToast(`Zaktualizowano uprawnienia PRO dla użytkownika.`, 'badge');
+  };
+
+  const refillUserLivesByAdmin = (userId: string) => {
+    setAllUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          const updated = refillAllLives(u);
+          if (currentUser.id === userId) {
+            setCurrentUser(updated);
+          }
+          return updated;
+        }
+        return u;
+      })
+    );
+    showToast('Serca użytkownika zostały uzupełnione do maksimum (5/5).', 'success');
   };
 
   const switchUser = (userId: string) => {
@@ -471,8 +636,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const newBadges = checkBadgesToUnlock(updatedUser);
       if (newBadges.length > 0) {
         updatedUser.unlockedBadges = [...(updatedUser.unlockedBadges || []), ...newBadges];
+        soundManager.playBadgeUnlocked();
         showToast(`Zdobyto nową odznakę! Sprawdź swój profil.`, 'badge');
+      } else if (levelInfo.level > prev.level) {
+        soundManager.playLevelUp();
+        showToast(`Awans na Poziom ${levelInfo.level}: ${levelInfo.title}!`, 'success');
       } else if (!alreadyCompleted) {
+        soundManager.playSuccess();
         showToast(`Gratulacje! Ukończono lekcję (+${xpReward} XP)`, 'success');
       }
 
@@ -497,7 +667,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const newBadges = checkBadgesToUnlock(updatedUser);
       if (newBadges.length > 0) {
         updatedUser.unlockedBadges = [...(updatedUser.unlockedBadges || []), ...newBadges];
+        soundManager.playBadgeUnlocked();
         showToast(`Zdobyto odznakę za test wiedzy!`, 'badge');
+      } else if (scorePercent >= 80) {
+        soundManager.playSuccess();
       }
 
       setAllUsers((users) => users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
@@ -537,6 +710,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const newBadges = checkBadgesToUnlock(updatedUser);
       if (newBadges.length > 0) {
         updatedUser.unlockedBadges = [...(updatedUser.unlockedBadges || []), ...newBadges];
+        soundManager.playBadgeUnlocked();
+      } else {
+        soundManager.playLevelUp();
       }
 
       showToast(`Wspaniale! Projekt oddany i zaliczony (+${xpReward} XP)`, 'success');
@@ -610,6 +786,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         registerUser,
         switchUser,
         logout,
+        deleteUser,
+        setUserStatus,
+        resetUserPassword,
+        verifyUserAntiBot,
+        giveProByAdmin,
+        refillUserLivesByAdmin,
         completeLesson,
         saveQuizScore,
         saveCodeSnippet,
@@ -620,6 +802,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         dismissToast,
         weakAreas,
         allLessons,
+        isSoundMuted,
+        toggleSound,
       }}
     >
       {children}

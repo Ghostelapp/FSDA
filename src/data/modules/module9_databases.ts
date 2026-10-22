@@ -150,5 +150,169 @@ CREATE TABLE orders (
         'Zaliczenie quizu z wynikiem minimum 80%',
       ],
     },
+    {
+      id: 'db-2',
+      moduleId: 9,
+      moduleTitle: 'Bazy Danych — SQL, PostgreSQL i Prisma ORM',
+      title: 'Prisma ORM: Modelowanie schematu, migracje bazy i Type-Safe Prisma Client',
+      slug: 'prisma-orm-postgresql-migracje-klient',
+      durationMinutes: 45,
+      xpReward: 95,
+      order: 2,
+      summary: 'Koniec z ręcznym pisaniem podatnych na literówki stringów SQL! Poznaj Prisma ORM — standard w świecie TypeScript. Dowiedz się, jak definiować tabele i relacje w schema.prisma, generować migracje i pobierać dane ze 100% autouzupełnianiem typów.',
+      objectives: [
+        'Modelować tabele, typy enum, indeksy i relacje w pliku schema.prisma',
+        'Tworzyć wersjonowane migracje bazy poleceniem prisma migrate dev',
+        'Wykonywać operacje CRUD i złączenia relacji (include / select) za pomocą wygenerowanego klienta Prisma',
+      ],
+      prerequisites: ['Moduł 9: Lekcja 1 (Podstawy SQL)'],
+      theoryMarkdown: `**Prisma** to nowoczesny Object-Relational Mapper (ORM) dla Node.js i TypeScript. Składa się z trzech filarów:
+1. **Prisma Schema:** Pojedynczy, deklaratywny plik \`schema.prisma\`, w którym opisujesz strukturę bazy i relacje.
+2. **Prisma Migrate:** Narzędzie do automatycznego generowania i uruchamiania skryptów migracji SQL.
+3. **Prisma Client:** W pełni typowany generator zapytań TypeScript z inteligentnym autouzupełnianiem kodu w IDE.
+
+**Deklaracja modelu w schema.prisma:**
+\`\`\`prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  xp        Int      @default(0)
+  role      String   @default("student")
+  posts     Post[]
+  createdAt DateTime @default(now())
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+\`\`\`
+
+**Pobieranie powiązanych danych bez pisania JOIN:**
+\`\`\`typescript
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
+// Pobierz użytkownika wraz z jego postami:
+const userWithPosts = await prisma.user.findUnique({
+  where: { email: 'kursant@academy.dev' },
+  include: {
+    posts: {
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    },
+  },
+});
+\`\`\``,
+      codeExamples: [
+        {
+          title: 'Transakcje w Prisma: Wszystko albo nic (ACID)',
+          language: 'typescript',
+          code: `// Bezpieczne przeniesienie punktów XP w transakcji:
+await prisma.$transaction(async (tx) => {
+  const sender = await tx.user.update({
+    where: { id: senderId },
+    data: { xp: { decrement: 100 } },
+  });
+
+  if (sender.xp < 0) {
+    throw new Error('Niewystarczająca liczba XP do wykonania transferu!');
+  }
+
+  await tx.user.update({
+    where: { id: recipientId },
+    data: { xp: { increment: 100 } },
+  });
+});`,
+          explanation: 'Jeśli w trakcie transakcji wystąpi błąd, Prisma automatycznie wycofa wszystkie zmiany (Rollback).',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Zainstaluj Prisma', description: 'npm install @prisma/client oraz npm install -D prisma.' },
+        { step: 2, title: 'Zainicjalizuj konfigurację', description: 'npx prisma init utworzy katalog prisma i plik .env.' },
+        { step: 3, title: 'Wykonaj migrację', description: 'npx prisma migrate dev --name init_db zaaplikuje zmiany w PostgreSQL.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-db-2',
+        title: 'Komponent wizualizacji schematu relacji Prisma',
+        instructions: 'Zaprojektuj wizualny widżet schematu bazy danych: utwórz kontener z klasą db-schema, model User "model User { id, email, xp }", oraz relację "User 1 -> N Posts".',
+        task: 'Utwórz element db-schema z modelem User i relacją User 1 -> N Posts.',
+        starterCode: {
+          html: '<!-- Zbuduj widok schematu bazy danych poniżej -->\n',
+          css: '.db-schema { background: #0b1329; border: 1px solid #1e3a8a; padding: 18px; border-radius: 12px; font-family: monospace; color: #93c5fd; font-size: 0.85rem; }\n.model { background: #172554; padding: 10px; border-radius: 6px; margin-bottom: 8px; }\n.relation { color: #60a5fa; font-weight: bold; }',
+          js: 'console.log("Prisma Schema Inspector gotowy.");',
+        },
+        solutionCode: {
+          html: '<div class="db-schema">\n  <div class="model">model User { id, email, xp }</div>\n  <div class="relation">User 1 -> N Posts</div>\n</div>',
+          css: '.db-schema { background: #0b1329; border: 1px solid #1e3a8a; padding: 18px; border-radius: 12px; font-family: monospace; color: #93c5fd; font-size: 0.85rem; }\n.model { background: #172554; padding: 10px; border-radius: 6px; margin-bottom: 8px; }\n.relation { color: #60a5fa; font-weight: bold; }',
+          js: 'console.log("Prisma Schema Inspector gotowy.");',
+        },
+        hints: [
+          'Użyj kontenera <div class="db-schema">.',
+          'Wstaw <div class="model">model User { id, email, xp }</div>.',
+          'Wstaw <div class="relation">User 1 -> N Posts</div>.',
+        ],
+        rules: [
+          { id: 'r1', description: 'Klasa db-schema obecna', ruleType: 'html_contains', target: 'db-schema' },
+          { id: 'r2', description: 'Model User obecny', ruleType: 'html_contains', target: 'model User { id, email, xp }' },
+          { id: 'r3', description: 'Relacja User 1 -> N Posts obecna', ruleType: 'html_contains', target: 'User 1 -> N Posts' },
+        ],
+      },
+      independentTask: {
+        title: 'Model sklepu w Prisma',
+        instructions: 'Zaprojektuj model Order ze statusem enum (PENDING, PAID, CANCELLED) oraz relacją do modelu OrderItem.',
+        expectedOutcome: 'Pełne zrozumienie typów wyliczeniowych enum i relacji kaskadowych w Prisma.',
+        starterHint: 'enum OrderStatus { PENDING PAID CANCELLED }',
+      },
+      quiz: [
+        {
+          id: 'q-db2-1',
+          question: 'Co dzieje się po uruchomieniu polecenia `npx prisma migrate dev`?',
+          options: [
+            'Prisma porównuje plik schema.prisma ze stanem bazy, generuje plik migracji w czystym SQL, wykonuje go na bazie i automatycznie regeneruje klienta TypeScript (Prisma Client)',
+            'Usuwa wszystkie dane bez pytania o zgodę',
+            'Konwertuje bazę PostgreSQL na plik Excel (.xlsx)',
+            'Uruchamia przeglądarkę Chrome w trybie incognito',
+          ],
+          correctAnswer: 0,
+          explanation: 'Polecenie migrate dev dba o spójność schematu, tworzy czytelną historię zmian SQL i odświeża typy w IDE.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Tworzenie nowej instancji new PrismaClient() wewnątrz każdej funkcji zapytania',
+          whyItHappens: 'Niewiedza o puli połączeń bazy danych (Connection Pool).',
+          howToFix: 'Prisma Client zarządza własną pulą połączeń. Zawsze eksportuj pojedynczą instancję (Singleton) z dedykowanego pliku db.ts.',
+          badCode: 'async function getUsers() { const prisma = new PrismaClient(); ... }',
+          goodCode: 'import { prisma } from "../lib/db"; // Singleton',
+        },
+      ],
+      practicalTask: {
+        title: 'Zapytanie wielorelacyjne w Prisma Client',
+        instructions: 'Napisz zapytanie findMany z klauzulą where filtrowania aktywnych kursantów oraz dołączeniem include ukończonych lekcji.',
+        brief: 'Przećwicz autouzupełnianie i silne typowanie w Prisma.',
+        steps: ['Zaimportuj singleton prisma', 'Zdefiniuj warunek where', 'Dodaj include dla powiązanej tabeli'],
+        deliverable: 'Praktyczne opanowanie Prisma Client.',
+      },
+      completionCriteria: [
+        'Zrozumienie modelowania danych w schema.prisma',
+        'Prawidłowe rozwiązanie ćwiczenia interaktywnego',
+        'Zaliczenie quizu z wynikiem minimum 80%',
+      ],
+    },
   ],
 };

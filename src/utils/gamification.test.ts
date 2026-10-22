@@ -71,6 +71,8 @@ test('checkBadgesToUnlock awards first-step on first lesson completed', () => {
     maxLives: 5,
     isPro: false,
     streakFreezes: 1,
+    status: 'active',
+    antiBotVerified: true,
     createdAt: '2026-10-21',
   };
 
@@ -99,6 +101,8 @@ test('calculateRegeneratedLives leaves PRO users with max lives and no countdown
     maxLives: 5,
     isPro: true,
     streakFreezes: 2,
+    status: 'active',
+    antiBotVerified: true,
     createdAt: '2026-10-21',
   };
 
@@ -133,6 +137,8 @@ test('calculateRegeneratedLives regenerates hearts after elapsed time', () => {
     lastHeartLostTimestamp: now - (fifteenMinutesMs * 2 + 60000), // 31 mins ago
     isPro: false,
     streakFreezes: 1,
+    status: 'active',
+    antiBotVerified: true,
     createdAt: '2026-10-21',
   };
 
@@ -164,6 +170,8 @@ test('deductLife deducts 1 life on free tier, never drops below 0, and protects 
     maxLives: 5,
     isPro: false,
     streakFreezes: 1,
+    status: 'active',
+    antiBotVerified: true,
     createdAt: '2026-10-21',
   };
 
@@ -198,6 +206,8 @@ test('buyHeartWithXP exchanges XP for heart', () => {
     maxLives: 5,
     isPro: false,
     streakFreezes: 0,
+    status: 'active',
+    antiBotVerified: true,
     createdAt: '2026-10-21',
   };
 

@@ -379,5 +379,131 @@ function printUserNameSafe(user) {
         'Zaliczenie quizu z wynikiem minimum 80%',
       ],
     },
+    {
+      id: 'fund-3',
+      moduleId: 1,
+      moduleTitle: 'Fundamenty programowania',
+      title: 'Terminal UNIX, system plików i zmienne środowiskowe .env',
+      slug: 'terminal-unix-system-plikow-env',
+      durationMinutes: 30,
+      xpReward: 60,
+      order: 3,
+      summary: 'Kluczowe narzędzie inżyniera: terminal bash/zsh, nawigacja po drzewie katalogów (pwd, cd, ls), zarządzanie plikami oraz bezpieczna konfiguracja zmiennych środowiskowych w pliku .env.',
+      objectives: [
+        'Sprawnie nawigować po systemie plików i operować na plikach z poziomu konsoli',
+        'Zrozumieć rolę zmiennych środowiskowych i zabezpieczać klucze API przed wyciekiem na GitHub',
+        'Stosować pliki .env.example jako wzorzec konfiguracyjny projektu',
+      ],
+      prerequisites: ['Lekcja 1: Architektura Internetu'],
+      theoryMarkdown: `Graficzny interfejs (GUI) jest wygodny, ale to **wiersz poleceń (CLI)** daje programiście pełną kontrolę nad serwerami, kontenerami i automatyzacją.
+
+**1. Podstawowe komendy UNIX:**
+- \`pwd\` (Print Working Directory): Wyświetla pełną ścieżkę bieżącego katalogu.
+- \`ls -la\`: Wypisuje wszystkie pliki (również ukryte kropką, np. \`.gitignore\`) wraz z uprawnieniami.
+- \`cd <ścieżka>\`: Przechodzi do katalogu (\`cd ..\` cofa o jeden poziom).
+- \`mkdir <nazwa>\`: Tworzy nowy katalog.
+- \`cat <plik>\`: Wypisuje zawartość pliku w oknie konsoli.
+
+**2. Zmienne środowiskowe (.env):**
+Sekrety (hasła do baz danych, klucze API, tokeny płatności) **nigdy nie mogą znaleźć się w kodzie źródłowym**.
+Przechowujemy je w pliku \`.env\`, który jest dodany do \`.gitignore\`:
+\`\`\`bash
+# .env (NIGDY nie commituj do repozytorium!)
+PORT=3000
+DATABASE_URL=postgresql://user:tajne_haslo@localhost:5432/db
+JWT_SECRET=super_tajny_klucz_kryptograficzny
+\`\`\`
+
+Do repozytorium wrzucamy wyłącznie szablon **\`.env.example\`** z pustymi lub przykładowymi wartościami, aby inni programiści wiedzieli, jak skonfigurować projekt.`,
+      codeExamples: [
+        {
+          title: 'Odczyt zmiennych środowiskowych w Node.js',
+          language: 'typescript',
+          code: `import 'dotenv/config';
+
+const port = process.env.PORT || 3000;
+const dbUrl = process.env.DATABASE_URL;
+
+if (!dbUrl) {
+  throw new Error('KRYTYCZNY BŁĄD: Zmienna DATABASE_URL nie została zdefiniowana w pliku .env!');
+}
+
+console.log(\`Serwer uruchomiony na porcie \${port}\`);`,
+          explanation: 'Pakiet dotenv wczytuje zawartość pliku .env do globalnego obiektu process.env w Node.js.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Dodaj .env do .gitignore', description: 'Upewnij się, że Git nie wyśle sekretów do sieci.' },
+        { step: 2, title: 'Stwórz plik .env.example', description: 'Wypisz nazwy wymaganych zmiennych bez ich sekretnych wartości.' },
+        { step: 3, title: 'Wczytaj przez process.env', description: 'Odwołuj się do zmiennych przez process.env.NAZWA_ZMIENNEJ.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-fund-3',
+        title: 'Komponent wizualizacji statusu zmiennych środowiskowych',
+        instructions: 'Zaprojektuj wizualny widżet statusu konfiguracji serwera: stwórz kontener z klasą env-checker, informację o aktywnym środowisku "NODE_ENV: production", oraz wskaźnik "DATABASE_URL: Configured".',
+        task: 'Utwórz element env-checker z tekstami NODE_ENV: production oraz DATABASE_URL: Configured.',
+        starterCode: {
+          html: '<!-- Zbuduj widok wskaźnika zmiennych środowiskowych poniżej -->\n',
+          css: '.env-checker { background: #0b132b; border: 1px solid #1c2541; padding: 14px 18px; border-radius: 10px; font-family: monospace; color: #5bc0be; font-size: 0.85rem; display: flex; flex-direction: column; gap: 6px; }\n.env-key { color: #6fffe9; font-weight: bold; }',
+          js: 'console.log("Env Inspector aktywny.");',
+        },
+        solutionCode: {
+          html: '<div class="env-checker">\n  <div>NODE_ENV: production</div>\n  <div>DATABASE_URL: Configured</div>\n</div>',
+          css: '.env-checker { background: #0b132b; border: 1px solid #1c2541; padding: 14px 18px; border-radius: 10px; font-family: monospace; color: #5bc0be; font-size: 0.85rem; display: flex; flex-direction: column; gap: 6px; }\n.env-key { color: #6fffe9; font-weight: bold; }',
+          js: 'console.log("Env Inspector aktywny.");',
+        },
+        hints: [
+          'Użyj kontenera <div class="env-checker">.',
+          'Wstaw <div>NODE_ENV: production</div>.',
+          'Wstaw <div>DATABASE_URL: Configured</div>.',
+        ],
+        rules: [
+          { id: 'r1', description: 'Klasa env-checker obecna', ruleType: 'html_contains', target: 'env-checker' },
+          { id: 'r2', description: 'NODE_ENV: production obecne', ruleType: 'html_contains', target: 'NODE_ENV: production' },
+          { id: 'r3', description: 'DATABASE_URL: Configured obecne', ruleType: 'html_contains', target: 'DATABASE_URL: Configured' },
+        ],
+      },
+      independentTask: {
+        title: 'Konfiguracja pliku .env.example',
+        instructions: 'Napisz plik .env.example definiujący klucze PORT, API_KEY, DATABASE_URL i REDIS_HOST bez ujawniania haseł.',
+        expectedOutcome: 'Bezpieczny wzorzec konfiguracyjny gotowy do przekazania zespołowi.',
+        starterHint: 'Zdefiniuj klucze z wartościami przykładowymi, np. DATABASE_URL=postgresql://user:pass@localhost:5432/db',
+      },
+      quiz: [
+        {
+          id: 'q-fund3-1',
+          question: 'Dlaczego plik .env zawierający klucze API i hasła do bazy bezwzględnie musi znaleźć się w pliku .gitignore?',
+          options: [
+            'Ponieważ w przeciwnym razie boty internetowe w ciągu kilku sekund przeskanują publiczne repozytorium GitHub i ukradną Twoje klucze, co może narazić firmę na gigantyczne straty finansowe',
+            'Ponieważ plik .env uniemożliwia kompilację kodu JavaScript',
+            'Plik .env waży zbyt wiele megabajtów dla serwerów Gita',
+            'Git nie obsługuje plików zaczynających się od kropki',
+          ],
+          correctAnswer: 0,
+          explanation: 'Zautomatyzowane roboty skanują GitHub 24/7 w poszukiwaniu wycieków kluczy AWS, Stripe i haseł bazodanowych. Zawsze izoluj sekrety w .env.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Wpisywanie klucza API bezpośrednio w kodzie komponentu React',
+          whyItHappens: 'Pośpiech i chęć szybkiego przetestowania zapytania.',
+          howToFix: 'Wszystkie zmienne we frontendzie React/Vite muszą mieć przedrostek VITE_ i trafiać do pliku .env, a wrażliwe klucze powinny być ukryte za backendem (API Proxy).',
+          badCode: 'const apiKey = "sk_live_9482018491028491"; // Poważny wyciek!',
+          goodCode: 'const apiKey = import.meta.env.VITE_PUBLIC_API_KEY;',
+        },
+      ],
+      practicalTask: {
+        title: 'Przetestowanie komend w Terminalu Akademii',
+        instructions: 'Otwórz zakładkę "Terminal Bash / Git" w lewym menu aplikacji i wykonaj komendy ls -la oraz cat package.json.',
+        brief: 'Przetestuj interaktywny terminal wbudowany w aplikację.',
+        steps: ['Przejdź do zakładki Terminal', 'Wpisz ls -la', 'Wyświetl plik cat package.json'],
+        deliverable: 'Praktyczne oswojenie się z wierszem poleceń.',
+      },
+      completionCriteria: [
+        'Zrozumienie podstawowych komend powłoki UNIX',
+        'Prawidłowe rozwiązanie ćwiczenia interaktywnego',
+        'Zaliczenie quizu z wynikiem minimum 80%',
+      ],
+    },
   ],
 };

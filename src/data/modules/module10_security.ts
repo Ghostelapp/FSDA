@@ -159,5 +159,148 @@ export function verifyToken(token: string) {
         'Zaliczenie quizu z wynikiem minimum 80%',
       ],
     },
+    {
+      id: 'sec-2',
+      moduleId: 10,
+      moduleTitle: 'Autoryzacja i Bezpieczeństwo Aplikacji',
+      title: 'Ochrona przed OWASP Top 10: XSS, CSRF, SQL Injection, Helmet i Rate Limiting',
+      slug: 'bezpieczenstwo-owasp-xss-csrf-sqli-helmet-rate-limiting',
+      durationMinutes: 45,
+      xpReward: 90,
+      order: 2,
+      summary: 'Cyberbezpieczeństwo w praktyce: chroń dane użytkowników przed Cross-Site Scripting (XSS), fałszowaniem żądań (CSRF), wstrzykiwaniem SQL (SQLi), atakami typu brute-force i wyciekami nagłówków dzięki Helmet.js i Rate Limiting.',
+      objectives: [
+        'Rozumieć wektory ataków XSS i stosować sanitizację HTML oraz Content Security Policy (CSP)',
+        'Wdrażać ciasteczka SameSite=Strict i tokeny anty-CSRF',
+        'Konfigurować pakiety helmet oraz express-rate-limit na serwerze produkcyjnym',
+      ],
+      prerequisites: ['Moduł 10: Lekcja 1 (JWT i bcrypt)'],
+      theoryMarkdown: `Organizacja **OWASP** (Open Web Application Security Project) publikuje zestawienie 10 najgroźniejszych podatności aplikacji internetowych.
+
+**1. Cross-Site Scripting (XSS):**
+Atak polegający na wstrzyknięciu złośliwego skryptu JavaScript do przeglądarki ofiary (np. przez niesanitizowany komentarz).
+- **Zagrożenie:** Kradzież ciasteczek sesyjnych, tokenów z localStorage, podsłuchiwanie klawiatury (keylogger).
+- **Obrona:** Unikaj \`dangerouslySetInnerHTML\`, stosuj bibliotekę DOMPurify, a wrażliwe tokeny przechowuj wyłącznie w ciasteczkach z flagą **\`HttpOnly\`** (do których JavaScript nie ma dostępu!).
+
+**2. Cross-Site Request Forgery (CSRF):**
+Zmuszenie zalogowanej przeglądarki ofiary do wykonania niepożądanej akcji na zaufanej stronie (np. wysłanie formularza przelewu).
+- **Obrona:** Ciasteczka sesyjne z flagą **\`SameSite=Lax\`** lub **\`SameSite=Strict\`**, a także unikalne tokeny CSRF dołączane do żądań POST/PUT/DELETE.
+
+**3. SQL Injection (SQLi):**
+Wstrzykiwanie fragmentów języka SQL do zapytań (np. \`' OR 1=1 --\`).
+- **Obrona:** Nigdy nie łącz stringów (\`"SELECT * WHERE id=" + id\`). Używaj zapytań parametryzowanych lub ORM-ów (Prisma/Drizzle), które automatycznie escapują parametry.
+
+**4. Utwardzanie Express.js (Helmet & Rate Limiter):**
+\`\`\`typescript
+import express from 'express';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+
+const app = express();
+
+// Ukrywa nagłówek X-Powered-By: Express i ustawia CSP, HSTS, X-Frame-Options:
+app.use(helmet());
+
+// Blokuje brute force: max 100 zapytań na 15 minut z jednego IP:
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { error: 'Zbyt wiele zapytań. Spróbuj ponownie za 15 minut.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', limiter);
+\`\`\``,
+      codeExamples: [
+        {
+          title: 'Middleware Rate Limitingu dla formularza logowania w Express',
+          language: 'typescript',
+          code: `import rateLimit from 'express-rate-limit';
+
+// Rygorystyczny limit dla logowania: max 5 błędnych prób na 5 minut:
+export const loginLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 5,
+  message: { error: 'Zbyt wiele nieudanych prób logowania. Konto zablokowane na 5 minut.' },
+  standardHeaders: true,
+});
+
+app.post('/api/auth/login', loginLimiter, authController.login);`,
+          explanation: 'Chroni przed automatycznymi atakami typu dictionary attack i credential stuffing.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Zainstaluj Helmet', description: 'npm install helmet i dodaj app.use(helmet()).' },
+        { step: 2, title: 'Wdróż Rate Limiting', description: 'npm install express-rate-limit i zabezpiecz endpointy logowania.' },
+        { step: 3, title: 'Wymuś ciasteczka HttpOnly', description: 'res.cookie("token", jwt, { httpOnly: true, secure: true, sameSite: "strict" }).' },
+      ],
+      interactiveExercise: {
+        id: 'ex-sec-2',
+        title: 'Komponent tarczy bezpieczeństwa aplikacji (WAF Badge)',
+        instructions: 'Zaprojektuj wizualną odznakę tarczy bezpieczeństwa: utwórz kontener z klasą waf-badge, informację o aktywnym nagłówku "Helmet CSP: Active", oraz limit zapytań "Rate Limiting: 100 req/15m".',
+        task: 'Utwórz element waf-badge z tekstami Helmet CSP: Active oraz Rate Limiting: 100 req/15m.',
+        starterCode: {
+          html: '<!-- Zbuduj widok tarczy bezpieczeństwa poniżej -->\n',
+          css: '.waf-badge { background: #1a0b2e; border: 1px solid #7c3aed; padding: 14px 18px; border-radius: 10px; font-family: monospace; color: #d8b4fe; display: flex; flex-direction: column; gap: 6px; }\n.shield-title { color: #a855f7; font-weight: bold; }',
+          js: 'console.log("Security Shield Active.");',
+        },
+        solutionCode: {
+          html: '<div class="waf-badge">\n  <div>Helmet CSP: Active</div>\n  <div>Rate Limiting: 100 req/15m</div>\n</div>',
+          css: '.waf-badge { background: #1a0b2e; border: 1px solid #7c3aed; padding: 14px 18px; border-radius: 10px; font-family: monospace; color: #d8b4fe; display: flex; flex-direction: column; gap: 6px; }\n.shield-title { color: #a855f7; font-weight: bold; }',
+          js: 'console.log("Security Shield Active.");',
+        },
+        hints: [
+          'Użyj kontenera <div class="waf-badge">.',
+          'Wstaw <div>Helmet CSP: Active</div>.',
+          'Wstaw <div>Rate Limiting: 100 req/15m</div>.',
+        ],
+        rules: [
+          { id: 'r1', description: 'Klasa waf-badge obecna', ruleType: 'html_contains', target: 'waf-badge' },
+          { id: 'r2', description: 'Helmet CSP: Active obecne', ruleType: 'html_contains', target: 'Helmet CSP: Active' },
+          { id: 'r3', description: 'Rate Limiting: 100 req/15m obecne', ruleType: 'html_contains', target: 'Rate Limiting: 100 req/15m' },
+        ],
+      },
+      independentTask: {
+        title: 'Audyt bezpieczeństwa nagłówków HTTP',
+        instructions: 'Zbadaj stronę securityheaders.com i skonfiguruj Content-Security-Policy blokującą skrypty z nieautoryzowanych domen.',
+        expectedOutcome: 'Ocena A+ w rankingu nagłówków bezpieczeństwa serwera.',
+        starterHint: 'helmet.contentSecurityPolicy({ directives: { defaultSrc: ["\'self\'"] } })',
+      },
+      quiz: [
+        {
+          id: 'q-sec2-1',
+          question: 'Dlaczego przechowywanie tokena uwierzytelniającego w ciasteczku z flagą HttpOnly jest bezpieczniejsze niż w localStorage przeglądarki?',
+          options: [
+            'Flaga HttpOnly uniemożliwia odczytanie ciasteczka z poziomu skryptów JavaScript, co chroni token przed kradzieżą w razie ataku XSS',
+            'Ciasteczko HttpOnly jest automatycznie usuwane co 5 sekund',
+            'LocalStorage może pomieścić maksymalnie 10 znaków',
+            'Flaga HttpOnly szyfruje procesor komputera użytkownika',
+          ],
+          correctAnswer: 0,
+          explanation: 'Skrypt wstrzyknięty przez atakującego w ataku XSS ma bezpośredni dostęp do window.localStorage, ale nie jest w stanie odczytać ciasteczek HttpOnly.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Brak limitera zapytań (Rate Limiting) na trasach rejestracji i logowania',
+          whyItHappens: 'Przekonanie, że zabezpieczenia bazy danych wystarczą.',
+          howToFix: 'Brak limitera pozwala botom sprawdzać miliony haseł na minutę (Brute Force) lub wysyłać tysiące zapytań obciążających serwer. Zawsze chroń wrażliwe trasy za pomocą express-rate-limit.',
+          badCode: 'app.post("/login", loginHandler); // Podatne na spam botów!',
+          goodCode: 'app.post("/login", loginLimiter, loginHandler);',
+        },
+      ],
+      practicalTask: {
+        title: 'Konfiguracja pakietu Helmet w serwerze Express',
+        instructions: 'Dodaj pakiet helmet do konfiguracji serwera Express i sprawdź nagłówki odpowiedzi za pomocą DevTools Network tab.',
+        brief: 'Przetestuj nagłówki X-Content-Type-Options i Strict-Transport-Security.',
+        steps: ['Zaimportuj helmet', 'Użyj middleware app.use(helmet())', 'Sprawdź ukrycie nagłówka X-Powered-By'],
+        deliverable: 'Utwardzone, bezpieczne środowisko Express.',
+      },
+      completionCriteria: [
+        'Zrozumienie wektorów ataku OWASP i mechanizmów obronnych',
+        'Prawidłowe rozwiązanie ćwiczenia interaktywnego',
+        'Zaliczenie quizu z wynikiem minimum 80%',
+      ],
+    },
   ],
 };

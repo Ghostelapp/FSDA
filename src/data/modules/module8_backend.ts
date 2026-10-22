@@ -293,5 +293,156 @@ app.post('/api/register', async (req, res, next) => {
         'Zaliczenie quizu z wynikiem minimum 80%',
       ],
     },
+    {
+      id: 'node-3',
+      moduleId: 8,
+      moduleTitle: 'Backend z Node.js i Express',
+      title: 'Architektura warstwowa: Kontrolery, Serwisy i Centralny Error Handler',
+      slug: 'nodejs-architektura-warstwowa-controllers-services',
+      durationMinutes: 45,
+      xpReward: 90,
+      order: 3,
+      summary: 'Koniec z pisaniem całego kodu w jednym pliku! Poznaj wzorzec warstwowy (Controller - Service - Repository), rozdzielanie logiki HTTP od logiki biznesowej oraz centralny middleware obsługi wyjątków.',
+      objectives: [
+        'Projektować architekturę warstwową (Routes -> Controllers -> Services -> Repositories)',
+        'Unikać umieszczania zapytań do bazy danych bezpośrednio w funkcjach obsługi tras (Route Handlers)',
+        'Wdrażać centralny middleware błędów (err, req, res, next) obsługujący błędy synchroniczne i asynchroniczne',
+      ],
+      prerequisites: ['Moduł 8: Lekcja 1 i 2'],
+      theoryMarkdown: `W profesjonalnych aplikacjach komercyjnych nie wolno łączyć obsługi protokołu HTTP (nagłówki, statusy) z logiką biznesową (kalkulacja rabatów, wysyłka e-maili) ani z zapytaniami do bazy.
+
+**Architektura 3-warstwowa (Layered Architecture):**
+1. **Routing & Controller:** Odbiera żądanie (\`req\`), wyciąga parametry, waliduje je (np. Zod) i wywołuje odpowiedni serwis. Następnie zwraca odpowiedź (\`res.status(...).json(...)\`).
+2. **Service Layer (Logika biznesowa):** Czyste reguły biznesowe, niezależne od Expressa. Tu sprawdzamy np. czy kursant ma wystarczającą ilość XP lub czy subskrypcja jest aktywna.
+3. **Data Access / Repository:** Bezpośrednia komunikacja z bazą danych (SQL / Prisma / Firestore).
+
+**Centralny Error Handler:**
+Express posiada specjalny 4-argumentowy middleware:
+\`\`\`typescript
+import { ErrorRequestHandler } from 'express';
+
+export class AppError extends Error {
+  constructor(public statusCode: number, message: string) {
+    super(message);
+  }
+}
+
+export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  const statusCode = err instanceof AppError ? err.statusCode : 500;
+  const message = err.message || 'Wewnętrzny błąd serwera';
+
+  console.error('[API Error]:', err);
+
+  res.status(statusCode).json({
+    success: false,
+    error: {
+      status: statusCode,
+      message,
+    },
+  });
+};
+\`\`\``,
+      codeExamples: [
+        {
+          title: 'Wzorzec separacji Kontroler vs Serwis w Express',
+          language: 'typescript',
+          code: `// users.service.ts - Czysta logika domenowa
+export class UsersService {
+  async enrollStudent(userId: string, courseId: string) {
+    const student = await db.user.findUnique({ where: { id: userId } });
+    if (!student) throw new AppError(404, 'Kursant nie istnieje');
+    if (student.lives <= 0 && !student.isPro) {
+      throw new AppError(403, 'Brak serduszek do zapisu na nowy kurs');
+    }
+    return db.enrollment.create({ data: { userId, courseId } });
+  }
+}
+
+// users.controller.ts - Warstwa protokołu HTTP
+export const enrollController = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const service = new UsersService();
+    const result = await service.enrollStudent(req.user.id, req.body.courseId);
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    next(error); // Przekazanie do centralnego Error Handlera!
+  }
+};`,
+          explanation: 'Dzięki separacji serwis można łatwo przetestować testami jednostkowymi bez uruchamiania serwera HTTP.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Wydziel trasę i kontroler', description: 'Plik routes.ts rejestruje endpoint, controller.ts obsługuje req/res.' },
+        { step: 2, title: 'Wydziel klasę serwisu', description: 'Logika biznesowa nie powinna mieć zależności od obiektów req i res.' },
+        { step: 3, title: 'Zarejestruj errorHandler na końcu', description: 'app.use(errorHandler) musi być ostatnim middleware w pliku server.ts.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-node-3',
+        title: 'Komponent widoku statusu mikroserwisów (Architecture Monitor)',
+        instructions: 'Zaprojektuj widżet monitorujący warstwy architektury serwera: stwórz kontener z klasą arch-monitor, element warstwy kontrolera "Controller Layer: Active", oraz element warstwy bazy "Database Pool: Connected".',
+        task: 'Utwórz blok arch-monitor z elementami Controller Layer: Active oraz Database Pool: Connected.',
+        starterCode: {
+          html: '<!-- Zbuduj widok monitora warstw poniżej -->\n',
+          css: '.arch-monitor { background: #090d16; border: 1px solid #1e293b; padding: 16px; border-radius: 10px; font-family: monospace; color: #38bdf8; }\n.layer { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }\n.status-ok { color: #34d399; font-weight: bold; }',
+          js: 'console.log("Architecture Monitor zainicjalizowany.");',
+        },
+        solutionCode: {
+          html: '<div class="arch-monitor">\n  <div class="layer">\n    <span>Controller Layer: Active</span>\n  </div>\n  <div class="layer">\n    <span>Database Pool: Connected</span>\n  </div>\n</div>',
+          css: '.arch-monitor { background: #090d16; border: 1px solid #1e293b; padding: 16px; border-radius: 10px; font-family: monospace; color: #38bdf8; }\n.layer { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }\n.status-ok { color: #34d399; font-weight: bold; }',
+          js: 'console.log("Architecture Monitor zainicjalizowany.");',
+        },
+        hints: [
+          'Użyj kontenera <div class="arch-monitor">.',
+          'Wstaw tekst Controller Layer: Active.',
+          'Wstaw tekst Database Pool: Connected.',
+        ],
+        rules: [
+          { id: 'r1', description: 'Klasa arch-monitor obecna', ruleType: 'html_contains', target: 'arch-monitor' },
+          { id: 'r2', description: 'Controller Layer: Active obecne', ruleType: 'html_contains', target: 'Controller Layer: Active' },
+          { id: 'r3', description: 'Database Pool: Connected obecne', ruleType: 'html_contains', target: 'Database Pool: Connected' },
+        ],
+      },
+      independentTask: {
+        title: 'Klasa własnych wyjątków biznesowych (Custom Exceptions)',
+        instructions: 'Zdefiniuj klasę NotFoundError dziedziczącą po AppError z kodem 404 oraz UnauthorizedError z kodem 401.',
+        expectedOutcome: 'Jednolita, samoopisująca się hierarchia błędów w całym projekcie.',
+        starterHint: 'class NotFoundError extends AppError { constructor(msg) { super(404, msg); } }',
+      },
+      quiz: [
+        {
+          id: 'q-node3-1',
+          question: 'Dlaczego w architekturze warstwowej zapytania do bazy danych umieszcza się w warstwie Repozytorium/Serwisu, a nie w Kontrolerze?',
+          options: [
+            'Umożliwia to łatwe testowanie logiki biznesowej bez konieczności symulowania zapytań HTTP oraz pozwala na ponowne użycie tej samej metody w wielu trasach lub zadaniach cron',
+            'Kontroler Expressa nie pozwala na używanie słowa kluczowego async/await',
+            'Baza danych PostgreSQL nie akceptuje połączeń z kontrolerów',
+            'Zmniejsza to zużycie prądu przez serwer o 50%',
+          ],
+          correctAnswer: 0,
+          explanation: 'Separacja odpowiedzialności pozwala na testowanie jednostkowe i izolację warstwy sieciowej od logiki danych.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Przekazywanie obiektów req i res bezpośrednio do warstwy serwisu',
+          whyItHappens: 'Wygoda programisty, który chce mieć dostęp do nagłówków w każdym miejscu kodu.',
+          howToFix: 'Przekazuj do serwisu wyłącznie wyekstrahowane dane domenowe (np. userId, amount), zachowując pełną niezależność serwisu od frameworka HTTP.',
+          badCode: 'async createOrder(req: Request) { const user = req.user; ... }',
+          goodCode: 'async createOrder(userId: string, orderData: OrderDto) { ... }',
+        },
+      ],
+      practicalTask: {
+        title: 'Refaktoryzacja punktu końcowego API',
+        instructions: 'Przeanalizuj endpoint rejestracji w projekcie i rozdziel go na plik route, controller oraz service.',
+        brief: 'Stwórz czysty potok architektoniczny Controller -> Service.',
+        steps: ['Wyodrębnij funkcję kontrolera', 'Stwórz klasę serwisu', 'Podepnij pod middleware błędów'],
+        deliverable: 'Czysty kod produkcyjny.',
+      },
+      completionCriteria: [
+        'Zrozumienie architektury warstwowej i separacji zadań',
+        'Prawidłowe rozwiązanie ćwiczenia interaktywnego',
+        'Zaliczenie quizu z wynikiem minimum 80%',
+      ],
+    },
   ],
 };

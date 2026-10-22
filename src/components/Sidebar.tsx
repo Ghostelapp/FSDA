@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
+import { soundManager } from '../utils/audioFx';
 import { 
   LayoutDashboard, 
   Layers, 
@@ -12,68 +13,99 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Database,
+  Briefcase,
+  TerminalSquare
 } from 'lucide-react';
+
+interface SidebarNavItem {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+  count?: number;
+}
 
 export const Sidebar: React.FC = () => {
   const { activeTab, setActiveTab, currentUser, weakAreas } = useApp();
 
-  const navItems = [
+  const primaryItems: SidebarNavItem[] = [
     { id: 'dashboard', label: 'Pulpit Kursanta', icon: LayoutDashboard },
     { id: 'modules', label: 'Ścieżka Kursu (15)', icon: Layers },
-    { id: 'editor', label: 'Piaskownica Kodu', icon: Terminal },
     { id: 'projects', label: 'Projekty Praktyczne (12)', icon: FolderGit2, badge: 'Portfolio' },
+    { id: 'certificate', label: 'Certyfikat Ukończenia', icon: Award },
+  ];
+
+  const toolsItems: SidebarNavItem[] = [
+    { id: 'terminal', label: 'Terminal Bash / Git', icon: TerminalSquare, badge: '+XP' },
+    { id: 'sql_studio', label: 'Studio Bazy SQL', icon: Database },
+    { id: 'interview', label: 'Live Coding (Egzamin)', icon: Briefcase, badge: 'Mock' },
+    { id: 'editor', label: 'Piaskownica Kodu', icon: Terminal },
+  ];
+
+  const extraItems: SidebarNavItem[] = [
     { 
       id: 'reviews', 
       label: 'Centrum Powtórek', 
       icon: RotateCcw, 
       count: weakAreas.length > 0 ? weakAreas.length : undefined 
     },
-    { id: 'certificate', label: 'Certyfikat Ukończenia', icon: Award },
     { id: 'deployment', label: 'Przewodnik Wdrożenia', icon: BookMarked },
   ];
 
   const weeklyPercent = Math.min(100, Math.round((currentUser.weeklySpentMinutes / (currentUser.weeklyGoalMinutes || 180)) * 100));
 
+  const renderNavGroup = (title: string, items: SidebarNavItem[]) => (
+    <div className="space-y-1 pt-2">
+      <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        {title}
+      </div>
+      {items.map((item) => {
+        const Icon = item.icon;
+        const isActive = activeTab === item.id || (item.id === 'modules' && activeTab === 'lesson');
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => {
+              soundManager.playClick();
+              setActiveTab(item.id as any);
+            }}
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all group ${
+              isActive
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+            }`}
+          >
+            <div className="flex items-center gap-2.5 truncate">
+              <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-cyan-400'}`} />
+              <span className="truncate">{item.label}</span>
+            </div>
+            {item.badge && (
+              <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold shrink-0 ${
+                isActive ? 'bg-indigo-700 text-indigo-100' : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/30'
+              }`}>
+                {item.badge}
+              </span>
+            )}
+            {item.count !== undefined && (
+              <span className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0">
+                {item.count}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <aside className="hidden lg:flex w-64 flex-col border-r border-slate-800 bg-slate-950/60 p-4 shrink-0 h-[calc(100vh-4rem)] sticky top-16">
-      <div className="space-y-1">
-        <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-          Nawigacja
-        </div>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id || (item.id === 'modules' && activeTab === 'lesson');
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setActiveTab(item.id as any)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all group ${
-                isActive
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-400'}`} />
-                <span>{item.label}</span>
-              </div>
-              {item.badge && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                  isActive ? 'bg-indigo-700 text-indigo-100' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                }`}>
-                  {item.badge}
-                </span>
-              )}
-              {item.count !== undefined && (
-                <span className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                  {item.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+    <aside className="hidden lg:flex w-64 flex-col border-r border-slate-800 bg-slate-950/60 p-4 shrink-0 h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto">
+      <div className="space-y-2">
+        {renderNavGroup('Ścieżka Nauki', primaryItems)}
+        {renderNavGroup('Warsztat & Symulatory', toolsItems)}
+        {renderNavGroup('Zasoby', extraItems)}
 
         {currentUser.role === 'admin' && (
           <div className="pt-3">

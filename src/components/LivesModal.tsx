@@ -137,10 +137,10 @@ export const LivesModal: React.FC = () => {
           </p>
 
           {/* Heart Slots Visualizer */}
-          <div className="mt-5 p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex flex-col items-center justify-center gap-3">
-            <div className="flex items-center justify-center gap-3">
+          <div className="mt-5 p-3.5 sm:p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex flex-col items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-2 sm:gap-3">
               {currentUser.isPro ? (
-                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-purple-500/20 border border-amber-500/40 text-amber-300 font-bold text-sm shadow-lg shadow-amber-500/10">
+                <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-purple-500/20 border border-amber-500/40 text-amber-300 font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/10">
                   <Crown className="h-4 w-4 text-amber-400" />
                   <span>∞ Nielimitowane podejścia</span>
                   <Sparkles className="h-4 w-4 text-purple-400" />
@@ -151,14 +151,14 @@ export const LivesModal: React.FC = () => {
                   return (
                     <div 
                       key={slot}
-                      className={`relative flex items-center justify-center h-11 w-11 rounded-2xl border transition-all duration-300 ${
+                      className={`relative flex items-center justify-center h-9 w-9 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl border transition-all duration-300 ${
                         hasLife 
                           ? 'bg-rose-500/15 border-rose-500/40 text-rose-500 shadow-md shadow-rose-500/20 scale-105' 
                           : 'bg-slate-900 border-slate-800 text-slate-600'
                       }`}
                     >
                       <Heart 
-                        className={`h-6 w-6 transition-all ${
+                        className={`h-4 w-4 sm:h-6 sm:w-6 transition-all ${
                           hasLife ? 'fill-rose-500 text-rose-500 animate-in zoom-in-75' : 'text-slate-600'
                         }`} 
                       />

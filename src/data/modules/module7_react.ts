@@ -303,5 +303,184 @@ useEffect(() => {
         'Zaliczenie quizu z wynikiem minimum 80%',
       ],
     },
+    {
+      id: 'react-3',
+      moduleId: 7,
+      moduleTitle: 'React — Nowoczesne Aplikacje SPA',
+      title: 'Globalny stan z Context API, wzorzec useReducer i optymalizacja useMemo',
+      slug: 'react-context-api-usereducer-usememo',
+      durationMinutes: 45,
+      xpReward: 95,
+      order: 3,
+      summary: 'Koniec z uciążliwym prop drilling! Naucz się tworzyć globalne konteksty w React (Context API), zarządzać złożonym stanem za pomocą maszyn stanów useReducer oraz optymalizować wydajność z useMemo i useCallback.',
+      objectives: [
+        'Eliminować przekazywanie właściwości przez wiele poziomów (Prop Drilling) za pomocą React Context',
+        'Stosować useReducer do przewidywalnego zarządzania stanem opartym na dyskretnych akcjach (dispatch)',
+        'Optymalizować czas renderowania komponentów dzięki useMemo (cache wyników) i useCallback (stabilne referencje)',
+      ],
+      prerequisites: ['Moduł 7: Lekcje 1 i 2'],
+      theoryMarkdown: `Wraz ze wzrostem wielkości aplikacji React pojawiają się dwa kluczowe wyzwania: **współdzielenie stanu pomiędzy odległymi gałęziami drzewa (Prop Drilling)** oraz **wydajność ponownego renderowania**.
+
+**1. React Context API:**
+Pozwala wstrzykiwać wartości bezpośrednio do dowolnego komponentu wewnątrz Providera, bez konieczności przekazywania propsów przez komponenty pośredniczące:
+\`\`\`tsx
+import { createContext, useContext, useState, ReactNode } from 'react';
+
+interface AuthContextType {
+  user: { name: string; role: string } | null;
+  login: (name: string) => void;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const login = (name: string) => setUser({ name, role: 'student' });
+  const logout = () => setUser(null);
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth musi być wywołany wewnątrz AuthProvider!');
+  return ctx;
+};
+\`\`\`
+
+**2. useReducer — Architektura zdarzeniowa (Wzorzec Redux):**
+Gdy komponent posiada złożony stan zależny od wielu wzajemnych warunków, \`useReducer\` rozdziela definicję **co się stało** (Action) od **jak zmienić dane** (Reducer):
+\`\`\`tsx
+type CartAction = 
+  | { type: 'ADD'; item: { id: string; price: number } }
+  | { type: 'REMOVE'; id: string }
+  | { type: 'CLEAR' };
+
+function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
+  switch (action.type) {
+    case 'ADD':
+      return [...state, action.item];
+    case 'REMOVE':
+      return state.filter(i => i.id !== action.id);
+    case 'CLEAR':
+      return [];
+  }
+}
+\`\`\`
+
+**3. useMemo i useCallback:**
+- \`useMemo(() => computeHeavyValue(a, b), [a, b])\` — zapamiętuje wynik ciężkich obliczeń i nie powtarza ich przy re-renderach, dopóki argumenty są niezmienne.
+- \`useCallback(() => handleClick(id), [id])\` — zapobiega tworzeniu nowej referencji funkcji przy każdym renderze, co chroni komponenty podrzędne opakowane w \`React.memo\` przed zbędnym renderowaniem.`,
+      codeExamples: [
+        {
+          title: 'Wzorzec Context + Custom Hook z rygorystycznym typowaniem',
+          language: 'tsx',
+          code: `import React, { createContext, useContext, useState } from 'react';
+
+interface ThemeState {
+  isDark: boolean;
+  toggle: () => void;
+}
+
+const ThemeCtx = createContext<ThemeState | null>(null);
+
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isDark, setIsDark] = useState(true);
+  const toggle = () => setIsDark(prev => !prev);
+
+  return (
+    <ThemeCtx.Provider value={{ isDark, toggle }}>
+      <div className={isDark ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'}>
+        {children}
+      </div>
+    </ThemeCtx.Provider>
+  );
+};
+
+export const useTheme = () => {
+  const context = useContext(ThemeCtx);
+  if (!context) throw new Error('useTheme must be used within ThemeProvider');
+  return context;
+};`,
+          explanation: 'Własny hook useTheme gwarantuje bezpieczeństwo typów i natychmiastowy, czytelny błąd w razie użycia poza Providerem.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Zdefiniuj interfejs stanu', description: 'Określ typ danych i funkcje modyfikujące w TypeScript.' },
+        { step: 2, title: 'Stwórz Context i Provider', description: 'Użyj createContext i przekaż obiekt wartości w prop value Providera.' },
+        { step: 3, title: 'Wystaw Custom Hook', description: 'Stwórz bezpieczną funkcję useContext z asercją obecności Providera.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-react-3',
+        title: 'Komponent przełącznika motywu (Context UI)',
+        instructions: 'Zaprojektuj interfejs przełącznika motywu z Context API: utwórz kontener z klasą theme-box, wyświetl aktualny motyw "Aktywny motyw: Ciemny" oraz przycisk z klasą btn-toggle i tekstem "Przełącz motyw".',
+        task: 'Zbuduj element theme-box z informacją o motywie i przyciskiem btn-toggle.',
+        starterCode: {
+          html: '<!-- Zbuduj widget przełącznika motywu poniżej -->\n',
+          css: '.theme-box { background: #0f172a; border: 1px solid #334155; padding: 20px; border-radius: 12px; color: #f8fafc; font-family: sans-serif; max-width: 380px; }\n.btn-toggle { background: #6366f1; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 12px; }',
+          js: 'console.log("Context Theme Widget załadowany.");',
+        },
+        solutionCode: {
+          html: '<div class="theme-box">\n  <p>Aktywny motyw: Ciemny</p>\n  <button class="btn-toggle">Przełącz motyw</button>\n</div>',
+          css: '.theme-box { background: #0f172a; border: 1px solid #334155; padding: 20px; border-radius: 12px; color: #f8fafc; font-family: sans-serif; max-width: 380px; }\n.btn-toggle { background: #6366f1; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 12px; }',
+          js: 'console.log("Context Theme Widget załadowany.");',
+        },
+        hints: [
+          'Użyj <div class="theme-box"> jako głównego kontenera.',
+          'Wstaw tekst Aktywny motyw: Ciemny wewnątrz paragrafu <p>.',
+          'Dodaj <button class="btn-toggle">Przełącz motyw</button>.',
+        ],
+        rules: [
+          { id: 'r1', description: 'Klasa theme-box obecna', ruleType: 'html_contains', target: 'theme-box' },
+          { id: 'r2', description: 'Tekst Aktywny motyw: Ciemny obecny', ruleType: 'html_contains', target: 'Aktywny motyw: Ciemny' },
+          { id: 'r3', description: 'Przycisk btn-toggle z tekstem Przełącz motyw', ruleType: 'html_contains', target: 'Przełącz motyw' },
+        ],
+      },
+      independentTask: {
+        title: 'Koszyk sklepowy z useReducer',
+        instructions: 'Zaprojektuj maszynę stanów koszyka e-commerce obsługującą akcje ADD_TO_CART, REMOVE_FROM_CART oraz APPLY_DISCOUNT.',
+        expectedOutcome: 'Czysta, przewidywalna architektura stanu odporna na błędy logiczne.',
+        starterHint: 'Zastosuj switch(action.type) z niezmiennymi operacjami na tablicy items.',
+      },
+      quiz: [
+        {
+          id: 'q-react3-1',
+          question: 'Jaka jest główna korzyść ze stosowania hooka useMemo w komponentach React?',
+          options: [
+            'Zapamiętuje (cache’uje) wynik kosztownych obliczeń i przelicza go ponownie tylko wtedy, gdy zmieni się którakolwiek z jego zależności',
+            'Automatycznie wysyła zapytanie AJAX do serwera',
+            'Zapisuje dane w pamięci stałej dysku SSD',
+            'Konwertuje kod Reacta na czysty HTML5',
+          ],
+          correctAnswer: 0,
+          explanation: 'useMemo pozwala uniknąć powtarzania ciężkich kalkulacji (np. filtrowania tysięcy rekordów) przy każdym renderze komponentu.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Przesadne opakowywanie każdej prostej funkcji w useCallback i każdego dodawania w useMemo',
+          whyItHappens: 'Przedwczesna optymalizacja bez profilowania wydajności.',
+          howToFix: 'useMemo i useCallback same w sobie posiadają narzut pamięciowy. Używaj ich przy kosztownych kalkulacjach lub gdy przekazujesz referencję do komponentów memoizowanych (React.memo).',
+          badCode: 'const sum = useMemo(() => a + b, [a, b]); // Przesada!',
+          goodCode: 'const filteredList = useMemo(() => filterLargeDataset(items, query), [items, query]);',
+        },
+      ],
+      practicalTask: {
+        title: 'Globalny stan powiadomień w akademii',
+        brief: 'Zaimplementuj wzorzec Context Provider dla systemu powiadomień toast w React z funkcjami showToast() i dismissToast().',
+        steps: ['Utwórz NotificationContext', 'Dodaj stan listy powiadomień', 'Wystaw funkcję dispatchera'],
+        deliverable: 'Kompletna architektura globalnego stanu w React.',
+      },
+      completionCriteria: [
+        'Zrozumienie React Context API i eliminacji prop drilling',
+        'Prawidłowe rozwiązanie ćwiczenia interaktywnego',
+        'Zaliczenie quizu z wynikiem minimum 80%',
+      ],
+    },
   ],
 };
