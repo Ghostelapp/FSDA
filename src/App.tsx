@@ -12,7 +12,9 @@ import { ReviewCenterView } from './components/ReviewCenterView';
 import { AdminPanelView } from './components/AdminPanelView';
 import { DeploymentGuideView } from './components/DeploymentGuideView';
 import { AuthModal } from './components/AuthModal';
-import { Sparkles, Trophy, X, Code2 } from 'lucide-react';
+import { LivesModal } from './components/LivesModal';
+import { SubscriptionModal } from './components/SubscriptionModal';
+import { Sparkles, Trophy, X, Code2, AlertTriangle } from 'lucide-react';
 
 const MainContent: React.FC = () => {
   const { activeTab, selectedLessonId, allLessons, toast, dismissToast, setActiveTab } = useApp();
@@ -33,10 +35,14 @@ const MainContent: React.FC = () => {
           <div className={`flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-md ${
             toast.type === 'badge'
               ? 'bg-amber-950/90 border-amber-500/50 text-amber-200'
+              : toast.type === 'danger'
+              ? 'bg-rose-950/90 border-rose-500/50 text-rose-200'
               : 'bg-indigo-950/90 border-indigo-500/50 text-indigo-200'
           }`}>
             {toast.type === 'badge' ? (
               <Trophy className="h-5 w-5 text-amber-400 shrink-0 animate-bounce" />
+            ) : toast.type === 'danger' ? (
+              <AlertTriangle className="h-5 w-5 text-rose-400 shrink-0" />
             ) : (
               <Sparkles className="h-5 w-5 text-indigo-400 shrink-0" />
             )}
@@ -111,6 +117,12 @@ const MainContent: React.FC = () => {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
       />
+
+      {/* Gamification Lives & Energy Modal */}
+      <LivesModal />
+
+      {/* Full Stack PRO Subscription Modal */}
+      <SubscriptionModal />
 
     </div>
   );

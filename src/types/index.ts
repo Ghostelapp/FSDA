@@ -17,6 +17,14 @@ export interface User {
   quizScores: Record<string, number>; // lessonId -> percentage score
   unlockedBadges: string[]; // badge IDs
   savedCode: Record<string, { html: string; css: string; js: string }>; // exerciseId -> code
+  // Gamification & Subscription
+  lives: number; // current hearts (0 to maxLives)
+  maxLives: number; // default 5
+  lastHeartLostTimestamp?: number; // epoch ms of last lost life for timer regeneration
+  isPro: boolean; // whether user has active PRO subscription (unlimited lives, etc.)
+  proPlan?: 'monthly' | 'yearly' | 'lifetime' | null;
+  proExpiresAt?: string;
+  streakFreezes: number; // shields protecting streak from resetting
   createdAt: string;
 }
 

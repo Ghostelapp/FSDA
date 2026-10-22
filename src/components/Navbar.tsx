@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { calculateLevel } from '../utils/gamification';
+import { calculateLevel, formatCountdown } from '../utils/gamification';
 import { 
   Code2, 
   Flame, 
@@ -15,7 +15,9 @@ import {
   BookOpen,
   Terminal,
   Trophy,
-  Award
+  Award,
+  Heart,
+  Crown
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -23,11 +25,24 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
-  const { currentUser, allUsers, switchUser, theme, toggleTheme, activeTab, setActiveTab } = useApp();
+  const { 
+    currentUser, 
+    allUsers, 
+    switchUser, 
+    theme, 
+    toggleTheme, 
+    activeTab, 
+    setActiveTab,
+    livesInfo,
+    setIsLivesModalOpen,
+    setIsSubModalOpen
+  } = useApp();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const levelInfo = calculateLevel(currentUser.xp);
+  const isPro = currentUser.isPro;
+  const currentLives = isPro ? 5 : (livesInfo.currentLives ?? currentUser.lives ?? 5);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-950/90 backdrop-blur-md transition-colors">
@@ -125,7 +140,56 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
         </nav>
 
         {/* User stats & Profile widget */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          
+          {/* Hearts / Lives indicator pill */}
+          <button
+            type="button"
+            onClick={() => setIsLivesModalOpen(true)}
+            title={isPro ? "Nielimitowane życia (PRO)" : `Masz ${currentLives}/5 serc. Kliknij, aby sprawdzić odnowienie lub uzupełnić serca.`}
+            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+              isPro
+                ? 'bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-indigo-500/20 border border-amber-500/40 text-amber-300 hover:border-amber-400 shadow-sm shadow-amber-500/10'
+                : currentLives === 0
+                ? 'bg-rose-500/20 border border-rose-500/50 text-rose-300 animate-pulse'
+                : 'bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:border-rose-500/40'
+            }`}
+          >
+            <Heart className={`h-4 w-4 ${isPro ? 'fill-amber-400 text-amber-400' : 'fill-rose-500 text-rose-500'}`} />
+            {isPro ? (
+              <span className="font-bold tracking-tight">∞ PRO</span>
+            ) : (
+              <span className="font-bold">{currentLives}/5</span>
+            )}
+            {!isPro && livesInfo.secondsToNextHeart && currentLives < 5 && (
+              <span className="hidden xl:inline text-[10px] text-slate-400 font-mono">
+                {formatCountdown(livesInfo.secondsToNextHeart)}
+              </span>
+            )}
+          </button>
+
+          {/* PRO Upgrade Button */}
+          {isPro ? (
+            <button
+              type="button"
+              onClick={() => setIsSubModalOpen(true)}
+              className="hidden lg:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold hover:bg-amber-500/25 transition-colors"
+              title="Twoja subskrypcja PRO jest aktywna"
+            >
+              <Crown className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+              <span>PRO</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsSubModalOpen(true)}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black shadow-md shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all"
+            >
+              <Crown className="h-3.5 w-3.5 fill-slate-950" />
+              <span>Zostań PRO</span>
+            </button>
+          )}
+
           {/* Streak indicator */}
           <div 
             title={`Twoja seria nauki: ${currentUser.streakDays} dni z rzędu!`}
@@ -253,7 +317,39 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-slate-800 bg-slate-900 px-4 py-3 space-y-1">
+        <div className="md:hidden border-b border-slate-800 bg-slate-900 px-4 py-3 space-y-2">
+          
+          {/* Mobile Hearts & Pro Bar */}
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setIsLivesModalOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
+                isPro 
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' 
+                  : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+              }`}
+            >
+              <Heart className={`h-4 w-4 ${isPro ? 'fill-amber-400' : 'fill-rose-500'}`} />
+              <span>{isPro ? 'Serca: ∞ PRO' : `Serca: ${currentLives}/5`}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsSubModalOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-black shrink-0"
+            >
+              <Crown className="h-4 w-4 fill-slate-950" />
+              <span>{isPro ? 'PRO Aktywne' : 'Kup PRO'}</span>
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }}

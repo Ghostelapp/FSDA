@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useApp } from '../context/AppContext';
 import { InteractiveExercise } from '../types';
 import { validateExerciseCode, generateSandboxDocument, ValidationSummary } from '../utils/codeRunner';
 import { highlightCode, getLanguageDisplayName } from '../utils/syntaxHighlighter';
@@ -17,7 +18,8 @@ import {
   Copy,
   Check,
   Palette,
-  Sparkles
+  Sparkles,
+  Heart
 } from 'lucide-react';
 
 interface CodeEditorProps {
@@ -94,7 +96,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     runCodeInSandbox();
   }, [code.html, code.css, code.js]);
 
+  const { currentUser, loseLife, livesInfo, setIsLivesModalOpen } = useApp();
+  const currentLives = currentUser.isPro ? 5 : (livesInfo.currentLives ?? currentUser.lives ?? 5);
+
   const handleRunAndValidate = () => {
+    if (!currentUser.isPro && currentLives <= 0) {
+      setIsLivesModalOpen(true);
+      return;
+    }
+
     setConsoleLogs([]);
     runCodeInSandbox();
     const result = validateExerciseCode(exercise, code);
@@ -105,8 +115,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       onSave(code);
     }
 
-    if (result.allPassed && onSuccess) {
-      onSuccess();
+    if (result.allPassed) {
+      if (onSuccess) onSuccess();
+    } else {
+      loseLife('Nie wszystkie testy kodu przeszły pomyślnie! Tracisz 1 serce. Przeanalizuj wyniki poniżej.');
     }
   };
 

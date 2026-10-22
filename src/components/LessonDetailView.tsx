@@ -21,7 +21,10 @@ import {
   Lightbulb,
   CheckCircle2,
   XCircle,
-  FileText
+  FileText,
+  Heart,
+  Crown,
+  Zap
 } from 'lucide-react';
 
 interface LessonDetailViewProps {
@@ -35,10 +38,14 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
     saveQuizScore, 
     saveCodeSnippet, 
     setActiveTab, 
-    allLessons 
+    allLessons,
+    loseLife,
+    livesInfo,
+    setIsLivesModalOpen
   } = useApp();
 
   const isCompleted = currentUser.completedLessons.includes(lesson.id);
+  const currentLives = currentUser.isPro ? 5 : (livesInfo.currentLives ?? currentUser.lives ?? 5);
 
   // Quiz State
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
@@ -57,6 +64,11 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
   };
 
   const handleEvaluateQuiz = () => {
+    if (!currentUser.isPro && currentLives <= 0) {
+      setIsLivesModalOpen(true);
+      return;
+    }
+
     setQuizSubmitted(true);
     let correctCount = 0;
     lesson.quiz.forEach((q) => {
@@ -66,6 +78,10 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
     });
     const scorePercent = Math.round((correctCount / lesson.quiz.length) * 100);
     saveQuizScore(lesson.id, scorePercent);
+
+    if (scorePercent < 80) {
+      loseLife(`Wynik testu: ${scorePercent}%. Tracisz 1 serce! Przeanalizuj poniższe wyjaśnienia.`);
+    }
   };
 
   const handleResetQuiz = () => {
@@ -364,16 +380,44 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
           })}
         </div>
 
-        <div className="flex gap-3 pt-2">
-          {!quizSubmitted ? (
+        {/* Out of lives prompt if 0 lives on Free tier */}
+        {!currentUser.isPro && currentLives <= 0 && (
+          <div className="p-4 rounded-2xl bg-rose-950/40 border border-rose-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5 text-rose-300">
+              <Heart className="h-5 w-5 text-rose-500 fill-rose-500 shrink-0" />
+              <div>
+                <span className="font-bold">Brak serc do weryfikacji quizu!</span>
+                <p className="text-[11px] text-slate-300">Odnów serce za darmo w szybkiej powtórce lub wymień XP w sklepie.</p>
+              </div>
+            </div>
             <button
               type="button"
-              disabled={Object.keys(selectedAnswers).length < lesson.quiz.length}
-              onClick={handleEvaluateQuiz}
-              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-bold transition-all shadow-md shadow-indigo-900/40"
+              onClick={() => setIsLivesModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shrink-0 transition-colors"
             >
-              Zatwierdź odpowiedzi
+              Uzupełnij serca (+1 ❤️)
             </button>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
+          {!quizSubmitted ? (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                disabled={Object.keys(selectedAnswers).length < lesson.quiz.length}
+                onClick={handleEvaluateQuiz}
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center gap-2"
+              >
+                <span>Zatwierdź odpowiedzi</span>
+                {!currentUser.isPro && (
+                  <span className="inline-flex items-center gap-1 text-[11px] bg-indigo-700/60 px-2 py-0.5 rounded-md font-mono">
+                    <Heart className="h-3 w-3 fill-rose-400 text-rose-400" />
+                    Koszt błędu: 1 ❤️
+                  </span>
+                )}
+              </button>
+            </div>
           ) : (
             <button
               type="button"
@@ -383,6 +427,16 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
               Spróbuj ponownie
             </button>
           )}
+
+          {/* Quick hearts reminder */}
+          <button
+            type="button"
+            onClick={() => setIsLivesModalOpen(true)}
+            className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors"
+          >
+            <Heart className={`h-3.5 w-3.5 ${currentUser.isPro ? 'fill-amber-400 text-amber-400' : 'fill-rose-500 text-rose-500'}`} />
+            <span>{currentUser.isPro ? 'Nielimitowane podejścia PRO' : `Dostępne serca: ${currentLives}/5`}</span>
+          </button>
         </div>
       </section>
 

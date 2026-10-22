@@ -3,7 +3,24 @@ import { User, UserRole, Announcement, Lesson, ReviewItem } from '../types';
 import { MODULES_DATA } from '../data/modulesData';
 import { PROJECTS_DATA } from '../data/projectsData';
 import { DEFAULT_ANNOUNCEMENTS } from '../data/defaultAnnouncements';
-import { calculateLevel, updateStreak, checkBadgesToUnlock, findWeakAreas } from '../utils/gamification';
+import { 
+  calculateLevel, 
+  updateStreak, 
+  checkBadgesToUnlock, 
+  findWeakAreas,
+  calculateRegeneratedLives,
+  deductLife,
+  addLife,
+  refillAllLives,
+  buyHeartWithXP,
+  buyFullRefillWithXP,
+  buyStreakFreezeWithXP,
+  setProStatus,
+  LivesCalculationResult,
+  XP_COST_ONE_HEART,
+  XP_COST_FULL_REFILL,
+  XP_COST_STREAK_FREEZE
+} from '../utils/gamification';
 
 export type AppTab = 
   | 'dashboard' 
@@ -24,7 +41,19 @@ interface AppContextType {
   selectedProjectId: string | null;
   announcements: Announcement[];
   theme: 'dark' | 'light';
-  toast: { message: string; type: 'success' | 'info' | 'badge' } | null;
+  toast: { message: string; type: 'success' | 'info' | 'badge' | 'danger' } | null;
+  livesInfo: LivesCalculationResult;
+  isLivesModalOpen: boolean;
+  isSubModalOpen: boolean;
+  setIsLivesModalOpen: (open: boolean) => void;
+  setIsSubModalOpen: (open: boolean) => void;
+  loseLife: (reason?: string) => boolean;
+  refillLives: () => void;
+  earnPracticeLife: () => void;
+  buyHeart: () => boolean;
+  buyRefill: () => boolean;
+  buyFreeze: () => boolean;
+  togglePro: (enable: boolean, plan?: 'monthly' | 'yearly') => void;
   toggleTheme: () => void;
   setActiveTab: (tab: AppTab, lessonId?: string, projectId?: string) => void;
   loginUser: (email: string) => boolean;
@@ -66,6 +95,10 @@ const DEFAULT_USERS: User[] = [
     quizScores: { 'fund-1': 100 },
     unlockedBadges: ['first-step', 'quiz-ace', 'streak-3'],
     savedCode: {},
+    lives: 5,
+    maxLives: 5,
+    isPro: false,
+    streakFreezes: 1,
     createdAt: '2026-10-15',
   },
   {
@@ -85,6 +118,10 @@ const DEFAULT_USERS: User[] = [
     quizScores: { 'fund-1': 100, 'html-1': 100, 'html-2': 85, 'html-3': 70 },
     unlockedBadges: ['first-step', 'quiz-ace', 'streak-3', 'xp-500', 'project-first'],
     savedCode: {},
+    lives: 5,
+    maxLives: 5,
+    isPro: false,
+    streakFreezes: 2,
     createdAt: '2026-10-10',
   },
   {
@@ -104,9 +141,15 @@ const DEFAULT_USERS: User[] = [
     quizScores: { 'fund-1': 100, 'html-1': 100, 'html-2': 100, 'html-3': 100, 'html-4': 100, 'html-5': 100 },
     unlockedBadges: ['first-step', 'html-master', 'quiz-ace', 'streak-3', 'streak-7', 'xp-500', 'xp-1500', 'project-first'],
     savedCode: {},
+    lives: 5,
+    maxLives: 5,
+    isPro: true,
+    proPlan: 'lifetime',
+    streakFreezes: 5,
     createdAt: '2026-09-01',
   },
 ];
+
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -153,7 +196,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [activeTab, setActiveTabState] = useState<AppTab>('dashboard');
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>('html-1');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>('proj-1');
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'badge' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'badge' | 'danger' } | null>(null);
+
+  // Gamification & Subscription modals
+  const [isLivesModalOpen, setIsLivesModalOpen] = useState(false);
+  const [isSubModalOpen, setIsSubModalOpen] = useState(false);
+
+  // Lives calculation state
+  const [livesInfo, setLivesInfo] = useState<LivesCalculationResult>(() => 
+    calculateRegeneratedLives(currentUser)
+  );
+
+  // Live countdown and heart regeneration timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const updated = calculateRegeneratedLives(currentUser);
+      setLivesInfo(updated);
+
+      // If hearts were regenerated over time, persist to user state
+      if (updated.regeneratedCount > 0 && updated.currentLives !== currentUser.lives) {
+        setCurrentUser((prev) => {
+          const userWithRegen: User = {
+            ...prev,
+            lives: updated.currentLives,
+            lastHeartLostTimestamp: updated.isFull ? undefined : prev.lastHeartLostTimestamp,
+          };
+          setAllUsers((users) => users.map((u) => (u.id === userWithRegen.id ? userWithRegen : u)));
+          return userWithRegen;
+        });
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentUser]);
 
   // Collect all lessons across all modules
   const allLessons: Lesson[] = MODULES_DATA.flatMap((m) => m.lessons);
@@ -202,7 +277,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const showToast = (message: string, type: 'success' | 'info' | 'badge' = 'success') => {
+  const showToast = (message: string, type: 'success' | 'info' | 'badge' | 'danger' = 'success') => {
     setToast({ message, type });
     setTimeout(() => {
       setToast(null);
@@ -210,6 +285,106 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const dismissToast = () => setToast(null);
+
+  // Lives management actions
+  const loseLife = (reason?: string): boolean => {
+    if (currentUser.isPro) {
+      // PRO members have unlimited lives!
+      return false;
+    }
+
+    const currentLives = typeof currentUser.lives === 'number' ? currentUser.lives : 5;
+    if (currentLives <= 0) {
+      showToast('Brak serc! Odnów serca w Sklepie lub wykonaj szybką powtórkę.', 'danger');
+      setIsLivesModalOpen(true);
+      return false;
+    }
+
+    const result = deductLife(currentUser);
+    setCurrentUser(result.updatedUser);
+    setAllUsers((users) => users.map((u) => (u.id === result.updatedUser.id ? result.updatedUser : u)));
+    setLivesInfo(calculateRegeneratedLives(result.updatedUser));
+
+    const remaining = result.updatedUser.lives;
+    showToast(
+      reason || `Tracisz 1 serce! Zostało: ${remaining}/5. Ucz się na błędach!`,
+      remaining === 0 ? 'danger' : 'info'
+    );
+
+    if (remaining === 0) {
+      setIsLivesModalOpen(true);
+    }
+
+    return true;
+  };
+
+  const refillLives = () => {
+    const updated = refillAllLives(currentUser);
+    setCurrentUser(updated);
+    setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
+    setLivesInfo(calculateRegeneratedLives(updated));
+    showToast('Wszystkie serca zostały odnowione (5/5)!', 'success');
+  };
+
+  const earnPracticeLife = () => {
+    const updated = addLife(currentUser, 1);
+    setCurrentUser(updated);
+    setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
+    setLivesInfo(calculateRegeneratedLives(updated));
+    showToast('+1 Serce zdobyte za aktywność w powtórkach!', 'success');
+  };
+
+  const buyHeart = (): boolean => {
+    const res = buyHeartWithXP(currentUser);
+    if (!res.success) {
+      showToast(res.error || 'Nie można kupić serca.', 'danger');
+      return false;
+    }
+    setCurrentUser(res.user);
+    setAllUsers((users) => users.map((u) => (u.id === res.user.id ? res.user : u)));
+    setLivesInfo(calculateRegeneratedLives(res.user));
+    showToast(`Zakupiono 1 serce za ${XP_COST_ONE_HEART} XP!`, 'success');
+    return true;
+  };
+
+  const buyRefill = (): boolean => {
+    const res = buyFullRefillWithXP(currentUser);
+    if (!res.success) {
+      showToast(res.error || 'Nie można odnowić serc.', 'danger');
+      return false;
+    }
+    setCurrentUser(res.user);
+    setAllUsers((users) => users.map((u) => (u.id === res.user.id ? res.user : u)));
+    setLivesInfo(calculateRegeneratedLives(res.user));
+    showToast(`Odnawianie pełnego pakietu serc (5/5) za ${XP_COST_FULL_REFILL} XP!`, 'success');
+    return true;
+  };
+
+  const buyFreeze = (): boolean => {
+    const res = buyStreakFreezeWithXP(currentUser);
+    if (!res.success) {
+      showToast(res.error || 'Nie można kupić tarczy serii.', 'danger');
+      return false;
+    }
+    setCurrentUser(res.user);
+    setAllUsers((users) => users.map((u) => (u.id === res.user.id ? res.user : u)));
+    showToast(`Kupiono Tarczę Serii za ${XP_COST_STREAK_FREEZE} XP! Twoja passa jest chroniona.`, 'badge');
+    return true;
+  };
+
+  const togglePro = (enable: boolean, plan: 'monthly' | 'yearly' = 'monthly') => {
+    const updated = setProStatus(currentUser, enable, plan);
+    setCurrentUser(updated);
+    setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
+    setLivesInfo(calculateRegeneratedLives(updated));
+
+    if (enable) {
+      showToast('👑 Subskrypcja Full Stack PRO aktywna! Nielimitowane życia i pełen dostęp.', 'badge');
+    } else {
+      showToast('Przełączono na plan bezpłatny z limitem 5 serc.', 'info');
+    }
+  };
+
 
   const setActiveTab = (tab: AppTab, lessonId?: string, projectId?: string) => {
     setActiveTabState(tab);
@@ -246,6 +421,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       quizScores: {},
       unlockedBadges: [],
       savedCode: {},
+      lives: 5,
+      maxLives: 5,
+      isPro: false,
+      streakFreezes: 1,
       createdAt: new Date().toISOString().split('T')[0],
     };
 
@@ -413,6 +592,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         announcements,
         theme,
         toast,
+        livesInfo,
+        isLivesModalOpen,
+        isSubModalOpen,
+        setIsLivesModalOpen,
+        setIsSubModalOpen,
+        loseLife,
+        refillLives,
+        earnPracticeLife,
+        buyHeart,
+        buyRefill,
+        buyFreeze,
+        togglePro,
         toggleTheme,
         setActiveTab,
         loginUser,

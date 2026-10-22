@@ -145,3 +145,256 @@ export function findWeakAreas(quizScores: Record<string, number>, allLessons: Le
 
   return weakItems;
 }
+
+// -------------------------------------------------------------
+// Lives & Gamified Subscription Mechanics
+// -------------------------------------------------------------
+
+export const MAX_FREE_LIVES = 5;
+export const HEART_REGEN_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes per heart
+export const XP_COST_ONE_HEART = 40;
+export const XP_COST_FULL_REFILL = 150;
+export const XP_COST_STREAK_FREEZE = 120;
+
+export interface LivesCalculationResult {
+  currentLives: number;
+  maxLives: number;
+  isFull: boolean;
+  secondsToNextHeart: number | null; // null if full or isPro
+  regeneratedCount: number;
+}
+
+/**
+ * Calculates lives restored over elapsed time.
+ */
+export function calculateRegeneratedLives(user: User, nowMs: number = Date.now()): LivesCalculationResult {
+  const maxLives = user.maxLives ?? MAX_FREE_LIVES;
+
+  if (user.isPro) {
+    return {
+      currentLives: maxLives,
+      maxLives,
+      isFull: true,
+      secondsToNextHeart: null,
+      regeneratedCount: 0,
+    };
+  }
+
+  const currentLives = typeof user.lives === 'number' ? user.lives : maxLives;
+
+  if (currentLives >= maxLives) {
+    return {
+      currentLives: maxLives,
+      maxLives,
+      isFull: true,
+      secondsToNextHeart: null,
+      regeneratedCount: 0,
+    };
+  }
+
+  if (!user.lastHeartLostTimestamp) {
+    return {
+      currentLives,
+      maxLives,
+      isFull: false,
+      secondsToNextHeart: Math.round(HEART_REGEN_INTERVAL_MS / 1000),
+      regeneratedCount: 0,
+    };
+  }
+
+  const elapsedMs = Math.max(0, nowMs - user.lastHeartLostTimestamp);
+  const heartsRecovered = Math.floor(elapsedMs / HEART_REGEN_INTERVAL_MS);
+
+  if (heartsRecovered <= 0) {
+    const msRemaining = HEART_REGEN_INTERVAL_MS - (elapsedMs % HEART_REGEN_INTERVAL_MS);
+    return {
+      currentLives,
+      maxLives,
+      isFull: false,
+      secondsToNextHeart: Math.max(1, Math.round(msRemaining / 1000)),
+      regeneratedCount: 0,
+    };
+  }
+
+  const newLives = Math.min(maxLives, currentLives + heartsRecovered);
+  const isNowFull = newLives >= maxLives;
+  
+  let secondsToNextHeart: number | null = null;
+  if (!isNowFull) {
+    const msIntoCurrentHeart = elapsedMs % HEART_REGEN_INTERVAL_MS;
+    const msRemaining = HEART_REGEN_INTERVAL_MS - msIntoCurrentHeart;
+    secondsToNextHeart = Math.max(1, Math.round(msRemaining / 1000));
+  }
+
+  return {
+    currentLives: newLives,
+    maxLives,
+    isFull: isNowFull,
+    secondsToNextHeart,
+    regeneratedCount: heartsRecovered,
+  };
+}
+
+/**
+ * Deducts 1 heart if user is on Free tier and has hearts.
+ */
+export function deductLife(user: User, nowMs: number = Date.now()): { updatedUser: User; lost: boolean } {
+  if (user.isPro) {
+    return { updatedUser: user, lost: false };
+  }
+
+  const currentLives = typeof user.lives === 'number' ? user.lives : (user.maxLives ?? MAX_FREE_LIVES);
+  if (currentLives <= 0) {
+    return { updatedUser: { ...user, lives: 0 }, lost: false };
+  }
+
+  const newLives = currentLives - 1;
+  const lastHeartLostTimestamp = user.lastHeartLostTimestamp || nowMs;
+
+  return {
+    updatedUser: {
+      ...user,
+      lives: newLives,
+      lastHeartLostTimestamp: newLives < (user.maxLives ?? MAX_FREE_LIVES) ? lastHeartLostTimestamp : undefined,
+    },
+    lost: true,
+  };
+}
+
+/**
+ * Adds hearts (e.g. via practice quiz in review center).
+ */
+export function addLife(user: User, amount: number = 1): User {
+  const maxLives = user.maxLives ?? MAX_FREE_LIVES;
+  const currentLives = typeof user.lives === 'number' ? user.lives : maxLives;
+  const newLives = Math.min(maxLives, currentLives + amount);
+
+  return {
+    ...user,
+    lives: newLives,
+    lastHeartLostTimestamp: newLives >= maxLives ? undefined : user.lastHeartLostTimestamp,
+  };
+}
+
+/**
+ * Refills all hearts to maximum.
+ */
+export function refillAllLives(user: User): User {
+  return {
+    ...user,
+    lives: user.maxLives ?? MAX_FREE_LIVES,
+    lastHeartLostTimestamp: undefined,
+  };
+}
+
+/**
+ * Buys 1 heart using XP.
+ */
+export function buyHeartWithXP(user: User): { success: boolean; user: User; error?: string } {
+  const maxLives = user.maxLives ?? MAX_FREE_LIVES;
+  const currentLives = typeof user.lives === 'number' ? user.lives : maxLives;
+
+  if (currentLives >= maxLives) {
+    return { success: false, user, error: 'Masz już pełną liczbę żyć (5/5)!' };
+  }
+
+  if (user.xp < XP_COST_ONE_HEART) {
+    return { success: false, user, error: `Potrzebujesz ${XP_COST_ONE_HEART} XP. Masz obecnie ${user.xp} XP.` };
+  }
+
+  const newLives = Math.min(maxLives, currentLives + 1);
+  return {
+    success: true,
+    user: {
+      ...user,
+      xp: user.xp - XP_COST_ONE_HEART,
+      lives: newLives,
+      lastHeartLostTimestamp: newLives >= maxLives ? undefined : user.lastHeartLostTimestamp,
+    },
+  };
+}
+
+/**
+ * Buys a full refill (5/5) using XP.
+ */
+export function buyFullRefillWithXP(user: User): { success: boolean; user: User; error?: string } {
+  const maxLives = user.maxLives ?? MAX_FREE_LIVES;
+  const currentLives = typeof user.lives === 'number' ? user.lives : maxLives;
+
+  if (currentLives >= maxLives) {
+    return { success: false, user, error: 'Masz już pełną liczbę żyć (5/5)!' };
+  }
+
+  if (user.xp < XP_COST_FULL_REFILL) {
+    return { success: false, user, error: `Potrzebujesz ${XP_COST_FULL_REFILL} XP. Masz obecnie ${user.xp} XP.` };
+  }
+
+  return {
+    success: true,
+    user: {
+      ...user,
+      xp: user.xp - XP_COST_FULL_REFILL,
+      lives: maxLives,
+      lastHeartLostTimestamp: undefined,
+    },
+  };
+}
+
+/**
+ * Buys a Streak Freeze shield using XP.
+ */
+export function buyStreakFreezeWithXP(user: User): { success: boolean; user: User; error?: string } {
+  if (user.xp < XP_COST_STREAK_FREEZE) {
+    return { success: false, user, error: `Potrzebujesz ${XP_COST_STREAK_FREEZE} XP. Masz obecnie ${user.xp} XP.` };
+  }
+
+  return {
+    success: true,
+    user: {
+      ...user,
+      xp: user.xp - XP_COST_STREAK_FREEZE,
+      streakFreezes: (user.streakFreezes ?? 0) + 1,
+    },
+  };
+}
+
+/**
+ * Sets PRO subscription status.
+ */
+export function setProStatus(
+  user: User,
+  isPro: boolean,
+  plan: 'monthly' | 'yearly' | 'lifetime' = 'monthly'
+): User {
+  if (isPro) {
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + (plan === 'yearly' ? 1 : 0));
+    if (plan === 'monthly') expires.setMonth(expires.getMonth() + 1);
+
+    return {
+      ...user,
+      isPro: true,
+      proPlan: plan,
+      proExpiresAt: expires.toISOString(),
+      lives: user.maxLives ?? MAX_FREE_LIVES,
+      lastHeartLostTimestamp: undefined,
+    };
+  }
+
+  return {
+    ...user,
+    isPro: false,
+    proPlan: null,
+    proExpiresAt: undefined,
+  };
+}
+
+/**
+ * Formats seconds into mm:ss
+ */
+export function formatCountdown(seconds: number): string {
+  if (seconds <= 0) return '00:00';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}

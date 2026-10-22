@@ -1,9 +1,12 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { RotateCcw, AlertTriangle, CheckCircle2, ArrowRight, BookOpen, Sparkles } from 'lucide-react';
+import { RotateCcw, AlertTriangle, CheckCircle2, ArrowRight, BookOpen, Sparkles, Heart, Crown } from 'lucide-react';
 
 export const ReviewCenterView: React.FC = () => {
-  const { weakAreas, setActiveTab, currentUser } = useApp();
+  const { weakAreas, setActiveTab, currentUser, setIsLivesModalOpen, livesInfo } = useApp();
+
+  const isPro = currentUser.isPro;
+  const currentLives = isPro ? 5 : (livesInfo.currentLives ?? currentUser.lives ?? 5);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
@@ -12,15 +15,53 @@ export const ReviewCenterView: React.FC = () => {
       <div>
         <div className="flex items-center gap-2 text-xs font-semibold text-rose-400 uppercase tracking-wider">
           <RotateCcw className="h-4 w-4" />
-          <span>Inteligentny System Spaced Repetition</span>
+          <span>Inteligentny System Spaced Repetition & Gamifikacja</span>
         </div>
         <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-          Centrum Powtórek i Trudniejszych Zagadnień
+          Centrum Powtórek i Regeneracji Energii
         </h1>
         <p className="mt-2 text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
           Platforma automatycznie analizuje Twoje wyniki quizów i ćwiczeń praktycznych. 
-          Zagadnienia z wynikiem poniżej 80% trafiają tutaj, aby umożliwić ich powtórzenie i trwałe utrwalenie w pamięci.
+          Tutaj możesz utrwalać wiedzę i odzyskiwać utracone serca poprzez szybkie powtórki pytań bez ryzyka ich utraty.
         </p>
+      </div>
+
+      {/* Hearts Recovery Card */}
+      <div className="p-5 rounded-2xl border border-rose-500/30 bg-gradient-to-r from-rose-950/30 via-slate-900 to-indigo-950/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3.5">
+          <div className="p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-400 shrink-0">
+            <Heart className="h-6 w-6 fill-rose-500" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-rose-300">
+                {isPro ? 'Status PRO Aktywny' : 'Zasada Uczciwej Nauki'}
+              </span>
+              <span className="text-[11px] font-mono text-slate-400">
+                {isPro ? '∞ serc' : `${currentLives}/5 serc`}
+              </span>
+            </div>
+            <h3 className="text-sm font-bold text-white mt-0.5">
+              {isPro 
+                ? 'Nielimitowane podejścia do wszystkich powtórek i testów' 
+                : 'Ucz się i odzyskuj serca za darmo (+1 ❤️)'}
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {isPro
+                ? 'Jako użytkownik PRO możesz swobodnie eksperymentować bez przerw na regenerację.'
+                : 'Za rozwiązanie 3 szybkich pytań powtórkowych natychmiast otrzymujesz +1 serce do wykorzystania w lekcjach.'}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsLivesModalOpen(true)}
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs shrink-0 shadow-lg shadow-rose-950 transition-all flex items-center justify-center gap-2"
+        >
+          <Heart className="h-4 w-4 fill-white" />
+          <span>{isPro ? 'Zarządzaj sercami' : 'Szybka powtórka (+1 ❤️)'}</span>
+        </button>
       </div>
 
       {weakAreas.length > 0 ? (
