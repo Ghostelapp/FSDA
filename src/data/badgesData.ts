@@ -1,0 +1,68 @@
+import { Badge } from '../types';
+
+export const BADGES_DATA: Badge[] = [
+  {
+    id: 'first-step',
+    name: 'Pierwszy Krok',
+    description: 'Ukończono pierwszą lekcję w akademii z pełnym zrozumieniem materiału.',
+    icon: 'Footprints',
+    category: 'milestone',
+    xpBonus: 50,
+  },
+  {
+    id: 'html-master',
+    name: 'Mistrz Semantyki HTML',
+    description: 'Zaliczono wszystkie 5 zaawansowanych lekcji z modułu HTML5.',
+    icon: 'FileCode2',
+    category: 'skill',
+    xpBonus: 150,
+  },
+  {
+    id: 'quiz-ace',
+    name: 'Bezbłędny Kursant',
+    description: 'Zdobyto perfekcyjny wynik 100% w teście sprawdzającym wiedzę.',
+    icon: 'Trophy',
+    category: 'skill',
+    xpBonus: 100,
+  },
+  {
+    id: 'streak-3',
+    name: 'Ogień Dyscypliny (3 dni)',
+    description: 'Utrzymano 3 dni nieprzerwanej, systematycznej nauki kodowania.',
+    icon: 'Flame',
+    category: 'streak',
+    xpBonus: 75,
+  },
+  {
+    id: 'streak-7',
+    name: 'Żelazna Konsekwencja (7 dni)',
+    description: 'Pełny tydzień codziennego programowania bez ani jednego dnia przerwy.',
+    icon: 'Zap',
+    category: 'streak',
+    xpBonus: 200,
+  },
+  {
+    id: 'xp-500',
+    name: 'Kolekcjoner Wiedzy (500 XP)',
+    description: 'Przekroczono barierę 500 punktów doświadczenia XP w platformie.',
+    icon: 'Sparkles',
+    category: 'milestone',
+    xpBonus: 100,
+  },
+  {
+    id: 'xp-1500',
+    name: 'Full Stack Weteran (1500 XP)',
+    description: 'Zdobyto 1500 XP — poziom zaawansowanego adepta programowania.',
+    icon: 'Award',
+    category: 'milestone',
+    xpBonus: 250,
+  },
+  {
+    id: 'project-first',
+    name: 'Budowniczy Portfela',
+    description: 'Ukończono i pomyślnie zwalidowano pierwszy projekt praktyczny.',
+    icon: 'FolderGit2',
+    category: 'project',
+    xpBonus: 150,
+  },
+];

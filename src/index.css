@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+
+  code, pre, kbd, samp {
+    font-family: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+}
+
+/* Custom scrollbar for dark mode */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.6);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
+}
+
+/* =========================================================
+   SYNTAX HIGHLIGHTING (VS Code / One Dark Pro Theme)
+   ========================================================= */
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #64748b !important;
+  font-style: italic;
+}
+
+.token.punctuation {
+  color: #94a3b8;
+}
+
+.token.namespace {
+  color: #f43f5e;
+}
+
+.token.property,
+.token.symbol {
+  color: #38bdf8;
+}
+
+.token.tag,
+.token.deleted {
+  color: #f43f5e;
+}
+
+.token.tag .token.punctuation {
+  color: #94a3b8;
+}
+
+.token.boolean,
+.token.number {
+  color: #fb923c;
+}
+
+.token.selector {
+  color: #fbbf24;
+}
+
+.token.attr-name {
+  color: #38bdf8;
+}
+
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #34d399;
+}
+
+.token.attr-value {
+  color: #a7f3d0;
+}
+
+.token.attr-value .token.punctuation {
+  color: #34d399;
+}
+
+.token.operator,
+.token.entity,
+.token.url {
+  color: #38bdf8;
+}
+
+.token.atrule,
+.token.keyword {
+  color: #c084fc;
+  font-weight: 500;
+}
+
+.token.function,
+.token.class-name {
+  color: #60a5fa;
+}
+
+.token.regex,
+.token.variable {
+  color: #f59e0b;
+}
+
+.token.important,
+.token.bold {
+  font-weight: bold;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+/* Language-specific overrides */
+.language-css .token.selector {
+  color: #fbbf24;
+}
+.language-css .token.property {
+  color: #38bdf8;
+}
+.language-css .token.unit {
+  color: #fb923c;
+}
+
+.language-bash .token.function {
+  color: #38bdf8;
+}
+.language-bash .token.parameter {
+  color: #fbbf24;
+}
+
+.language-sql .token.keyword {
+  color: #c084fc;
+  font-weight: 600;
+}
+
+/* Pixel-perfect alignment for overlaid interactive code editor */
+.code-editor-font {
+  font-family: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 12.5px !important;
+  line-height: 1.625 !important;
+  letter-spacing: 0px !important;
+  tab-size: 2 !important;
+  -moz-tab-size: 2 !important;
+}
+
+.code-editor-textarea {
+  caret-color: #38bdf8 !important;
+}
+
+.code-editor-textarea::selection {
+  background: rgba(99, 102, 241, 0.4) !important;
+  color: transparent !important;
+}
+
+/* Inline code pill enhanced styling */
+.prose-code-token {
+  font-family: 'Fira Code', monospace;
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.775rem;
+  border-width: 1px;
+}

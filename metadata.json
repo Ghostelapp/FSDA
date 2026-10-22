@@ -1,0 +1,6 @@
+{
+  "name": "Full Stack Developer Academy",
+  "description": "Interaktywna platforma edukacyjna do nauki programowania od podstaw do poziomu Full Stack Developera z wbudowanym edytorem kodu, projektami i certyfikacją.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
