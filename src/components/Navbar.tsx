@@ -21,8 +21,10 @@ import {
   Volume2,
   VolumeX,
   Database,
-  TerminalSquare
+  TerminalSquare,
+  Smartphone
 } from 'lucide-react';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface NavbarProps {
   onOpenAuthModal: () => void;
@@ -206,6 +208,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
             <span>{currentUser.streakDays}d</span>
           </div>
 
+          {/* Android Play Store & PWA Install Button */}
+          <PWAInstallButton className="hidden md:flex" />
+
           {/* XP & Level Indicator */}
           <div 
             title={`Poziom ${levelInfo.level}: ${levelInfo.title} (${currentUser.xp} XP)`}
@@ -387,6 +392,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
               {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-400" />}
               <span>{theme === 'dark' ? 'Jasny motyw' : 'Ciemny motyw'}</span>
             </button>
+          </div>
+
+          {/* Mobile Android / Play Store Install Action */}
+          <div className="py-1 border-b border-slate-800">
+            <PWAInstallButton variant="full" className="w-full justify-center py-2.5" />
           </div>
 
           {/* Primary Navigation */}

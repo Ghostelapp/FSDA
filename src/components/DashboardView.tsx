@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { calculateLevel } from '../utils/gamification';
 import { MODULES_DATA } from '../data/modulesData';
 import { BADGES_DATA } from '../data/badgesData';
+import { LearningProgressChart } from './LearningProgressChart';
 import { 
   Sparkles, 
   Flame, 
@@ -156,6 +157,12 @@ export const DashboardView: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* 30-Day Learning Progress Visualization (Recharts) */}
+      <LearningProgressChart 
+        currentUser={currentUser} 
+        modules={MODULES_DATA} 
+      />
 
       {/* Weak Areas Banner if any */}
       {weakAreas.length > 0 && (

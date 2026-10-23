@@ -1,0 +1,62 @@
+{
+  "packageId": "com.fullstackacademy.app",
+  "host": "ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app",
+  "name": "Full Stack Academy",
+  "launcherName": "FS Academy",
+  "display": "standalone",
+  "themeColor": "#4F46E5",
+  "themeColorDark": "#020617",
+  "navigationColor": "#020617",
+  "navigationColorDark": "#020617",
+  "navigationDividerColor": "#1E293B",
+  "navigationDividerColorDark": "#1E293B",
+  "backgroundColor": "#020617",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-512x512.png",
+  "maskableIconUrl": "https://ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-maskable-512x512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionCode": 1,
+  "appVersionName": "1.0.0",
+  "shortcuts": [
+    {
+      "name": "Lekcje",
+      "shortName": "Lekcje",
+      "url": "/?tab=lesson",
+      "icon": "https://ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
+    },
+    {
+      "name": "Piaskownica Kodu",
+      "shortName": "Edytor",
+      "url": "/?tab=editor",
+      "icon": "https://ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
+    },
+    {
+      "name": "Certyfikat",
+      "shortName": "Certyfikat",
+      "url": "/?tab=certificate",
+      "icon": "https://ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": false
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "orientation": "portrait-primary"
+}

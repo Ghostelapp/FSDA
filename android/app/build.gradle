@@ -1,0 +1,54 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace "com.fullstackacademy.app"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.fullstackacademy.app"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Web app host configuration
+        manifestPlaceholders = [
+            hostName: "ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app",
+            defaultUrl: "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/",
+            launcherName: "@string/launcher_name",
+            assetStatements: '[{ "relation": ["delegate_permission/common.handle_all_urls"], "target": { "namespace": "android_app", "package_name": "com.fullstackacademy.app", "sha256_cert_fingerprints": ["A6:5D:54:DB:3F:7C:C1:DF:CF:E4:45:1D:26:21:41:15:B8:49:58:D4:D2:D8:93:9D:AF:81:34:4F:81:23:86:23"] } }]'
+        ]
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("../android.keystore")
+            storePassword "fullstack2026"
+            keyAlias "android"
+            keyPassword "fullstack2026"
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    // Official Google Android Browser Helper library for Trusted Web Activities
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

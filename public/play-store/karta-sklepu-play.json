@@ -1,0 +1,31 @@
+{
+  "appId": "com.fullstackacademy.app",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "defaultLanguage": "pl-PL",
+  "title": "Full Stack Academy — Kurs IT",
+  "shortDescription": "Nauka programowania od zera do Full Stack Developera: HTML, JS, React, SQL i Git",
+  "fullDescription": "Zostań profesjonalnym Full Stack Developerem z aplikacją mobilną Full Stack Academy!\n\nUcz się programowania krok po kroku poprzez interaktywne lekcje, praktyczne ćwiczenia w edytorze kodu, symulator terminala Bash/Git oraz studio baz danych SQL.\n\nGŁÓWNE FUNKCJE APLIKACJI:\n• 15 kompletnych modułów szkoleniowych (od podstaw Internetu i HTML5, przez CSS3, JavaScript ES6+, TypeScript i React, aż po Node.js, Express, SQL, Cyberbezpieczeństwo i DevOps).\n• Wbudowana Piaskownica Kodu (HTML/CSS/JS) z automatyczną weryfikacją testów jednostkowych.\n• Interaktywny symulator Terminala UNIX / Bash oraz systemu kontroli wersji Git.\n• Studio Bazy Danych SQL z wykonywaniem zapytań na żywo.\n• Egzaminy Live Coding (Mock Interviews) przygotowujące do rozmów kwalifikacyjnych.\n• System grywalizacji: punkty XP, poziomy, dzienna seria nauki (Streak), odznaki oraz imienny Certyfikat Ukończenia Kursu.\n• Tryb Offline (Service Worker) pozwalający na przeglądanie lekcji bez dostępu do sieci.\n\nDla kogo?\nKurs został zaprojektowany zarówno dla osób stawiających pierwsze kroki w branży IT, jak i początkujących programistów chcących uporządkować wiedzę i zbudować portfolio 12 projektów komercyjnych.",
+  "category": "Edukacja (Education)",
+  "contentRating": "PEGI 3 / Dla każdego",
+  "contactEmail": "zordonzordon1@gmail.com",
+  "privacyPolicyUrl": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/privacy-policy.html",
+  "productionAppUrl": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app",
+  "keystoreInfo": {
+    "file": "play-store/android.keystore",
+    "alias": "android",
+    "storePassword": "fullstack2026",
+    "keyPassword": "fullstack2026",
+    "sha256Fingerprint": "A6:5D:54:DB:3F:7C:C1:DF:CF:E4:45:1D:26:21:41:15:B8:49:58:D4:D2:D8:93:9D:AF:81:34:4F:81:23:86:23"
+  },
+  "assets": {
+    "icon512": "/pwa-512x512.png",
+    "maskable512": "/pwa-maskable-512x512.png",
+    "featureGraphic1024x500": "/play-store/feature-graphic-1024x500.png",
+    "screenshots": [
+      "/play-store/screenshot-1-dashboard.png",
+      "/play-store/screenshot-2-editor.png",
+      "/play-store/screenshot-3-certificate.png"
+    ]
+  }
+}
