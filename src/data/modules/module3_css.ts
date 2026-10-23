@@ -7,12 +7,15 @@ export const MODULE_3: Module = {
   description: 'Selektory, specyficzność, Box Model, elastyczny Flexbox, dwuwymiarowy CSS Grid, podejście Mobile-First, animacje i zmienne CSS.',
   badgeName: 'Mistrz Układów Flexbox & Grid',
   badgeIcon: 'Palette',
-  durationHours: 20,
-  totalXp: 600,
+  durationHours: 26,
+  totalXp: 800,
   prerequisites: ['Moduł 2: HTML'],
   topics: [
     'Kaskada, dziedziczenie i kalkulacja specyficzności selektorów',
     'Box Model od podszewki: content, padding, border, margin oraz box-sizing: border-box',
+    'Selektory, pseudoklasy (:hover, :focus, :nth-child), kolory (HEX, RGB, HSL) i jednostki (rem, px, vh, vw)',
+    'Typografia webowa (Google Fonts, line-height, clamp) oraz tła i gradienty',
+    'Pozycjonowanie elementów (relative, absolute, fixed, sticky) i kontekst warstw z-index',
     'Flexbox: osie main i cross axis, align-items, justify-content, flex-wrap i gap',
     'CSS Grid: grid-template-columns, fr units, repeat, minmax, auto-fit i grid-template-areas',
     'Responsywność i Media Queries: projektowanie w strategii Mobile-First',
@@ -148,6 +151,358 @@ Dzięki \`border-box\` wymiary \`padding\` i \`border\` mieszczą się **wewnąt
       ],
     },
     {
+      id: 'css-6',
+      moduleId: 3,
+      moduleTitle: 'CSS — Nowoczesne Stylowanie i Układy',
+      title: 'Selektory, pseudoklasy (:hover, :focus) oraz jednostki (px, rem, em, vh/vw)',
+      slug: 'selektory-pseudoklasy-jednostki-rem-vh',
+      durationMinutes: 30,
+      xpReward: 65,
+      order: 2,
+      summary: 'Poznaj precyzyjne celowanie w elementy DOM za pomocą kombinatorów i pseudoklas oraz dowiedz się, dlaczego profesjonaliści używają jednostek rem i vh/vw zamiast sztywnych pikseli.',
+      objectives: [
+        'Stosować selektory potomków (.card p), bezpośrednich dzieci (.menu > li) oraz pseudoklasy (:hover, :focus-visible, :nth-child)',
+        'Rozróżniać jednostki względne (rem, em, %, vw, vh) od bezwzględnych (px)',
+        'Zrozumieć systemy barw w CSS: HEX (#4f46e5), RGB/RGBA oraz nowoczesny HSL',
+      ],
+      prerequisites: ['Lekcja 1: Box Model'],
+      theoryMarkdown: `Pisanie skalowalnego CSS zaczyna się od właściwego doboru jednostek i selektorów.
+
+**1. Jednostki w CSS — kiedy używać \`rem\`, a kiedy \`px\`?**
+- **\`rem\` (Root EM):** Względna jednostka powiązana z rozmiarem czcionki elementu \`<html>\` (domyślnie \`1rem = 16px\`). Używaj \`rem\` do **rozmiarów czcionek (\`font-size\`) i odstępów** — jeśli użytkownik niedowidzący powiększy czcionkę w przeglądarce, cała Twoja strona proporcjonalnie się przeskaluje!
+- **\`px\` (Piksele):** Idealne do cienkich obramowań (\`border: 1px solid\`) lub małych zaokrągleń.
+- **\`vw\` / \`vh\` (Viewport Width / Height):** 1% szerokości lub wysokości okna przeglądarki. \`min-height: 100vh\` sprawia, że sekcja zajmuje dokładnie cały ekran.
+
+**2. Niezbędne pseudoklasy interakcji:**
+- **\`:hover\`** — aktywuje się po najechaniu kursorem myszy,
+- **\`:focus-visible\`** — obramowanie przy nawigacji klawiaturą (klawisz Tab),
+- **\`:nth-child(even)\`** — styluje co drugi wiersz tabeli (efekt zebry).`,
+      codeExamples: [
+        {
+          title: 'Skalowalne rozmiary w rem oraz stany interaktywne przycisku',
+          language: 'css',
+          code: `html {
+  font-size: 16px; /* 1rem = 16px */
+}
+
+.hero-title {
+  font-size: 2.25rem; /* 36px */
+  color: hsl(243, 75%, 59%);
+}
+
+.cta-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: #4f46e5;
+  color: #ffffff;
+}
+
+.cta-btn:hover {
+  background-color: #4338ca;
+}`,
+          explanation: 'Zastosowanie rem gwarantuje spełnienie wytycznych dostępności WCAG przy zmianie rozmiaru tekstu w systemie.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Używaj rem dla font-size', description: 'Przyjmij przelicznik: 1rem = 16px, 1.5rem = 24px, 0.875rem = 14px.' },
+        { step: 2, title: 'Dodaj stan :hover i :focus', description: 'Każdy klikalny element musi dawać wizualną informację zwrotną.' },
+        { step: 3, title: 'Wykorzystaj 100vh dla pełnoekranowego tła', description: 'Ustaw min-height: 100vh zamiast sztywnego height.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-css-units',
+        title: 'Ostyluj przycisk z jednostkami rem i pseudoklasą :hover',
+        instructions: 'W arkuszu CSS nadaj klasie .btn-action rozmiar czcionki font-size: 1.125rem; oraz zdefiniuj regułę .btn-action:hover zmieniającą tło lub kolor.',
+        task: 'Użyj jednostki rem w .btn-action oraz stwórz selektor .btn-action:hover.',
+        starterCode: {
+          html: '<button class="btn-action" type="button">Najedź na mnie kursorem</button>',
+          css: '.btn-action {\n  background: #2563eb;\n  color: white;\n  padding: 10px 20px;\n  border: none;\n  border-radius: 8px;\n  cursor: pointer;\n}\n/* Dodaj font-size w rem oraz regułę :hover */',
+          js: 'console.log("Jednostki i pseudoklasy aktywne.");',
+        },
+        solutionCode: {
+          html: '<button class="btn-action" type="button">Najedź na mnie kursorem</button>',
+          css: '.btn-action {\n  font-size: 1.125rem;\n  background: #2563eb;\n  color: white;\n  padding: 10px 20px;\n  border: none;\n  border-radius: 8px;\n  cursor: pointer;\n}\n.btn-action:hover {\n  background: #1d4ed8;\n}',
+          js: 'console.log("Jednostki i pseudoklasy aktywne.");',
+        },
+        hints: [
+          'Wewnątrz .btn-action dopisz: font-size: 1.125rem;',
+          'Pod spodem dodaj: .btn-action:hover { background: #1d4ed8; }',
+        ],
+        rules: [
+          { id: 'r1', description: 'Jednostka rem użyta w stylach', ruleType: 'css_contains', target: 'rem' },
+          { id: 'r2', description: 'Pseudoklasa :hover zdefiniowana', ruleType: 'css_contains', target: ':hover' },
+        ],
+      },
+      independentTask: {
+        title: 'Tabela z naprzemiennym kolorem wierszy (Zebra Striping)',
+        instructions: 'Użyj selektora tr:nth-child(even) { background-color: #f1f5f9; }, aby pokolorować parzyste wiersze tabeli.',
+        expectedOutcome: 'Czytelna tabela bez konieczności dopisywania klas w HTML.',
+        starterHint: 'Pseudoklasa :nth-child(even) wybiera elementy 2, 4, 6...',
+      },
+      quiz: [
+        {
+          id: 'q-css6-1',
+          question: 'Ile pikseli ma wartość 1.5rem, jeśli domyślny rozmiar czcionki na elemencie <html> wynosi 16px?',
+          options: ['15px', '20px', '24px', '32px'],
+          correctAnswer: 2,
+          explanation: '1.5 * 16px = 24px. Jednostka rem zawsze mnoży bazowy rozmiar z elementu głównego :root / html.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Ustawianie sztywnego height: 100vh na kontenerze z dużą ilością tekstu',
+          whyItHappens: 'Chęć rozciągnięcia sekcji na cały ekran.',
+          howToFix: 'Zawsze używaj min-height: 100vh zamiast height: 100vh — dzięki temu na małym ekranie telefonu tekst nie wyleje się poza kontener!',
+          badCode: '.section { height: 100vh; } /* Tekst ucięty na telefonie! */',
+          goodCode: '.section { min-height: 100vh; } /* Bezpieczne rozciąganie */',
+        },
+      ],
+      practicalTask: {
+        title: 'Paleta kolorów w formacie HSL',
+        brief: 'Stwórz 3 odcienie tego samego koloru (jasny, podstawowy, ciemny) zmieniając wyłącznie trzeci parametr (Lightness) w funkcji hsl(230, 80%, L%).',
+        steps: ['Ustaw tło przycisku na hsl(230, 80%, 55%)', 'Na :hover zmniejsz jasność do 45%'],
+        deliverable: 'Spójny system kolorów bez zgadywania kodów HEX.',
+      },
+      completionCriteria: [
+        'Zrozumienie jednostek rem, px, vh/vw',
+        'Poprawne użycie pseudoklasy :hover',
+        'Zaliczenie quizu min. 80%',
+      ],
+    },
+    {
+      id: 'css-7',
+      moduleId: 3,
+      moduleTitle: 'CSS — Nowoczesne Stylowanie i Układy',
+      title: 'Typografia webowa, interlinia, tła i gradienty (linear-gradient)',
+      slug: 'typografia-webowa-tla-gradienty',
+      durationMinutes: 30,
+      xpReward: 65,
+      order: 3,
+      summary: '90% zawartości internetu to tekst. Naucz się dobierać bezpieczne stosy czcionek (font-family), kontrolować czytelność wiersza (line-height, max-width: 65ch) oraz tworzyć nowoczesne gradienty.',
+      objectives: [
+        'Definiować stos czcionek z fontami zapasowymi (fallback fonts) i wagami font-weight',
+        'Poprawiać czytelność tekstu za pomocą line-height (1.5 - 1.7) oraz letter-spacing',
+        'Tworzyć nowoczesne tła gradientowe linear-gradient() oraz kadrować zdjęcia z object-fit: cover',
+      ],
+      prerequisites: ['Lekcja 2: Selektory i jednostki'],
+      theoryMarkdown: `Dobra typografia i tło odróżniają amatorską stronę od produktu klasy premium.
+
+**1. Złote zasady czytelnej typografii:**
+- **Interlinia (\`line-height\`):** Dla długiego tekstu akapitowego ustawiaj \`line-height: 1.6\`, a dla dużych nagłówków \`line-height: 1.15\`–\`1.25\`.
+- **Długość linii (\`max-width: 65ch\`):** Ludzkie oko męczy się, gdy linijka tekstu ma więcej niż 65–75 znaków (\`ch\`).
+- **Stos czcionek (\`font-family\`):** Zawsze podawaj czcionki zapasowe, np. \`font-family: 'Inter', system-ui, -apple-system, sans-serif;\`.
+
+**2. Gradienty i obrazy tła:**
+- **\`background: linear-gradient(135deg, #4f46e5, #06b6d4);\`** — tworzy płynne przejście tonalne pod kątem 135 stopni.
+- **\`object-fit: cover;\`** — zapobiega rozciąganiu i deformacji zdjęć \`<img>\`, przycinając je proporcjonalnie jak \`background-size: cover\`.`,
+      codeExamples: [
+        {
+          title: 'Nowoczesny baner Hero z gradientem i wzorcową typografią',
+          language: 'css',
+          code: `.hero-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+  color: #f8fafc;
+  padding: 3rem 2rem;
+  border-radius: 16px;
+}
+
+.hero-banner p {
+  font-size: 1.125rem;
+  line-height: 1.65;
+  max-width: 60ch;
+  color: #cbd5e1;
+}`,
+          explanation: 'Jednostka ch odpowiada szerokości znaku "0" w bieżącej czcionce — idealnie ogranicza szerokość kolumny tekstu.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Ustaw czytelny font-family i line-height na body', description: 'Zapewnij komfort czytania w całej aplikacji.' },
+        { step: 2, title: 'Zastosuj linear-gradient na karcie wyróżnionej', description: 'Użyj dwóch zbliżonych kolorów (np. indygo i fioletu).' },
+        { step: 3, title: 'Zabezpiecz zdjęcia przed deformacją', description: 'Dodaj object-fit: cover dla awatarów i miniatur.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-css-typo',
+        title: 'Stwórz baner z gradientem linear-gradient i interlinią line-height',
+        instructions: 'W pliku CSS nadaj klasie .banner tło z funkcją linear-gradient(...) oraz ustaw właściwość line-height: 1.6; dla czytelności tekstu.',
+        task: 'Zastosuj linear-gradient oraz line-height w klasie .banner.',
+        starterCode: {
+          html: '<div class="banner">\n  <h2>Akademia Nowoczesnego Frontendu</h2>\n  <p>Twórz przejrzyste interfejsy dzięki zasadom typografii i subtelnym gradientom.</p>\n</div>',
+          css: '.banner {\n  color: white;\n  padding: 24px;\n  border-radius: 12px;\n  font-family: system-ui, sans-serif;\n  /* Dodaj background z linear-gradient oraz line-height */\n}',
+          js: 'console.log("Typografia i gradienty gotowe.");',
+        },
+        solutionCode: {
+          html: '<div class="banner">\n  <h2>Akademia Nowoczesnego Frontendu</h2>\n  <p>Twórz przejrzyste interfejsy dzięki zasadom typografii i subtelnym gradientom.</p>\n</div>',
+          css: '.banner {\n  background: linear-gradient(135deg, #4f46e5, #7c3aed);\n  line-height: 1.6;\n  color: white;\n  padding: 24px;\n  border-radius: 12px;\n  font-family: system-ui, sans-serif;\n}',
+          js: 'console.log("Typografia i gradienty gotowe.");',
+        },
+        hints: [
+          'Dodaj: background: linear-gradient(135deg, #4f46e5, #7c3aed);',
+          'Dodaj: line-height: 1.6;',
+        ],
+        rules: [
+          { id: 'r1', description: 'Funkcja linear-gradient użyta w CSS', ruleType: 'css_contains', target: 'linear-gradient' },
+          { id: 'r2', description: 'Właściwość line-height zdefiniowana', ruleType: 'css_contains', target: 'line-height:' },
+        ],
+      },
+      independentTask: {
+        title: 'Płynna typografia z funkcją clamp()',
+        instructions: 'Przetestuj nowoczesną funkcję font-size: clamp(1.5rem, 4vw, 3rem), która płynnie skaluje nagłówek między 1.5rem a 3rem w zależności od szerokości ekranu.',
+        expectedOutcome: 'Responsywny nagłówek bez ani jednego Media Query.',
+        starterHint: 'Składnia: clamp(minimum, wartość_preferowana, maksimum).',
+      },
+      quiz: [
+        {
+          id: 'q-css7-1',
+          question: 'Która właściwość CSS zapobiega spłaszczaniu lub rozciąganiu zdjęcia <img> o stałych wymiarach 200x200px?',
+          options: [
+            'text-align: justify',
+            'object-fit: cover',
+            'font-weight: bold',
+            'display: inline',
+          ],
+          correctAnswer: 1,
+          explanation: 'object-fit: cover zachowuje proporcje obrazu i wypełnia cały wymiar 200x200px, przycinając nadmiar.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Justowanie tekstu (text-align: justify) na wąskich ekranach mobilnych',
+          whyItHappens: 'Przyzwyczajenie z drukowanych książek i prac dyplomowych.',
+          howToFix: 'W sieci nie ma automatycznego dzielenia wyrazów w każdym języku, przez co justify tworzy gigantyczne "rzeki" pustych przestrzeni między słowami. Używaj text-align: left.',
+          badCode: 'p { text-align: justify; } /* Trudne do czytania w sieci */',
+          goodCode: 'p { text-align: left; line-height: 1.6; }',
+        },
+      ],
+      practicalTask: {
+        title: 'Karta profilu z okrągłym awatarem',
+        brief: 'Stwórz awatar 80x80px z border-radius: 50% oraz object-fit: cover.',
+        steps: ['Wstaw <img> z prostokątnym zdjęciem', 'Nadaj width: 80px; height: 80px; border-radius: 50%; object-fit: cover'],
+        deliverable: 'Idealnie okrągły, niezdeformowany awatar użytkownika.',
+      },
+      completionCriteria: [
+        'Zrozumienie zasad typografii i line-height',
+        'Prawidłowe użycie linear-gradient',
+        'Zaliczenie quizu min. 80%',
+      ],
+    },
+    {
+      id: 'css-8',
+      moduleId: 3,
+      moduleTitle: 'CSS — Nowoczesne Stylowanie i Układy',
+      title: 'Pozycjonowanie elementów (relative, absolute, fixed, sticky) oraz z-index',
+      slug: 'pozycjonowanie-position-z-index',
+      durationMinutes: 35,
+      xpReward: 75,
+      order: 4,
+      summary: 'Dowiedz się, jak przypiąć pasek nawigacji u góry ekranu (sticky), umieścić plakietkę "PROMOCJA" w rogu karty produktu (relative + absolute) oraz zarządzać warstwami z-index.',
+      objectives: [
+        'Zrozumieć kluczowy duet: rodzic z position: relative oraz dziecko z position: absolute',
+        'Rozróżniać przyklejony nagłówek position: sticky od okna modalnego position: fixed',
+        'Kontrolować kolejność nakładania się warstw za pomocą właściwości z-index',
+      ],
+      prerequisites: ['Lekcje 1–3 modułu CSS'],
+      theoryMarkdown: `Czasami musimy wyjąć element ze standardowego przepływu dokumentu i umieścić go w konkretnym punkcie — np. ikonkę powiadomień w prawym górnym rogu dzwoneczka lub okno modalne na środku ekranu.
+
+**5 wartości właściwości \`position\`:**
+1. **\`static\` (domyślna):** Normalny przepływ dokumentu. Ignoruje \`top\`, \`right\`, \`bottom\`, \`left\` oraz \`z-index\`.
+2. **\`relative\`:** Element pozostaje na swoim miejscu, ale staje się **punktem odniesienia (kotwicą)** dla swoich dzieci z \`position: absolute\`!
+3. **\`absolute\`:** Całkowicie wyjmuje element z układu i pozycjonuje go względem najbliższego przodka posiadającego \`position: relative\`.
+4. **\`fixed\`:** Przypina element na stałe względem okna przeglądarki (np. pływający przycisk czatu lub tło modala).
+5. **\`sticky\`:** Hybryda — element przewija się normalnie ze stroną, a po dotarciu do górnej krawędzi (\`top: 0\`) przykleja się do ekranu!`,
+      codeExamples: [
+        {
+          title: 'Plakietka "NOWOŚĆ" w rogu karty produktu (relative + absolute)',
+          language: 'css',
+          code: `.product-card {
+  position: relative; /* Kotwica dla plakietki! */
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.badge-new {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: #ef4444;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+}`,
+          explanation: 'Gdyby .product-card nie miało position: relative, plakietka .badge-new uciekłaby do rogu całego okna przeglądarki!',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Nadaj position: relative na kontenerze rodzica', description: 'Utwórz lokalny układ współrzędnych.' },
+        { step: 2, title: 'Nadaj position: absolute na elemencie nakładanym', description: 'Określ współrzędne, np. top: 10px; right: 10px;.' },
+        { step: 3, title: 'Użyj z-index dla nakładających się warstw', description: 'Wyższa wartość z-index (np. 10 vs 1) wyświetla element na wierzchu.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-css-position',
+        title: 'Umieść plakietkę PRO w prawym górnym rogu karty',
+        instructions: 'W pliku CSS nadaj klasie .card-box właściwość position: relative;, a klasie .badge właściwość position: absolute; oraz top: 10px; i right: 10px;.',
+        task: 'Zastosuj duet position: relative na .card-box oraz position: absolute na .badge.',
+        starterCode: {
+          html: '<div class="card-box">\n  <span class="badge">PRO</span>\n  <h3>Kurs Architektury CSS</h3>\n  <p>Zaawansowane układy i pozycjonowanie.</p>\n</div>',
+          css: '.card-box {\n  /* Dodaj position: relative */\n  background: white;\n  border: 1px solid #cbd5e1;\n  padding: 24px;\n  border-radius: 12px;\n  max-width: 280px;\n}\n.badge {\n  /* Dodaj position: absolute, top i right */\n  background: #4f46e5;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 6px;\n  font-size: 12px;\n}',
+          js: 'console.log("Pozycjonowanie CSS aktywne.");',
+        },
+        solutionCode: {
+          html: '<div class="card-box">\n  <span class="badge">PRO</span>\n  <h3>Kurs Architektury CSS</h3>\n  <p>Zaawansowane układy i pozycjonowanie.</p>\n</div>',
+          css: '.card-box {\n  position: relative;\n  background: white;\n  border: 1px solid #cbd5e1;\n  padding: 24px;\n  border-radius: 12px;\n  max-width: 280px;\n}\n.badge {\n  position: absolute;\n  top: 10px;\n  right: 10px;\n  background: #4f46e5;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 6px;\n  font-size: 12px;\n}',
+          js: 'console.log("Pozycjonowanie CSS aktywne.");',
+        },
+        hints: [
+          'W .card-box wpisz: position: relative;',
+          'W .badge wpisz: position: absolute; top: 10px; right: 10px;',
+        ],
+        rules: [
+          { id: 'r1', description: 'Właściwość position: relative obecna', ruleType: 'css_contains', target: 'position: relative' },
+          { id: 'r2', description: 'Właściwość position: absolute obecna', ruleType: 'css_contains', target: 'position: absolute' },
+          { id: 'r3', description: 'Współrzędna top zdefiniowana', ruleType: 'css_contains', target: 'top:' },
+        ],
+      },
+      independentTask: {
+        title: 'Przyklejony pasek nawigacji (Sticky Header)',
+        instructions: 'Nadaj nagłówkowi strony właściwości position: sticky; top: 0; z-index: 50;, aby pozostawał widoczny podczas przewijania długiego artykułu.',
+        expectedOutcome: 'Nowoczesna nawigacja bez przeskakiwania treści pod spodem.',
+        starterHint: 'Pamiętaj, że position: sticky wymaga podania przynajmniej jednej krawędzi, np. top: 0.',
+      },
+      quiz: [
+        {
+          id: 'q-css8-1',
+          question: 'Względem czego pozycjonuje się element posiadający position: absolute?',
+          options: [
+            'Zawsze względem lewego dolnego rogu monitora',
+            'Względem najbliższego elementu nadrzędnego (rodzica/przodka), który ma position inne niż static (np. relative), a w razie jego braku — względem <body>',
+            'Względem poprzedzającego go akapitu <p>',
+            'Tylko względem znacznika <footer>',
+          ],
+          correctAnswer: 1,
+          explanation: 'Dlatego zawsze pamiętamy o dodaniu position: relative na rodzicu, wewnątrz którego chcemy zamknąć element absolute.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Wpisywanie losowych, gigantycznych wartości z-index: 9999999',
+          whyItHappens: 'Próba przebicia innego elementu na siłę ("wojna na z-indexy").',
+          howToFix: 'Utrzymuj uporządkowaną skalę warstw (np. 10 dla dropdownu, 20 dla sticky navbaru, 50 dla modala) i pamiętaj, że z-index działa tylko na elementach z position innym niż static lub dzieciach Flex/Grid.',
+          badCode: '.modal { z-index: 999999999; }',
+          goodCode: '.navbar { z-index: 20; }\n.modal-backdrop { z-index: 50; }',
+        },
+      ],
+      practicalTask: {
+        title: 'Czerwona kropka powiadomień na ikonie dzwonka',
+        brief: 'Zbuduj kontener ikony z licznikiem nieprzeczytanych wiadomości (małe czerwone kółko w prawym górnym rogu: top: -4px; right: -4px).',
+        steps: ['Stwórz przycisk z position: relative', 'Dodaj span z liczbą "3" i position: absolute'],
+        deliverable: 'Klasyczny komponent UI paska powiadomień.',
+      },
+      completionCriteria: [
+        'Zrozumienie różnic między relative, absolute, fixed i sticky',
+        'Prawidłowe rozwiązanie ćwiczenia z plakietką PRO',
+        'Zaliczenie quizu min. 80%',
+      ],
+    },
+    {
       id: 'css-2',
       moduleId: 3,
       moduleTitle: 'CSS — Nowoczesne Stylowanie i Układy',
@@ -155,7 +510,7 @@ Dzięki \`border-box\` wymiary \`padding\` i \`border\` mieszczą się **wewnąt
       slug: 'flexbox-elastyczne-uklady',
       durationMinutes: 35,
       xpReward: 70,
-      order: 2,
+      order: 5,
       summary: 'Koniec z walką o wyśrodkowanie diva w pionie i poziomie! Opanuj elastyczny model Flexbox: osie main i cross, justify-content, align-items, flex-direction oraz gap.',
       objectives: [
         'Zrozumieć działanie osi głównej (Main Axis) i poprzecznej (Cross Axis)',

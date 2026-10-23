@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Smartphone, 
   Download, 
@@ -9,7 +10,6 @@ import {
   Sparkles, 
   Terminal, 
   ShieldCheck, 
-  Layers, 
   FileCode2,
   Info,
   KeyRound,
@@ -50,6 +50,15 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
   const [activeTab, setActiveTab] = useState<'release_pack' | 'store_listing' | 'install' | 'checklist'>('release_pack');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const copyToClipboard = (text: string, id: string) => {
@@ -58,14 +67,17 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+      onClick={onClose}
+    >
       <div 
-        className="relative w-full max-w-3xl rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+        className="relative my-auto w-full max-w-3xl rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative border-b border-slate-800 bg-gradient-to-r from-indigo-950/70 via-slate-900 to-slate-900 p-4 sm:p-6">
+        <div className="relative shrink-0 border-b border-slate-800 bg-gradient-to-r from-indigo-950/70 via-slate-900 to-slate-900 p-4 sm:p-5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white shadow-lg shadow-indigo-500/25 shrink-0">
@@ -85,6 +97,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
             <button
               type="button"
               onClick={onClose}
+              aria-label="Zamknij okno"
               className="rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
             >
               <X className="h-5 w-5" />
@@ -145,7 +158,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-5">
+        <div className="flex-1 min-h-0 p-4 sm:p-5 overflow-y-auto space-y-4">
           {activeTab === 'release_pack' && (
             <div className="space-y-4">
               {/* Primary 1-Click Download Bundle Card */}
@@ -516,7 +529,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-800 bg-slate-950/80 p-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="shrink-0 border-t border-slate-800 bg-slate-950/80 p-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 text-slate-400">
             <Info className="h-4 w-4 text-indigo-400 shrink-0" />
             <span>Pakiet: <strong className="text-slate-200 font-mono">com.fullstackacademy.app</strong> • Target SDK 34</span>
@@ -531,6 +544,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

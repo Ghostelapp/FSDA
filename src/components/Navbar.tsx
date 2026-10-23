@@ -22,15 +22,17 @@ import {
   VolumeX,
   Database,
   TerminalSquare,
-  Smartphone
+  Smartphone,
+  Search
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
 
 interface NavbarProps {
   onOpenAuthModal: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPalette }) => {
   const { 
     currentUser, 
     allUsers, 
@@ -78,11 +80,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
         </div>
 
         {/* Desktop Quick Nav */}
-        <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
+        <nav className="hidden xl:flex items-center gap-1 text-xs font-medium shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('dashboard')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
+            className={`px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 ${
               activeTab === 'dashboard' 
                 ? 'bg-slate-800/80 text-white font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-900'
@@ -93,7 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
           <button
             type="button"
             onClick={() => setActiveTab('modules')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
+            className={`px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 ${
               activeTab === 'modules' || activeTab === 'lesson'
                 ? 'bg-slate-800/80 text-white font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-900'
@@ -104,18 +106,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
           <button
             type="button"
             onClick={() => setActiveTab('editor')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
+            className={`px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 ${
               activeTab === 'editor' 
                 ? 'bg-slate-800/80 text-white font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-900'
             }`}
           >
-            Piaskownica Kodu
+            Piaskownica
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('projects')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
+            className={`px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 ${
               activeTab === 'projects' 
                 ? 'bg-slate-800/80 text-white font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-900'
@@ -125,19 +127,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('reviews')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
-              activeTab === 'reviews' 
+            onClick={() => setActiveTab('api_studio')}
+            className={`px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 ${
+              activeTab === 'api_studio' 
                 ? 'bg-slate-800/80 text-white font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-900'
             }`}
           >
-            Powtórki
+            REST API
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('certificate')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
+            className={`px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 ${
               activeTab === 'certificate' 
                 ? 'bg-slate-800/80 text-white font-semibold' 
                 : 'text-slate-300 hover:text-white hover:bg-slate-900'
@@ -148,79 +150,57 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal }) => {
         </nav>
 
         {/* User stats & Profile widget */}
-        {/* User stats & Profile widget */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {onOpenCommandPalette && (
+            <button
+              type="button"
+              onClick={onOpenCommandPalette}
+              aria-label="Szukaj w akademii (Ctrl+K)"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 px-2.5 py-1 text-xs text-slate-300 transition-colors whitespace-nowrap shrink-0"
+            >
+              <Search className="h-3.5 w-3.5 text-indigo-400" />
+              <span className="hidden lg:inline">Szukaj</span>
+              <kbd className="hidden xl:inline text-[10px] font-mono text-slate-400">Ctrl+K</kbd>
+            </button>
+          )}
           
-          {/* Hearts / Lives indicator pill */}
+          {/* Hearts / Lives indicator */}
           <button
             type="button"
             onClick={() => setIsLivesModalOpen(true)}
             title={isPro ? "Nielimitowane życia (PRO)" : `Masz ${currentLives}/5 serc. Kliknij, aby sprawdzić odnowienie lub uzupełnić serca.`}
-            className={`flex items-center gap-1 sm:gap-1.5 rounded-lg px-2 sm:px-2.5 py-1 text-xs font-semibold transition-all shrink-0 ${
+            className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${
               isPro
-                ? 'bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-indigo-500/20 border border-amber-500/40 text-amber-300 hover:border-amber-400 shadow-sm shadow-amber-500/10'
+                ? 'bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:border-amber-400'
                 : currentLives === 0
-                ? 'bg-rose-500/20 border border-rose-500/50 text-rose-300 animate-pulse'
+                ? 'bg-rose-500/20 border border-rose-500/50 text-rose-300'
                 : 'bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:border-rose-500/40'
             }`}
           >
-            <Heart className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isPro ? 'fill-amber-400 text-amber-400' : 'fill-rose-500 text-rose-500'}`} />
+            <Heart className={`h-3.5 w-3.5 ${isPro ? 'fill-amber-400 text-amber-400' : 'fill-rose-500 text-rose-500'}`} />
             {isPro ? (
-              <span className="font-bold tracking-tight">∞ PRO</span>
+              <span className="font-bold tracking-tight">PRO</span>
             ) : (
               <span className="font-bold">{currentLives}/5</span>
             )}
-            {!isPro && livesInfo.secondsToNextHeart && currentLives < 5 && (
-              <span className="hidden xl:inline text-[10px] text-slate-400 font-mono">
-                {formatCountdown(livesInfo.secondsToNextHeart)}
-              </span>
-            )}
           </button>
-
-          {/* PRO Upgrade Button */}
-          {isPro ? (
-            <button
-              type="button"
-              onClick={() => setIsSubModalOpen(true)}
-              className="hidden lg:flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold hover:bg-amber-500/25 transition-colors"
-              title="Twoja subskrypcja PRO jest aktywna"
-            >
-              <Crown className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-              <span>PRO</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsSubModalOpen(true)}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black shadow-md shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all"
-            >
-              <Crown className="h-3.5 w-3.5 fill-slate-950" />
-              <span>Zostań PRO</span>
-            </button>
-          )}
 
           {/* Streak indicator */}
           <div 
             title={`Twoja seria nauki: ${currentUser.streakDays} dni z rzędu!`}
-            className="flex items-center gap-1 sm:gap-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2 sm:px-2.5 py-1 text-xs font-semibold text-amber-400 shrink-0"
+            className="flex items-center gap-1 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2 py-1 text-xs font-semibold text-amber-400 whitespace-nowrap shrink-0"
           >
-            <Flame className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-amber-400 text-amber-400 animate-pulse" />
+            <Flame className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
             <span>{currentUser.streakDays}d</span>
           </div>
-
-          {/* Android Play Store & PWA Install Button */}
-          <PWAInstallButton className="hidden md:flex" />
 
           {/* XP & Level Indicator */}
           <div 
             title={`Poziom ${levelInfo.level}: ${levelInfo.title} (${currentUser.xp} XP)`}
-            className="hidden sm:flex items-center gap-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 text-xs shrink-0"
+            className="hidden sm:flex items-center gap-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 text-xs whitespace-nowrap shrink-0"
           >
             <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-            <div>
-              <span className="font-bold text-indigo-300">{currentUser.xp} XP</span>
-              <span className="text-slate-400 ml-1.5 text-[11px]">Poz. {levelInfo.level}</span>
-            </div>
+            <span className="font-bold text-indigo-300 tabular-nums">{currentUser.xp} XP</span>
           </div>
 
           {/* Sound FX Toggle (desktop / tablet) */}

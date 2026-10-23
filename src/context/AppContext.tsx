@@ -1,9 +1,19 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, UserRole, UserStatus, Announcement, Lesson, ReviewItem } from '../types';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo, useRef } from 'react';
+import { User, UserRole, UserStatus, Announcement, Lesson, ReviewItem, DailyReminderSettings } from '../types';
 import { MODULES_DATA } from '../data/modulesData';
-import { PROJECTS_DATA } from '../data/projectsData';
 import { DEFAULT_ANNOUNCEMENTS } from '../data/defaultAnnouncements';
 import { soundManager } from '../utils/audioFx';
+import {
+  DEFAULT_REMINDER_SETTINGS,
+  formatLocalDateKey,
+  getMsUntilNextReminder,
+  shouldTriggerDailyReminderNow,
+  buildDailyGoalNotificationPayload,
+  getNotificationPermissionState,
+  requestBrowserNotificationPermission,
+  sendServiceWorkerNotification,
+  syncScheduleWithServiceWorker,
+} from '../utils/pushNotifications';
 import { 
   calculateLevel, 
   updateStreak, 
@@ -35,7 +45,12 @@ export type AppTab =
   | 'deployment'
   | 'terminal'
   | 'sql_studio'
-  | 'interview';
+  | 'interview'
+  | 'api_studio'
+  | 'event_loop'
+  | 'leaderboard'
+  | 'flashcards'
+  | 'career';
 
 interface AppContextType {
   currentUser: User;
@@ -90,12 +105,24 @@ interface AppContextType {
   allLessons: Lesson[];
   isSoundMuted: boolean;
   toggleSound: () => void;
+  // Daily Goal & Service Worker Push Notifications
+  reminderSettings: DailyReminderSettings;
+  notificationPermission: NotificationPermission | 'unsupported';
+  todaySpentMinutes: number;
+  dailyGoalMinutes: number;
+  nextReminderInMs: number | null;
+  requestNotificationPermission: () => Promise<NotificationPermission | 'unsupported'>;
+  updateReminderSettings: (partial: Partial<DailyReminderSettings>) => void;
+  triggerGoalReminderNow: (isTest?: boolean) => Promise<boolean>;
+  awardCustomXp: (xpAmount: number, reason: string) => void;
+  importUserBackup: (restoredUser: User) => void;
 }
 
 const STORAGE_KEY_USER = 'fsda_current_user_v5';
 const STORAGE_KEY_USERS = 'fsda_all_users_v5';
 const STORAGE_KEY_ANNOUNCEMENTS = 'fsda_announcements_v5';
 const STORAGE_KEY_THEME = 'fsda_theme_v5';
+const STORAGE_KEY_REMINDERS = 'fsda_reminder_settings_v1';
 
 const DEFAULT_USERS: User[] = [
   {
@@ -210,6 +237,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsSoundMuted(next);
   };
 
+  // Daily Goal & Service Worker Push Reminder State
+  const [reminderSettings, setReminderSettings] = useState<DailyReminderSettings>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_REMINDERS);
+      if (stored) {
+        return { ...DEFAULT_REMINDER_SETTINGS, ...JSON.parse(stored) };
+      }
+      if (currentUser.reminderSettings) {
+        return { ...DEFAULT_REMINDER_SETTINGS, ...currentUser.reminderSettings };
+      }
+      return DEFAULT_REMINDER_SETTINGS;
+    } catch {
+      return DEFAULT_REMINDER_SETTINGS;
+    }
+  });
+
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>(() =>
+    getNotificationPermissionState()
+  );
+
+  const [nextReminderInMs, setNextReminderInMs] = useState<number | null>(() =>
+    getMsUntilNextReminder(reminderSettings.reminderTime, reminderSettings.daysOfWeek)
+  );
+
   // Gamification & Subscription modals
   const [isLivesModalOpen, setIsLivesModalOpen] = useState(false);
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
@@ -242,8 +293,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearInterval(interval);
   }, [currentUser]);
 
-  // Collect all lessons across all modules
-  const allLessons: Lesson[] = MODULES_DATA.flatMap((m) => m.lessons);
+  // Collect all lessons across all modules (stable reference)
+  const allLessons: Lesson[] = useMemo(() => MODULES_DATA.flatMap((m) => m.lessons), []);
 
   // Sync to localStorage
   useEffect(() => {
@@ -613,6 +664,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const completeLesson = (lessonId: string, xpReward: number) => {
+    const lessonObj = allLessons.find((l) => l.id === lessonId);
+    const lessonMinutes = lessonObj?.durationMinutes || 25;
+
     setCurrentUser((prev) => {
       const alreadyCompleted = prev.completedLessons.includes(lessonId);
       const newCompleted = alreadyCompleted ? prev.completedLessons : [...prev.completedLessons, lessonId];
@@ -620,7 +674,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const newXp = prev.xp + addedXp;
       const levelInfo = calculateLevel(newXp);
       const todayStr = new Date().toISOString().split('T')[0];
+      const localTodayKey = formatLocalDateKey();
       const streakInfo = updateStreak(prev.lastActiveDate, prev.streakDays, todayStr);
+      const prevTodayMinutes = prev.lastGoalDate === localTodayKey ? (prev.todaySpentMinutes ?? 15) : 0;
 
       const updatedUser: User = {
         ...prev,
@@ -628,7 +684,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         level: levelInfo.level,
         streakDays: streakInfo.newStreak,
         lastActiveDate: todayStr,
-        weeklySpentMinutes: prev.weeklySpentMinutes + 25,
+        weeklySpentMinutes: prev.weeklySpentMinutes + lessonMinutes,
+        todaySpentMinutes: prevTodayMinutes + lessonMinutes,
+        lastGoalDate: localTodayKey,
         completedLessons: newCompleted,
       };
 
@@ -755,7 +813,206 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast('Zaktualizowano profil użytkownika w bazie danych.', 'success');
   };
 
-  const weakAreas = findWeakAreas(currentUser.quizScores || {}, allLessons);
+  const awardCustomXp = useCallback((xpAmount: number, reason: string) => {
+    setCurrentUser((prev) => {
+      const newXp = prev.xp + xpAmount;
+      const levelInfo = calculateLevel(newXp);
+      const updatedUser: User = {
+        ...prev,
+        xp: newXp,
+        level: levelInfo.level,
+      };
+      setAllUsers((users) => users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+      return updatedUser;
+    });
+    soundManager.playSuccess();
+    showToast(`${reason} (+${xpAmount} XP)`, 'success');
+  }, []);
+
+  const importUserBackup = useCallback((restoredUser: User) => {
+    setCurrentUser(restoredUser);
+    setAllUsers((prev) => {
+      const exists = prev.some((u) => u.id === restoredUser.id);
+      if (exists) {
+        return prev.map((u) => (u.id === restoredUser.id ? restoredUser : u));
+      }
+      return [...prev, restoredUser];
+    });
+    soundManager.playLevelUp();
+    showToast(`Przywrócono kopię zapasową profilu: ${restoredUser.name}`, 'badge');
+  }, []);
+
+  const weakAreas = useMemo(
+    () => findWeakAreas(currentUser.quizScores || {}, allLessons),
+    [currentUser.quizScores, allLessons]
+  );
+
+  const localTodayKey = formatLocalDateKey();
+  const todaySpentMinutes =
+    currentUser.lastGoalDate === localTodayKey
+      ? (currentUser.todaySpentMinutes ?? 15)
+      : currentUser.lastActiveDate === new Date().toISOString().split('T')[0]
+      ? (currentUser.todaySpentMinutes ?? 15)
+      : 0;
+  const dailyGoalMinutes = reminderSettings.dailyGoalMinutes || 30;
+
+  // Persist reminderSettings in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_REMINDERS, JSON.stringify(reminderSettings));
+    } catch (e) {
+      console.warn('Reminder settings storage error', e);
+    }
+  }, [reminderSettings]);
+
+  const updateReminderSettings = useCallback((partial: Partial<DailyReminderSettings>) => {
+    setReminderSettings((prev) => {
+      const next = { ...prev, ...partial };
+      setNextReminderInMs(
+        next.enabled ? getMsUntilNextReminder(next.reminderTime, next.daysOfWeek) : null
+      );
+      return next;
+    });
+  }, []);
+
+  const requestNotificationPermission = useCallback(async () => {
+    const perm = await requestBrowserNotificationPermission();
+    setNotificationPermission(perm);
+    if (perm === 'granted') {
+      showToast('Powiadomienia Push (Service Worker) zostały włączone!', 'success');
+    } else if (perm === 'denied') {
+      showToast('Uprawnienia powiadomień przeglądarki są zablokowane — aktywne są przypomnienia w aplikacji.', 'info');
+    }
+    return perm;
+  }, []);
+
+  const triggerGoalReminderNow = useCallback(
+    async (isTest: boolean = false): Promise<boolean> => {
+      const nextLesson =
+        allLessons.find((l) => !currentUser.completedLessons.includes(l.id)) || allLessons[0];
+
+      const payload = buildDailyGoalNotificationPayload({
+        userName: currentUser.name,
+        streakDays: currentUser.streakDays,
+        todayMinutes: todaySpentMinutes,
+        dailyGoalMinutes,
+        nextLessonId: nextLesson?.id,
+        nextLessonTitle: nextLesson?.title,
+        isTest,
+      });
+
+      const swSent = await sendServiceWorkerNotification(payload);
+      soundManager.playSuccess();
+
+      const remaining = Math.max(0, dailyGoalMinutes - todaySpentMinutes);
+      const toastMsg = isTest
+        ? swSent
+          ? `Wysłano powiadomienie Service Worker: „${payload.title}”`
+          : `Przypomnienie o celu dnia (${todaySpentMinutes}/${dailyGoalMinutes} min): Kontynuuj lekcję „${nextLesson?.title || 'HTML'}”!`
+        : remaining > 0
+        ? `Przypomnienie o celu dnia: brakuje jeszcze ${remaining} min nauki, aby utrzymać serię ${currentUser.streakDays} dni!`
+        : `Cel dzienny (${dailyGoalMinutes} min) osiągnięty! Brawo!`;
+
+      showToast(toastMsg, 'info');
+      return swSent;
+    },
+    [allLessons, currentUser.completedLessons, currentUser.name, currentUser.streakDays, todaySpentMinutes, dailyGoalMinutes]
+  );
+
+  const triggerGoalReminderRef = useRef(triggerGoalReminderNow);
+  useEffect(() => {
+    triggerGoalReminderRef.current = triggerGoalReminderNow;
+  }, [triggerGoalReminderNow]);
+
+  // Listen for Service Worker notification clicks to navigate directly to the recommended lesson
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    const handleSWMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
+        const lessonId = event.data.data?.lessonId || 'html-1';
+        setActiveTab('lesson', lessonId);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleSWMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', handleSWMessage);
+    };
+  }, []);
+
+  // Simple & accurate daily learning goal scheduling loop in AppContext
+  useEffect(() => {
+    const evaluateSchedule = () => {
+      const now = new Date();
+      const ms = reminderSettings.enabled
+        ? getMsUntilNextReminder(reminderSettings.reminderTime, reminderSettings.daysOfWeek, now)
+        : null;
+
+      setNextReminderInMs((prev) => {
+        if (prev === null && ms === null) return prev;
+        if (prev === null || ms === null) return ms;
+        if (Math.abs(prev - ms) < 1000) return prev;
+        return ms;
+      });
+
+      if (shouldTriggerDailyReminderNow(reminderSettings, todaySpentMinutes, now)) {
+        const todayKey = formatLocalDateKey(now);
+        setReminderSettings((prev) => {
+          if (prev.lastNotifiedDate === todayKey) return prev;
+          return {
+            ...prev,
+            lastNotifiedDate: todayKey,
+          };
+        });
+        void triggerGoalReminderRef.current(false);
+      }
+    };
+
+    evaluateSchedule();
+
+    const intervalId = setInterval(evaluateSchedule, 15000);
+
+    // Sync upcoming reminder with the Service Worker
+    const nextLesson =
+      allLessons.find((l) => !currentUser.completedLessons.includes(l.id)) || allLessons[0];
+    const nextMs = reminderSettings.enabled
+      ? getMsUntilNextReminder(reminderSettings.reminderTime, reminderSettings.daysOfWeek)
+      : null;
+
+    const swPayload =
+      reminderSettings.enabled && todaySpentMinutes < dailyGoalMinutes
+        ? buildDailyGoalNotificationPayload({
+            userName: currentUser.name,
+            streakDays: currentUser.streakDays,
+            todayMinutes: todaySpentMinutes,
+            dailyGoalMinutes,
+            nextLessonId: nextLesson?.id,
+            nextLessonTitle: nextLesson?.title,
+          })
+        : null;
+
+    void syncScheduleWithServiceWorker(nextMs, swPayload);
+
+    // Also set an exact timeout if the next reminder is within the next 6 hours
+    let exactTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    if (nextMs !== null && nextMs > 0 && nextMs <= 6 * 60 * 60 * 1000) {
+      exactTimeoutId = setTimeout(evaluateSchedule, nextMs + 250);
+    }
+
+    return () => {
+      clearInterval(intervalId);
+      if (exactTimeoutId) clearTimeout(exactTimeoutId);
+    };
+  }, [
+    reminderSettings,
+    todaySpentMinutes,
+    dailyGoalMinutes,
+    allLessons,
+    currentUser.completedLessons,
+    currentUser.name,
+    currentUser.streakDays,
+  ]);
 
   return (
     <AppContext.Provider
@@ -804,6 +1061,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         allLessons,
         isSoundMuted,
         toggleSound,
+        reminderSettings,
+        notificationPermission,
+        todaySpentMinutes,
+        dailyGoalMinutes,
+        nextReminderInMs,
+        requestNotificationPermission,
+        updateReminderSettings,
+        triggerGoalReminderNow,
+        awardCustomXp,
+        importUserBackup,
       }}
     >
       {children}

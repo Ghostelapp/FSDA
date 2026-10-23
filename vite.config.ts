@@ -20,6 +20,7 @@ export default defineConfig(() => {
           'pwa-maskable-512x512.png',
           '.well-known/assetlinks.json',
           'twa-manifest.json',
+          'sw-notifications.js',
         ],
         manifest: {
           id: '/',
@@ -55,6 +56,7 @@ export default defineConfig(() => {
           ],
         },
         workbox: {
+          importScripts: ['/sw-notifications.js'],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json}'],
           runtimeCaching: [

@@ -7,11 +7,15 @@ export const MODULE_4: Module = {
   description: 'Zmienne (const, let), typy prymitywne i referencyjne, funkcje strzałkowe, manipulacja DOM, obsługa zdarzeń, asynchroniczność (Promises, async/await) i Fetch API.',
   badgeName: 'Czarodziej JavaScript',
   badgeIcon: 'Sparkles',
-  durationHours: 35,
-  totalXp: 900,
+  durationHours: 48,
+  totalXp: 1180,
   prerequisites: ['Moduł 2: HTML', 'Moduł 3: CSS'],
   topics: [
     'Typy danych, scope (zakres leksykalny), hoisting i operatory porównania',
+    'Instrukcje warunkowe (if/else, switch), wartości Truthy/Falsy i operator Nullish Coalescing (??)',
+    'Pętle (for, while, for...of) oraz podstawowe operacje na tablicach (push, pop, includes, slice)',
+    'Funkcje od podstaw: deklaracja, parametry domyślne, return, Arrow Functions i Scope',
+    'Obiekty, destrukturyzacja, operator Spread/Rest (...) oraz pamięć LocalStorage i JSON',
     'Funkcje wyższego rzędu, domknięcia (closures) i metody tablicowe (map, filter, reduce, find)',
     'Obiektowy model dokumentu (DOM): selektory querySelector, tworzenie i modyfikacja węzłów',
     'Architektura zdarzeń: Event Bubbling, Event Capturing i delegacja zdarzeń',
@@ -142,6 +146,524 @@ console.log(greeting);`,
       ],
     },
     {
+      id: 'js-6',
+      moduleId: 4,
+      moduleTitle: 'JavaScript — Logika i Interaktywność',
+      title: 'Instrukcje warunkowe (if/else, switch), Truthy/Falsy i operator ??',
+      slug: 'instrukcje-warunkowe-if-else-truthy-falsy',
+      durationMinutes: 30,
+      xpReward: 65,
+      order: 2,
+      summary: 'Naucz się sterować przepływem programu: podejmuj decyzje za pomocą if/else, poznaj 6 wartości Falsy w JavaScript oraz stosuj nowoczesny operator Nullish Coalescing (??) i Guard Clauses.',
+      objectives: [
+        'Budować czytelne rozgałęzienia decyzyjne if / else if / else oraz switch',
+        'Znać na pamięć 6 wartości Falsy (false, 0, "", null, undefined, NaN)',
+        'Rozróżniać operator logiczny || od operatora Nullish Coalescing ??',
+      ],
+      prerequisites: ['Lekcja 1: Zmienne i typy danych'],
+      theoryMarkdown: `Program komputerowy nieustannie podejmuje decyzje: czy użytkownik jest zalogowany? Czy koszyk jest pusty? Czy subskrypcja wygasła?
+
+**1. 6 wartości Falsy w JavaScript:**
+W kontekście warunku \`if (wartość)\` tylko te 6 wartości jest traktowanych jako **fałsz (Falsy)**:
+- \`false\`
+- \`0\` (oraz \`-0\`, \`0n\`)
+- \`""\` (pusty ciąg znaków)
+- \`null\`
+- \`undefined\`
+- \`NaN\` (Not a Number)
+**Wszystko inne jest Truthy (prawdziwe)** — w tym pusta tablica \`[]\` oraz pusty obiekt \`{}\`!
+
+**2. Operator \`??\` (Nullish Coalescing) vs \`||\`:**
+Gdy ustawiasz wartość domyślną:
+\`\`\`javascript
+const discount = 0;
+console.log(discount || 10); // 10 (BŁĄD! 0 jest Falsy, więc || je odrzucił!)
+console.log(discount ?? 10); // 0  (PRAWIDŁOWO! ?? reaguje tylko na null i undefined)
+\`\`\`
+
+**3. Wzorzec Guard Clause (Wczesny powrót):**
+Zamiast zagnieżdżać 4 poziomy \`if { if { if } }\`, sprawdzaj warunki brzegowe na samym początku funkcji i wychodź przez \`return\`.`,
+      codeExamples: [
+        {
+          title: 'Weryfikacja uprawnień z wzorcem Guard Clause i operatorem ??',
+          language: 'javascript',
+          code: `function checkAccess(userRole, userAge) {
+  const role = userRole ?? 'guest';
+
+  if (userAge < 18) {
+    return 'Brak dostępu: wymagana pełnoletność';
+  }
+
+  if (role === 'admin') {
+    return 'Pełny dostęp administratora';
+  } else if (role === 'student') {
+    return 'Dostęp do modułów kursowych';
+  }
+
+  return 'Dostęp demonstracyjny (Gość)';
+}
+
+console.log(checkAccess('student', 22));`,
+          explanation: 'Sprawdzenie wieku na początku funkcji eliminuje głębokie zagnieżdżenia else.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Zapisz warunek główny w if (...)', description: 'Używaj operatorów ===, !==, >=, <=.' },
+        { step: 2, title: 'Obsłuż pozostałe przypadki w else if / else', description: 'Zadbaj o domyślną ścieżkę zapasową.' },
+        { step: 3, title: 'Stosuj ?? dla wartości domyślnych', description: 'Chronisz w ten sposób poprawne wartości 0 oraz "".' },
+      ],
+      interactiveExercise: {
+        id: 'ex-js-conditionals',
+        title: 'Oceń wynik egzaminu za pomocą instrukcji if / else',
+        instructions: 'W pliku app.js zadeklaruj const points = 85; a następnie użyj instrukcji if (points >= 70), aby wypisać w console.log("Egzamin zdany!"), a w bloku else wypisz "Wymagana poprawka".',
+        task: 'Zastosuj instrukcję if / else sprawdzającą points >= 70.',
+        starterCode: {
+          html: '<h2>Kalkulator Wyniku Egzaminu</h2>',
+          css: 'body { font-family: sans-serif; padding: 20px; }',
+          js: 'const points = 85;\n// Dopisz instrukcję if / else poniżej:\n',
+        },
+        solutionCode: {
+          html: '<h2>Kalkulator Wyniku Egzaminu</h2>',
+          css: 'body { font-family: sans-serif; padding: 20px; }',
+          js: 'const points = 85;\nif (points >= 70) {\n  console.log("Egzamin zdany!");\n} else {\n  console.log("Wymagana poprawka");\n}',
+        },
+        hints: [
+          'Wpisz: if (points >= 70) { console.log("Egzamin zdany!"); }',
+          'Dopisz: else { console.log("Wymagana poprawka"); }',
+        ],
+        rules: [
+          { id: 'r1', description: 'Instrukcja warunkowa if użyta', ruleType: 'js_contains', target: 'if' },
+          { id: 'r2', description: 'Blok else obecny', ruleType: 'js_contains', target: 'else' },
+          { id: 'r3', description: 'Tekst "Egzamin zdany!" obecny', ruleType: 'js_contains', target: 'Egzamin zdany!' },
+        ],
+      },
+      independentTask: {
+        title: 'Instrukcja switch dla statusu zamówienia',
+        instructions: 'Napisz instrukcję switch(orderStatus) obsługującą stany: "pending", "shipped", "delivered" oraz blok default.',
+        expectedOutcome: 'Czytelna obsługa wielu dyskretnych stanów tekstowych.',
+        starterHint: 'Pamiętaj o słowie kluczowym break; na końcu każdego bloku case.',
+      },
+      quiz: [
+        {
+          id: 'q-js6-1',
+          question: 'Jaki wynik zwróci wyrażenie Boolean([]) (czyli wartość logiczna pustej tablicy w JS)?',
+          options: [
+            'false, ponieważ tablica jest pusta',
+            'true! W JavaScript pusta tablica [] oraz pusty obiekt {} są wartościami Truthy (aby sprawdzić czy tablica jest pusta, badamy array.length === 0)',
+            'undefined',
+            'Wyrzuci błąd TypeError',
+          ],
+          correctAnswer: 1,
+          explanation: 'To częsta pułapka na rozmowach rekrutacyjnych: if ([]) zawsze wykona się jako prawda! Zawsze sprawdzaj if (arr.length > 0).',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Użycie pojedynczego znaku przypisania = zamiast porównania === wewnątrz if (x = 5)',
+          whyItHappens: 'Literówka podczas szybkiego pisania warunku.',
+          howToFix: 'Pojedynczy = nadpisuje zmienną wartością 5 i zwraca 5 (Truthy), więc warunek wykona się zawsze! Używaj ===.',
+          badCode: 'if (userRole = "admin") { ... } // Nadpisuje rolę na admin!',
+          goodCode: 'if (userRole === "admin") { ... }',
+        },
+      ],
+      practicalTask: {
+        title: 'Test operatora ?? w konsoli',
+        brief: 'Porównaj w konsoli działanie 0 || 50 oraz 0 ?? 50.',
+        steps: ['Wpisz w konsoli 0 || 50', 'Wpisz 0 ?? 50', 'Porównaj wyniki dla pustego stringa ""'],
+        deliverable: 'Świadome stosowanie operatora Nullish Coalescing.',
+      },
+      completionCriteria: [
+        'Zrozumienie if/else oraz 6 wartości Falsy',
+        'Poprawne rozwiązanie ćwiczenia z egzaminem',
+        'Zaliczenie quizu min. 80%',
+      ],
+    },
+    {
+      id: 'js-7',
+      moduleId: 4,
+      moduleTitle: 'JavaScript — Logika i Interaktywność',
+      title: 'Pętle (for, while, for...of) i podstawowe operacje na tablicach',
+      slug: 'petle-for-while-podstawy-tablic',
+      durationMinutes: 35,
+      xpReward: 70,
+      order: 3,
+      summary: 'Zanim przejdziesz do programowania funkcyjnego, opanuj fundament kolekcji danych: indeksowanie tablic od 0, metody push/pop/includes/slice oraz iterację pętlami for i for...of.',
+      objectives: [
+        'Tworzyć tablice i odczytywać elementy po indeksie (od 0 do array.length - 1)',
+        'Dodawać, usuwać i wyszukiwać elementy metodami push(), pop(), includes(), indexOf(), slice()',
+        'Iterować po kolekcjach za pomocą klasycznej pętli for oraz nowoczesnej pętli for (const item of items)',
+      ],
+      prerequisites: ['Lekcja 2: Instrukcje warunkowe'],
+      theoryMarkdown: `**Tablica (Array)** to uporządkowana lista wartości przechowywana pod jedną zmienną.
+
+**1. Indeksowanie od zera (Zero-based indexing):**
+\`\`\`javascript
+const techStack = ['HTML', 'CSS', 'JavaScript', 'React'];
+console.log(techStack[0]); // 'HTML' (pierwszy element ma indeks 0!)
+console.log(techStack.length); // 4
+console.log(techStack[techStack.length - 1]); // 'React' (ostatni element)
+\`\`\`
+
+**2. Podstawowe metody tablicowe:**
+- **\`push(el)\`** — dodaje element na koniec tablicy.
+- **\`pop()\`** — usuwa i zwraca ostatni element.
+- **\`includes(el)\`** — zwraca \`true\` lub \`false\`, sprawdzając czy element istnieje w tablicy.
+- **\`slice(start, end)\`** — wycina fragment tablicy do NOWEJ tablicy bez psucia oryginału.
+
+**3. Pętla \`for...of\` (ES6) vs klasyczne \`for\`:**
+Gdy chcesz przejść po każdym elemencie tablicy od początku do końca, najczytelniejsza jest pętla **\`for...of\`**:
+\`\`\`javascript
+for (const tech of techStack) {
+  console.log(\`Uczę się technologii: \${tech}\`);
+}
+\`\`\``,
+      codeExamples: [
+        {
+          title: 'Zliczanie sumy wydatków za pomocą pętli for...of',
+          language: 'javascript',
+          code: `const expenses = [45, 120, 30, 85];
+let total = 0;
+
+for (const amount of expenses) {
+  total += amount;
+}
+
+console.log(\`Liczba transakcji: \${expenses.length}, Suma: \${total} zł\`);`,
+          explanation: 'W każdym obiegu pętli zmienna amount przyjmuje kolejną liczbę z tablicy expenses.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Utwórz tablicę w nawiasach kwadratowych []', description: 'Oddziel kolejne elementy przecinkami.' },
+        { step: 2, title: 'Sprawdź obecność elementu metodą .includes()', description: 'Unikaj ręcznego pisania pętli tylko po to, by sprawdzić czy wartość istnieje.' },
+        { step: 3, title: 'Użyj pętli for...of do przejścia po kolekcji', description: 'Stosuj const item of array dla bezpieczeństwa i czytelności.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-js-loops',
+        title: 'Przeiteruj po tablicy modułów za pomocą pętli i wypisz je w konsoli',
+        instructions: 'W pliku app.js utwórz tablicę const modules = ["HTML", "CSS", "JS"]; a następnie użyj pętli for (lub for...of), aby wypisać elementy za pomocą console.log().',
+        task: 'Zdefiniuj tablicę modules i użyj pętli for do wypisania jej elementów w console.log.',
+        starterCode: {
+          html: '<h2>Iteracja po tablicy w JS</h2>',
+          css: 'body { font-family: sans-serif; padding: 20px; }',
+          js: '// Zdefiniuj tablicę modules i pętlę for poniżej:\n',
+        },
+        solutionCode: {
+          html: '<h2>Iteracja po tablicy w JS</h2>',
+          css: 'body { font-family: sans-serif; padding: 20px; }',
+          js: 'const modules = ["HTML", "CSS", "JS"];\nfor (const mod of modules) {\n  console.log(mod);\n}',
+        },
+        hints: [
+          'Zadeklaruj: const modules = ["HTML", "CSS", "JS"];',
+          'Napisz pętlę: for (const mod of modules) { console.log(mod); }',
+        ],
+        rules: [
+          { id: 'r1', description: 'Tablica modules zdefiniowana', ruleType: 'js_contains', target: 'modules' },
+          { id: 'r2', description: 'Pętla for obecna w kodzie', ruleType: 'js_contains', target: 'for' },
+          { id: 'r3', description: 'Wywołanie console.log wewnątrz skryptu', ruleType: 'js_contains', target: 'console.log' },
+        ],
+      },
+      independentTask: {
+        title: 'Filtrowanie duplikatów za pomocą includes()',
+        instructions: 'Napisz pętlę, która przepisuje elementy z tablicy [1, 2, 2, 3, 1] do nowej tablicy unique tylko wtedy, gdy !unique.includes(item).',
+        expectedOutcome: 'Zrozumienie algorytmicznego usuwania duplikatów.',
+        starterHint: 'Sprawdź warunek if (!unique.includes(num)) unique.push(num);',
+      },
+      quiz: [
+        {
+          id: 'q-js7-1',
+          question: 'Jaki indeks ma ostatni element tablicy posiadającej 10 elementów (array.length === 10)?',
+          options: [
+            '10',
+            '9 (ponieważ indeksowanie w JavaScript zawsze zaczyna się od 0)',
+            '11',
+            '-1',
+          ],
+          correctAnswer: 1,
+          explanation: 'Elementy tablicy 10-elementowej mają indeksy od 0 do 9. Odwołanie do array[10] zwróci undefined.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Nieskończona pętla while (Infinite Loop) zawieszająca kartę przeglądarki',
+          whyItHappens: 'Zapomnienie o zwiększaniu licznika (np. i++) wewnątrz pętli while (i < 10).',
+          howToFix: 'Zawsze upewnij się, że warunek pętli w końcu stanie się fałszywy, lub preferuj pętle for...of.',
+          badCode: 'let i = 0;\nwhile (i < 5) { console.log(i); } // Zawiesi przeglądarkę!',
+          goodCode: 'let i = 0;\nwhile (i < 5) { console.log(i); i++; }',
+        },
+      ],
+      practicalTask: {
+        title: 'Klasyczne zadanie rekrutacyjne FizzBuzz',
+        brief: 'Napisz pętlę od 1 do 15 wypisującą "Fizz" dla liczb podzielnych przez 3 (i % 3 === 0), "Buzz" dla podzielnych przez 5 oraz "FizzBuzz" dla podzielnych przez obie.',
+        steps: ['Stwórz pętlę for (let i = 1; i <= 15; i++)', 'Sprawdź najpierw podzielność przez 15, potem 3, potem 5'],
+        deliverable: 'Rozwiązanie najsłynniejszego zadania algorytmicznego dla Juniorów.',
+      },
+      completionCriteria: [
+        'Zrozumienie indeksowania tablic i pętli for / for...of',
+        'Poprawne rozwiązanie ćwiczenia z iteracją',
+        'Zaliczenie quizu min. 80%',
+      ],
+    },
+    {
+      id: 'js-8',
+      moduleId: 4,
+      moduleTitle: 'JavaScript — Logika i Interaktywność',
+      title: 'Funkcje od podstaw: deklaracja, parametry, return, Arrow Functions i Scope',
+      slug: 'funkcje-parametry-return-arrow-functions',
+      durationMinutes: 35,
+      xpReward: 70,
+      order: 4,
+      summary: 'Naucz się zamykać logikę w wielokrotnego użytku funkcje. Poznaj różnicę między console.log a instrukcją return, parametry domyślne, funkcje strzałkowe (=>) oraz zasięg zmiennych (Scope).',
+      objectives: [
+        'Deklarować funkcje przyjmujące parametry i zwracające wynik przez słowo kluczowe return',
+        'Przepisywać tradycyjne funkcje na zwięzłe funkcje strzałkowe (Arrow Functions)',
+        'Rozumieć różnicę między zasięgiem globalnym a lokalnym (Block & Function Scope)',
+      ],
+      prerequisites: ['Lekcja 3: Pętle i tablice'],
+      theoryMarkdown: `Funkcje to podstawowe cegiełki architektury aplikacji — pozwalają napisać logikę raz i wywoływać ją setki razy z różnymi danymi.
+
+**1. \`return\` vs \`console.log\` (Kluczowa różnica dla początkujących!):**
+- \`console.log()\` tylko wyświetla napis w konsoli deweloperskiej i zwraca \`undefined\`.
+- **\`return\`** przekazuje obliczoną wartość z powrotem do miejsca, w którym funkcja została wywołana, i **natychmiast kończy działanie funkcji**.
+
+**2. Trzy sposoby zapisu funkcji:**
+\`\`\`javascript
+// 1. Klasyczna deklaracja funkcji:
+function add(a, b = 0) {
+  return a + b;
+}
+
+// 2. Funkcja strzałkowa (Arrow Function — ES6):
+const multiply = (a, b) => {
+  return a * b;
+};
+
+// 3. Skrócona funkcja strzałkowa z niejawnym return (Implicit Return):
+const square = (n) => n * n;
+\`\`\`
+
+**3. Zasięg zmiennych (Scope):**
+Zmienna zadeklarowana wewnątrz funkcji lub bloku \`{ }\` za pomocą \`const\`/\`let\` jest **lokalna** — nie jest widoczna na zewnątrz tej funkcji.`,
+      codeExamples: [
+        {
+          title: 'Funkcja obliczająca cenę brutto z domyślną stawką VAT',
+          language: 'javascript',
+          code: `const calculateGrossPrice = (netPrice, taxRate = 0.23) => {
+  const gross = netPrice * (1 + taxRate);
+  return Number(gross.toFixed(2));
+};
+
+const laptopPrice = calculateGrossPrice(3000); // Użyje domyślnego 23% VAT -> 3690
+const bookPrice = calculateGrossPrice(100, 0.05); // Użyje 5% VAT -> 105
+console.log(laptopPrice, bookPrice);`,
+          explanation: 'Parametr domyślny taxRate = 0.23 zadziała automatycznie, jeśli przy wywołaniu nie podamy drugiego argumentu.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Nazwij funkcję czasownikiem', description: 'Np. calculateTotal, formatUserName, validateEmail.' },
+        { step: 2, title: 'Zdefiniuj parametry wejściowe w nawiasach ()', description: 'Możesz nadać im wartości domyślne.' },
+        { step: 3, title: 'Zwróć wynik instrukcją return', description: 'Przypisz wynik wywołania funkcji do nowej zmiennej.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-js-functions',
+        title: 'Napisz funkcję obliczającą pole prostokąta z instrukcją return',
+        instructions: 'Zdefiniuj funkcję (klasyczną lub strzałkową) o nazwie calculateArea, która przyjmuje parametry (width, height) i zwraca ich iloczyn za pomocą return. Następnie wywołaj ją w console.log(calculateArea(5, 4)).',
+        task: 'Stwórz funkcję calculateArea z instrukcją return i wywołaj ją w console.log.',
+        starterCode: {
+          html: '<h2>Funkcje i wartość zwracana (return)</h2>',
+          css: 'body { font-family: sans-serif; padding: 20px; }',
+          js: '// Napisz funkcję calculateArea poniżej:\n',
+        },
+        solutionCode: {
+          html: '<h2>Funkcje i wartość zwracana (return)</h2>',
+          css: 'body { font-family: sans-serif; padding: 20px; }',
+          js: 'function calculateArea(width, height) {\n  return width * height;\n}\nconsole.log(calculateArea(5, 4));',
+        },
+        hints: [
+          'Wpisz: function calculateArea(width, height) { return width * height; }',
+          'Wywołaj: console.log(calculateArea(5, 4));',
+        ],
+        rules: [
+          { id: 'r1', description: 'Funkcja calculateArea zdefiniowana', ruleType: 'js_contains', target: 'calculateArea' },
+          { id: 'r2', description: 'Słowo kluczowe return lub funkcja strzałkowa => obecne', ruleType: 'js_contains', target: 'calculateArea(' },
+          { id: 'r3', description: 'Wypisanie wyniku w console.log', ruleType: 'js_contains', target: 'console.log' },
+        ],
+      },
+      independentTask: {
+        title: 'Konwersja na jednoliniową funkcję strzałkową',
+        instructions: 'Przepisz funkcję calculateArea do postaci const calculateArea = (w, h) => w * h;',
+        expectedOutcome: 'Biegłość w zapisie Arrow Functions używanym w każdym komponencie React.',
+        starterHint: 'Gdy po strzałce => nie ma nawiasów klamrowych {}, wartość wyrażenia jest zwracana automatycznie.',
+      },
+      quiz: [
+        {
+          id: 'q-js8-1',
+          question: 'Co zwraca funkcja w JavaScript, jeśli nie umieścimy w niej słowa kluczowego return?',
+          options: [
+            'Zwraca liczbę 0',
+            'Zwraca wartość undefined',
+            'Zwraca pusty tekst ""',
+            'Powoduje błąd kompilacji',
+          ],
+          correctAnswer: 1,
+          explanation: 'Każda funkcja bez instrukcji return domyślnie zwraca wartość undefined.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Pisanie kodu pod instrukcją return w tym samym bloku (Unreachable Code)',
+          whyItHappens: 'Niezrozumienie, że return natychmiast przerywa wykonywanie funkcji.',
+          howToFix: 'Wszystkie operacje muszą znaleźć się przed instrukcją return.',
+          badCode: 'function test() {\n  return 10;\n  console.log("To nigdy się nie wykona!");\n}',
+          goodCode: 'function test() {\n  console.log("Obliczam...");\n  return 10;\n}',
+        },
+      ],
+      practicalTask: {
+        title: 'Walidator hasła jako czysta funkcja',
+        brief: 'Napisz funkcję isPasswordStrong(password), która zwraca true, jeśli password.length >= 8 oraz password.includes("!").',
+        steps: ['Przyjmij parametr password', 'Zwróć wynik operatora logicznego &&'],
+        deliverable: 'Funkcja pomocnicza gotowa do użycia w formularzu rejestracji.',
+      },
+      completionCriteria: [
+        'Rozróżnianie return od console.log',
+        'Opanowanie składni deklaracji funkcji i Arrow Functions',
+        'Zaliczenie quizu min. 80%',
+      ],
+    },
+    {
+      id: 'js-9',
+      moduleId: 4,
+      moduleTitle: 'JavaScript — Logika i Interaktywność',
+      title: 'Obiekty, destrukturyzacja, operator Spread (...) oraz LocalStorage',
+      slug: 'obiekty-destrukturyzacja-spread-localstorage',
+      durationMinutes: 40,
+      xpReward: 75,
+      order: 5,
+      summary: 'Poznaj struktury klucz-wartość (Objects), nowoczesną składnię destrukturyzacji i kopiowania obiektów operatorem ...spread oraz trwały zapis danych w przeglądarce za pomocą localStorage.',
+      objectives: [
+        'Tworzyć i modyfikować obiekty { key: value } oraz zagnieżdżone struktury danych',
+        'Wyciągać właściwości za pomocą destrukturyzacji const { name, role } = user;',
+        'Tworzyć niemutowalne kopie obiektów i tablic operatorem Spread (...) oraz zapisywać dane w localStorage',
+      ],
+      prerequisites: ['Lekcja 4: Funkcje od podstaw'],
+      theoryMarkdown: `W prawdziwych aplikacjach (i w React!) 99% danych z serwera przychodzi w postaci **obiektów** oraz **tablic obiektów**.
+
+**1. Destrukturyzacja obiektów (Object Destructuring):**
+Zamiast pisać w kółko \`user.name\`, \`user.email\`, \`user.role\`, rozpakowujemy właściwości w jednej linijce:
+\`\`\`javascript
+const user = { id: 1, name: 'Anna', role: 'Admin', xp: 1200 };
+const { name, role } = user;
+console.log(name, role); // 'Anna', 'Admin'
+\`\`\`
+
+**2. Operator Spread (\`...\`) — bezpieczne kopiowanie i aktualizacja:**
+Obiekty są typami referencyjnymi. Aby stworzyć zaktualizowaną kopię obiektu bez psucia oryginału (fundament stanu w React!):
+\`\`\`javascript
+const updatedUser = { ...user, xp: 1350 };
+\`\`\`
+
+**3. Pamięć podręczna \`localStorage\` i \`JSON\`:**
+\`localStorage\` pozwala trwale zapisać dane w przeglądarce użytkownika (nie znikają po odświeżeniu strony!):
+\`\`\`javascript
+// Zapis obiektu (zamiana na tekst JSON):
+localStorage.setItem('profile', JSON.stringify(updatedUser));
+
+// Odczyt (zamiana tekstu JSON z powrotem na obiekt JS):
+const saved = JSON.parse(localStorage.getItem('profile'));
+\`\`\``,
+      codeExamples: [
+        {
+          title: 'Zarządzanie ustawieniami użytkownika z destrukturyzacją i Spread',
+          language: 'javascript',
+          code: `const defaultSettings = {
+  theme: 'dark',
+  notifications: true,
+  dailyGoalMinutes: 30,
+};
+
+// Nadpisanie wybranej właściwości za pomocą operatora Spread (...):
+const userSettings = {
+  ...defaultSettings,
+  dailyGoalMinutes: 60,
+};
+
+const { theme, dailyGoalMinutes } = userSettings;
+console.log(\`Motyw: \${theme}, Cel dzienny: \${dailyGoalMinutes} min\`);`,
+          explanation: 'Operator ...defaultSettings kopiuje wszystkie dotychczasowe klucze, a kolejna linia nadpisuje dailyGoalMinutes.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Zdefiniuj obiekt w nawiasach klamrowych {}', description: 'Grupuj powiązane cechy jednego bytu (np. kursanta, produktu).' },
+        { step: 2, title: 'Rozpakuj potrzebne klucze destrukturyzacją', description: 'Użyj const { pole1, pole2 } = obiekt;.' },
+        { step: 3, title: 'Serializuj dane przez JSON.stringify przy zapisie', description: 'localStorage przechowuje wyłącznie wartości tekstowe (string).' },
+      ],
+      interactiveExercise: {
+        id: 'ex-js-objects',
+        title: 'Zbuduj obiekt kursanta i wyciągnij jego dane destrukturyzacją',
+        instructions: 'W pliku app.js utwórz obiekt const student = { name: "Kamil", level: 4 }; a następnie użyj destrukturyzacji lub odwołania student.name i wypisz dane w console.log().',
+        task: 'Zdefiniuj obiekt student z polami name i level oraz wypisz je w console.log.',
+        starterCode: {
+          html: '<h2>Obiekty i Destrukturyzacja ES6+</h2>',
+          css: 'body { font-family: sans-serif; padding: 20px; }',
+          js: '// Utwórz obiekt student poniżej:\n',
+        },
+        solutionCode: {
+          html: '<h2>Obiekty i Destrukturyzacja ES6+</h2>',
+          css: 'body { font-family: sans-serif; padding: 20px; }',
+          js: 'const student = { name: "Kamil", level: 4 };\nconst { name, level } = student;\nconsole.log(name, level);',
+        },
+        hints: [
+          'Zadeklaruj: const student = { name: "Kamil", level: 4 };',
+          'Rozpakuj: const { name, level } = student;',
+          'Wywołaj: console.log(name, level);',
+        ],
+        rules: [
+          { id: 'r1', description: 'Obiekt student zdefiniowany', ruleType: 'js_contains', target: 'student' },
+          { id: 'r2', description: 'Właściwość name obecna', ruleType: 'js_contains', target: 'name' },
+          { id: 'r3', description: 'Wypisanie wyniku w console.log', ruleType: 'js_contains', target: 'console.log' },
+        ],
+      },
+      independentTask: {
+        title: 'Zapis i odczyt tablicy zadań w localStorage',
+        instructions: 'Zapisz tablicę obiektów todos w localStorage pod kluczem "my_todos" z użyciem JSON.stringify(), a następnie odczytaj ją przez JSON.parse().',
+        expectedOutcome: 'Trwałość danych w aplikacji po zamknięciu i ponownym otwarciu karty przeglądarki.',
+        starterHint: 'localStorage.setItem("my_todos", JSON.stringify(todos))',
+      },
+      quiz: [
+        {
+          id: 'q-js9-1',
+          question: 'Dlaczego przed zapisaniem obiektu w localStorage musimy użyć funkcji JSON.stringify(obiekt)?',
+          options: [
+            'Ponieważ localStorage potrafi przechowywać wyłącznie ciągi znaków (string), a zapisanie surowego obiektu zamieniłoby go w bezużyteczny napis "[object Object]"',
+            'Aby zaszyfrować hasła przed hakerami',
+            'Ponieważ bez tego przeglądarka zablokuje plik CSS',
+            'Jest to wymóg bazy PostgreSQL',
+          ],
+          correctAnswer: 0,
+          explanation: 'Próba wywołania localStorage.setItem("user", { name: "Jan" }) zapisze string "[object Object]". Zawsze serializujemy obiekty przez JSON.stringify.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Kopiowanie obiektu przez zwykłe przypisanie const copy = original;',
+          whyItHappens: 'Brak świadomości, że obiekty przypisywane są przez referencję (wskaźnik do tego samego miejsca w pamięci RAM).',
+          howToFix: 'Użyj operatora Spread const copy = { ...original }; lub nowoczesnej funkcji structuredClone(original).',
+          badCode: 'const copy = user;\ncopy.name = "Zmiana"; // Zmodyfikuje również oryginalny obiekt user!',
+          goodCode: 'const copy = { ...user, name: "Zmiana" }; // Oryginał pozostaje nietknięty',
+        },
+      ],
+      practicalTask: {
+        title: 'Inspekcja LocalStorage w DevTools',
+        brief: 'Otwórz zakładkę Application -> Local Storage w narzędziach deweloperskich Chrome i sprawdź klucze zapisane przez naszą Akademię.',
+        steps: ['Naciśnij F12 -> Application', 'Rozwiń Local Storage po lewej stronie', 'Zobacz zapisany postęp JSON'],
+        deliverable: 'Praktyczne zrozumienie pamięci przeglądarkowej.',
+      },
+      completionCriteria: [
+        'Zrozumienie obiektów, destrukturyzacji i operatora Spread (...)',
+        'Opanowanie serializacji JSON i localStorage',
+        'Zaliczenie quizu min. 80%',
+      ],
+    },
+    {
       id: 'js-2',
       moduleId: 4,
       moduleTitle: 'JavaScript — Logika i Interaktywność',
@@ -149,7 +671,7 @@ console.log(greeting);`,
       slug: 'metody-tablic-map-filter-reduce',
       durationMinutes: 40,
       xpReward: 80,
-      order: 2,
+      order: 6,
       summary: 'Koniec z ręcznym pisaniem pętli for! Opanuj programowanie deklaratywne: transformację danych metodą map(), filtrowanie kolekcji metodą filter() oraz agregację z reduce().',
       objectives: [
         'Pisać zwięzłe funkcje strzałkowe (Arrow Functions) z niejawnym return',

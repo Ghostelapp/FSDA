@@ -14,6 +14,12 @@ import { DeploymentGuideView } from './components/DeploymentGuideView';
 import { TerminalSimulator } from './components/TerminalSimulator';
 import { SqlStudioView } from './components/SqlStudioView';
 import { MockInterviewView } from './components/MockInterviewView';
+import { ApiStudioView } from './components/ApiStudioView';
+import { EventLoopView } from './components/EventLoopView';
+import { LeaderboardChallengeView } from './components/LeaderboardChallengeView';
+import { FlashcardsCheatSheetView } from './components/FlashcardsCheatSheetView';
+import { CareerBackupView } from './components/CareerBackupView';
+import { CommandPaletteModal } from './components/CommandPaletteModal';
 import { AuthModal } from './components/AuthModal';
 import { LivesModal } from './components/LivesModal';
 import { SubscriptionModal } from './components/SubscriptionModal';
@@ -22,6 +28,18 @@ import { Sparkles, Trophy, X, Code2, AlertTriangle } from 'lucide-react';
 const MainContent: React.FC = () => {
   const { activeTab, selectedLessonId, allLessons, toast, dismissToast, setActiveTab } = useApp();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Retrieve current active lesson
   const currentLesson = allLessons.find((l) => l.id === selectedLessonId) || allLessons[1]; // defaults to HTML lesson 1
@@ -30,7 +48,10 @@ const MainContent: React.FC = () => {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
       
       {/* Top Navbar */}
-      <Navbar onOpenAuthModal={() => setIsAuthModalOpen(true)} />
+      <Navbar
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+      />
 
       {/* Toast Notification Banner */}
       {toast && (
@@ -76,6 +97,11 @@ const MainContent: React.FC = () => {
           {activeTab === 'terminal' && <TerminalSimulator />}
           {activeTab === 'sql_studio' && <SqlStudioView />}
           {activeTab === 'interview' && <MockInterviewView />}
+          {activeTab === 'api_studio' && <ApiStudioView />}
+          {activeTab === 'event_loop' && <EventLoopView />}
+          {activeTab === 'leaderboard' && <LeaderboardChallengeView />}
+          {activeTab === 'flashcards' && <FlashcardsCheatSheetView />}
+          {activeTab === 'career' && <CareerBackupView />}
           {activeTab === 'admin' && <AdminPanelView />}
           {activeTab === 'deployment' && <DeploymentGuideView />}
         </main>
@@ -122,6 +148,12 @@ const MainContent: React.FC = () => {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      {/* Global Command Palette (Ctrl+K) */}
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
       />
 
       {/* Gamification Lives & Energy Modal */}

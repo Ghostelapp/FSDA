@@ -1,6 +1,15 @@
 export type UserRole = 'student' | 'admin';
 export type UserStatus = 'active' | 'suspended' | 'pending_verification' | 'banned';
 
+export interface DailyReminderSettings {
+  enabled: boolean;
+  reminderTime: string; // "HH:MM" in 24h format, e.g., "18:00"
+  dailyGoalMinutes: number; // e.g., 30
+  daysOfWeek: number[]; // 0 (Sunday) to 6 (Saturday)
+  streakProtectionAlert: boolean;
+  lastNotifiedDate?: string; // "YYYY-MM-DD"
+}
+
 export interface User {
   id: string;
   name: string;
@@ -13,6 +22,10 @@ export interface User {
   lastActiveDate: string;
   weeklyGoalMinutes: number;
   weeklySpentMinutes: number;
+  dailyGoalMinutes?: number;
+  todaySpentMinutes?: number;
+  lastGoalDate?: string;
+  reminderSettings?: DailyReminderSettings;
   completedLessons: string[]; // lesson IDs
   completedProjects: string[]; // project IDs
   quizScores: Record<string, number>; // lessonId -> percentage score

@@ -7,14 +7,14 @@ export const MODULE_1: Module = {
   description: 'Poznaj architekturę sieci, model klient-serwer, system plików, terminal UNIX oraz profesjonalne techniki czytania błędów i debugowania.',
   badgeName: 'Pionier Terminala',
   badgeIcon: 'Terminal',
-  durationHours: 12,
-  totalXp: 350,
+  durationHours: 16,
+  totalXp: 480,
   prerequisites: ['Brak — kurs zaczynamy od zera'],
   topics: [
     'Jak działa internet: DNS, protokoły HTTP/HTTPS i pakiety TCP/IP',
-    'Podział ról: Frontend, Backend, Baza Danych i Serwer',
-    'Konfiguracja środowiska: VS Code, rozszerzenia, formatowanie Prettier',
-    'Terminal Bash/Zsh: nawigacja cd, ls, mkdir, rm, uprawnienia i zmienne środowiskowe',
+    'Jak komputer wykonuje kod: pamięć RAM, algorytmy, kompilacja vs interpretacja',
+    'Konfiguracja środowiska: VS Code, skróty klawiszowe, Prettier i ESLint',
+    'Terminal Bash/Zsh: nawigacja cd, ls, mkdir, rm, uprawnienia i zmienne środowiskowe .env',
     'Sztuka debugowania: jak czytać Stack Trace i zadawać pytania w dokumentacji',
   ],
   projectBrief: 'Konfiguracja bezpiecznego środowiska programistycznego i skrypt startowy w bash.',
@@ -136,18 +136,250 @@ Authorization: Bearer eyJhbGciOiJIUzI1...`,
       id: 'fund-2',
       moduleId: 1,
       moduleTitle: 'Fundamenty programowania',
+      title: 'Jak działa kod? Myślenie algorytmiczne, pamięć RAM i wykonanie programu',
+      slug: 'jak-dziala-kod-algorytmy-pamiec',
+      durationMinutes: 25,
+      xpReward: 60,
+      order: 2,
+      summary: 'Zanim napiszesz pierwszą aplikację, zrozum jak procesor i pamięć RAM przetwarzają instrukcje, czym jest algorytm oraz czym różni się język interpretowany (JS) od kompilowanego.',
+      objectives: [
+        'Rozkładać złożony problem na proste, jednoznaczne kroki (myślenie algorytmiczne)',
+        'Zrozumieć jak zmienne rezerwują miejsce w pamięci operacyjnej RAM',
+        'Rozróżniać kompilację (C++, Rust, TypeScript) od interpretacji JIT (JavaScript V8)',
+      ],
+      prerequisites: ['Lekcja 1: Architektura Internetu'],
+      theoryMarkdown: `Programowanie to sztuka tłumaczenia ludzkich celów na precyzyjną listę instrukcji, które potrafi wykonać procesor.
+
+**1. Czym jest algorytm?**
+Algorytm to skończony ciąg jasno zdefiniowanych kroków prowadzących do rozwiązania problemu (jak przepis kulinarny). Każdy algorytm składa się z 3 klocków:
+- **Sekwencji** (wykonaj krok A, potem krok B),
+- **Warunku (Selekcji)** (*jeśli* użytkownik podał poprawne hasło -> zaloguj, *w przeciwnym razie* -> pokaż błąd),
+- **Pętli (Iteracji)** (*powtarzaj* wysyłkę powiadomienia dla każdego kursanta z listy).
+
+**2. Pamięć RAM jako szafka z szufladkami:**
+Gdy w kodzie piszesz \`const wiek = 25;\`, komputer rezerwuje komórkę w szybkiej pamięci **RAM**, nadaje jej czytelną etykietę \`wiek\` i zapisuje w niej wartość binarną liczby \`25\`.
+
+**3. Kompilacja vs Interpretacja (JIT):**
+Procesor rozumie wyłącznie kod maszynowy (zera i jedynki). Silnik **V8** (w Chrome i Node.js) używa techniki **JIT (Just-In-Time Compilation)** — wczytuje Twój kod JavaScript i w locie kompiluje najczęściej używane fragmenty bezpośrednio do superszybkiego kodu maszynowego.`,
+      codeExamples: [
+        {
+          title: 'Od problemu w języku polskim do pierwszego algorytmu w JS',
+          language: 'javascript',
+          code: `// CEL: Sprawdź czy kursant otrzymuje certyfikat (wymagane >= 80% punktów)
+const punktyKursanta = 88;
+const progZaliczenia = 80;
+
+// Krok warunkowy (Selekcja):
+if (punktyKursanta >= progZaliczenia) {
+  console.log("Gratulacje! Certyfikat został wygenerowany.");
+} else {
+  console.log("Spróbuj ponownie — brakuje jeszcze kilku punktów.");
+}`,
+          explanation: 'Komputer wykonuje instrukcje od góry do dołu, sprawdzając warunek logiczny w nawiasie if (...).',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Zdefiniuj dane wejściowe (Input)', description: 'Zapisz wartości początkowe w zmiennych (np. cena produktu, kod rabatowy).' },
+        { step: 2, title: 'Zastosuj regułę przetwarzania', description: 'Przeprowadź obliczenie lub sprawdź warunek if/else.' },
+        { step: 3, title: 'Zwróć wynik (Output)', description: 'Wyświetl rezultat na ekranie lub w konsoli.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-fund-algo',
+        title: 'Twój pierwszy algorytm: weryfikacja wieku użytkownika',
+        instructions: 'W zakładce JS zadeklaruj stałą const age = 20; oraz wypisz w console.log("Dostęp przyznany") jeśli wiek jest większy lub równy 18.',
+        task: 'Zadeklaruj const age = 20 i wywołaj console.log("Dostęp przyznany").',
+        starterCode: {
+          html: '<h2>Symulator Algorytmu Decyzyjnego</h2>\n<p>Wynik działania programu zobaczysz w konsoli.</p>',
+          css: 'body { font-family: sans-serif; padding: 20px; }',
+          js: '// Napisz swój pierwszy algorytm poniżej:\n',
+        },
+        solutionCode: {
+          html: '<h2>Symulator Algorytmu Decyzyjnego</h2>\n<p>Wynik działania programu zobaczysz w konsoli.</p>',
+          css: 'body { font-family: sans-serif; padding: 20px; }',
+          js: 'const age = 20;\nif (age >= 18) {\n  console.log("Dostęp przyznany");\n}',
+        },
+        hints: [
+          'Zacznij od: const age = 20;',
+          'Dodaj warunek: if (age >= 18) { ... }',
+          'Wewnątrz klamry wpisz: console.log("Dostęp przyznany");',
+        ],
+        rules: [
+          { id: 'r1', description: 'Deklaracja zmiennej age', ruleType: 'js_contains', target: 'age' },
+          { id: 'r2', description: 'Wypisanie tekstu "Dostęp przyznany"', ruleType: 'js_contains', target: 'Dostęp przyznany' },
+          { id: 'r3', description: 'Użycie console.log', ruleType: 'js_contains', target: 'console.log' },
+        ],
+      },
+      independentTask: {
+        title: 'Algorytm obliczania rabatu koszyka',
+        instructions: 'Rozpisz w komentarzach 4 kroki algorytmu naliczającego 15% zniżki, gdy wartość koszyka przekracza 200 zł, a następnie zapisz go w kodzie JS.',
+        expectedOutcome: 'Umiejętność planowania logiki w pseudokodzie przed pisaniem właściwego kodu.',
+        starterHint: 'Najpierw oblicz kwotę po rabacie: cena * 0.85.',
+      },
+      quiz: [
+        {
+          id: 'q-f-algo-1',
+          question: 'Czym jest silnik V8 w przeglądarce Google Chrome oraz środowisku Node.js?',
+          options: [
+            'Klawiaturą mechaniczną dla programistów',
+            'Silnikiem wykonującym i kompilującym JIT kod JavaScript do instrukcji procesora',
+            'Arkusze stylów dla tabel HTML',
+            'Rodzajem kabla sieciowego',
+          ],
+          correctAnswer: 1,
+          explanation: 'Silnik V8 napisany w C++ odpowiada za parsowanie i błyskawiczne wykonywanie kodu JavaScript.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Zaczynanie pisania kodu bez zrozumienia problemu i rozpisania kroków',
+          whyItHappens: 'Chęć natychmiastowego zobaczenia efektu na ekranie.',
+          howToFix: 'Najpierw zapisz kroki po polsku w komentarzach (// Krok 1: ..., // Krok 2: ...), a dopiero potem zamień je na kod.',
+          badCode: '// Chaotyczne pisanie losowych warunków bez planu',
+          goodCode: '// 1. Pobierz kwotę\n// 2. Sprawdź czy > 100\n// 3. Odejmij rabat',
+        },
+      ],
+      practicalTask: {
+        title: 'Pseudokod procesu logowania',
+        brief: 'Napisz w notatniku 5 kroków algorytmu logowania użytkownika z obsługą błędnego hasła i blokadą po 3 nieudanych próbach.',
+        steps: ['Pobierz e-mail i hasło', 'Sprawdź czy użytkownik istnieje w bazie', 'Porównaj hash hasła', 'Zwróć token lub zwiększ licznik błędów'],
+        deliverable: 'Kompletny schemat logiczny procesu autoryzacji.',
+      },
+      completionCriteria: [
+        'Zrozumienie pojęcia algorytmu i pamięci RAM',
+        'Prawidłowe wykonanie ćwiczenia w JS',
+        'Wynik quizu min. 80%',
+      ],
+    },
+    {
+      id: 'fund-3',
+      moduleId: 1,
+      moduleTitle: 'Fundamenty programowania',
+      title: 'Warsztat Developera: VS Code, skróty klawiszowe, Prettier i ESLint',
+      slug: 'warsztat-vscode-prettier-eslint',
+      durationMinutes: 25,
+      xpReward: 50,
+      order: 3,
+      summary: 'Skonfiguruj profesjonalny edytor kodu Visual Studio Code. Poznaj skróty klawiszowe oszczędzające godziny pracy, automatyczne formatowanie Prettier oraz strażnika jakości ESLint.',
+      objectives: [
+        'Opanować najważniejsze skróty klawiszowe VS Code (Ctrl+P, Ctrl+Shift+P, Alt+Strzałki, Ctrl+D)',
+        'Skonfigurować automatyczne formatowanie kodu przy zapisie (Format On Save + Prettier)',
+        'Zrozumieć różnicę między formaterem wyglądu (Prettier) a analizatorem błędów logicznych (ESLint)',
+      ],
+      prerequisites: ['Lekcja 1 i 2'],
+      theoryMarkdown: `Dobry rzemieślnik dba o swoje narzędzia. **Visual Studio Code (VS Code)** to obecnie standard rynkowy używany przez ponad 75% programistów Full Stack.
+
+**1. Skróty klawiszowe, które musisz znać na pamięć:**
+- **\`Ctrl + P\` (Mac: \`Cmd + P\`):** Błyskawiczne otwieranie dowolnego pliku po nazwie (bez szukania myszką w drzewie folderów!).
+- **\`Ctrl + Shift + P\` (Mac: \`Cmd + Shift + P\`):** Paleta poleceń (Command Palette) — dostęp do wszystkich funkcji edytora.
+- **\`Ctrl + D\`:** Zaznacza kolejne wystąpienie tego samego słowa (edycja wielokursorowa!).
+- **\`Alt + Strzałka Góra/Dół\`:** Przenosi całą bieżącą linijkę kodu w górę lub w dół.
+- **\`Ctrl + /\`:** Komentuje lub odkomentowuje zaznaczone linie kodu.
+
+**2. Duet doskonały: Prettier + ESLint**
+- **Prettier (Formater):** Dba wyłącznie o wygląd kodu (wcięcia, średniki, cudzysłowy, łamanie długich linii). Włącz opcję **Format On Save**, a po każdym \`Ctrl + S\` Twój kod sam ułoży się idealnie!
+- **ESLint (Linter):** Analizuje kod pod kątem błędów i złych praktyk (np. nieużywane zmienne, brakujące zależności w React, przypisanie w warunku \`if\`).`,
+      codeExamples: [
+        {
+          title: 'Przykładowy plik konfiguracyjny .prettierrc w projekcie',
+          language: 'json',
+          code: `{
+  "semi": true,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "es5",
+  "printWidth": 100
+}`,
+          explanation: 'Plik .prettierrc w głównym katalogu gwarantuje, że każdy programista w zespole formatuje kod identycznie.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Zainstaluj rozszerzenia ESLint i Prettier', description: 'Otwórz zakładkę Extensions (Ctrl+Shift+X) w VS Code.' },
+        { step: 2, title: 'Włącz Format On Save', description: 'W ustawieniach VS Code zaznacz Editor: Format On Save.' },
+        { step: 3, title: 'Przetestuj wielokursor (Ctrl+D)', description: 'Zaznacz nazwę zmiennej i naciśnij Ctrl+D trzykrotnie, aby zmienić ją w 3 miejscach naraz.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-fund-vscode',
+        title: 'Karta skrótów klawiszowych IDE',
+        instructions: 'Zbuduj w HTML ściągawkę skrótów klawiszowych: użyj znacznika <kbd> dla skrótu "Ctrl + P" oraz drugiego znacznika <kbd> dla "Ctrl + Shift + P" wewnątrz kontenera z klasą shortcuts.',
+        task: 'Utwórz kontener .shortcuts ze znacznikami <kbd>Ctrl + P</kbd> oraz <kbd>Ctrl + Shift + P</kbd>.',
+        starterCode: {
+          html: '<!-- Zbuduj ściągawkę ze znacznikami <kbd> -->\n',
+          css: '.shortcuts { background: #1e293b; color: #f8fafc; padding: 16px; border-radius: 10px; font-family: sans-serif; }\nkbd { background: #334155; border: 1px solid #475569; border-radius: 4px; padding: 2px 6px; font-family: monospace; color: #38bdf8; }',
+          js: 'console.log("Ściągawka VS Code gotowa!");',
+        },
+        solutionCode: {
+          html: '<div class="shortcuts">\n  <p><kbd>Ctrl + P</kbd> — Szybkie szukanie pliku</p>\n  <p><kbd>Ctrl + Shift + P</kbd> — Paleta poleceń</p>\n</div>',
+          css: '.shortcuts { background: #1e293b; color: #f8fafc; padding: 16px; border-radius: 10px; font-family: sans-serif; }\nkbd { background: #334155; border: 1px solid #475569; border-radius: 4px; padding: 2px 6px; font-family: monospace; color: #38bdf8; }',
+          js: 'console.log("Ściągawka VS Code gotowa!");',
+        },
+        hints: [
+          'Użyj <div class="shortcuts"> jako kontenera.',
+          'Semantyczny tag HTML dla klawiszy klawiatury to <kbd>.',
+          'Wpisz <kbd>Ctrl + P</kbd> oraz <kbd>Ctrl + Shift + P</kbd>.',
+        ],
+        rules: [
+          { id: 'r1', description: 'Znacznik semantyczny <kbd> użyty w kodzie', ruleType: 'html_tag_exists', target: 'kbd' },
+          { id: 'r2', description: 'Skrót Ctrl + P obecny', ruleType: 'html_contains', target: 'Ctrl + P' },
+          { id: 'r3', description: 'Klasa shortcuts obecna', ruleType: 'html_contains', target: 'shortcuts' },
+        ],
+      },
+      independentTask: {
+        title: 'Paleta poleceń w naszej Akademii',
+        instructions: 'Naciśnij teraz na klawiaturze Ctrl + K (lub Cmd + K), aby otworzyć wbudowaną w naszą Akademię Paletę Poleceń wzorowaną na VS Code!',
+        expectedOutcome: 'Natychmiastowe wyszukiwanie dowolnej lekcji i symulatora bez użycia myszy.',
+        starterHint: 'Skrót Ctrl+K działa z każdego miejsca w aplikacji.',
+      },
+      quiz: [
+        {
+          id: 'q-f-vsc-1',
+          question: 'Czym różni się zadanie narzędzia Prettier od narzędzia ESLint?',
+          options: [
+            'Prettier formatuje styl i wcięcia kodu, a ESLint wykrywa błędy składniowe i potencjalne usterki logiczne',
+            'Prettier służy do baz danych, a ESLint do grafiki 3D',
+            'Nie ma żadnej różnicy',
+            'ESLint działa tylko na systemie macOS',
+          ],
+          correctAnswer: 0,
+          explanation: 'Prettier dba o estetykę i spójne formatowanie, natomiast ESLint chroni przed błędami w kodzie.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Ręczne wyrównywanie wcięć spacjami w każdym pliku',
+          whyItHappens: 'Brak skonfigurowanego formatera Prettier z opcją Format On Save.',
+          howToFix: 'Pozwól automatowi formatować kod przy każdym zapisie pliku (Ctrl+S). Oszczędzisz dziesiątki godzin.',
+          badCode: 'function test(){const a=1;return a;} // Nieczytelny, zbity kod',
+          goodCode: 'function test() {\n  const a = 1;\n  return a;\n}',
+        },
+      ],
+      practicalTask: {
+        title: 'Konfiguracja własnego pliku .prettierrc',
+        brief: 'Stwórz w głównym katalogu projektu plik .prettierrc i przetestuj automatyczne formatowanie przy zapisie.',
+        steps: ['Utwórz plik .prettierrc', 'Wklej konfigurację JSON', 'Zapisz plik skrótem Ctrl+S'],
+        deliverable: 'Automatycznie sformatowany kod zgodny ze standardem zespołowym.',
+      },
+      completionCriteria: [
+        'Poznanie skrótów VS Code i znacznika <kbd>',
+        'Zrozumienie roli Prettier i ESLint',
+        'Zaliczenie quizu min. 80%',
+      ],
+    },
+    {
+      id: 'fund-4',
+      moduleId: 1,
+      moduleTitle: 'Fundamenty programowania',
       title: 'Terminal, wiersz poleceń i zarządzanie systemem plików',
       slug: 'terminal-bash-system-plikow',
       durationMinutes: 30,
       xpReward: 60,
-      order: 2,
+      order: 4,
       summary: 'Opanuj terminal — podstawowe narzędzie każdego profesjonalnego developera. Naucz się poruszać po katalogach, tworzyć i edytować pliki oraz instalować pakiety.',
       objectives: [
         'Zrozumieć strukturę drzewa katalogów w systemach Linux i macOS',
         'Opanować kluczowe polecenia: pwd, ls, cd, mkdir, touch, rm, cat',
-        'Poznać zmienne środowiskowe (PATH, NODE_ENV) i uprawnienia chmod',
+        'Poznać potoki, łączenie komend operatorem && i strukturę katalogów projektu',
       ],
-      prerequisites: ['Lekcja 1: Architektura Internetu'],
+      prerequisites: ['Lekcja 1-3 z modułu Fundamenty'],
       theoryMarkdown: `Terminal to tekstowy interfejs do komunikacji z jądrem systemu operacyjnego (shell). 
 
 Jako Full Stack Developer będziesz używać terminala codziennie: do uruchamiania serwerów, kompilacji kodu, pracy z Git, budowania kontenerów Docker i zarządzania serwerami VPS.
@@ -253,21 +485,143 @@ ls -la`,
       ],
     },
     {
-      id: 'fund-3',
+      id: 'fund-5',
+      moduleId: 1,
+      moduleTitle: 'Fundamenty programowania',
+      title: 'Zmienne środowiskowe (.env), bezpieczeństwo sekretów i plik .gitignore',
+      slug: 'terminal-unix-system-plikow-env',
+      durationMinutes: 30,
+      xpReward: 60,
+      order: 5,
+      summary: 'Dowiedz się, jak profesjonalnie przechowywać hasła do baz danych, klucze API i konfigurację serwerową w plikach .env oraz chronić je przed przypadkowym wysłaniem na GitHub.',
+      objectives: [
+        'Zrozumieć rolę zmiennych środowiskowych w oddzieleniu konfiguracji od kodu',
+        'Zabezpieczać klucze API przed wyciekiem na GitHub za pomocą pliku .gitignore',
+        'Stosować pliki .env.example jako wzorzec konfiguracyjny dla zespołu',
+      ],
+      prerequisites: ['Lekcja 4: Terminal i system plików'],
+      theoryMarkdown: `Sekrety aplikacji (hasła do baz danych PostgreSQL, klucze Stripe, tajne klucze JWT) **nigdy nie mogą znaleźć się bezpośrednio w kodzie źródłowym**.
+
+**1. Plik \`.env\`:**
+Przechowujemy w nim pary \`KLUCZ=WARTOŚĆ\` czytane przez serwer podczas startu:
+\`\`\`bash
+# .env (NIGDY nie commituj tego pliku do repozytorium!)
+PORT=3000
+DATABASE_URL=postgresql://user:tajne_haslo@localhost:5432/db
+JWT_SECRET=super_tajny_klucz_kryptograficzny
+\`\`\`
+
+**2. Strażnik \`.gitignore\`:**
+W pliku \`.gitignore\` wpisujemy listę plików i katalogów, które Git ma całkowicie ignorować (np. \`node_modules/\`, \`.env\`, \`dist/\`).
+
+**3. Wzorzec \`.env.example\`:**
+Do repozytorium GitHub wrzucamy wyłącznie bezpieczny szablon **\`.env.example\`** z pustymi lub przykładowymi wartościami, aby inni programiści w zespole wiedzieli, jakie zmienne muszą utworzyć na swoim komputerze.`,
+      codeExamples: [
+        {
+          title: 'Odczyt zmiennych środowiskowych w Node.js',
+          language: 'typescript',
+          code: `import 'dotenv/config';
+
+const port = process.env.PORT || 3000;
+const dbUrl = process.env.DATABASE_URL;
+
+if (!dbUrl) {
+  throw new Error('KRYTYCZNY BŁĄD: Zmienna DATABASE_URL nie została zdefiniowana w pliku .env!');
+}
+
+console.log(\`Serwer uruchomiony na porcie \${port}\`);`,
+          explanation: 'Pakiet dotenv wczytuje zawartość pliku .env do globalnego obiektu process.env w Node.js.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Dodaj .env do .gitignore', description: 'Upewnij się, że Git nie wyśle sekretów do sieci.' },
+        { step: 2, title: 'Stwórz plik .env.example', description: 'Wypisz nazwy wymaganych zmiennych bez ich sekretnych wartości.' },
+        { step: 3, title: 'Wczytaj przez process.env', description: 'Odwołuj się do zmiennych przez process.env.NAZWA_ZMIENNEJ.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-fund-5',
+        title: 'Komponent wizualizacji statusu zmiennych środowiskowych',
+        instructions: 'Zaprojektuj wizualny widżet statusu konfiguracji serwera: stwórz kontener z klasą env-checker, informację o aktywnym środowisku "NODE_ENV: production", oraz wskaźnik "DATABASE_URL: Configured".',
+        task: 'Utwórz element env-checker z tekstami NODE_ENV: production oraz DATABASE_URL: Configured.',
+        starterCode: {
+          html: '<!-- Zbuduj widok wskaźnika zmiennych środowiskowych poniżej -->\n',
+          css: '.env-checker { background: #0b132b; border: 1px solid #1c2541; padding: 14px 18px; border-radius: 10px; font-family: monospace; color: #5bc0be; font-size: 0.85rem; display: flex; flex-direction: column; gap: 6px; }\n.env-key { color: #6fffe9; font-weight: bold; }',
+          js: 'console.log("Env Inspector aktywny.");',
+        },
+        solutionCode: {
+          html: '<div class="env-checker">\n  <div>NODE_ENV: production</div>\n  <div>DATABASE_URL: Configured</div>\n</div>',
+          css: '.env-checker { background: #0b132b; border: 1px solid #1c2541; padding: 14px 18px; border-radius: 10px; font-family: monospace; color: #5bc0be; font-size: 0.85rem; display: flex; flex-direction: column; gap: 6px; }\n.env-key { color: #6fffe9; font-weight: bold; }',
+          js: 'console.log("Env Inspector aktywny.");',
+        },
+        hints: [
+          'Użyj kontenera <div class="env-checker">.',
+          'Wstaw <div>NODE_ENV: production</div>.',
+          'Wstaw <div>DATABASE_URL: Configured</div>.',
+        ],
+        rules: [
+          { id: 'r1', description: 'Klasa env-checker obecna', ruleType: 'html_contains', target: 'env-checker' },
+          { id: 'r2', description: 'NODE_ENV: production obecne', ruleType: 'html_contains', target: 'NODE_ENV: production' },
+          { id: 'r3', description: 'DATABASE_URL: Configured obecne', ruleType: 'html_contains', target: 'DATABASE_URL: Configured' },
+        ],
+      },
+      independentTask: {
+        title: 'Konfiguracja pliku .env.example',
+        instructions: 'Napisz plik .env.example definiujący klucze PORT, API_KEY, DATABASE_URL i REDIS_HOST bez ujawniania haseł.',
+        expectedOutcome: 'Bezpieczny wzorzec konfiguracyjny gotowy do przekazania zespołowi.',
+        starterHint: 'Zdefiniuj klucze z wartościami przykładowymi, np. DATABASE_URL=postgresql://user:pass@localhost:5432/db',
+      },
+      quiz: [
+        {
+          id: 'q-fund5-1',
+          question: 'Dlaczego plik .env zawierający klucze API i hasła do bazy bezwzględnie musi znaleźć się w pliku .gitignore?',
+          options: [
+            'Ponieważ w przeciwnym razie boty internetowe w ciągu kilku sekund przeskanują publiczne repozytorium GitHub i ukradną Twoje klucze, co może narazić firmę na gigantyczne straty finansowe',
+            'Ponieważ plik .env uniemożliwia kompilację kodu JavaScript',
+            'Plik .env waży zbyt wiele megabajtów dla serwerów Gita',
+            'Git nie obsługuje plików zaczynających się od kropki',
+          ],
+          correctAnswer: 0,
+          explanation: 'Zautomatyzowane roboty skanują GitHub 24/7 w poszukiwaniu wycieków kluczy AWS, Stripe i haseł bazodanowych. Zawsze izoluj sekrety w .env.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Wpisywanie klucza API bezpośrednio w kodzie komponentu React',
+          whyItHappens: 'Pośpiech i chęć szybkiego przetestowania zapytania.',
+          howToFix: 'Wszystkie zmienne we frontendzie React/Vite muszą mieć przedrostek VITE_ i trafiać do pliku .env, a wrażliwe klucze powinny być ukryte za backendem (API Proxy).',
+          badCode: 'const apiKey = "sk_live_9482018491028491"; // Poważny wyciek!',
+          goodCode: 'const apiKey = import.meta.env.VITE_PUBLIC_API_KEY;',
+        },
+      ],
+      practicalTask: {
+        title: 'Przetestowanie komend w Terminalu Akademii',
+        instructions: 'Otwórz zakładkę "Terminal Bash / Git" w lewym menu aplikacji i wykonaj komendy ls -la oraz cat package.json.',
+        brief: 'Przetestuj interaktywny terminal wbudowany w aplikację.',
+        steps: ['Przejdź do zakładki Terminal', 'Wpisz ls -la', 'Wyświetl plik cat package.json'],
+        deliverable: 'Praktyczne oswojenie się z wierszem poleceń.',
+      },
+      completionCriteria: [
+        'Zrozumienie roli plików .env i .gitignore',
+        'Prawidłowe rozwiązanie ćwiczenia interaktywnego',
+        'Zaliczenie quizu z wynikiem minimum 80%',
+      ],
+    },
+    {
+      id: 'fund-6',
       moduleId: 1,
       moduleTitle: 'Fundamenty programowania',
       title: 'Sztuka debugowania: jak czytać Stack Trace, błędy i logi',
       slug: 'debugowanie-stack-trace-bledy',
       durationMinutes: 30,
       xpReward: 60,
-      order: 3,
+      order: 6,
       summary: 'Ponad 50% czasu pracy developera to znajdowanie i naprawianie usterek. Naucz się czytać komunikaty błędów, Stack Trace oraz korzystać z debuggera i konsoli.',
       objectives: [
         'Rozróżniać typy błędów: SyntaxError, ReferenceError, TypeError, Logic Errors',
         'Czytać ślad stosu wywołań (Stack Trace) od góry do dołu, lokalizując numer pliku i linii',
         'Stosować profesjonalne techniki logowania: console.log, console.error, console.table, breakpointy',
       ],
-      prerequisites: ['Lekcja 1 i 2 z modułu Fundamenty'],
+      prerequisites: ['Lekcje 1-5 z modułu Fundamenty'],
       theoryMarkdown: `Błąd w kodzie nie jest porażką — to precyzyjna wskazówka przekazywana przez interpreter, gdzie i dlaczego wykonanie programu zostało przerwane.
 
 **Główne kategorie błędów:**
@@ -376,132 +730,6 @@ function printUserNameSafe(user) {
       completionCriteria: [
         'Zrozumienie typów błędów w JS',
         'Prawidłowe rozwiązanie ćwiczenia z role="alert"',
-        'Zaliczenie quizu z wynikiem minimum 80%',
-      ],
-    },
-    {
-      id: 'fund-3',
-      moduleId: 1,
-      moduleTitle: 'Fundamenty programowania',
-      title: 'Terminal UNIX, system plików i zmienne środowiskowe .env',
-      slug: 'terminal-unix-system-plikow-env',
-      durationMinutes: 30,
-      xpReward: 60,
-      order: 3,
-      summary: 'Kluczowe narzędzie inżyniera: terminal bash/zsh, nawigacja po drzewie katalogów (pwd, cd, ls), zarządzanie plikami oraz bezpieczna konfiguracja zmiennych środowiskowych w pliku .env.',
-      objectives: [
-        'Sprawnie nawigować po systemie plików i operować na plikach z poziomu konsoli',
-        'Zrozumieć rolę zmiennych środowiskowych i zabezpieczać klucze API przed wyciekiem na GitHub',
-        'Stosować pliki .env.example jako wzorzec konfiguracyjny projektu',
-      ],
-      prerequisites: ['Lekcja 1: Architektura Internetu'],
-      theoryMarkdown: `Graficzny interfejs (GUI) jest wygodny, ale to **wiersz poleceń (CLI)** daje programiście pełną kontrolę nad serwerami, kontenerami i automatyzacją.
-
-**1. Podstawowe komendy UNIX:**
-- \`pwd\` (Print Working Directory): Wyświetla pełną ścieżkę bieżącego katalogu.
-- \`ls -la\`: Wypisuje wszystkie pliki (również ukryte kropką, np. \`.gitignore\`) wraz z uprawnieniami.
-- \`cd <ścieżka>\`: Przechodzi do katalogu (\`cd ..\` cofa o jeden poziom).
-- \`mkdir <nazwa>\`: Tworzy nowy katalog.
-- \`cat <plik>\`: Wypisuje zawartość pliku w oknie konsoli.
-
-**2. Zmienne środowiskowe (.env):**
-Sekrety (hasła do baz danych, klucze API, tokeny płatności) **nigdy nie mogą znaleźć się w kodzie źródłowym**.
-Przechowujemy je w pliku \`.env\`, który jest dodany do \`.gitignore\`:
-\`\`\`bash
-# .env (NIGDY nie commituj do repozytorium!)
-PORT=3000
-DATABASE_URL=postgresql://user:tajne_haslo@localhost:5432/db
-JWT_SECRET=super_tajny_klucz_kryptograficzny
-\`\`\`
-
-Do repozytorium wrzucamy wyłącznie szablon **\`.env.example\`** z pustymi lub przykładowymi wartościami, aby inni programiści wiedzieli, jak skonfigurować projekt.`,
-      codeExamples: [
-        {
-          title: 'Odczyt zmiennych środowiskowych w Node.js',
-          language: 'typescript',
-          code: `import 'dotenv/config';
-
-const port = process.env.PORT || 3000;
-const dbUrl = process.env.DATABASE_URL;
-
-if (!dbUrl) {
-  throw new Error('KRYTYCZNY BŁĄD: Zmienna DATABASE_URL nie została zdefiniowana w pliku .env!');
-}
-
-console.log(\`Serwer uruchomiony na porcie \${port}\`);`,
-          explanation: 'Pakiet dotenv wczytuje zawartość pliku .env do globalnego obiektu process.env w Node.js.',
-        },
-      ],
-      stepByStepGuide: [
-        { step: 1, title: 'Dodaj .env do .gitignore', description: 'Upewnij się, że Git nie wyśle sekretów do sieci.' },
-        { step: 2, title: 'Stwórz plik .env.example', description: 'Wypisz nazwy wymaganych zmiennych bez ich sekretnych wartości.' },
-        { step: 3, title: 'Wczytaj przez process.env', description: 'Odwołuj się do zmiennych przez process.env.NAZWA_ZMIENNEJ.' },
-      ],
-      interactiveExercise: {
-        id: 'ex-fund-3',
-        title: 'Komponent wizualizacji statusu zmiennych środowiskowych',
-        instructions: 'Zaprojektuj wizualny widżet statusu konfiguracji serwera: stwórz kontener z klasą env-checker, informację o aktywnym środowisku "NODE_ENV: production", oraz wskaźnik "DATABASE_URL: Configured".',
-        task: 'Utwórz element env-checker z tekstami NODE_ENV: production oraz DATABASE_URL: Configured.',
-        starterCode: {
-          html: '<!-- Zbuduj widok wskaźnika zmiennych środowiskowych poniżej -->\n',
-          css: '.env-checker { background: #0b132b; border: 1px solid #1c2541; padding: 14px 18px; border-radius: 10px; font-family: monospace; color: #5bc0be; font-size: 0.85rem; display: flex; flex-direction: column; gap: 6px; }\n.env-key { color: #6fffe9; font-weight: bold; }',
-          js: 'console.log("Env Inspector aktywny.");',
-        },
-        solutionCode: {
-          html: '<div class="env-checker">\n  <div>NODE_ENV: production</div>\n  <div>DATABASE_URL: Configured</div>\n</div>',
-          css: '.env-checker { background: #0b132b; border: 1px solid #1c2541; padding: 14px 18px; border-radius: 10px; font-family: monospace; color: #5bc0be; font-size: 0.85rem; display: flex; flex-direction: column; gap: 6px; }\n.env-key { color: #6fffe9; font-weight: bold; }',
-          js: 'console.log("Env Inspector aktywny.");',
-        },
-        hints: [
-          'Użyj kontenera <div class="env-checker">.',
-          'Wstaw <div>NODE_ENV: production</div>.',
-          'Wstaw <div>DATABASE_URL: Configured</div>.',
-        ],
-        rules: [
-          { id: 'r1', description: 'Klasa env-checker obecna', ruleType: 'html_contains', target: 'env-checker' },
-          { id: 'r2', description: 'NODE_ENV: production obecne', ruleType: 'html_contains', target: 'NODE_ENV: production' },
-          { id: 'r3', description: 'DATABASE_URL: Configured obecne', ruleType: 'html_contains', target: 'DATABASE_URL: Configured' },
-        ],
-      },
-      independentTask: {
-        title: 'Konfiguracja pliku .env.example',
-        instructions: 'Napisz plik .env.example definiujący klucze PORT, API_KEY, DATABASE_URL i REDIS_HOST bez ujawniania haseł.',
-        expectedOutcome: 'Bezpieczny wzorzec konfiguracyjny gotowy do przekazania zespołowi.',
-        starterHint: 'Zdefiniuj klucze z wartościami przykładowymi, np. DATABASE_URL=postgresql://user:pass@localhost:5432/db',
-      },
-      quiz: [
-        {
-          id: 'q-fund3-1',
-          question: 'Dlaczego plik .env zawierający klucze API i hasła do bazy bezwzględnie musi znaleźć się w pliku .gitignore?',
-          options: [
-            'Ponieważ w przeciwnym razie boty internetowe w ciągu kilku sekund przeskanują publiczne repozytorium GitHub i ukradną Twoje klucze, co może narazić firmę na gigantyczne straty finansowe',
-            'Ponieważ plik .env uniemożliwia kompilację kodu JavaScript',
-            'Plik .env waży zbyt wiele megabajtów dla serwerów Gita',
-            'Git nie obsługuje plików zaczynających się od kropki',
-          ],
-          correctAnswer: 0,
-          explanation: 'Zautomatyzowane roboty skanują GitHub 24/7 w poszukiwaniu wycieków kluczy AWS, Stripe i haseł bazodanowych. Zawsze izoluj sekrety w .env.',
-        },
-      ],
-      commonMistakes: [
-        {
-          mistake: 'Wpisywanie klucza API bezpośrednio w kodzie komponentu React',
-          whyItHappens: 'Pośpiech i chęć szybkiego przetestowania zapytania.',
-          howToFix: 'Wszystkie zmienne we frontendzie React/Vite muszą mieć przedrostek VITE_ i trafiać do pliku .env, a wrażliwe klucze powinny być ukryte za backendem (API Proxy).',
-          badCode: 'const apiKey = "sk_live_9482018491028491"; // Poważny wyciek!',
-          goodCode: 'const apiKey = import.meta.env.VITE_PUBLIC_API_KEY;',
-        },
-      ],
-      practicalTask: {
-        title: 'Przetestowanie komend w Terminalu Akademii',
-        instructions: 'Otwórz zakładkę "Terminal Bash / Git" w lewym menu aplikacji i wykonaj komendy ls -la oraz cat package.json.',
-        brief: 'Przetestuj interaktywny terminal wbudowany w aplikację.',
-        steps: ['Przejdź do zakładki Terminal', 'Wpisz ls -la', 'Wyświetl plik cat package.json'],
-        deliverable: 'Praktyczne oswojenie się z wierszem poleceń.',
-      },
-      completionCriteria: [
-        'Zrozumienie podstawowych komend powłoki UNIX',
-        'Prawidłowe rozwiązanie ćwiczenia interaktywnego',
         'Zaliczenie quizu z wynikiem minimum 80%',
       ],
     },

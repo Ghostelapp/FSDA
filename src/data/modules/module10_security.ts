@@ -302,5 +302,272 @@ app.post('/api/auth/login', loginLimiter, authController.login);`,
         'Zaliczenie quizu z wynikiem minimum 80%',
       ],
     },
+    {
+      id: 'sec-3',
+      moduleId: 10,
+      moduleTitle: 'Bezpieczeństwo i Uwierzytelnianie Aplikacji',
+      title: 'Autoryzacja oparta na rolach (RBAC), Access vs Refresh Token oraz OAuth 2.0',
+      slug: 'bezpieczenstwo-rbac-refresh-token-oauth2',
+      durationMinutes: 45,
+      xpReward: 90,
+      order: 3,
+      summary: 'Czym różni się Uwierzytelnianie (Authentication — kim jesteś?) od Autoryzacji (Authorization — co wolno Ci zrobić?)? Poznaj architekturę krótkotrwałych Access Tokenów z rotacją Refresh Tokenów, kontrolę dostępu RBAC oraz przepływ OAuth 2.0 ("Zaloguj przez Google/GitHub").',
+      objectives: [
+        'Projektować middleware autoryzacji Role-Based Access Control (RBAC) chroniący zasoby administracyjne',
+        'Rozumieć architekturę podwójnych tokenów: krótkotrwały Access Token (15 min) + odnawialny Refresh Token (7 dni)',
+        'Unikać podatności BOLA / IDOR (Broken Object Level Authorization) poprzez weryfikację właściciela zasobu',
+      ],
+      prerequisites: ['Haszowanie haseł i JWT'],
+      theoryMarkdown: `**1. Authentication (401) vs Authorization (403):**
+- **Authentication (Uwierzytelnianie — kod \`401 Unauthorized\`):** Weryfikacja tożsamości użytkownika (np. sprawdzenie loginu i hasła lub podpisu tokena JWT).
+- **Authorization (Autoryzacja — kod \`403 Forbidden\`):** Sprawdzenie, czy zalogowany już użytkownik ma uprawnienia do wykonania danej akcji (np. kursant próbuje usunąć kurs należący do administratora).
+
+**2. Role-Based Access Control (RBAC) oraz ochrona przed IDOR (BOLA):**
+Sam fakt, że użytkownik ma rolę \`USER\`, nie oznacza, że może edytować profil innego użytkownika, zmieniając ID w adresie \`PATCH /api/users/999\`! To najgroźniejsza luka z listy OWASP API Security (**Broken Object Level Authorization / IDOR**):
+\`\`\`typescript
+// Middleware wymagający określonej roli:
+export function requireRole(...allowedRoles: string[]) {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Brak uprawnień (403 Forbidden)' });
+    }
+    next();
+  };
+}
+
+// Weryfikacja właściciela zasobu (Ochrona przed IDOR):
+if (post.authorId !== req.user.id && req.user.role !== 'ADMIN') {
+  return res.status(403).json({ error: 'Nie jesteś autorem tego wpisu!' });
+}
+\`\`\`
+
+**3. Dlaczego stosujemy parę Access Token + Refresh Token?**
+Gdyby pojedynczy token JWT był ważny przez 30 dni, po zablokowaniu zhakowanego konta token nadal działałby przez miesiąc (bo JWT jest bezstanowy!).
+Dlatego w systemach produkcyjnych:
+- **Access Token** żyje krótko (np. **15 minut**).
+- **Refresh Token** żyje długo (np. **7–30 dni**), jest zapisany w bazie danych i w ciasteczku \`HttpOnly\`. Gdy konto zostaje zablokowane, usuwamy Refresh Token z bazy i po max 15 minutach sesja wygasa.`,
+      codeExamples: [
+        {
+          title: 'Zabezpieczenie trasy Express za pomocą łańcucha authenticate + requireRole',
+          language: 'typescript',
+          code: `app.delete(
+  '/api/courses/:id',
+  authenticateToken,          // 1. Sprawdza kim jesteś (401)
+  requireRole('ADMIN', 'MENTOR'), // 2. Sprawdza czy masz rolę (403)
+  async (req, res) => {
+    await courseService.deleteCourse(req.params.id);
+    res.status(204).send();
+  }
+);`,
+          explanation: 'Kaskadowe łączenie middleware pozwala deklaratywnie zabezpieczyć dowolny endpoint jedną linijką kodu.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Rozdziel statusy 401 i 403', description: 'Zwracaj 401 gdy brakuje ważnego tokena, a 403 gdy rola użytkownika jest niewystarczająca.' },
+        { step: 2, title: 'Zawsze weryfikuj userId zasobu', description: 'W zapytaniach SQL/Prisma używaj klauzuli WHERE { id: itemId, ownerId: req.user.id }.' },
+        { step: 3, title: 'Ustaw krótki czas życia Access Tokena', description: 'Stosuj expiresIn: "15m" dla Access Tokena i endpoint /api/auth/refresh.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-sec-3',
+        title: 'Wizualizacja strażnika uprawnień RBAC & Anti-IDOR',
+        instructions: 'Zbuduj kontener z klasą rbac-guard, wstaw znacznik <code>requireRole("ADMIN") -&gt; 200 Authorized</code> oraz status ochrony "IDOR Ownership Check: Verified".',
+        task: 'Utwórz widżet rbac-guard prezentujący kontrolę dostępu opartą na rolach.',
+        starterCode: {
+          html: '<!-- Zbuduj widżet RBAC poniżej -->\n',
+          css: '.rbac-guard { background: #0f172a; border: 1px solid #10b981; padding: 14px 18px; border-radius: 10px; font-family: sans-serif; color: #f8fafc; display: flex; flex-direction: column; gap: 6px; }\ncode { color: #34d399; font-family: monospace; font-weight: bold; }',
+          js: 'console.log("RBAC Guard aktywny.");',
+        },
+        solutionCode: {
+          html: '<div class="rbac-guard">\n  <code>requireRole("ADMIN") -&gt; 200 Authorized</code>\n  <div>IDOR Ownership Check: Verified</div>\n</div>',
+          css: '.rbac-guard { background: #0f172a; border: 1px solid #10b981; padding: 14px 18px; border-radius: 10px; font-family: sans-serif; color: #f8fafc; display: flex; flex-direction: column; gap: 6px; }\ncode { color: #34d399; font-family: monospace; font-weight: bold; }',
+          js: 'console.log("RBAC Guard aktywny.");',
+        },
+        hints: [
+          'Użyj <div class="rbac-guard">.',
+          'Wstaw <code>requireRole("ADMIN") -&gt; 200 Authorized</code>.',
+          'Dodaj tekst IDOR Ownership Check: Verified.',
+        ],
+        rules: [
+          { id: 'r1', description: 'Klasa rbac-guard obecna', ruleType: 'html_contains', target: 'rbac-guard' },
+          { id: 'r2', description: 'Wywołanie requireRole("ADMIN") obecne', ruleType: 'html_contains', target: 'requireRole("ADMIN")' },
+          { id: 'r3', description: 'Status IDOR Ownership Check: Verified obecny', ruleType: 'html_contains', target: 'IDOR Ownership Check: Verified' },
+        ],
+      },
+      independentTask: {
+        title: 'Naprawa podatności IDOR w endpoincie faktur',
+        instructions: 'Zrefaktoryzuj endpoint GET /api/invoices/:invoiceId tak, aby użytkownik nie mógł pobrać faktury sąsiada, wpisując kolejny numer ID w pasku adresu.',
+        expectedOutcome: 'Sprawdzenie invoice.userId === req.user.id przed zwróceniem dokumentu.',
+        starterHint: 'const invoice = await db.invoice.findFirst({ where: { id: req.params.invoiceId, userId: req.user.id } });',
+      },
+      quiz: [
+        {
+          id: 'q-sec3-1',
+          question: 'Na czym polega podatność bezpieczeństwa nazywana IDOR (Insecure Direct Object Reference / BOLA)?',
+          options: [
+            'Serwer sprawdza wprawdzie, czy użytkownik jest zalogowany, ale nie weryfikuje, czy pobierany lub modyfikowany rekord (np. `/api/orders/105`) faktycznie należy do tego użytkownika',
+            'Użytkownik zapomina swojego hasła',
+            'Baza danych działa zbyt wolno przy dużym ruchu',
+            'Strona nie posiada ciemnego motywu',
+          ],
+          correctAnswer: 0,
+          explanation: 'Aby zapobiec IDOR, każde zapytanie do bazy musi porównywać właściciela zasobu z ID zalogowanego użytkownika z tokena.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Ukrywanie przycisku "Usuń wszystko" tylko w kodzie Reacta (`{user.role === "ADMIN" && <DeleteBtn />}`) bez zabezpieczenia endpointu na backendzie',
+          whyItHappens: 'Złudne poczucie, że skoro przycisku nie widać na ekranie, to nikt nie wywoła akcji.',
+          howToFix: 'Każdy użytkownik może otworzyć konsolę lub program Postman i wysłać żądanie DELETE bezpośrednio do API. Autoryzacja ról MUSI być zawsze egzekwowana na serwerze!',
+          badCode: '// Tylko ukrycie w UI, a endpoint DELETE /api/users otwarty dla każdego',
+          goodCode: 'app.delete("/api/users/:id", authenticate, requireRole("ADMIN"), deleteUser);',
+        },
+      ],
+      practicalTask: {
+        title: 'Macierz uprawnień dla 3 ról w akademii',
+        brief: 'Zaprojektuj obiekt uprawnień dla ról STUDENT, MENTOR oraz ADMIN i napisz funkcję canPerform(role, action), np. canPerform("MENTOR", "review_code").',
+        steps: ['Zdefiniuj stałą PERMISSIONS z użyciem as const', 'Napisz funkcję sprawdzającą obecność uprawnienia', 'Przetestuj dla wszystkich ról'],
+        deliverable: 'Czysty moduł autoryzacji uprawnień (Permission-Based Access Control).',
+      },
+      completionCriteria: [
+        'Zrozumienie RBAC, Refresh Tokenów i ochrony przed IDOR',
+        'Prawidłowe rozwiązanie ćwiczenia interaktywnego',
+        'Zaliczenie quizu z wynikiem minimum 80%',
+      ],
+    },
+    {
+      id: 'sec-4',
+      moduleId: 10,
+      moduleTitle: 'Bezpieczeństwo i Uwierzytelnianie Aplikacji',
+      title: 'Ochrona przed botami (Honeypot, Timing Verification), Zarządzanie Sekretami i Audyt npm',
+      slug: 'bezpieczenstwo-ochrona-przed-botami-honeypot-sekrety-npm-audit',
+      durationMinutes: 40,
+      xpReward: 85,
+      order: 4,
+      summary: 'Jak chronić formularze rejestracji i kontaktowe przed automatycznymi botami spamującymi bez psucia UX irytującymi obrazkami CAPTCHA? Poznaj technikę Honeypot, analizę czasu wypełniania formularza, bezpieczne zarządzanie sekretami oraz audyt podatności pakietów (npm audit).',
+      objectives: [
+        'Implementować niewidoczną dla ludzi pułapkę Honeypot oraz weryfikację czasu interakcji (Heuristic Timing Check)',
+        'Zarządzać kluczami API i sekretami bez ryzyka ich wycieku do repozytorium Git lub paczki klienckiej',
+        'Przeprowadzać audyt bezpieczeństwa zależności zewnętrznych (Supply Chain Security) za pomocą npm audit',
+      ],
+      prerequisites: ['Walidacja formularzy i nagłówki bezpieczeństwa'],
+      theoryMarkdown: `Boty internetowe nieustannie skanują publiczne formularze rejestracji, logowania i komentarzy. Możemy zatrzymać 99% zautomatyzowanych skryptów za pomocą wielowarstwowej obrony niewidocznej dla prawdziwego użytkownika!
+
+**1. Pułapka Honeypot ("Słoik miodu" na boty):**
+Dodajemy do formularza dodatkowe pole (np. \`website_url\` lub \`company_fax\`), które ukrywamy wizualnie w CSS (\`opacity: 0; position: absolute; pointer-events: none;\`) i oznaczamy \`tabIndex={-1}\` oraz \`aria-hidden="true"\`.
+- **Człowiek** nie widzi tego pola i zostawia je puste.
+- **Bot spamujący** parsuje kod HTML i automatycznie wpisuje tekst we wszystkie znalezione pola \`<input>\`.
+- Jeśli na serwerze pole \`honeypot\` nie jest puste -> natychmiast odrzucamy żądanie!
+
+**2. Heurystyczna weryfikacja czasu (Timing Check):**
+Prawdziwy człowiek potrzebuje przynajmniej **1.5–2 sekund**, aby przeczytać i wypełnić formularz rejestracyjny. Skrypt bota wysyła żądanie \`POST\` w **20 milisekund** od załadowania widoku:
+\`\`\`typescript
+const elapsedMs = Date.now() - formRenderedAtTimestamp;
+if (elapsedMs < 1200) {
+  throw new Error('Podejrzanie szybka wysyłka formularza (Bot detected).');
+}
+\`\`\`
+
+**3. Bezpieczeństwo łańcucha dostaw (Supply Chain Security) i Sekrety:**
+- **Nigdy nie umieszczaj prywatnych kluczy API w zmiennych zaczynających się od \`VITE_\` lub \`NEXT_PUBLIC_\`**, ponieważ bundler wklei je bezpośrednio do pliku JavaScript widocznego dla każdego w DevTools!
+- Regularnie uruchamiaj \`npm audit\`, aby wykrywać znane luki bezpieczeństwa (CVE) w zainstalowanych bibliotekach.`,
+      codeExamples: [
+        {
+          title: 'Weryfikacja antybotowa używana w naszej Akademii Full Stack',
+          language: 'typescript',
+          code: `export function verifyHumanInteraction(params: {
+  honeypotValue: string;
+  elapsedMs: number;
+  challengeChecked: boolean;
+}): { valid: boolean; reason?: string } {
+  // 1. Sprawdzenie pułapki Honeypot
+  if (params.honeypotValue.trim() !== '') {
+    return { valid: false, reason: 'Wykryto bota (Honeypot triggered).' };
+  }
+  // 2. Sprawdzenie minimalnego czasu wypełniania (min. 1.2 sekundy)
+  if (params.elapsedMs < 1200) {
+    return { valid: false, reason: 'Formularz wysłany zbyt szybko.' };
+  }
+  // 3. Weryfikacja wyzwania interaktywnego
+  if (!params.challengeChecked) {
+    return { valid: false, reason: 'Potwierdź weryfikację bezpieczeństwa.' };
+  }
+  return { valid: true };
+}`,
+          explanation: 'Połączenie ukrytego pola Honeypot, pomiaru czasu i Rate Limitera skutecznie chroni endpointy bez konieczności przeklikiwania świateł drogowych.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Dodaj ukryte pole Honeypot do formularza', description: 'Pamiętaj o atrybutach tabIndex={-1} oraz autoComplete="off", aby przeglądarka sama go nie wypełniła.' },
+        { step: 2, title: 'Sprawdź sekrety na frontendzie', description: 'Klucze prywatne mogą istnieć tylko na backendzie (server.ts) i być wywoływane przez proxy /api/*.' },
+        { step: 3, title: 'Włącz automatyczny audyt w CI/CD', description: 'Uruchamiaj npm audit --audit-level=high w potoku GitHub Actions.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-sec-4',
+        title: 'Widżet wielowarstwowej tarczy Anty-Botowej',
+        instructions: 'Zbuduj kontener z klasą antibot-shield, wstaw znacznik <code>Honeypot: Empty | Timing: 3420ms</code> oraz werdykt "Human Verification: PASSED".',
+        task: 'Utwórz widżet antibot-shield prezentujący wynik weryfikacji antybotowej.',
+        starterCode: {
+          html: '<!-- Zbuduj widżet ochrony antybotowej poniżej -->\n',
+          css: '.antibot-shield { background: #0f172a; border: 1px solid #38bdf8; padding: 14px 18px; border-radius: 10px; font-family: sans-serif; color: #f8fafc; display: flex; flex-direction: column; gap: 6px; }\ncode { color: #38bdf8; font-family: monospace; font-weight: bold; }',
+          js: 'console.log("Anti-Bot Shield aktywny.");',
+        },
+        solutionCode: {
+          html: '<div class="antibot-shield">\n  <code>Honeypot: Empty | Timing: 3420ms</code>\n  <div>Human Verification: PASSED</div>\n</div>',
+          css: '.antibot-shield { background: #0f172a; border: 1px solid #38bdf8; padding: 14px 18px; border-radius: 10px; font-family: sans-serif; color: #f8fafc; display: flex; flex-direction: column; gap: 6px; }\ncode { color: #38bdf8; font-family: monospace; font-weight: bold; }',
+          js: 'console.log("Anti-Bot Shield aktywny.");',
+        },
+        hints: [
+          'Użyj <div class="antibot-shield">.',
+          'Wstaw <code>Honeypot: Empty | Timing: 3420ms</code>.',
+          'Dodaj tekst Human Verification: PASSED.',
+        ],
+        rules: [
+          { id: 'r1', description: 'Klasa antibot-shield obecna', ruleType: 'html_contains', target: 'antibot-shield' },
+          { id: 'r2', description: 'Informacja Honeypot: Empty obecna', ruleType: 'html_contains', target: 'Honeypot: Empty' },
+          { id: 'r3', description: 'Werdykt Human Verification: PASSED obecny', ruleType: 'html_contains', target: 'Human Verification: PASSED' },
+        ],
+      },
+      independentTask: {
+        title: 'Komponent pola Honeypot dostępny dla czytników ekranu',
+        instructions: 'Stwórz w React ukryte pole input dla pułapki Honeypot z atrybutami aria-hidden="true", tabIndex={-1} oraz autoComplete="off", aby ani użytkownicy klawiatury, ani menedżery haseł nie wypełnili go przypadkowo.',
+        expectedOutcome: 'Bezpieczna pułapka na boty bez fałszywych alarmów u prawdziwych użytkowników.',
+        starterHint: '<input type="text" name="website_trap" tabIndex={-1} autoComplete="off" aria-hidden="true" className="opacity-0 absolute -z-10 pointer-events-none" />',
+      },
+      quiz: [
+        {
+          id: 'q-sec4-1',
+          question: 'Dlaczego nie wolno przechowywać prywatnego klucza API (np. `OPENAI_API_KEY` lub `STRIPE_SECRET_KEY`) w zmiennej środowiskowej zaczynającej się od prefiksu `VITE_` w aplikacji React?',
+          options: [
+            'Ponieważ Vite dołącza wszystkie zmienne z prefiksem `VITE_` bezpośrednio do publicznej paczki JavaScript wysyłanej do przeglądarki, przez co każdy użytkownik może je odczytać w zakładce Sources/Network',
+            'Ponieważ zmienne `VITE_` mają limit długości do 10 znaków',
+            'Ponieważ przeglądarka Chrome blokuje słowo VITE',
+            'Ponieważ spowalnia to animacje CSS',
+          ],
+          correctAnswer: 0,
+          explanation: 'Prywatne klucze API muszą znajdować się wyłącznie po stronie serwera (Node.js) i nigdy nie mogą opuszczać środowiska backendowego.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Brak atrybutu `autoComplete="off"` na ukrytym polu Honeypot',
+          whyItHappens: 'Pominięcie zachowania automatycznego uzupełniania formularzy przez przeglądarkę.',
+          howToFix: 'Jeśli nazwiesz pole Honeypot np. `phone` lub `address`, przeglądarka użytkownika może automatycznie wpisać tam jego dane z autouzupełniania i zablokować mu rejestrację! Używaj neutralnej nazwy i `autoComplete="off"`.',
+          badCode: '<input name="phone" className="hidden" /> // Autouzupełnianie przeglądarki wypełni to pole!',
+          goodCode: '<input name="bot_check_field" autoComplete="off" tabIndex={-1} aria-hidden="true" />',
+        },
+      ],
+      practicalTask: {
+        title: 'Inspekcja modala rejestracji w naszej Akademii',
+        brief: 'Otwórz komponent AuthModal.tsx w kodzie projektu i przeanalizuj, jak działają w nim zabezpieczenia Honeypot oraz pomiar czasu otwarcia formularza.',
+        steps: ['Znajdź plik src/components/AuthModal.tsx', 'Zobacz stan honeypot oraz openedAt', 'Sprawdź walidację przed utworzeniem konta'],
+        deliverable: 'Praktyczna znajomość produkcyjnych zabezpieczeń formularzy.',
+      },
+      completionCriteria: [
+        'Zrozumienie pułapki Honeypot, ochrony sekretów i audytu zależności',
+        'Prawidłowe rozwiązanie ćwiczenia interaktywnego',
+        'Zaliczenie quizu z wynikiem minimum 80%',
+      ],
+    },
   ],
 };
+

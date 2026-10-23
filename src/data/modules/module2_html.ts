@@ -7,11 +7,14 @@ export const MODULE_2: Module = {
   description: 'Kompletny moduł HTML5 od podstaw do zaawansowanych struktur. Poznaj semantykę, formularze z walidacją, multimedia, tabele, dostępność WCAG oraz optymalizację SEO.',
   badgeName: 'Mistrz Semantyki HTML5',
   badgeIcon: 'FileCode2',
-  durationHours: 18,
-  totalXp: 650,
+  durationHours: 24,
+  totalXp: 840,
   prerequisites: ['Moduł 1: Fundamenty programowania'],
   topics: [
     'Anatomia dokumentu HTML5, DOCTYPE i struktura drzewa DOM',
+    'Typografia, formatowanie tekstu (h1-h6, p, strong, em, blockquote, code) i encje HTML',
+    'Listy (ul, ol, dl), linki wewnętrzne/zewnętrzne oraz ścieżki względne i bezwzględne',
+    'Elementy blokowe vs liniowe (div vs span) oraz atrybuty globalne (id, class, data-*)',
     'Znaczniki semantyczne: header, nav, main, article, section, aside, footer',
     'Nowoczesne formularze: input types, walidacja atrybutowa, label i dostępność',
     'Multimedia, hiperłącza i tabele danych: img, picture, audio, a, table, aria-labels',
@@ -145,6 +148,375 @@ Każda profesjonalna strona zaczyna się od tzw. **boilerplate**:
       ],
     },
     {
+      id: 'html-7',
+      moduleId: 2,
+      moduleTitle: 'HTML — Semantyczna Architektura Stron',
+      title: 'Tekst, typografia i formatowanie treści: h1–h6, p, strong, em, code i encje',
+      slug: 'tekst-typografia-formatowanie-html',
+      durationMinutes: 25,
+      xpReward: 60,
+      order: 2,
+      summary: 'Opanuj fundamenty pracy z tekstem w HTML: prawidłową hierarchię nagłówków h1–h6, różnicę między semantycznym <strong> a wizualnym <b>, cytaty <blockquote> oraz encje specjalne.',
+      objectives: [
+        'Budować poprawną hierarchię nagłówków od <h1> do <h6> bez pomijania poziomów',
+        'Rozróżniać znaczniki semantyczne (<strong>, <em>, <mark>) od czysto wizualnych (<b>, <i>)',
+        'Stosować znaczniki dla kodu (<code>, <pre>) oraz encje HTML (&copy;, &nbsp;, &lt;, &gt;)',
+      ],
+      prerequisites: ['Lekcja 1: Anatomia dokumentu HTML5'],
+      theoryMarkdown: `Treść tekstowa to główny nośnik informacji w sieci i podstawa pozycjonowania w wyszukiwarce Google (SEO).
+
+**1. Hierarchia nagłówków (\`<h1>\` – \`<h6>\`):**
+- **\`<h1>\`** — Tytuł główny całej podstrony (dokładnie **jeden** na stronę!).
+- **\`<h2>\`** — Główne rozdziały lub sekcje strony.
+- **\`<h3>\`** — Podsekcje wewnątrz \`<h2>\`.
+*Złota zasada:* Nigdy nie wybieraj poziomu nagłówka ze względu na rozmiar czcionki (od tego jest CSS!). Nie przeskakuj z \`<h1>\` od razu do \`<h4>\`.
+
+**2. Semantyczne wyróżnienia tekstu:**
+- **\`<strong>\` vs \`<b>\`:** \`<strong>\` oznacza tekst o **wysokiej wadze i istotności** (czytniki ekranu zmieniają intonację głosu), natomiast \`<b>\` to tylko wizualne pogrubienie.
+- **\`<em>\` vs \`<i>\`:** \`<em>\` (emphasis) kładzie nacisk logiczny na słowo w zdaniu, a \`<i>\` służy do terminów technicznych lub obcojęzycznych.
+- **\`<blockquote>\` i \`<q>\`:** Długie cytaty blokowe oraz krótkie cytaty w linii tekstu.
+- **\`<code>\` i \`<pre>\`:** Wyświetlanie fragmentów kodu źródłowego z zachowaniem wcięć i czcionki monospace.
+
+**3. Encje znakowe (HTML Entities):**
+Gdy chcesz wyświetlić znak zastrzeżony w HTML (np. \`<\`) lub symbol specjalny:
+- \`&lt;\` (\`<\`), \`&gt;\` (\`>\`), \`&amp;\` (\`&\`), \`&copy;\` (©), \`&nbsp;\` (twarda spacja nierozdzielająca słów).`,
+      codeExamples: [
+        {
+          title: 'Wzorcowe formatowanie artykułu technicznego',
+          language: 'html',
+          code: `<article>
+  <h1>Przewodnik po czystym kodzie</h1>
+  <h2>Dlaczego nazewnictwo zmiennych ma znaczenie?</h2>
+  <p>
+    Pamiętaj, że kod jest <strong>znacznie częściej czytany</strong> niż pisany.
+    Nigdy nie używaj jednoliterowych nazw takich jak <code>let x = 10;</code>.
+  </p>
+  <blockquote>
+    "Każdy potrafi napisać kod, który zrozumie komputer. Dobrzy programiści piszą kod, który zrozumieją ludzie." — <em>Martin Fowler</em>
+  </blockquote>
+</article>`,
+          explanation: 'Połączenie h1 -> h2, strong, code oraz blockquote tworzy przejrzysty i bogaty semantycznie artykuł.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Zacznij od pojedynczego <h1>', description: 'Opisz główny temat bieżącego widoku.' },
+        { step: 2, title: 'Podziel tekst na akapity <p>', description: 'Każda myśl powinna znajdować się w osobnym znaczniku <p>.' },
+        { step: 3, title: 'Wyróżnij kluczowe pojęcia za pomocą <strong> i <code>', description: 'Nadaj treści strukturę łatwą do skanowania wzrokiem.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-html-text',
+        title: 'Sformatuj notatkę programistyczną z użyciem strong, code i blockquote',
+        instructions: 'W edytorze HTML stwórz podtytuł <h2>, akapit <p> zawierający pogrubienie <strong> oraz wstawkę kodu <code>, a pod spodem cytat <blockquote>.',
+        task: 'Użyj znaczników h2, p, strong, code oraz blockquote.',
+        starterCode: {
+          html: '<!-- Sformatuj notatkę poniżej -->\n',
+          css: 'body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.6; color: #1e293b; }\ncode { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #db2777; font-family: monospace; }\nblockquote { border-left: 4px solid #4f46e5; padding-left: 14px; color: #475569; font-style: italic; margin: 16px 0; }',
+          js: 'console.log("Typografia HTML5 aktywna.");',
+        },
+        solutionCode: {
+          html: '<h2>Zasada DRY w programowaniu</h2>\n<p>Reguła <strong>Don\'t Repeat Yourself</strong> pomaga unikać duplikacji w funkcjach takich jak <code>calculateTax()</code>.</p>\n<blockquote>Powtarzanie kodu to prosta droga do trudnych w utrzymaniu błędów.</blockquote>',
+          css: 'body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.6; color: #1e293b; }\ncode { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #db2777; font-family: monospace; }\nblockquote { border-left: 4px solid #4f46e5; padding-left: 14px; color: #475569; font-style: italic; margin: 16px 0; }',
+          js: 'console.log("Typografia HTML5 aktywna.");',
+        },
+        hints: [
+          'Dodaj <h2>Tytuł sekcji</h2>.',
+          'Wewnątrz <p> umieść <strong>ważny tekst</strong> oraz <code>fragmentKodu()</code>.',
+          'Dodaj na dole <blockquote>Treść cytatu</blockquote>.',
+        ],
+        rules: [
+          { id: 'r1', description: 'Znacznik <strong> obecny w kodzie', ruleType: 'html_tag_exists', target: 'strong' },
+          { id: 'r2', description: 'Znacznik <code> obecny w kodzie', ruleType: 'html_tag_exists', target: 'code' },
+          { id: 'r3', description: 'Cytat blokowy <blockquote> obecny', ruleType: 'html_tag_exists', target: 'blockquote' },
+        ],
+      },
+      independentTask: {
+        title: 'Wieloliniowy blok kodu z <pre><code>',
+        instructions: 'Wyświetl 3-linijkowy fragment kodu HTML na stronie, używając kombinacji <pre><code> oraz encji &lt; i &gt;.',
+        expectedOutcome: 'Wyświetlenie surowych nawiasów ostrokątnych na ekranie bez ich zinterpretowania przez przeglądarkę.',
+        starterHint: 'Wpisz &lt;div&gt;Tekst&lt;/div&gt; wewnątrz <pre><code>.',
+      },
+      quiz: [
+        {
+          id: 'q-h7-1',
+          question: 'Jaka jest kluczowa różnica między znacznikiem <strong> a znacznikiem <b>?',
+          options: [
+            '<strong> nadaje tekstowi semantyczną ważność (istotną dla czytników ekranu i SEO), natomiast <b> to wyłącznie pogrubienie wizualne',
+            '<b> działa tylko w starych przeglądarkach',
+            '<strong> zmienia kolor czcionki na czerwony',
+            'Nie ma między nimi żadnej różnicy',
+          ],
+          correctAnswer: 0,
+          explanation: 'W nowoczesnym HTML5 zawsze preferujemy <strong> i <em> ze względu na dostępność cyfrową.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Używanie wielokrotnych znaczników <br><br><br> do robienia odstępów między akapitami',
+          whyItHappens: 'Traktowanie dokumentu HTML jak edytora Word (wielokrotne wciskanie Entera).',
+          howToFix: 'Każdy akapit zamykaj w osobnym tagu <p>, a wielkość odstępów reguluj w CSS za pomocą margin-bottom.',
+          badCode: 'Pierwszy akapit<br><br><br>Drugi akapit',
+          goodCode: '<p>Pierwszy akapit</p>\n<p>Drugi akapit</p>',
+        },
+      ],
+      practicalTask: {
+        title: 'Wpis blogowy z hierarchią h1-h3',
+        brief: 'Napisz krótki artykuł techniczny zawierający h1, dwie sekcje h2, podsekcję h3, cytat oraz przykład kodu.',
+        steps: ['Stwórz strukturę nagłówków', 'Dodaj wyróżnienia strong i em', 'Dodaj stopkę ze znakiem &copy;'],
+        deliverable: 'Wzorcowo sformatowany tekst gotowy pod SEO.',
+      },
+      completionCriteria: [
+        'Zrozumienie hierarchii nagłówków i semantyki tekstu',
+        'Poprawne rozwiązanie ćwiczenia z strong, code i blockquote',
+        'Zaliczenie quizu min. 80%',
+      ],
+    },
+    {
+      id: 'html-8',
+      moduleId: 2,
+      moduleTitle: 'HTML — Semantyczna Architektura Stron',
+      title: 'Listy (ul, ol, dl), nawigacja kotwicowa i ścieżki względne vs bezwzględne',
+      slug: 'listy-linki-sciezki-wzgledne',
+      durationMinutes: 30,
+      xpReward: 65,
+      order: 3,
+      summary: 'Naucz się grupować informacje w listy punktowane, numerowane i definicyjne oraz opanuj zasady adresowania plików w projekcie (ścieżki względne ./ i ../ vs bezwzględne).',
+      objectives: [
+        'Tworzyć listy nieuporządkowane <ul>, uporządkowane <ol> oraz słowniki pojęć <dl>/<dt>/<dd>',
+        'Rozróżniać ścieżki względne (./img/logo.png, ../index.html) od bezwzględnych (https://...)',
+        'Tworzyć nawigację wewnątrz strony (kotwice #id) oraz linki specjalne mailto: i tel:',
+      ],
+      prerequisites: ['Lekcja 2: Tekst i typografia'],
+      theoryMarkdown: `Listy i hiperłącza to spoiwo każdego serwisu internetowego — od menu nawigacyjnych po spisy treści i koszyki zakupowe.
+
+**1. Trzy rodzaje list w HTML5:**
+- **\`<ul>\` (Unordered List):** Lista punktowana — gdy kolejność elementów nie ma znaczenia (np. lista funkcji produktu, linki w menu). Bezpośrednim dzieckiem \`<ul>\` może być **wyłącznie** \`<li>\`!
+- **\`<ol>\` (Ordered List):** Lista numerowana — gdy liczy się ścisła kolejność kroków (np. przepis, ranking TOP 10, instrukcja instalacji).
+- **\`<dl>\` (Description List):** Lista par *termin* (\`<dt>\`) i *opis* (\`<dd>\`) — idealna do sekcji FAQ lub specyfikacji technicznej produktu.
+
+**2. Ścieżki względne vs bezwzględne w atrybucie \`href\` i \`src\`:**
+- **Ścieżka bezwzględna (Absolute):** Pełny adres internetowy, np. \`https://developer.mozilla.org\`. Używamy do linkowania obcych stron.
+- **Ścieżka względna (Relative):** Wskazuje plik względem obecnego położenia:
+  - \`./kontakt.html\` lub \`kontakt.html\` — plik w tym samym folderze,
+  - \`./assets/logo.svg\` — wejście do podfolderu \`assets\`,
+  - \`../index.html\` — wyjście o jeden folder w górę (\`..\`).
+
+**3. Kotwice (Anchors):**
+Link \`<a href="#cennik">Zobacz cennik</a>\` płynnie przewinie stronę do elementu posiadającego atrybut \`id="cennik"\`.`,
+      codeExamples: [
+        {
+          title: 'Nawigacja z kotwicami i lista kroków nauki',
+          language: 'html',
+          code: `<nav>
+  <ul>
+    <li><a href="#plan-nauki">Plan nauki</a></li>
+    <li><a href="mailto:mentor@academy.dev">Napisz do mentora</a></li>
+  </ul>
+</nav>
+
+<section id="plan-nauki">
+  <h2>3 kroki do zostania Full Stack Developerem</h2>
+  <ol>
+    <li>Opanuj fundamenty HTML5, CSS3 i JavaScript ES6+</li>
+    <li>Zbuduj projekty w React, Node.js i PostgreSQL</li>
+    <li>Przygotuj portfolio na GitHubie i aplikuj!</li>
+  </ol>
+</section>`,
+          explanation: 'Kliknięcie w #plan-nauki przenosi użytkownika bezpośrednio do sekcji z id="plan-nauki".',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Wybierz odpowiedni typ listy', description: 'Użyj <ul> dla kolekcji bez kolejności lub <ol> dla kroków numerowanych.' },
+        { step: 2, title: 'Umieść elementy w <li>', description: 'Pamiętaj, że tekst wpisujemy zawsze wewnątrz <li>, nigdy bezpośrednio w <ul>.' },
+        { step: 3, title: 'Połącz link kotwicowy z id sekcji', description: 'Ustaw href="#sekcja" na linku oraz id="sekcja" na elemencie docelowym.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-html-lists',
+        title: 'Zbuduj spis treści z kotwicą i listą uporządkowaną <ol>',
+        instructions: 'Stwórz link <a href="#kroki">Przejdź do kroków</a> oraz sekcję z id="kroki" zawierającą listę numerowaną <ol> z przynajmniej dwoma podpunktami <li>.',
+        task: 'Utwórz link z href="#kroki" oraz listę <ol> z elementami <li> wewnątrz elementu z id="kroki".',
+        starterCode: {
+          html: '<!-- Dodaj link kotwicowy oraz sekcję z listą <ol> -->\n',
+          css: 'body { font-family: sans-serif; padding: 20px; }\na { color: #4f46e5; font-weight: bold; text-decoration: none; }\nol { background: #f8fafc; padding: 16px 32px; border-radius: 8px; border: 1px solid #e2e8f0; }',
+          js: 'console.log("Listy i kotwice gotowe.");',
+        },
+        solutionCode: {
+          html: '<a href="#kroki">Przejdź do kroków</a>\n<div id="kroki">\n  <h3>Etapy wdrożenia</h3>\n  <ol>\n    <li>Analiza wymagań</li>\n    <li>Implementacja i testy</li>\n  </ol>\n</div>',
+          css: 'body { font-family: sans-serif; padding: 20px; }\na { color: #4f46e5; font-weight: bold; text-decoration: none; }\nol { background: #f8fafc; padding: 16px 32px; border-radius: 8px; border: 1px solid #e2e8f0; }',
+          js: 'console.log("Listy i kotwice gotowe.");',
+        },
+        hints: [
+          'Dodaj <a href="#kroki">Przejdź do kroków</a>.',
+          'Utwórz <div id="kroki">.',
+          'Wewnątrz dodaj <ol><li>Krok 1</li><li>Krok 2</li></ol>.',
+        ],
+        rules: [
+          { id: 'r1', description: 'Link kotwicowy href="#kroki" obecny', ruleType: 'html_contains', target: '#kroki' },
+          { id: 'r2', description: 'Lista uporządkowana <ol> istnieje', ruleType: 'html_tag_exists', target: 'ol' },
+          { id: 'r3', description: 'Elementy listy <li> istnieją', ruleType: 'html_tag_exists', target: 'li' },
+        ],
+      },
+      independentTask: {
+        title: 'Sekcja FAQ oparta o listę definicji <dl>',
+        instructions: 'Zbuduj słowniczek 3 pojęć (HTML, CSS, JS) za pomocą znaczników <dl>, <dt> (nazwa technologii) oraz <dd> (wyjaśnienie).',
+        expectedOutcome: 'Semantyczny słownik pojęć bez nadmiarowych divów.',
+        starterHint: '<dl><dt>HTML</dt><dd>Struktura strony</dd></dl>',
+      },
+      quiz: [
+        {
+          id: 'q-h8-1',
+          question: 'Który element może być bezpośrednim dzieckiem listy <ul> lub <ol> zgodnie ze specyfikacją HTML5?',
+          options: [
+            'Dowolny znacznik, np. <p> lub <h2>',
+            'Wyłącznie element <li> (oraz pomocniczo <script> lub <template>)',
+            'Tylko znacznik <span>',
+            'Tylko znacznik <a>',
+          ],
+          correctAnswer: 1,
+          explanation: 'Wszelkie nagłówki, linki czy obrazki w liście muszą znajdować się WEWNĄTRZ elementu <li>, nigdy bezpośrednio pod <ul>.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Umieszczanie linków <a> wokół elementów <li> zamiast wewnątrz nich',
+          whyItHappens: 'Chęć uczynienia całego wiersza listy klikalnym.',
+          howToFix: 'Zawsze umieszczaj <a> wewnątrz <li> (<li><a href="...">Tekst</a></li>), a w CSS nadaj linkowi display: block.',
+          badCode: '<ul>\n  <a href="/kontakt"><li>Kontakt</li></a> <!-- BŁĄD WALIDACJI HTML -->\n</ul>',
+          goodCode: '<ul>\n  <li><a href="/kontakt">Kontakt</a></li> <!-- PRAWIDŁOWO -->\n</ul>',
+        },
+      ],
+      practicalTask: {
+        title: 'Zagnieżdżone menu kategorii sklepu',
+        brief: 'Zbuduj dwupoziomową listę <ul> (Kategoria -> Podkategorie), pamiętając że podlista <ul> musi otwierać się wewnątrz elementu <li> rodzica.',
+        steps: ['Stwórz główną listę <ul>', 'Wewnątrz pierwszego <li> przed jego zamknięciem </li> wstaw drugą listę <ul>'],
+        deliverable: 'Poprawnie zagnieżdżone drzewo kategorii.',
+      },
+      completionCriteria: [
+        'Zrozumienie różnicy między ul, ol i dl',
+        'Poprawne użycie kotwic i ścieżek względnych',
+        'Zaliczenie quizu min. 80%',
+      ],
+    },
+    {
+      id: 'html-9',
+      moduleId: 2,
+      moduleTitle: 'HTML — Semantyczna Architektura Stron',
+      title: 'Elementy blokowe vs liniowe (div vs span) i atrybuty globalne (id, class, data-*)',
+      slug: 'elementy-blokowe-liniowe-atrybuty-globalne',
+      durationMinutes: 30,
+      xpReward: 65,
+      order: 4,
+      summary: 'Zrozum fundamentalną różnicę między zachowaniem elementów blokowych (block) i liniowych (inline) w normalnym przepływie dokumentu oraz naucz się poprawnie używać id, class i data-* attribute.',
+      objectives: [
+        'Rozróżniać elementy blokowe (div, p, h1-h6, section) od liniowych (span, a, strong, img)',
+        'Stosować unikalny identyfikator id oraz wielokrotnego użytku klasy CSS (class)',
+        'Przechowywać własne dane w znacznikach HTML za pomocą atrybutów data-* (dataset)',
+      ],
+      prerequisites: ['Lekcje 1–3 modułu HTML'],
+      theoryMarkdown: `Zanim napiszesz pierwszą linijkę CSS, przeglądarka układa wszystkie znaczniki HTML według tzw. **Normal Document Flow** (normalnego przepływu dokumentu).
+
+**1. Elementy Blokowe (Block-level elements):**
+Przykłady: \`<div>\`, \`<p>\`, \`<h1>\`–\`<h6>\`, \`<ul>\`, \`<section>\`, \`<article>\`.
+- Zawsze zaczynają się **od nowej linii**.
+- Domyślnie zajmują **100% dostępnej szerokości** swojego rodzica.
+- Można im swobodnie nadawać \`width\`, \`height\`, \`margin\` i \`padding\` w każdym kierunku.
+
+**2. Elementy Liniowe (Inline elements):**
+Przykłady: \`<span>\`, \`<a>\`, \`<strong>\`, \`<em>\`, \`<code>\`, \`<kbd>\`.
+- Układają się **obok siebie w jednej linii** tekstu (jak słowa w zdaniu).
+- Zajmują dokładnie tyle szerokości, ile wynosi ich zawartość.
+- **Ignorują** właściwości \`width\` oraz \`height\`!
+
+**3. Atrybuty globalne (\`id\`, \`class\`, \`data-*\`):**
+- **\`id="unikalna-nazwa"\`**: Musi być **unikalny w skali całej strony** (jak numer PESEL). Służy do kotwic, powiązań formularzy i precyzyjnych referencji.
+- **\`class="karta wyrozniona"\`**: Może być przypisana do wielu elementów. To podstawowy sposób stylowania w CSS!
+- **\`data-*\` (np. \`data-product-id="42"\`)**: Pozwala bezpiecznie przekazać dowolne dane z HTML do JavaScriptu (odczytywane przez \`element.dataset.productId\`).`,
+      codeExamples: [
+        {
+          title: 'Współpraca kontenera blokowego <div> i wyróżnienia liniowego <span>',
+          language: 'html',
+          code: `<div id="featured-course" class="course-card" data-category="frontend" data-level="junior">
+  <h3>Kurs Nowoczesnego HTML5 i CSS3</h3>
+  <p>
+    Poziom trudności: <span class="badge badge-green">Od podstaw</span> |
+    Czas trwania: <span class="highlight">24 godziny</span>
+  </p>
+</div>`,
+          explanation: 'Element <div> tworzy prostokątny blok karty, natomiast znaczniki <span> stylują wybrane fragmenty wewnątrz jednej linii tekstu.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Użyj <div> do grupowania większych bloków', description: 'Stosuj go jako kontener układu, gdy żaden tag semantyczny nie pasuje.' },
+        { step: 2, title: 'Użyj <span> wewnątrz tekstu', description: 'Otocz pojedyncze słowo lub cenę tagiem <span> z klasą CSS.' },
+        { step: 3, title: 'Dodaj atrybuty class oraz data-*', description: 'Używaj klas wielokrotnie, a id zachowaj dla unikalnych sekcji.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-html-block-inline',
+        title: 'Zbuduj kartę produktu z div, span oraz atrybutem data-price',
+        instructions: 'Stwórz kontener <div class="product-card" data-price="199"> zawierający akapit <p> z nazwą produktu oraz zagnieżdżony wewnątrz niego element <span class="price">199 zł</span>.',
+        task: 'Użyj div z klasą product-card i atrybutem data-price oraz elementu span z klasą price.',
+        starterCode: {
+          html: '<!-- Zbuduj kartę produktu z div, data-price oraz span -->\n',
+          css: '.product-card { background: #ffffff; border: 1px solid #cbd5e1; padding: 16px; border-radius: 10px; max-width: 300px; font-family: sans-serif; }\n.price { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 6px; font-weight: bold; }',
+          js: 'console.log("Block vs Inline gotowe.");',
+        },
+        solutionCode: {
+          html: '<div class="product-card" data-price="199">\n  <p>Pakiet Full Stack Pro — <span class="price">199 zł</span></p>\n</div>',
+          css: '.product-card { background: #ffffff; border: 1px solid #cbd5e1; padding: 16px; border-radius: 10px; max-width: 300px; font-family: sans-serif; }\n.price { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 6px; font-weight: bold; }',
+          js: 'console.log("Block vs Inline gotowe.");',
+        },
+        hints: [
+          'Zacznij od <div class="product-card" data-price="199">.',
+          'Wewnątrz dodaj <p> i <span class="price">199 zł</span>.',
+          'Domknij </p> oraz </div>.',
+        ],
+        rules: [
+          { id: 'r1', description: 'Klasa product-card obecna', ruleType: 'html_contains', target: 'product-card' },
+          { id: 'r2', description: 'Atrybut data-price zdefiniowany', ruleType: 'html_attr_exists', target: 'data-price' },
+          { id: 'r3', description: 'Element liniowy <span> obecny', ruleType: 'html_tag_exists', target: 'span' },
+        ],
+      },
+      independentTask: {
+        title: 'Odczyt atrybutu data-* w JavaScript',
+        instructions: 'W zakładce JS pobierz kartę produktu i wypisz wartość jej atrybutu data-price za pomocą document.querySelector(".product-card").dataset.price.',
+        expectedOutcome: 'Zrozumienie mostu komunikacyjnego między HTML (data-*) a JavaScriptem (dataset).',
+        starterHint: 'Każdy atrybut data-moja-wartosc zamienia się w JS na element.dataset.mojaWartosc.',
+      },
+      quiz: [
+        {
+          id: 'q-h9-1',
+          question: 'Co się stanie, jeśli nadasz domyślnemu elementowi liniowemu <span> właściwość width: 500px w CSS?',
+          options: [
+            'Element rozciągnie się na 500 pikseli',
+            'Nic się nie stanie — elementy inline ignorują właściwości width oraz height, dopóki nie zmienimy ich display na inline-block lub block',
+            'Przeglądarka wyświetli błąd składni',
+            'Tekst wewnątrz span zostanie usunięty',
+          ],
+          correctAnswer: 1,
+          explanation: 'Elementy czysto liniowe (inline) przyjmują wyłącznie wymiary wynikające z tekstu wewnątrz nich.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Nadawanie tego samego atrybutu id="karta" wielu elementom na jednej stronie',
+          whyItHappens: 'Mylenie przeznaczenia atrybutu id z atrybutem class.',
+          howToFix: 'Jeśli styl lub logika dotyczy więcej niż jednego elementu, zawsze używaj class="karta". Identyfikator id musi być unikalny!',
+          badCode: '<div id="box">1</div>\n<div id="box">2</div> <!-- BŁĄD: zduplikowane ID -->',
+          goodCode: '<div class="box">1</div>\n<div class="box">2</div> <!-- PRAWIDŁOWO -->',
+        },
+      ],
+      practicalTask: {
+        title: 'Eksperyment z obramowaniem bloków i linii',
+        brief: 'Nadaj w CSS czerwone obramowanie dla <p> oraz niebieskie dla <span>, aby na własne oczy zobaczyć jak elementy blokowe zajmują całą szerokość ekranu.',
+        steps: ['Stwórz 2 akapity <p> i 3 elementy <span>', 'Dodaj border w CSS', 'Porównaj ich zachowanie przy zmianie rozmiaru okna'],
+        deliverable: 'Wizualna intuicja działania Normal Document Flow.',
+      },
+      completionCriteria: [
+        'Rozróżnianie elementów blokowych i liniowych',
+        'Prawidłowe użycie class, id i data-*',
+        'Zaliczenie quizu min. 80%',
+      ],
+    },
+    {
       id: 'html-2',
       moduleId: 2,
       moduleTitle: 'HTML — Semantyczna Architektura Stron',
@@ -152,7 +524,7 @@ Każda profesjonalna strona zaczyna się od tzw. **boilerplate**:
       slug: 'semantyka-html5-struktura',
       durationMinutes: 35,
       xpReward: 70,
-      order: 2,
+      order: 5,
       summary: 'Koniec z "divozą"! Dowiedz się, dlaczego znaczniki semantyczne są kluczem do nowoczesnego web developmentu, dostępności a11y i wysokich pozycji w Google.',
       objectives: [
         'Poznać znaczenie i zastosowanie tagów: <header>, <nav>, <main>, <article>, <section>, <aside> i <footer>',

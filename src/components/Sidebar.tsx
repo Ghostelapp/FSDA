@@ -16,7 +16,12 @@ import {
   ChevronRight,
   Database,
   Briefcase,
-  TerminalSquare
+  TerminalSquare,
+  Send,
+  Cpu,
+  Trophy,
+  Brain,
+  FileText
 } from 'lucide-react';
 
 interface SidebarNavItem {
@@ -33,18 +38,23 @@ export const Sidebar: React.FC = () => {
   const primaryItems: SidebarNavItem[] = [
     { id: 'dashboard', label: 'Pulpit Kursanta', icon: LayoutDashboard },
     { id: 'modules', label: 'Ścieżka Kursu (15)', icon: Layers },
-    { id: 'projects', label: 'Projekty Praktyczne (12)', icon: FolderGit2, badge: 'Portfolio' },
+    { id: 'projects', label: 'Projekty Praktyczne (12)', icon: FolderGit2 },
+    { id: 'leaderboard', label: 'Ligi XP & Wyzwanie Dnia', icon: Trophy },
     { id: 'certificate', label: 'Certyfikat Ukończenia', icon: Award },
   ];
 
   const toolsItems: SidebarNavItem[] = [
-    { id: 'terminal', label: 'Terminal Bash / Git', icon: TerminalSquare, badge: '+XP' },
+    { id: 'api_studio', label: 'Studio REST API', icon: Send },
+    { id: 'event_loop', label: 'Wizualizator Event Loop', icon: Cpu },
+    { id: 'terminal', label: 'Terminal Bash / Git', icon: TerminalSquare },
     { id: 'sql_studio', label: 'Studio Bazy SQL', icon: Database },
-    { id: 'interview', label: 'Live Coding (Egzamin)', icon: Briefcase, badge: 'Mock' },
+    { id: 'interview', label: 'Live Coding (Egzamin)', icon: Briefcase },
     { id: 'editor', label: 'Piaskownica Kodu', icon: Terminal },
   ];
 
   const extraItems: SidebarNavItem[] = [
+    { id: 'flashcards', label: 'Fiszki SM-2 & Ściągi', icon: Brain },
+    { id: 'career', label: 'Kreator CV & Backup', icon: FileText },
     { 
       id: 'reviews', 
       label: 'Centrum Powtórek', 

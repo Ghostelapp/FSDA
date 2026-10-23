@@ -4,6 +4,7 @@ import { calculateLevel } from '../utils/gamification';
 import { MODULES_DATA } from '../data/modulesData';
 import { BADGES_DATA } from '../data/badgesData';
 import { LearningProgressChart } from './LearningProgressChart';
+import { DailyGoalReminderCard } from './DailyGoalReminderCard';
 import { 
   Sparkles, 
   Flame, 
@@ -157,6 +158,9 @@ export const DashboardView: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Daily Learning Goal & Service Worker Push Notification Scheduler */}
+      <DailyGoalReminderCard />
 
       {/* 30-Day Learning Progress Visualization (Recharts) */}
       <LearningProgressChart 
