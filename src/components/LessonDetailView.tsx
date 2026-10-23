@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Lesson } from '../types';
 import { CodeEditor } from './CodeEditor';
 import { CodeBlock } from './CodeBlock';
+import { PostLessonQuiz } from './PostLessonQuiz';
 import { 
   CheckCircle, 
   ArrowLeft, 
@@ -54,6 +55,14 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
 
   // Completed criteria checklist state
   const [checkedCriteria, setCheckedCriteria] = useState<Record<number, boolean>>({});
+  const [showPostLessonQuiz, setShowPostLessonQuiz] = useState<boolean>(false);
+
+  useEffect(() => {
+    setSelectedAnswers({});
+    setQuizSubmitted(false);
+    setCheckedCriteria({});
+    setShowPostLessonQuiz(false);
+  }, [lesson.id]);
 
   const handleSelectAnswer = (questionId: string, optionIndex: number) => {
     if (quizSubmitted) return;
@@ -91,6 +100,10 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
 
   const handleCompleteLessonAction = () => {
     completeLesson(lesson.id, lesson.xpReward);
+    setShowPostLessonQuiz(true);
+    setTimeout(() => {
+      document.getElementById('post-lesson-quiz')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const handleCopyCode = (codeText: string, index: number) => {
@@ -533,18 +546,42 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
         </div>
 
         <div className="pt-3 flex flex-wrap items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={handleCompleteLessonAction}
-            className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold transition-all shadow-lg ${
-              isCompleted
-                ? 'bg-slate-800 text-slate-300 border border-slate-700'
-                : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-900/40'
-            }`}
-          >
-            <CheckCircle className="h-4 w-4" />
-            <span>{isCompleted ? 'Zaliczono ponownie (+0 XP)' : `Zalicz lekcję i odbierz +${lesson.xpReward} XP`}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleCompleteLessonAction}
+              className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold transition-all shadow-lg ${
+                isCompleted
+                  ? 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
+                  : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-900/40'
+              }`}
+            >
+              <CheckCircle className="h-4 w-4" />
+              <span>
+                {isCompleted
+                  ? 'Lekcja zaliczona — Otwórz quiz końcowy'
+                  : `Zalicz lekcję (+${lesson.xpReward} XP) i przejdź do quizu`}
+              </span>
+            </button>
+
+            {!isCompleted && !showPostLessonQuiz && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPostLessonQuiz(true);
+                  setTimeout(() => {
+                    document
+                      .getElementById('post-lesson-quiz')
+                      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 100);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-3 rounded-xl border border-indigo-500/30 bg-indigo-950/30 hover:bg-indigo-900/40 text-indigo-300 text-xs font-bold transition-colors"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <span>Uruchom interaktywny quiz</span>
+              </button>
+            )}
+          </div>
 
           {/* Next Lesson Button */}
           {nextLesson && (
@@ -559,6 +596,20 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
           )}
         </div>
       </section>
+
+      {/* INTERACTIVE POST-LESSON QUIZ (Appears upon completing the lesson or manual trigger) */}
+      {(isCompleted || showPostLessonQuiz) && (
+        <PostLessonQuiz
+          lesson={lesson}
+          nextLesson={nextLesson}
+          onNavigateNext={() => {
+            if (nextLesson) {
+              setActiveTab('lesson', nextLesson.id);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+        />
+      )}
 
     </div>
   );
