@@ -42,9 +42,10 @@ button {
 button:hover {
   background: #4338ca;
 }`,
-    js: `document.getElementById('btn').addEventListener('click', () => {
-  console.log("Przycisk został kliknięty o: " + new Date().toLocaleTimeString());
-  alert("Witaj z piaskownicy!");
+    js: `document.getElementById('btn').addEventListener('click', (e) => {
+  const timeStr = new Date().toLocaleTimeString();
+  e.target.textContent = "Kliknięto o " + timeStr;
+  console.log("Przycisk został kliknięty o: " + timeStr);
 });
 console.log("Laboratorium gotowe do pracy.");`,
   },

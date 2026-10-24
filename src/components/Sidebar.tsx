@@ -141,28 +141,28 @@ export const Sidebar: React.FC = () => {
         )}
       </div>
 
-      {/* Current HTML Module Quick Glance */}
+      {/* Current Curriculum Progress Quick Glance */}
       <div className="mt-6 rounded-xl border border-indigo-500/20 bg-indigo-950/20 p-3.5">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Aktualny Moduł</span>
-          <span className="text-[11px] font-semibold text-slate-300">Moduł 2</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Postęp Kursu</span>
+          <span className="text-[11px] font-semibold text-slate-300">15 Modułów</span>
         </div>
-        <p className="text-xs font-semibold text-white truncate">HTML — Semantyka & Formularze</p>
+        <p className="text-xs font-semibold text-white truncate">Ścieżka Full Stack</p>
         <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400">
           <span>Ukończono</span>
           <span className="font-mono text-indigo-300 font-bold">
-            {currentUser.completedLessons.filter((id) => id.startsWith('html-')).length} / 5 lekcji
+            {currentUser.completedLessons.length} lekcji
           </span>
         </div>
         <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full transition-all duration-500"
-            style={{ width: `${(currentUser.completedLessons.filter((id) => id.startsWith('html-')).length / 5) * 100}%` }}
+            style={{ width: `${Math.min(100, Math.round((currentUser.completedLessons.length / 81) * 100))}%` }}
           />
         </div>
         <button
           type="button"
-          onClick={() => setActiveTab('lesson', 'html-1')}
+          onClick={() => setActiveTab('modules')}
           className="mt-3 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-indigo-600/40 hover:bg-indigo-600 text-white text-[11px] font-semibold transition-colors"
         >
           <span>Kontynuuj naukę</span>

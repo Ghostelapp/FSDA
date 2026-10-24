@@ -38,7 +38,7 @@ interface InterviewTask {
 }
 
 export const MockInterviewView: React.FC = () => {
-  const { currentUser, completeLesson } = useApp();
+  const { awardCustomXp } = useApp();
 
   const TASKS: InterviewTask[] = [
     {
@@ -268,10 +268,12 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
       setTestResults(results);
 
       if (allPassed) {
+        if (!isCompleted) {
+          awardCustomXp(currentTask.xpReward, `Zadanie Live Coding: ${currentTask.title}`);
+        }
         setIsCompleted(true);
         setIsTimerRunning(false);
         soundManager.playSuccess();
-        completeLesson('fund-1', currentTask.xpReward);
       } else {
         soundManager.playHeartLost();
       }

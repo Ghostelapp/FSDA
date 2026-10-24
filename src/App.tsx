@@ -26,7 +26,7 @@ import { SubscriptionModal } from './components/SubscriptionModal';
 import { Sparkles, Trophy, X, Code2, AlertTriangle } from 'lucide-react';
 
 const MainContent: React.FC = () => {
-  const { activeTab, selectedLessonId, allLessons, toast, dismissToast, setActiveTab } = useApp();
+  const { activeTab, selectedLessonId, allLessons, toast, dismissToast, setActiveTab, isAuthenticated, logout } = useApp();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
@@ -138,8 +138,17 @@ const MainContent: React.FC = () => {
               onClick={() => setIsAuthModalOpen(true)}
               className="hover:text-indigo-400 transition-colors"
             >
-              Zmień Profil
+              {isAuthenticated ? 'Konto / Zmień Profil' : 'Zaloguj się / Rejestracja'}
             </button>
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={logout}
+                className="text-rose-400 hover:text-rose-300 transition-colors font-medium"
+              >
+                Wyloguj się
+              </button>
+            )}
           </div>
         </div>
       </footer>

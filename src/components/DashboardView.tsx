@@ -32,9 +32,11 @@ export const DashboardView: React.FC = () => {
   const completedCount = currentUser.completedLessons.length;
   const overallPercent = Math.min(100, Math.round((completedCount / (totalLessons || 1)) * 100));
 
-  // Current focus: HTML module
+  // Current focus: HTML module & next recommended lesson
   const htmlModule = MODULES_DATA.find((m) => m.id === 2);
+  const htmlTotalCount = htmlModule?.lessons.length || 12;
   const htmlCompletedCount = currentUser.completedLessons.filter((id) => id.startsWith('html-')).length;
+  const nextLesson = allLessons.find((l) => !currentUser.completedLessons.includes(l.id)) || allLessons[0];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
@@ -62,11 +64,11 @@ export const DashboardView: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full md:w-auto shrink-0">
             <button
               type="button"
-              onClick={() => setActiveTab('lesson', 'html-1')}
+              onClick={() => setActiveTab('lesson', nextLesson?.id || 'html-1')}
               className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white px-4 sm:px-5 py-2.5 sm:py-3 text-xs font-bold transition-all shadow-lg shadow-indigo-900/50"
             >
               <Code2 className="h-4 w-4" />
-              <span>Przejdź do lekcji HTML</span>
+              <span>Kontynuuj: {nextLesson ? nextLesson.title : 'Lekcje HTML'}</span>
               <ArrowRight className="h-4 w-4" />
             </button>
             <button
@@ -138,9 +140,9 @@ export const DashboardView: React.FC = () => {
               <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
           </div>
-          <p className="mt-2 sm:mt-3 text-xl sm:text-2xl font-black text-white">{currentUser.completedLessons.length} <span className="text-xs font-normal text-slate-400">lekcji</span></p>
+          <p className="mt-2 sm:mt-3 text-xl sm:text-2xl font-black text-white">{currentUser.completedLessons.length} <span className="text-xs font-normal text-slate-400">/ {totalLessons}</span></p>
           <p className="mt-1 text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
-            W module HTML: {htmlCompletedCount} / 5
+            W module HTML: {htmlCompletedCount} / {htmlTotalCount}
           </p>
         </div>
 

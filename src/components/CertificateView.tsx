@@ -20,8 +20,7 @@ export const CertificateView: React.FC = () => {
   const printRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
-  const completedHtmlLessons = currentUser.completedLessons.filter((id) => id.startsWith('html-') || id.startsWith('react-') || id.startsWith('node-')).length;
-  const isEligible = completedHtmlLessons >= 3 || currentUser.role === 'admin';
+  const isEligible = currentUser.completedLessons.length >= 3 || currentUser.role === 'admin';
 
   const verificationCode = `FSDA-2026-${currentUser.id.replace('user-', '').slice(0, 8).toUpperCase()}-${currentUser.level || 10}X`;
   const verificationUrl = `https://academy.fullstack.dev/verify/${verificationCode}`;
@@ -38,13 +37,9 @@ export const CertificateView: React.FC = () => {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleShareLinkedIn = () => {
-    soundManager.playClick();
-    const text = encodeURIComponent(
-      `Z dumą dzielę się certyfikatem ukończenia ścieżki Full Stack Developer Academy! 🚀 Opanowałem technologie: TypeScript, React, Node.js, Express, PostgreSQL i architekturę chmurową. Weryfikacja certyfikatu: ${verificationUrl} #FullStack #WebDevelopment #Programming #React #TypeScript #NodeJS`
-    );
-    window.open(`https://www.linkedin.com/feed/?shareActive=true&text=${text}`, '_blank');
-  };
+  const linkedInShareUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(
+    `Z dumą dzielę się certyfikatem ukończenia ścieżki Full Stack Developer Academy! Opanowałem technologie: TypeScript, React, Node.js, Express, PostgreSQL i architekturę chmurową. Weryfikacja certyfikatu: ${verificationUrl} #FullStack #WebDevelopment #Programming #React #TypeScript #NodeJS`
+  )}`;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
@@ -74,14 +69,16 @@ export const CertificateView: React.FC = () => {
             <span>{copied ? 'Skopiowano link!' : 'Kopiuj link'}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleShareLinkedIn}
+          <a
+            href={linkedInShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => soundManager.playClick()}
             className="inline-flex items-center gap-1.5 rounded-xl bg-[#0077b5] hover:bg-[#006097] text-white px-3.5 py-2.5 text-xs font-bold transition-all shadow-md shadow-blue-900/30"
           >
             <Share2 className="h-4 w-4" />
             <span>Dodaj na LinkedIn</span>
-          </button>
+          </a>
 
           <button
             type="button"

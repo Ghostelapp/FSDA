@@ -22,8 +22,9 @@ import {
   VolumeX,
   Database,
   TerminalSquare,
-  Smartphone,
-  Search
+  Search,
+  LogOut,
+  LogIn
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
 
@@ -35,8 +36,10 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPalette }) => {
   const { 
     currentUser, 
+    isAuthenticated,
     allUsers, 
     switchUser, 
+    logout,
     theme, 
     toggleTheme, 
     activeTab, 
@@ -224,6 +227,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
 
+          {/* Quick Login Button when logged out */}
+          {!isAuthenticated && (
+            <button
+              type="button"
+              onClick={onOpenAuthModal}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 px-2.5 py-1.5 text-xs font-bold text-white shadow-sm transition-colors shrink-0"
+            >
+              <LogIn className="h-3.5 w-3.5" />
+              <span>Zaloguj się</span>
+            </button>
+          )}
+
           {/* Profile Switcher Dropdown */}
           <div className="relative shrink-0">
             <button
@@ -237,7 +252,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
                 className="h-6 w-6 rounded-md object-cover ring-1 ring-indigo-500/50" 
               />
               <span className="hidden md:inline font-medium max-w-[100px] truncate">{currentUser.name}</span>
-              {currentUser.role === 'admin' ? (
+              {!isAuthenticated ? (
+                <span className="hidden sm:inline-block bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-amber-500/30">
+                  Gość
+                </span>
+              ) : currentUser.role === 'admin' ? (
                 <span className="hidden sm:inline-block bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-rose-500/30">
                   Admin
                 </span>
@@ -255,7 +274,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
                 onClick={() => setUserDropdownOpen(false)}
               >
                 <div className="px-3 py-2 border-b border-slate-800 mb-1">
-                  <p className="text-xs font-semibold text-white">{currentUser.name}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-white truncate">{currentUser.name}</p>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold shrink-0 ${
+                      isAuthenticated ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                    }`}>
+                      {isAuthenticated ? 'Zalogowany' : 'Tryb Gościa'}
+                    </span>
+                  </div>
                   <p className="text-[11px] text-slate-400 truncate">{currentUser.email}</p>
                   <p className="text-[10px] text-indigo-400 mt-1 font-mono">{levelInfo.title}</p>
                 </div>
@@ -264,41 +290,51 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
                   Szybkie przełączanie konta:
                 </div>
 
-                {allUsers.map((u) => (
+                {allUsers.filter((u) => u.status === 'active').map((u) => (
                   <button
                     key={u.id}
                     type="button"
                     onClick={() => switchUser(u.id)}
                     className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-left transition-colors ${
-                      u.id === currentUser.id 
+                      isAuthenticated && u.id === currentUser.id 
                         ? 'bg-indigo-600/20 text-indigo-300 font-semibold border border-indigo-500/30' 
                         : 'text-slate-300 hover:bg-slate-800'
                     }`}
                   >
                     <span className="truncate">{u.name}</span>
-                    <span className="text-[10px] text-slate-400 ml-2">
+                    <span className="text-[10px] text-slate-400 ml-2 shrink-0">
                       {u.role === 'admin' ? 'Instruktor' : `${u.xp} XP`}
                     </span>
                   </button>
                 ))}
 
-                <div className="border-t border-slate-800 mt-2 pt-1">
+                <div className="border-t border-slate-800 mt-2 pt-1 space-y-0.5">
                   <button
                     type="button"
                     onClick={onOpenAuthModal}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-indigo-300 hover:bg-slate-800 font-medium"
                   >
                     <UserCheck className="h-3.5 w-3.5" />
-                    Zmień konto / Rejestracja
+                    <span>{isAuthenticated ? 'Konto / Zmień profil / Rejestracja' : 'Zaloguj się / Załóż konto'}</span>
                   </button>
-                  {currentUser.role === 'admin' && (
+                  {currentUser.role === 'admin' && isAuthenticated && (
                     <button
                       type="button"
                       onClick={() => setActiveTab('admin')}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-rose-300 hover:bg-slate-800 font-medium"
                     >
                       <Shield className="h-3.5 w-3.5" />
-                      Panel Zarządzania Kursem
+                      <span>Panel Zarządzania Kursem</span>
+                    </button>
+                  )}
+                  {isAuthenticated && (
+                    <button
+                      type="button"
+                      onClick={logout}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-rose-400 hover:bg-rose-950/40 font-semibold transition-colors"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      <span>Wyloguj się z konta</span>
                     </button>
                   )}
                 </div>
@@ -474,7 +510,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
               <Code2 className="h-4 w-4 text-blue-400" />
               <span>Przewodnik Wdrożenia & DevOps</span>
             </button>
-            {currentUser.role === 'admin' && (
+            {currentUser.role === 'admin' && isAuthenticated && (
               <button
                 type="button"
                 onClick={() => { setActiveTab('admin'); setMobileMenuOpen(false); }}
@@ -482,6 +518,34 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
               >
                 <Shield className="h-4 w-4" />
                 <span>Panel Administratora</span>
+              </button>
+            )}
+          </div>
+
+          {/* Mobile Auth & Session Controls */}
+          <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenAuthModal();
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-xs font-bold"
+            >
+              <UserCheck className="h-4 w-4" />
+              <span>{isAuthenticated ? 'Zarządzaj Kontem / Zmień Profil' : 'Zaloguj się / Załóż Konto'}</span>
+            </button>
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  logout();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-bold"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Wyloguj się ({currentUser.name})</span>
               </button>
             )}
           </div>

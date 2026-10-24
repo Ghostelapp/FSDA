@@ -78,7 +78,7 @@ export const ModulesView: React.FC = () => {
           const isExpanded = expandedModuleId === module.id;
           const completedInModule = module.lessons.filter((l) => currentUser.completedLessons.includes(l.id)).length;
           const totalInModule = module.lessons.length;
-          const isModuleActive = module.id <= 2; // Modules 1 & 2 available in MVP
+          const isModuleActive = totalInModule > 0;
 
           return (
             <div

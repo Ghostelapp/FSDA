@@ -4,6 +4,12 @@ import { MODULES_DATA } from '../data/modulesData';
 import { DEFAULT_ANNOUNCEMENTS } from '../data/defaultAnnouncements';
 import { soundManager } from '../utils/audioFx';
 import {
+  authenticateUserCredentials,
+  validateAndCreateUser,
+  canSwitchToUser,
+  createGuestUser,
+} from '../utils/authValidation';
+import {
   DEFAULT_REMINDER_SETTINGS,
   formatLocalDateKey,
   getMsUntilNextReminder,
@@ -54,6 +60,7 @@ export type AppTab =
 
 interface AppContextType {
   currentUser: User;
+  isAuthenticated: boolean;
   allUsers: User[];
   activeTab: AppTab;
   selectedLessonId: string | null;
@@ -85,6 +92,12 @@ interface AppContextType {
     antiBotScore?: number;
     bio?: string;
   }) => { success: boolean; user?: User; error?: string };
+  updateCurrentUserProfile: (partial: {
+    name?: string;
+    bio?: string;
+    password?: string;
+    weeklyGoalMinutes?: number;
+  }) => { success: boolean; message: string };
   switchUser: (userId: string) => void;
   logout: () => void;
   deleteUser: (userId: string) => void;
@@ -119,6 +132,7 @@ interface AppContextType {
 }
 
 const STORAGE_KEY_USER = 'fsda_current_user_v5';
+const STORAGE_KEY_AUTH = 'fsda_is_authenticated_v5';
 const STORAGE_KEY_USERS = 'fsda_all_users_v5';
 const STORAGE_KEY_ANNOUNCEMENTS = 'fsda_announcements_v5';
 const STORAGE_KEY_THEME = 'fsda_theme_v5';
@@ -180,6 +194,99 @@ const DEFAULT_USERS: User[] = [
     bio: 'Główny Administrator i Architekt Akademii Full Stack Developer.',
     createdAt: '2026-09-01',
   },
+  {
+    id: 'user-student-anna',
+    name: 'Anna Kowalska (Kursant PRO)',
+    email: 'anna.kowalska@akademia.pl',
+    role: 'student',
+    status: 'active',
+    antiBotVerified: true,
+    antiBotScore: 100,
+    password: 'student123',
+    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=AnnaKowalska',
+    xp: 1850,
+    level: 4,
+    streakDays: 12,
+    lastActiveDate: new Date().toISOString().split('T')[0],
+    weeklyGoalMinutes: 210,
+    weeklySpentMinutes: 145,
+    completedLessons: ['fund-1', 'fund-2', 'html-1', 'html-2', 'css-1', 'js-1'],
+    completedProjects: ['proj-1'],
+    quizScores: {
+      'fund-1': 100,
+      'html-1': 90,
+      'css-1': 85,
+    },
+    unlockedBadges: ['first-step', 'streak-3', 'streak-7', 'xp-500', 'xp-1500', 'project-first'],
+    savedCode: {},
+    lives: 5,
+    maxLives: 5,
+    isPro: true,
+    proPlan: 'yearly',
+    streakFreezes: 2,
+    bio: 'Kursantka ścieżki Frontend & React TypeScript.',
+    createdAt: '2026-09-15',
+  },
+  {
+    id: 'user-student-piotr',
+    name: 'Piotr Nowak (Kursant Free)',
+    email: 'piotr.nowak@akademia.pl',
+    role: 'student',
+    status: 'active',
+    antiBotVerified: true,
+    antiBotScore: 95,
+    password: 'student123',
+    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=PiotrNowak',
+    xp: 420,
+    level: 2,
+    streakDays: 3,
+    lastActiveDate: new Date().toISOString().split('T')[0],
+    weeklyGoalMinutes: 150,
+    weeklySpentMinutes: 60,
+    completedLessons: ['fund-1', 'html-1'],
+    completedProjects: [],
+    quizScores: {
+      'fund-1': 80,
+      'html-1': 70,
+    },
+    unlockedBadges: ['first-step', 'streak-3'],
+    savedCode: {},
+    lives: 4,
+    maxLives: 5,
+    isPro: false,
+    streakFreezes: 1,
+    bio: 'Uczę się podstaw Web Developmentu od zera.',
+    createdAt: '2026-10-02',
+  },
+  {
+    id: 'user-bot-blocked',
+    name: 'AutoScraper Bot v3',
+    email: 'scraper@spambot.io',
+    role: 'student',
+    status: 'banned',
+    banReason: 'Zautomatyzowany skrypt wykryty przez system Anybot (honeypot + czas < 200ms).',
+    antiBotVerified: false,
+    antiBotScore: 0,
+    password: 'bot123',
+    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=SpamBot',
+    xp: 0,
+    level: 1,
+    streakDays: 0,
+    lastActiveDate: '2026-10-05',
+    weeklyGoalMinutes: 180,
+    weeklySpentMinutes: 0,
+    completedLessons: [],
+    completedProjects: [],
+    quizScores: {},
+    unlockedBadges: [],
+    savedCode: {},
+    lives: 0,
+    maxLives: 5,
+    isPro: false,
+    streakFreezes: 0,
+    bio: 'Zablokowane konto testowe do demonstracji filtrów bezpieczeństwa.',
+    createdAt: '2026-10-05',
+  },
 ];
 
 
@@ -189,14 +296,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [allUsers, setAllUsers] = useState<User[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY_USERS);
-      return stored ? JSON.parse(stored) : DEFAULT_USERS;
+      if (stored) {
+        const parsed: User[] = JSON.parse(stored);
+        const existingIds = new Set(parsed.map((u) => u.id));
+        const missingDefaults = DEFAULT_USERS.filter((d) => !existingIds.has(d.id));
+        return [...parsed, ...missingDefaults];
+      }
+      return DEFAULT_USERS;
     } catch {
       return DEFAULT_USERS;
     }
   });
 
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_AUTH);
+      if (stored !== null) {
+        return JSON.parse(stored) === true;
+      }
+      return true;
+    } catch {
+      return true;
+    }
+  });
+
   const [currentUser, setCurrentUser] = useState<User>(() => {
     try {
+      const storedAuth = localStorage.getItem(STORAGE_KEY_AUTH);
+      if (storedAuth !== null && JSON.parse(storedAuth) === false) {
+        return createGuestUser();
+      }
       const stored = localStorage.getItem(STORAGE_KEY_USER);
       if (stored) {
         return JSON.parse(stored);
@@ -304,6 +433,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.warn('Storage sync error', e);
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(isAuthenticated));
+    } catch (e) {
+      console.warn('Auth storage sync error', e);
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     try {
@@ -458,46 +595,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const loginUser = (email: string, password?: string): { success: boolean; error?: string } => {
-    const found = allUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (!found) {
-      return { success: false, error: 'Nie znaleziono konta z tym adresem e-mail.' };
+    const result = authenticateUserCredentials(allUsers, email, password);
+    if (!result.success || !result.user) {
+      return { success: false, error: result.error };
     }
 
-    if (found.status === 'banned') {
-      return {
-        success: false,
-        error: `Konto zostało zablokowane. Powód: ${found.banReason || 'Naruszenie regulaminu platformy.'}`,
-      };
-    }
-
-    if (found.status === 'suspended') {
-      return {
-        success: false,
-        error: `Konto zostało tymczasowo zawieszone. Powód: ${found.banReason || 'Weryfikacja bezpieczeństwa przez anty-bota.'}`,
-      };
-    }
-
-    if (found.status === 'pending_verification') {
-      return {
-        success: false,
-        error: 'Konto oczekuje na weryfikację anty-botem. Skontaktuj się z administratorem lub zaloguj jako człowiek.',
-      };
-    }
-
-    if (password && found.password && found.password !== password) {
-      return {
-        success: false,
-        error: 'Nieprawidłowe hasło dostępowe. Sprawdź poprawność lub skorzystaj z resetu hasła.',
-      };
-    }
-
-    const updatedUser = {
-      ...found,
-      lastLoginAt: new Date().toISOString(),
-    };
+    const updatedUser = result.user;
     setCurrentUser(updatedUser);
+    setIsAuthenticated(true);
     setAllUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
-    showToast(`Witaj ponownie, ${found.name}! Zalogowano pomyślnie.`, 'success');
+    setLivesInfo(calculateRegeneratedLives(updatedUser));
+    if (updatedUser.role !== 'admin' && activeTab === 'admin') {
+      setActiveTabState('dashboard');
+    }
+    soundManager.playSuccess();
+    showToast(`Witaj ponownie, ${updatedUser.name}! Zalogowano pomyślnie.`, 'success');
     return { success: true };
   };
 
@@ -510,52 +622,63 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     antiBotScore?: number;
     bio?: string;
   }): { success: boolean; user?: User; error?: string } => {
-    const existing = allUsers.find((u) => u.email.toLowerCase() === params.email.toLowerCase());
-    if (existing) {
-      return { success: false, error: 'Konto z podanym adresem e-mail już istnieje w systemie.' };
+    const result = validateAndCreateUser(allUsers, params);
+    if (!result.success || !result.user) {
+      return { success: false, error: result.error };
     }
 
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      name: params.name,
-      email: params.email,
-      role: params.role,
-      status: params.antiBotPassed ? 'active' : 'pending_verification',
-      antiBotVerified: params.antiBotPassed,
-      antiBotScore: params.antiBotScore ?? (params.antiBotPassed ? 100 : 30),
-      password: params.password || 'password123',
-      avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(params.name)}`,
-      xp: 0,
-      level: 1,
-      streakDays: 1,
-      lastActiveDate: new Date().toISOString().split('T')[0],
-      weeklyGoalMinutes: 180,
-      weeklySpentMinutes: 0,
-      completedLessons: [],
-      completedProjects: [],
-      quizScores: {},
-      unlockedBadges: [],
-      savedCode: {},
-      lives: 5,
-      maxLives: 5,
-      isPro: false,
-      streakFreezes: 1,
-      bio: params.bio || 'Nowy kursant Akademii Full Stack.',
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date().toISOString().split('T')[0],
+    const newUser = result.user;
+    setAllUsers((prev) => [...prev, newUser]);
+    setCurrentUser(newUser);
+    setIsAuthenticated(true);
+    setLivesInfo(calculateRegeneratedLives(newUser));
+    if (newUser.role !== 'admin' && activeTab === 'admin') {
+      setActiveTabState('dashboard');
+    }
+
+    soundManager.playLevelUp();
+    showToast(`Konto zostało pomyślnie utworzone i zweryfikowane anty-botem! Witaj, ${newUser.name}.`, 'success');
+    return { success: true, user: newUser };
+  };
+
+  const updateCurrentUserProfile = (partial: {
+    name?: string;
+    bio?: string;
+    password?: string;
+    weeklyGoalMinutes?: number;
+  }): { success: boolean; message: string } => {
+    if (!isAuthenticated || currentUser.id === 'user-guest') {
+      return { success: false, message: 'Zaloguj się na swoje konto, aby zapisać zmiany profilu.' };
+    }
+
+    const cleanName = partial.name !== undefined ? partial.name.trim() : currentUser.name;
+    if (cleanName.length < 2) {
+      return { success: false, message: 'Imię i nazwisko musi zawierać co najmniej 2 znaki.' };
+    }
+
+    if (partial.password !== undefined && partial.password.trim().length > 0 && partial.password.length < 6) {
+      return { success: false, message: 'Nowe hasło musi mieć co najmniej 6 znaków.' };
+    }
+
+    const updatedUser: User = {
+      ...currentUser,
+      name: cleanName,
+      bio: partial.bio !== undefined ? partial.bio.trim() : currentUser.bio,
+      password:
+        partial.password && partial.password.trim().length >= 6
+          ? partial.password
+          : currentUser.password,
+      weeklyGoalMinutes:
+        typeof partial.weeklyGoalMinutes === 'number' && partial.weeklyGoalMinutes >= 30
+          ? partial.weeklyGoalMinutes
+          : currentUser.weeklyGoalMinutes,
     };
 
-    const updated = [...allUsers, newUser];
-    setAllUsers(updated);
-    setCurrentUser(newUser);
-
-    if (params.antiBotPassed) {
-      showToast(`Konto zostało pomyślnie utworzone i zweryfikowane anty-botem! Witaj, ${params.name}.`, 'success');
-    } else {
-      showToast(`Konto utworzone, lecz oczekuje na pełną weryfikację anty-botem.`, 'info');
-    }
-
-    return { success: true, user: newUser };
+    setCurrentUser(updatedUser);
+    setAllUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    soundManager.playSuccess();
+    showToast('Twój profil oraz ustawienia bezpieczeństwa zostały zaktualizowane.', 'success');
+    return { success: true, message: 'Zmiany w profilu zostały zapisane.' };
   };
 
   const deleteUser = (userId: string) => {
@@ -571,8 +694,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setAllUsers(updated);
 
     if (currentUser.id === userId) {
-      const fallback = updated[0] || DEFAULT_USERS[0];
-      setCurrentUser(fallback);
+      setIsAuthenticated(false);
+      setCurrentUser(createGuestUser());
+      if (activeTab === 'admin') {
+        setActiveTabState('dashboard');
+      }
     }
 
     showToast(`Konto ${userToDelete.name} zostało usunięte z bazy danych.`, 'info');
@@ -582,31 +708,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setAllUsers((prev) =>
       prev.map((u) => {
         if (u.id === userId) {
-          const updated = { ...u, status, banReason: reason };
-          if (currentUser.id === userId) {
-            setCurrentUser(updated);
-          }
-          return updated;
+          return { ...u, status, banReason: reason };
         }
         return u;
       })
     );
+
+    if (currentUser.id === userId && status !== 'active') {
+      setIsAuthenticated(false);
+      setCurrentUser(createGuestUser());
+      if (activeTab === 'admin') {
+        setActiveTabState('dashboard');
+      }
+    } else if (currentUser.id === userId) {
+      setCurrentUser((prev) => ({ ...prev, status, banReason: reason }));
+    }
 
     const actionText = status === 'active' ? 'odblokowane i aktywne' : status === 'suspended' ? 'zawieszone' : 'zablokowane';
     showToast(`Status konta został zmieniony: ${actionText}.`, status === 'active' ? 'success' : 'danger');
   };
 
   const resetUserPassword = (email: string, newPassword: string = 'noweHaslo2026!'): { success: boolean; message: string } => {
-    const found = allUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const found = allUsers.find((u) => u.email.trim().toLowerCase() === cleanEmail);
     if (!found) {
       return { success: false, message: 'Nie znaleziono konta z podanym adresem e-mail.' };
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, message: 'Nowe hasło musi mieć co najmniej 6 znaków.' };
     }
 
     setAllUsers((prev) =>
       prev.map((u) => (u.id === found.id ? { ...u, password: newPassword } : u))
     );
-    showToast(`Hasło dla ${found.name} zostało zresetowane na: ${newPassword}`, 'badge');
-    return { success: true, message: `Nowe hasło zostało ustawione: ${newPassword}` };
+    if (currentUser.id === found.id) {
+      setCurrentUser((prev) => ({ ...prev, password: newPassword }));
+    }
+    showToast(`Hasło dla ${found.name} zostało zaktualizowane.`, 'badge');
+    return { success: true, message: `Nowe hasło dla konta ${found.email} zostało ustawione: ${newPassword}` };
   };
 
   const verifyUserAntiBot = (userId: string) => {
@@ -653,14 +793,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const switchUser = (userId: string) => {
     const found = allUsers.find((u) => u.id === userId);
-    if (found) {
-      setCurrentUser(found);
-      showToast(`Przełączono na profil: ${found.name} (${found.role === 'admin' ? 'Instruktor/Admin' : 'Kursant'})`, 'info');
+    const check = canSwitchToUser(found);
+    if (!check.allowed || !found) {
+      showToast(check.error || 'Nie można przełączyć na to konto.', 'danger');
+      return;
     }
+
+    const updatedUser: User = {
+      ...found,
+      lastLoginAt: new Date().toISOString(),
+    };
+    setCurrentUser(updatedUser);
+    setIsAuthenticated(true);
+    setAllUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+    setLivesInfo(calculateRegeneratedLives(updatedUser));
+    if (updatedUser.role !== 'admin' && activeTab === 'admin') {
+      setActiveTabState('dashboard');
+    }
+    showToast(`Przełączono na profil: ${found.name} (${found.role === 'admin' ? 'Instruktor/Admin' : 'Kursant'})`, 'info');
   };
 
   const logout = () => {
-    showToast('Wylogowano z konta.', 'info');
+    const prevName = currentUser.name;
+    const guest = createGuestUser();
+    setIsAuthenticated(false);
+    setCurrentUser(guest);
+    setLivesInfo(calculateRegeneratedLives(guest));
+    if (activeTab === 'admin') {
+      setActiveTabState('dashboard');
+    }
+    showToast(`Wylogowano z konta (${prevName}). Jesteś teraz w trybie gościa.`, 'info');
   };
 
   const completeLesson = (lessonId: string, xpReward: number) => {
@@ -831,6 +993,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const importUserBackup = useCallback((restoredUser: User) => {
     setCurrentUser(restoredUser);
+    setIsAuthenticated(true);
     setAllUsers((prev) => {
       const exists = prev.some((u) => u.id === restoredUser.id);
       if (exists) {
@@ -1018,6 +1181,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     <AppContext.Provider
       value={{
         currentUser,
+        isAuthenticated,
         allUsers,
         activeTab,
         selectedLessonId,
@@ -1041,6 +1205,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setActiveTab,
         loginUser,
         registerUser,
+        updateCurrentUserProfile,
         switchUser,
         logout,
         deleteUser,

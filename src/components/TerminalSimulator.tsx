@@ -40,7 +40,7 @@ interface VirtualFile {
 }
 
 export const TerminalSimulator: React.FC = () => {
-  const { currentUser, completeLesson } = useApp();
+  const { currentUser, awardCustomXp } = useApp();
 
   const [inputVal, setInputVal] = useState('');
   const [history, setHistory] = useState<string[]>([]);
@@ -132,18 +132,24 @@ export const TerminalSimulator: React.FC = () => {
     const newOutputs: TerminalLine[] = [inputLine];
 
     // Check Missions
+    const matchedMissionIds: string[] = [];
     missions.forEach((m) => {
       if (!m.completed && m.expectedCommandRegex.test(cmd)) {
-        m.completed = true;
+        matchedMissionIds.push(m.id);
         soundManager.playSuccess();
-        completeLesson('fund-1', m.xpReward); // awards real XP
+        awardCustomXp(m.xpReward, `Misja terminalowa: ${m.title}`);
         newOutputs.push({
           id: `succ-${Date.now()}-${m.id}`,
           type: 'success',
-          text: `🎯 MISJA ZALICZONA: "${m.title}"! Zdobywasz +${m.xpReward} XP.`,
+          text: `MISJA ZALICZONA: "${m.title}"! Zdobywasz +${m.xpReward} XP.`,
         });
       }
     });
+    if (matchedMissionIds.length > 0) {
+      setMissions((prev) =>
+        prev.map((m) => (matchedMissionIds.includes(m.id) ? { ...m, completed: true } : m))
+      );
+    }
 
     // Process Command Logic
     const parts = cmd.split(' ').filter(Boolean);

@@ -48,6 +48,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const [consoleLogs, setConsoleLogs] = useState<{ type: 'log' | 'error' | 'warn'; text: string; time: string }[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationSummary | null>(null);
   const [showSolutionModal, setShowSolutionModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [showHints, setShowHints] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -66,6 +67,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     });
     setConsoleLogs([]);
     setValidationResult(null);
+    setActiveFileTab('html');
+    setActiveOutputTab('preview');
+    setShowHints(false);
+    setHintIndex(0);
+    setShowSolutionModal(false);
+    setShowResetModal(false);
   }, [exercise.id]);
 
   // Listen to messages from the sandboxed iframe
@@ -123,15 +130,18 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   };
 
   const handleReset = () => {
-    if (confirm('Czy na pewno chcesz przywrócić kod początkowy? Wprowadzone zmiany zostaną zresetowane.')) {
-      setCode({
-        html: exercise.starterCode.html,
-        css: exercise.starterCode.css,
-        js: exercise.starterCode.js,
-      });
-      setValidationResult(null);
-      setConsoleLogs([]);
-    }
+    setShowResetModal(true);
+  };
+
+  const confirmResetCode = () => {
+    setCode({
+      html: exercise.starterCode.html,
+      css: exercise.starterCode.css,
+      js: exercise.starterCode.js,
+    });
+    setValidationResult(null);
+    setConsoleLogs([]);
+    setShowResetModal(false);
   };
 
   const handleApplySolution = () => {
@@ -652,6 +662,37 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-900/40"
               >
                 Wklej całe rozwiązanie do edytora
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Code Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-amber-400">
+              <RotateCcw className="h-5 w-5" />
+              <h3 className="text-base font-bold text-white">Przywrócić kod początkowy?</h3>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Wszystkie niezapisane zmiany w zakładkach HTML, CSS oraz JS dla tego ćwiczenia zostaną zastąpione kodem startowym.
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+              >
+                Anuluj
+              </button>
+              <button
+                type="button"
+                onClick={confirmResetCode}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold"
+              >
+                Zresetuj kod
               </button>
             </div>
           </div>

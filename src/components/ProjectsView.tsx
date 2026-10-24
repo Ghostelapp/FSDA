@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { PROJECTS_DATA } from '../data/projectsData';
 import { Project } from '../types';
@@ -26,6 +26,13 @@ export const ProjectsView: React.FC = () => {
   // Active selected project
   const initialProject = PROJECTS_DATA.find((p) => p.id === selectedProjectId) || PROJECTS_DATA[0];
   const [activeProject, setActiveProject] = useState<Project>(initialProject);
+
+  useEffect(() => {
+    const found = PROJECTS_DATA.find((p) => p.id === selectedProjectId);
+    if (found) {
+      setActiveProject(found);
+    }
+  }, [selectedProjectId]);
 
   const isCompleted = currentUser.completedProjects.includes(activeProject.id);
 
