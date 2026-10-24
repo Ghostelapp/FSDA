@@ -51,19 +51,9 @@ export const MockInterviewView: React.FC = () => {
 Napisz funkcję isValidBrackets(str), która sprawdza, czy wszystkie nawiasy w podanym ciągu '()', '{}', '[]' są prawidłowo sparowane i zamykane w odpowiedniej kolejności.
 Zwróć true jeśli ciąg jest poprawny, false w przeciwnym razie.`,
       starterCode: `function isValidBrackets(str) {
-  // Twój kod tutaj
-  const stack = [];
-  const map = { ')': '(', '}': '{', ']': '[' };
-  
-  for (const char of str) {
-    if (char === '(' || char === '{' || char === '[') {
-      stack.push(char);
-    } else if (char === ')' || char === '}' || char === ']') {
-      if (stack.pop() !== map[char]) return false;
-    }
-  }
-  
-  return stack.length === 0;
+  // Uzupełnij implementację przy użyciu stosu (tablicy):
+  // Zwróć true jeśli nawiasy (), {}, [] są poprawnie sparowane, w przeciwnym razie false.
+  return false;
 }`,
       solutionCode: `function isValidBrackets(str) {
   const stack = [];
@@ -101,11 +91,8 @@ Napisz funkcję groupSpendingByPlan(orders), która przyjmuje tablicę zamówie�
 i zwraca obiekt z sumą kwot pogrupowaną według nazwy planu:
 { monthly: 98, yearly: 99 }`,
       starterCode: `function groupSpendingByPlan(orders) {
-  // Twój kod tutaj (użyj Array.prototype.reduce)
-  return orders.reduce((acc, order) => {
-    acc[order.plan] = (acc[order.plan] || 0) + order.amount;
-    return acc;
-  }, {});
+  // Uzupełnij implementację (np. przy użyciu orders.reduce):
+  return {};
 }`,
       solutionCode: `function groupSpendingByPlan(orders) {
   return orders.reduce((acc, order) => {
@@ -139,13 +126,9 @@ i zwraca obiekt z sumą kwot pogrupowaną według nazwy planu:
       description: `Jedno z ulubionych pytań rekruterów z JavaScriptu i optymalizacji:
 Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej funkcji fn, dopóki nie upłynie podany czas delayMs od ostatniego jej wywołania.`,
       starterCode: `function debounce(fn, delayMs) {
-  let timer;
-  return function(...args) {
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      fn.apply(this, args);
-    }, delayMs);
-  };
+  // Uzupełnij implementację:
+  // Przechowaj identyfikator timera w domknięciu i użyj clearTimeout oraz setTimeout
+  return null;
 }`,
       solutionCode: `function debounce(fn, delayMs) {
   let timer;
@@ -261,12 +244,17 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
         });
       } else {
         // Debounce test
+        const codeWithoutComments = userCode.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '');
         // eslint-disable-next-line no-new-func
         const fn = new Function(`${userCode}; return debounce;`)();
         const d = fn(() => {}, 100);
         results.push({
           passed: typeof d === 'function',
           message: 'Test 1: funkcja zwraca właściwy wrapper closure',
+        });
+        results.push({
+          passed: /clearTimeout\s*\(/.test(codeWithoutComments) && /setTimeout\s*\(/.test(codeWithoutComments),
+          message: 'Test 2: wykorzystano clearTimeout() oraz setTimeout() wewnątrz domknięcia',
         });
       }
 

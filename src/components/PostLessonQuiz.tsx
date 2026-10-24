@@ -19,16 +19,19 @@ import {
 interface PostLessonQuizProps {
   lesson: Lesson;
   nextLesson: Lesson | null;
+  isExercisePassed?: boolean;
   onNavigateNext?: () => void;
 }
 
 export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
   lesson,
   nextLesson,
+  isExercisePassed = false,
   onNavigateNext,
 }) => {
   const {
     currentUser,
+    completeLesson,
     saveQuizScore,
     loseLife,
     livesInfo,
@@ -146,6 +149,8 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
         loseLife(
           `Wynik quizu końcowego: ${scorePercent}%. Wymagane minimum to 80% — tracisz 1 serce.`
         );
+      } else if (isExercisePassed && !currentUser.completedLessons.includes(lesson.id)) {
+        completeLesson(lesson.id, lesson.xpReward);
       }
 
       setIsFinished(true);

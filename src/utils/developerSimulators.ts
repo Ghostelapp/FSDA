@@ -632,7 +632,7 @@ export const DAILY_CHALLENGES: DailyChallengeSpec[] = [
     xpReward: 100,
     description:
       'Napisz funkcję czyAnagram(a, b), która zwraca true, jeśli oba napisy składają się z dokładnie tych samych liter (ignorując wielkość liter i spacje), lub false w przeciwnym razie.',
-    starterCode: `function czyAnagram(a, b) {\n  // Uzupełnij implementację:\n  const norm = (str) => str.toLowerCase().replace(/\\s+/g, '').split('').sort().join('');\n  return norm(a) === norm(b);\n}`,
+    starterCode: `function czyAnagram(a, b) {\n  // Uzupełnij implementację:\n  // Znormalizuj oba napisy (małe litery, bez spacji, posortowane znaki) i porównaj je\n  return false;\n}`,
     solutionCode: `function czyAnagram(a, b) {\n  const norm = (str) => String(str).toLowerCase().replace(/\\s+/g, '').split('').sort().join('');\n  return norm(a) === norm(b);\n}`,
     testCases: [
       { inputDesc: 'czyAnagram("listen", "silent")', args: ['listen', 'silent'], expected: true },
@@ -646,7 +646,7 @@ export const DAILY_CHALLENGES: DailyChallengeSpec[] = [
     xpReward: 100,
     description:
       'Napisz funkcję sumaPodzielnych(n), która zwraca sumę wszystkich liczb dodatnich mniejszych od n, które są podzielne przez 3 lub 5.',
-    starterCode: `function sumaPodzielnych(n) {\n  let suma = 0;\n  for (let i = 1; i < n; i++) {\n    if (i % 3 === 0 || i % 5 === 0) suma += i;\n  }\n  return suma;\n}`,
+    starterCode: `function sumaPodzielnych(n) {\n  // Uzupełnij implementację:\n  // Zsumuj liczby mniejsze od n podzielne przez 3 lub 5\n  return 0;\n}`,
     solutionCode: `function sumaPodzielnych(n) {\n  let suma = 0;\n  for (let i = 1; i < n; i++) {\n    if (i % 3 === 0 || i % 5 === 0) suma += i;\n  }\n  return suma;\n}`,
     testCases: [
       { inputDesc: 'sumaPodzielnych(10)', args: [10], expected: 23 },

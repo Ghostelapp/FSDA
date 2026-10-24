@@ -4,6 +4,7 @@ import { Lesson } from '../types';
 import { CodeEditor } from './CodeEditor';
 import { CodeBlock } from './CodeBlock';
 import { PostLessonQuiz } from './PostLessonQuiz';
+import { checkLessonCompletionEligibility } from '../utils/codeRunner';
 import { 
   CheckCircle, 
   ArrowLeft, 
@@ -25,7 +26,8 @@ import {
   FileText,
   Heart,
   Crown,
-  Zap
+  Zap,
+  Lock
 } from 'lucide-react';
 
 interface LessonDetailViewProps {
@@ -54,16 +56,27 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  // Completed criteria checklist state
-  const [checkedCriteria, setCheckedCriteria] = useState<Record<number, boolean>>({});
+  // Automated exercise & quiz verification state
+  const [exercisePassedInSession, setExercisePassedInSession] = useState<boolean>(false);
   const [showPostLessonQuiz, setShowPostLessonQuiz] = useState<boolean>(false);
 
   useEffect(() => {
     setSelectedAnswers({});
     setQuizSubmitted(false);
-    setCheckedCriteria({});
+    setExercisePassedInSession(false);
     setShowPostLessonQuiz(false);
   }, [lesson.id]);
+
+  const hasClaimedExercise = Boolean(
+    currentUser.claimedRewards?.includes(`exercise-${lesson.interactiveExercise.id}`)
+  );
+  const isExercisePassed = isCompleted || exercisePassedInSession || hasClaimedExercise;
+  const bestQuizScore = currentUser.quizScores?.[lesson.id] ?? 0;
+  const eligibility = checkLessonCompletionEligibility({
+    isExercisePassed,
+    quizScore: isCompleted ? Math.max(80, bestQuizScore) : bestQuizScore,
+    requiredQuizScore: 80,
+  });
 
   const handleSelectAnswer = (questionId: string, optionIndex: number) => {
     if (quizSubmitted) return;
@@ -91,6 +104,8 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
 
     if (scorePercent < 80) {
       loseLife(`Wynik testu: ${scorePercent}%. Tracisz 1 serce! Przeanalizuj poniższe wyjaśnienia.`);
+    } else if (isExercisePassed && !isCompleted) {
+      completeLesson(lesson.id, lesson.xpReward);
     }
   };
 
@@ -100,6 +115,9 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
   };
 
   const handleCompleteLessonAction = () => {
+    if (!eligibility.canComplete && !isCompleted) {
+      return;
+    }
     completeLesson(lesson.id, lesson.xpReward);
     setShowPostLessonQuiz(true);
     setTimeout(() => {
@@ -288,7 +306,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
       </section>
 
       {/* SECTION 5: Interaktywne ćwiczenie z wbudowanym edytorem */}
-      <section className="space-y-4">
+      <section id="lesson-code-editor" className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 text-indigo-400">
             <Sparkles className="h-5 w-5" />
@@ -300,11 +318,15 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
         <CodeEditor
           exercise={lesson.interactiveExercise}
           onSuccess={() => {
+            setExercisePassedInSession(true);
             awardCustomXp(
               25,
               `Zaliczono ćwiczenie w edytorze: ${lesson.interactiveExercise.title}`,
               `exercise-${lesson.interactiveExercise.id}`
             );
+            if (eligibility.isQuizPassed && !isCompleted) {
+              completeLesson(lesson.id, lesson.xpReward);
+            }
           }}
           savedCode={currentUser.savedCode?.[lesson.interactiveExercise.id]}
           onSave={(code) => saveCodeSnippet(lesson.interactiveExercise.id, code)}
@@ -522,54 +544,174 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
         </div>
       </section>
 
-      {/* SECTION 10: Podsumowanie i kryteria zaliczenia */}
-      <section className="rounded-2xl border border-emerald-500/30 bg-emerald-950/15 p-6 space-y-4">
-        <div className="flex items-center gap-2 text-emerald-400">
-          <CheckSquare className="h-5 w-5" />
-          <h2 className="text-base font-bold text-white">10. Podsumowanie i kryteria zaliczenia lekcji</h2>
+      {/* SECTION 10: Podsumowanie i automatyczna weryfikacja zaliczenia */}
+      <section className="rounded-2xl border border-emerald-500/30 bg-emerald-950/15 p-6 space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-emerald-400">
+            <CheckSquare className="h-5 w-5" />
+            <h2 className="text-base font-bold text-white">10. Automatyczna weryfikacja zaliczenia lekcji</h2>
+          </div>
+          <span
+            className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${
+              isCompleted || eligibility.canComplete
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+            }`}
+          >
+            {isCompleted
+              ? 'Lekcja ukończona i zweryfikowana'
+              : eligibility.canComplete
+              ? 'Wszystkie wymagania spełnione (2/2)'
+              : `Wymagane wykonanie zadań (${(eligibility.isExercisePassed ? 1 : 0) + (eligibility.isQuizPassed ? 1 : 0)}/2)`}
+          </span>
         </div>
-        
+
         <p className="text-xs text-slate-300">
-          Zaznacz opanowane zagadnienia, aby upewnić się, że materiał został w pełni przyswojony:
+          Zaliczenie lekcji oraz przyznanie punktów XP odbywa się wyłącznie po automatycznym przejściu testów w edytorze kodu oraz zdaniu quizu sprawdzającego:
         </p>
 
+        {/* Automated Verification Gates */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div
+            className={`p-3.5 rounded-xl border flex items-start justify-between gap-3 ${
+              eligibility.isExercisePassed
+                ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
+                : 'bg-slate-900/90 border-slate-800 text-slate-300'
+            }`}
+          >
+            <div className="flex items-start gap-2.5">
+              {eligibility.isExercisePassed ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+              ) : (
+                <Lock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+              )}
+              <div className="space-y-1 text-xs">
+                <p className="font-bold text-white">1. Ćwiczenie praktyczne w edytorze</p>
+                <p className="text-slate-300">
+                  {eligibility.isExercisePassed
+                    ? `Zaliczono 100% testów kodu (${lesson.interactiveExercise.title})`
+                    : 'Napisz kod w Sekcji 5 i kliknij "Sprawdź kod", aby zaliczyć wszystkie testy.'}
+                </p>
+              </div>
+            </div>
+            {!eligibility.isExercisePassed && (
+              <button
+                type="button"
+                onClick={() =>
+                  document.getElementById('lesson-code-editor')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+                className="shrink-0 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-colors"
+              >
+                Do edytora
+              </button>
+            )}
+          </div>
+
+          <div
+            className={`p-3.5 rounded-xl border flex items-start justify-between gap-3 ${
+              eligibility.isQuizPassed
+                ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
+                : 'bg-slate-900/90 border-slate-800 text-slate-300'
+            }`}
+          >
+            <div className="flex items-start gap-2.5">
+              {eligibility.isQuizPassed ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+              ) : (
+                <Lock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+              )}
+              <div className="space-y-1 text-xs">
+                <p className="font-bold text-white">2. Test wiedzy (min. 80%)</p>
+                <p className="text-slate-300">
+                  {eligibility.isQuizPassed
+                    ? `Zdano quiz z wynikiem ${Math.max(80, bestQuizScore)}%`
+                    : `Wymagane minimum 80% poprawnych odpowiedzi (Twój wynik: ${bestQuizScore}%).`}
+                </p>
+              </div>
+            </div>
+            {!eligibility.isQuizPassed && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPostLessonQuiz(true);
+                  setTimeout(() => {
+                    document.getElementById('post-lesson-quiz')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 100);
+                }}
+                className="shrink-0 px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-colors"
+              >
+                Rozwiąż quiz
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Read-only Lesson Criteria Status */}
         <div className="space-y-2">
-          {lesson.completionCriteria.map((crit, idx) => (
-            <label
-              key={idx}
-              className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-900/80 border border-slate-800 cursor-pointer text-xs text-slate-200 select-none hover:bg-slate-800 transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={checkedCriteria[idx] || isCompleted}
-                onChange={(e) => setCheckedCriteria((prev) => ({ ...prev, [idx]: e.target.checked }))}
-                className="h-4 w-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500"
-              />
-              <span>{crit}</span>
-            </label>
-          ))}
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            Kryteria programowe weryfikowane przez system:
+          </p>
+          {lesson.completionCriteria.map((crit, idx) => {
+            const isCriterionVerified =
+              isCompleted ||
+              eligibility.canComplete ||
+              (idx === 0 && eligibility.isExercisePassed) ||
+              (crit.toLowerCase().includes('quiz') && eligibility.isQuizPassed);
+
+            return (
+              <div
+                key={idx}
+                className={`flex items-center justify-between gap-2.5 p-2.5 rounded-lg border text-xs ${
+                  isCriterionVerified
+                    ? 'bg-emerald-950/25 border-emerald-500/30 text-emerald-200'
+                    : 'bg-slate-900/80 border-slate-800 text-slate-300'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  {isCriterionVerified ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <Lock className="h-4 w-4 text-slate-500 shrink-0" />
+                  )}
+                  <span>{crit}</span>
+                </div>
+                <span className="text-[11px] font-mono text-slate-400 shrink-0">
+                  {isCriterionVerified ? 'Zweryfikowano' : 'Wymaga wykonania'}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
         <div className="pt-3 flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
+              disabled={!eligibility.canComplete && !isCompleted}
               onClick={handleCompleteLessonAction}
               className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold transition-all shadow-lg ${
                 isCompleted
                   ? 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
-                  : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-900/40'
+                  : eligibility.canComplete
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-900/40'
+                  : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed opacity-75'
               }`}
             >
-              <CheckCircle className="h-4 w-4" />
+              {isCompleted || eligibility.canComplete ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <Lock className="h-4 w-4" />
+              )}
               <span>
                 {isCompleted
-                  ? 'Lekcja zaliczona — Otwórz quiz końcowy'
-                  : `Zalicz lekcję (+${lesson.xpReward} XP) i przejdź do quizu`}
+                  ? 'Lekcja zaliczona — Otwórz quiz podsumowujący'
+                  : eligibility.canComplete
+                  ? `Zatwierdź ukończenie lekcji (+${lesson.xpReward} XP)`
+                  : `Zablokowane — wykonaj ćwiczenie i quiz (+${lesson.xpReward} XP)`}
               </span>
             </button>
 
-            {!isCompleted && !showPostLessonQuiz && (
+            {!showPostLessonQuiz && (
               <button
                 type="button"
                 onClick={() => {
@@ -602,11 +744,12 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
         </div>
       </section>
 
-      {/* INTERACTIVE POST-LESSON QUIZ (Appears upon completing the lesson or manual trigger) */}
+      {/* INTERACTIVE POST-LESSON QUIZ */}
       {(isCompleted || showPostLessonQuiz) && (
         <PostLessonQuiz
           lesson={lesson}
           nextLesson={nextLesson}
+          isExercisePassed={eligibility.isExercisePassed}
           onNavigateNext={() => {
             if (nextLesson) {
               setActiveTab('lesson', nextLesson.id);

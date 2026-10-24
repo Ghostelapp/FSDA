@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { PROJECTS_DATA } from '../data/projectsData';
 import { Project } from '../types';
 import { CodeEditor } from './CodeEditor';
+import { getProjectInteractiveExercise, ValidationSummary } from '../utils/codeRunner';
 import { 
   FolderGit2, 
   Sparkles, 
@@ -17,15 +18,17 @@ import {
   Cloud,
   ChevronRight,
   ShieldCheck,
-  Check
+  Check,
+  Lock
 } from 'lucide-react';
 
 export const ProjectsView: React.FC = () => {
-  const { currentUser, completeProject, selectedProjectId, setActiveTab } = useApp();
+  const { currentUser, completeProject, selectedProjectId, saveCodeSnippet, awardCustomXp } = useApp();
   
   // Active selected project
   const initialProject = PROJECTS_DATA.find((p) => p.id === selectedProjectId) || PROJECTS_DATA[0];
   const [activeProject, setActiveProject] = useState<Project>(initialProject);
+  const [projectValidation, setProjectValidation] = useState<ValidationSummary | null>(null);
 
   useEffect(() => {
     const found = PROJECTS_DATA.find((p) => p.id === selectedProjectId);
@@ -34,16 +37,22 @@ export const ProjectsView: React.FC = () => {
     }
   }, [selectedProjectId]);
 
+  useEffect(() => {
+    setProjectValidation(null);
+  }, [activeProject.id]);
+
   const isCompleted = currentUser.completedProjects.includes(activeProject.id);
-
-  // Completed stage checklist state
-  const [completedStages, setCompletedStages] = useState<Record<string, boolean>>({});
-
-  const toggleStage = (key: string) => {
-    setCompletedStages((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+  const projectExercise = getProjectInteractiveExercise(activeProject);
+  const hasClaimedProjectVerify = Boolean(
+    currentUser.claimedRewards?.includes(`project-verify-${activeProject.id}`)
+  );
+  const isProjectVerified =
+    isCompleted || Boolean(projectValidation?.allPassed) || hasClaimedProjectVerify;
 
   const handleCompleteProject = () => {
+    if (!isProjectVerified && !isCompleted) {
+      return;
+    }
     completeProject(activeProject.id, activeProject.xpReward);
   };
 
@@ -219,38 +228,62 @@ export const ProjectsView: React.FC = () => {
               </div>
             </div>
 
-            {/* Stages & Milestones */}
+            {/* Stages & Milestones (Automatically Verified by Project Code Runner) */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Layers className="h-4 w-4 text-amber-400" />
-                <span>Etapy realizacji krok po kroku:</span>
-              </h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Layers className="h-4 w-4 text-amber-400" />
+                  <span>Etapy realizacji (weryfikowane automatycznie w kodzie):</span>
+                </h3>
+                <span className="text-[11px] font-mono text-slate-400">
+                  Status etapów zależy od wyników testów w edytorze poniżej
+                </span>
+              </div>
               <div className="space-y-3">
-                {activeProject.stages.map((stage) => {
-                  const stageKey = `${activeProject.id}-stage-${stage.stage}`;
-                  const isChecked = completedStages[stageKey] || isCompleted;
+                {activeProject.stages.map((stage, sIdx) => {
+                  const ruleForStage = projectValidation?.results[sIdx];
+                  const isStageVerified =
+                    isProjectVerified || Boolean(ruleForStage?.passed);
 
                   return (
-                    <div key={stage.stage} className="p-4 rounded-xl border border-slate-800 bg-slate-950/70 space-y-2">
-                      <div className="flex items-center justify-between">
+                    <div
+                      key={stage.stage}
+                      className={`p-4 rounded-xl border space-y-2 transition-colors ${
+                        isStageVerified
+                          ? 'border-emerald-500/40 bg-emerald-950/20'
+                          : 'border-slate-800 bg-slate-950/70'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-600 text-[11px] font-bold text-white">
+                          <span
+                            className={`flex h-5 w-5 items-center justify-center rounded-md text-[11px] font-bold text-white ${
+                              isStageVerified ? 'bg-emerald-600' : 'bg-indigo-600'
+                            }`}
+                          >
                             {stage.stage}
                           </span>
                           <h4 className="text-xs font-bold text-white">{stage.title}</h4>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => toggleStage(stageKey)}
-                          className={`flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md transition-colors ${
-                            isChecked
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : 'bg-slate-800 text-slate-400 hover:text-white'
+                        <span
+                          className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-md border ${
+                            isStageVerified
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                              : 'bg-slate-900 text-slate-400 border-slate-800'
                           }`}
                         >
-                          <Check className="h-3 w-3" />
-                          <span>{isChecked ? 'Wykonano' : 'Oznacz jako zrobione'}</span>
-                        </button>
+                          {isStageVerified ? (
+                            <>
+                              <Check className="h-3 w-3 text-emerald-400" />
+                              <span>Zweryfikowano w kodzie</span>
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="h-3 w-3 text-amber-400" />
+                              <span>Wymaga testu kodu</span>
+                            </>
+                          )}
+                        </span>
                       </div>
                       <p className="text-xs text-slate-400 leading-relaxed">{stage.description}</p>
                       <div className="flex flex-wrap gap-2 pt-1">
@@ -266,6 +299,52 @@ export const ProjectsView: React.FC = () => {
               </div>
             </div>
 
+            {/* Interactive Project Code Verification Workspace */}
+            <div id="project-code-verifier" className="space-y-3 pt-2 border-t border-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Terminal className="h-4 w-4 text-indigo-400" />
+                    <span>Interaktywny Weryfikator Kodu Projektu #{activeProject.number}</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Napisz kod spełniający wymagania etapów i kliknij &quot;Sprawdź kod&quot;, aby automatycznie odblokować zaliczenie projektu.
+                  </p>
+                </div>
+                <span
+                  className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${
+                    isProjectVerified
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                  }`}
+                >
+                  {isProjectVerified
+                    ? '100% testów projektu zaliczone'
+                    : projectValidation
+                    ? `Zaliczono ${projectValidation.passedCount}/${projectValidation.totalCount} testów`
+                    : 'Testy nieuruchomione'}
+                </span>
+              </div>
+
+              <CodeEditor
+                key={projectExercise.id}
+                exercise={projectExercise}
+                onValidationChange={(res) => setProjectValidation(res)}
+                onSuccess={() => {
+                  awardCustomXp(
+                    50,
+                    `Zweryfikowano kod projektu: ${activeProject.title}`,
+                    `project-verify-${activeProject.id}`
+                  );
+                  if (!isCompleted) {
+                    completeProject(activeProject.id, activeProject.xpReward);
+                  }
+                }}
+                savedCode={currentUser.savedCode?.[projectExercise.id]}
+                onSave={(code) => saveCodeSnippet(projectExercise.id, code)}
+              />
+            </div>
+
             {/* Acceptance Tests */}
             <div className="space-y-2">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -275,7 +354,11 @@ export const ProjectsView: React.FC = () => {
               <ul className="space-y-1.5 text-xs text-slate-300">
                 {activeProject.acceptanceTests.map((t, idx) => (
                   <li key={idx} className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                    {isProjectVerified ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <Lock className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
+                    )}
                     <span>{t}</span>
                   </li>
                 ))}
@@ -312,22 +395,37 @@ export const ProjectsView: React.FC = () => {
             {/* Action Bar */}
             <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-800">
               <div className="text-xs text-slate-400">
-                {isCompleted 
-                  ? 'Gratulacje! Ten projekt został pomyślnie dodany do Twojego dorobku.'
-                  : 'Po zrealizowaniu wymagań i testów akceptacyjnych kliknij przycisk poniżej.'}
+                {isCompleted
+                  ? 'Gratulacje! Ten projekt został pomyślnie zweryfikowany i dodany do Twojego portfolio.'
+                  : isProjectVerified
+                  ? 'Wszystkie testy automatyczne projektu zostały zaliczone! Możesz zatwierdzić projekt.'
+                  : 'Aby odblokować zaliczenie projektu, napisz kod w weryfikatorze powyżej i zalicz 100% testów.'}
               </div>
 
               <button
                 type="button"
+                disabled={!isProjectVerified && !isCompleted}
                 onClick={handleCompleteProject}
                 className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold transition-all shadow-lg ${
                   isCompleted
                     ? 'bg-slate-800 text-slate-300 border border-slate-700'
-                    : 'bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white shadow-indigo-900/40'
+                    : isProjectVerified
+                    ? 'bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white shadow-indigo-900/40'
+                    : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed opacity-75'
                 }`}
               >
-                <CheckCircle2 className="h-4 w-4" />
-                <span>{isCompleted ? 'Zaliczony ponownie (+0 XP)' : `Zatwierdź ukończenie projektu (+${activeProject.xpReward} XP)`}</span>
+                {isCompleted || isProjectVerified ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <Lock className="h-4 w-4" />
+                )}
+                <span>
+                  {isCompleted
+                    ? 'Projekt zweryfikowany i zaliczony'
+                    : isProjectVerified
+                    ? `Zatwierdź ukończenie projektu (+${activeProject.xpReward} XP)`
+                    : `Zablokowane — zalicz testy kodu projektu (+${activeProject.xpReward} XP)`}
+                </span>
               </button>
             </div>
 

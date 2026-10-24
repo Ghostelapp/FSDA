@@ -25,6 +25,7 @@ import {
 interface CodeEditorProps {
   exercise: InteractiveExercise;
   onSuccess?: () => void;
+  onValidationChange?: (result: ValidationSummary) => void;
   savedCode?: { html: string; css: string; js: string };
   onSave?: (code: { html: string; css: string; js: string }) => void;
 }
@@ -32,6 +33,7 @@ interface CodeEditorProps {
 export const CodeEditor: React.FC<CodeEditorProps> = ({
   exercise,
   onSuccess,
+  onValidationChange,
   savedCode,
   onSave,
 }) => {
@@ -116,6 +118,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     runCodeInSandbox();
     const result = validateExerciseCode(exercise, code);
     setValidationResult(result);
+    if (onValidationChange) {
+      onValidationChange(result);
+    }
     setActiveOutputTab('tests');
 
     if (onSave) {
@@ -626,44 +631,86 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         </div>
       </div>
 
-      {/* Solution Confirmation Modal with Full Syntax Highlighting */}
+      {/* Solution / Requirements Guidance Modal */}
       {showSolutionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           <div className="w-full max-w-2xl rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center gap-3 text-amber-400">
-              <AlertTriangle className="h-6 w-6" />
-              <h3 className="text-base font-bold text-white">Czy na pewno chcesz podejrzeć wzorzec?</h3>
-            </div>
-            
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Najlepsze efekty w nauce programowania osiąga się poprzez samodzielne zmaganie z problemem i naprawianie błędów. 
-              Zalecamy najpierw skorzystanie z podpowiedzi. Poniżej znajduje się wzorcowy kod dla bieżącego pliku:
-            </p>
-
-            <CodeBlock 
-              code={exercise.solutionCode[activeFileTab] || exercise.solutionCode.html}
-              language={langForTab}
-              title={`Wzorzec dla: ${activeFileTab.toUpperCase()}`}
-              badge="Rozwiązanie autorskie"
-              badgeColor="emerald"
-            />
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowSolutionModal(false)}
-                className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
-              >
-                Wrócę do próby
-              </button>
-              <button
-                type="button"
-                onClick={handleApplySolution}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-900/40"
-              >
-                Wklej całe rozwiązanie do edytora
-              </button>
-            </div>
+            {validationResult?.allPassed ? (
+              <>
+                <div className="flex items-center gap-3 text-emerald-400">
+                  <CheckCircle2 className="h-6 w-6" />
+                  <h3 className="text-base font-bold text-white">Zadanie zaliczone — Porównaj z wzorcem architekta</h3>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Gratulacje! Samodzielnie przeszedłeś wszystkie testy automatyczne. Poniżej możesz porównać swoje rozwiązanie z wzorcowym kodem dla bieżącej zakładki:
+                </p>
+                <CodeBlock 
+                  code={exercise.solutionCode[activeFileTab] || exercise.solutionCode.html}
+                  language={langForTab}
+                  title={`Wzorzec dla: ${activeFileTab.toUpperCase()}`}
+                  badge="Rozwiązanie autorskie"
+                  badgeColor="emerald"
+                />
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSolutionModal(false)}
+                    className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+                  >
+                    Zamknij
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleApplySolution}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-900/40"
+                  >
+                    Załaduj wzorzec do porównania
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 text-amber-400">
+                  <AlertTriangle className="h-6 w-6" />
+                  <h3 className="text-base font-bold text-white">Wzorzec odblokowuje się po zaliczeniu testów</h3>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Aby wyeliminować zaliczanie zadań bez ich samodzielnego wykonania, pełny kod wzorcowy jest dostępny dopiero po przejściu testów automatycznych. Skorzystaj z poniższej listy wymagań weryfikatora oraz wskazówek:
+                </p>
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-2">
+                  <p className="text-xs font-bold text-indigo-300">Wymagane kryteria testów automatycznych:</p>
+                  <ul className="space-y-1.5 text-xs text-slate-300">
+                    {exercise.rules.map((r) => (
+                      <li key={r.id} className="flex items-start gap-2">
+                        <span className="text-indigo-400 font-mono">•</span>
+                        <span>
+                          {r.description} <code className="text-cyan-300 bg-slate-900 px-1.5 py-0.5 rounded font-mono text-[11px]">{r.target}</code>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                {exercise.hints && exercise.hints.length > 0 && (
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-950/20 p-4 space-y-1.5">
+                    <p className="text-xs font-bold text-amber-300">Wskazówki krok po kroku:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-xs text-amber-100/90">
+                      {exercise.hints.map((h, i) => (
+                        <li key={i}>{h}</li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSolutionModal(false)}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold"
+                  >
+                    Wracam do pisania kodu
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

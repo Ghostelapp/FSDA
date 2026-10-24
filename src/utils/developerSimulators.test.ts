@@ -101,14 +101,23 @@ test('JS Event Loop scenarios have valid sequential steps', () => {
   ]);
 });
 
-test('Daily Challenge evaluator validates user solutions accurately', () => {
-  const challenge = DAILY_CHALLENGES[0];
-  const result = evaluateDailyChallenge(challenge, challenge.solutionCode);
-  assert.equal(result.passedAll, true);
-  assert.equal(result.results.length, 3);
+test('Daily Challenge evaluator validates user solutions accurately and blocks starterCode', () => {
+  for (const challenge of DAILY_CHALLENGES) {
+    const starterRes = evaluateDailyChallenge(challenge, challenge.starterCode);
+    assert.equal(
+      starterRes.passedAll,
+      false,
+      `Daily challenge ${challenge.id} starterCode must NOT pass automatically`
+    );
 
-  const broken = evaluateDailyChallenge(challenge, 'function czyAnagram() { return false; }');
-  assert.equal(broken.passedAll, false);
+    const solutionRes = evaluateDailyChallenge(challenge, challenge.solutionCode);
+    assert.equal(
+      solutionRes.passedAll,
+      true,
+      `Daily challenge ${challenge.id} solutionCode MUST pass all unit tests`
+    );
+    assert.equal(solutionRes.results.length, 3);
+  }
 });
 
 test('Weekly Leaderboard ranks users by XP and assigns leagues', () => {
