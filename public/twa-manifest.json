@@ -1,6 +1,6 @@
 {
   "packageId": "com.fullstackacademy.app",
-  "host": "ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app",
+  "host": "ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app",
   "name": "Full Stack Academy",
   "launcherName": "FS Academy",
   "display": "standalone",
@@ -13,37 +13,43 @@
   "backgroundColor": "#020617",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-512x512.png",
-  "maskableIconUrl": "https://ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-maskable-512x512.png",
+  "iconUrl": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-512x512.png",
+  "maskableIconUrl": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-maskable-512x512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./android.keystore",
     "alias": "android"
   },
-  "appVersionCode": 1,
-  "appVersionName": "1.0.0",
+  "appVersionCode": 2,
+  "appVersionName": "2.0.0",
   "shortcuts": [
     {
-      "name": "Lekcje",
-      "shortName": "Lekcje",
-      "url": "/?tab=lesson",
-      "icon": "https://ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
+      "name": "Ścieżka 15 Modułów (91 lekcji)",
+      "shortName": "Moduły",
+      "url": "/?tab=modules",
+      "icon": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
     },
     {
       "name": "Piaskownica Kodu",
       "shortName": "Edytor",
       "url": "/?tab=editor",
-      "icon": "https://ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
+      "icon": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
     },
     {
-      "name": "Certyfikat",
+      "name": "Studio Bazy SQL",
+      "shortName": "SQL Studio",
+      "url": "/?tab=sql_studio",
+      "icon": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
+    },
+    {
+      "name": "Certyfikat Ukończenia",
       "shortName": "Certyfikat",
       "url": "/?tab=certificate",
-      "icon": "https://ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
+      "icon": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
     }
   ],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/manifest.webmanifest",
+  "webManifestUrl": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {
     "locationDelegation": {

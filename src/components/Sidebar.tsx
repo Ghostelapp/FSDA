@@ -24,6 +24,7 @@ import {
   Brain,
   FileText
 } from 'lucide-react';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface SidebarNavItem {
   id: string;
@@ -34,7 +35,7 @@ interface SidebarNavItem {
 }
 
 export const Sidebar: React.FC = () => {
-  const { activeTab, setActiveTab, currentUser, isAuthenticated, weakAreas } = useApp();
+  const { activeTab, setActiveTab, currentUser, isAuthenticated, weakAreas, allLessons } = useApp();
 
   const primaryItems: SidebarNavItem[] = [
     { id: 'dashboard', label: 'Pulpit Kursanta', icon: LayoutDashboard },
@@ -143,6 +144,10 @@ export const Sidebar: React.FC = () => {
             </div>
             <ChevronRight className="h-3.5 w-3.5 opacity-60" />
           </button>
+
+          <div className="mt-2.5">
+            <PWAInstallButton variant="full" className="w-full justify-center py-2" />
+          </div>
         </div>
       </div>
 
@@ -150,19 +155,19 @@ export const Sidebar: React.FC = () => {
       <div className="mt-6 rounded-xl border border-indigo-500/20 bg-indigo-950/20 p-3.5">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Postęp Kursu</span>
-          <span className="text-[11px] font-semibold text-slate-300">15 Modułów</span>
+          <span className="text-[11px] font-semibold text-slate-300">15 Modułów ({allLessons.length} lekcji)</span>
         </div>
         <p className="text-xs font-semibold text-white truncate">Ścieżka Full Stack</p>
         <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400">
           <span>Ukończono</span>
           <span className="font-mono text-indigo-300 font-bold">
-            {currentUser.completedLessons.length} lekcji
+            {currentUser.completedLessons.length} / {allLessons.length} lekcji
           </span>
         </div>
         <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(100, Math.round((currentUser.completedLessons.length / 81) * 100))}%` }}
+            style={{ width: `${Math.min(100, Math.round((currentUser.completedLessons.length / (allLessons.length || 91)) * 100))}%` }}
           />
         </div>
         <button

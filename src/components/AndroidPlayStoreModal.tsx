@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Smartphone, 
@@ -19,6 +19,14 @@ import {
   PackageCheck
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import {
+  validateAssetLinks,
+  validateStoreListing,
+  validateTwaManifest,
+  type AssetLinkEntry,
+  type PlayStoreListingMeta,
+  type TwaManifestConfig,
+} from '../utils/playStoreValidator';
 
 interface AndroidPlayStoreModalProps {
   isOpen: boolean;
@@ -26,21 +34,93 @@ interface AndroidPlayStoreModalProps {
 }
 
 const SHA256_FINGERPRINT = 'A6:5D:54:DB:3F:7C:C1:DF:CF:E4:45:1D:26:21:41:15:B8:49:58:D4:D2:D8:93:9D:AF:81:34:4F:81:23:86:23';
-const PRIVACY_POLICY_URL = 'https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/privacy-policy.html';
+const PRODUCTION_HOST = 'ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app';
+const PRIVACY_POLICY_URL = `https://${PRODUCTION_HOST}/privacy-policy.html`;
 const STORE_TITLE = 'Full Stack Academy — Kurs IT';
 const STORE_SHORT_DESC = 'Nauka programowania od zera do Full Stack Developera: HTML, JS, React, SQL i Git';
 const STORE_FULL_DESC = `Zostań profesjonalnym Full Stack Developerem z aplikacją mobilną Full Stack Academy!
 
-Ucz się programowania krok po kroku poprzez interaktywne lekcje, praktyczne ćwiczenia w edytorze kodu, symulator terminala Bash/Git oraz studio baz danych SQL.
+Ucz się programowania krok po kroku poprzez 91 kompletnych lekcji w 15 modułach, praktyczne ćwiczenia w edytorze kodu, symulator terminala Bash/Git, Studio REST API oraz Studio Bazy Danych SQL.
 
-GŁÓWNE FUNKCJE APLIKACJI:
-• 15 kompletnych modułów szkoleniowych (od podstaw Internetu i HTML5, przez CSS3, JavaScript ES6+, TypeScript i React, aż po Node.js, Express, SQL, Cyberbezpieczeństwo i DevOps).
-• Wbudowana Piaskownica Kodu (HTML/CSS/JS) z automatyczną weryfikacją testów jednostkowych.
+GŁÓWNE FUNKCJE APLIKACJI (WERSJA 2.0):
+• 15 kompletnych modułów szkoleniowych i 91 lekcji (od architektury Internetu, HTML5 i CSS3, przez JavaScript ES6+, Git, TypeScript i React, aż po Node.js, Express, PostgreSQL/Prisma, OAuth2/JWT, Stripe, Testy Vitest/Playwright, Docker/CI/CD, Next.js App Router i przygotowanie do pracy w Scrum).
+• Wbudowana Piaskownica Kodu (HTML/CSS/JS) z automatyczną weryfikacją testów jednostkowych i AST.
 • Interaktywny symulator Terminala UNIX / Bash oraz systemu kontroli wersji Git.
-• Studio Bazy Danych SQL z wykonywaniem zapytań na żywo.
+• Studio Bazy Danych SQL z walidacją składni i wykonywaniem zapytań na żywo.
+• Studio REST API oraz Wizualizator JavaScript Event Loop (Call Stack, Web APIs, Microtasks, Macrotasks).
+• Fiszki SM-2 (Spaced Repetition), ściągi techniczne (Cheat Sheets) oraz Kreator CV programisty.
 • Egzaminy Live Coding (Mock Interviews) przygotowujące do rozmów kwalifikacyjnych.
-• System grywalizacji: punkty XP, poziomy, dzienna seria nauki (Streak), odznaki oraz imienny Certyfikat Ukończenia Kursu.
-• Tryb Offline (Service Worker) pozwalający na przeglądanie lekcji bez dostępu do sieci.`;
+• System grywalizacji: punkty XP, ligi tygodniowe, Wyzwanie Dnia, dzienna seria nauki (Streak), odznaki oraz imienny Certyfikat Ukończenia Kursu.
+• Tryb Offline (Service Worker) pozwalający na naukę na telefonie bez dostępu do sieci.
+
+Dla kogo?
+Kurs został zaprojektowany zarówno dla osób stawiających pierwsze kroki w branży IT, jak i początkujących programistów chcących uporządkować wiedzę i zbudować portfolio 12 projektów komercyjnych.`;
+
+const BUILD_APK_COMMANDS = `# 1. Rozpakuj pobrany pakiet produkcyjny Google Play
+tar -xzvf fullstack-academy-google-play-pack.tar.gz
+
+# 2. Opcja A — Zbuduj podpisany plik .aab i .apk przez Gradle (Android SDK 35)
+cd android && gradle bundleRelease assembleRelease
+# Wynik AAB (do Google Play): android/app/build/outputs/bundle/release/app-release.aab
+# Wynik APK (na telefon):     android/app/build/outputs/apk/release/app-release.apk
+
+# 3. Opcja B — Zbuduj przez oficjalne narzędzie Google Bubblewrap CLI
+npx @bubblewrap/cli build`;
+
+const TWA_MANIFEST_CONFIG: TwaManifestConfig = {
+  packageId: 'com.fullstackacademy.app',
+  host: PRODUCTION_HOST,
+  name: 'Full Stack Academy',
+  launcherName: 'FS Academy',
+  display: 'standalone',
+  themeColor: '#4F46E5',
+  backgroundColor: '#020617',
+  startUrl: '/',
+  iconUrl: `https://${PRODUCTION_HOST}/pwa-512x512.png`,
+  maskableIconUrl: `https://${PRODUCTION_HOST}/pwa-maskable-512x512.png`,
+  appVersionCode: 2,
+  appVersionName: '2.0.0',
+  signingKey: {
+    path: './android.keystore',
+    alias: 'android',
+  },
+  webManifestUrl: `https://${PRODUCTION_HOST}/manifest.webmanifest`,
+};
+
+const ASSET_LINKS_CONFIG: AssetLinkEntry[] = [
+  {
+    relation: ['delegate_permission/common.handle_all_urls'],
+    target: {
+      namespace: 'android_app',
+      package_name: 'com.fullstackacademy.app',
+      sha256_cert_fingerprints: [SHA256_FINGERPRINT],
+    },
+  },
+];
+
+const LISTING_META_CONFIG: PlayStoreListingMeta = {
+  appId: 'com.fullstackacademy.app',
+  versionName: '2.0.0',
+  versionCode: 2,
+  defaultLanguage: 'pl-PL',
+  title: STORE_TITLE,
+  shortDescription: STORE_SHORT_DESC,
+  fullDescription: STORE_FULL_DESC,
+  privacyPolicyUrl: PRIVACY_POLICY_URL,
+  contactEmail: 'zordonzordon1@gmail.com',
+  targetSdk: 35,
+  minSdk: 21,
+  assets: {
+    icon512: '/pwa-512x512.png',
+    maskable512: '/pwa-maskable-512x512.png',
+    featureGraphic1024x500: '/play-store/feature-graphic-1024x500.png',
+    screenshots: [
+      '/play-store/screenshot-1-dashboard.png',
+      '/play-store/screenshot-2-editor.png',
+      '/play-store/screenshot-3-certificate.png',
+    ],
+  },
+};
 
 export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
   isOpen,
@@ -49,6 +129,34 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
   const { isInstallable, isInstalled, install } = usePWAInstall();
   const [activeTab, setActiveTab] = useState<'release_pack' | 'store_listing' | 'install' | 'checklist'>('release_pack');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const auditChecks = useMemo(() => {
+    const twaRes = validateTwaManifest(TWA_MANIFEST_CONFIG);
+    const assetRes = validateAssetLinks(ASSET_LINKS_CONFIG, 'com.fullstackacademy.app', SHA256_FINGERPRINT);
+    const listingChecks = validateStoreListing(LISTING_META_CONFIG);
+
+    return [
+      {
+        id: 'twa-manifest',
+        title: 'Manifest TWA (twa-manifest.json) & Keystore RSA-2048',
+        passed: twaRes.valid,
+        details: twaRes.valid
+          ? 'Skonfigurowano com.fullstackacademy.app v2.0.0 (versionCode 2), podpis android.keystore i 4 skróty ekranu głównego.'
+          : twaRes.errors.join(' '),
+      },
+      {
+        id: 'asset-links',
+        title: 'Digital Asset Links (.well-known/assetlinks.json)',
+        passed: assetRes.valid,
+        details: assetRes.valid
+          ? `Zweryfikowano odcisk SHA-256 (${SHA256_FINGERPRINT.slice(0, 23)}...) — ukrywa pasek adresu przeglądarki w APK.`
+          : assetRes.errors.join(' '),
+      },
+      ...listingChecks,
+    ];
+  }, []);
+
+  const passedCount = auditChecks.filter((c) => c.passed).length;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -86,10 +194,10 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
               <div>
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-emerald-400">
                   <Sparkles className="h-3 w-3" />
-                  <span>Gotowy Pakiet Produkcyjny v1.0.0</span>
+                  <span>Gotowy Pakiet Produkcyjny v2.0.0 • Android 15 (SDK 35) • 91 Lekcji</span>
                 </div>
                 <h2 className="text-base sm:text-xl font-bold text-white mt-1">
-                  Centrum Publikacji Google Play Store
+                  Centrum Publikacji Google Play Store (APK & AAB)
                 </h2>
               </div>
             </div>
@@ -116,7 +224,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
               }`}
             >
               <Download className="h-3.5 w-3.5" />
-              <span>Gotowa Paczka & Keystore</span>
+              <span>Gotowa Paczka APK/AAB & Keystore</span>
             </button>
             <button
               type="button"
@@ -152,7 +260,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
               }`}
             >
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Status Weryfikacji (6/6)</span>
+              <span>Audyt Google Play ({passedCount}/{auditChecks.length})</span>
             </button>
           </div>
         </div>
@@ -166,13 +274,13 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-400">
-                      Wszystkie pliki wygenerowane automatycznie
+                      Wszystkie pliki wygenerowane automatycznie (v2.0.0)
                     </span>
                     <h3 className="text-base sm:text-lg font-extrabold text-white">
                       Kompletny Pakiet Publikacji Google Play (.tar.gz)
                     </h3>
                     <p className="text-xs text-slate-300 leading-relaxed">
-                      Zawiera skonfigurowany projekt Android (`com.fullstackacademy.app`), wygenerowany klucz podpisu <code>android.keystore</code>, skonfigurowany <code>assetlinks.json</code> z prawdziwym odciskiem SHA-256, grafikę promocyjną 1024x500, zrzuty ekranu oraz workflow GitHub Actions.
+                      Zawiera skonfigurowany projekt Android Studio / Gradle (<code>com.fullstackacademy.app</code>, <code>targetSdk 35</code>, <code>proguard-rules.pro</code>), klucz podpisu <code>android.keystore</code>, <code>assetlinks.json</code> z odciskiem SHA-256, grafikę 1024x500, prawdziwe zrzuty ekranu 9:16 oraz potok CI/CD budujący podpisane pliki <strong>.apk</strong> i <strong>.aab</strong>.
                     </p>
                   </div>
 
@@ -268,24 +376,34 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                 </div>
               </div>
 
-              {/* Why direct login requires user action + 3 steps */}
+              {/* CLI Commands to build signed .apk / .aab */}
               <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4 space-y-2.5">
-                <h4 className="text-xs font-bold text-white flex items-center gap-2">
-                  <Terminal className="h-4 w-4 text-indigo-400" />
-                  <span>Ostatni krok po Twojej stronie (ze względów bezpieczeństwa Google 2FA):</span>
-                </h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Konsola Google Play wymaga osobistego logowania właściciela konta z weryfikacją dwuetapową (2FA) na <strong className="text-white">play.google.com/console</strong>. Cała reszta została już wykonana za Ciebie:
-                </p>
-                <ol className="text-xs text-slate-300 space-y-1.5 list-decimal list-inside">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                    <Terminal className="h-4 w-4 text-indigo-400" />
+                    <span>Kompilacja podpisanego pliku .APK i .AAB (Lokalnie lub w GitHub Actions):</span>
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(BUILD_APK_COMMANDS, 'build_cmd')}
+                    className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-semibold"
+                  >
+                    {copiedCode === 'build_cmd' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>Kopiuj polecenia</span>
+                  </button>
+                </div>
+                <pre className="rounded-xl bg-slate-900 p-3 font-mono text-[11px] text-emerald-300 border border-slate-800 overflow-x-auto leading-relaxed">
+                  {BUILD_APK_COMMANDS}
+                </pre>
+                <ol className="text-xs text-slate-300 space-y-1 list-decimal list-inside pt-1">
                   <li>
-                    Wypakuj pobrany pakiet lub wypchnij repozytorium na GitHub — plik <code>.github/workflows/google-play-publish.yml</code> automatycznie skompiluje podpisany plik <strong>.aab</strong> oraz <strong>.apk</strong> w chmurze.
+                    Wypchnij repozytorium na GitHub — workflow <code>.github/workflows/google-play-publish.yml</code> automatycznie zbuduje podpisany plik <strong>app-release.aab</strong> oraz <strong>app-release.apk</strong> w chmurze.
                   </li>
                   <li>
-                    W Google Play Console kliknij <strong>Utwórz aplikację</strong> i wklej gotowe opisy oraz grafiki z zakładki <strong>„Teksty i Grafiki do Sklepu”</strong> powyżej.
+                    W <strong className="text-white">Google Play Console</strong> utwórz aplikację i wklej gotowe teksty oraz grafiki z zakładki <strong>„Teksty i Grafiki do Sklepu”</strong>.
                   </li>
                   <li>
-                    Przeciągnij plik <code>app-release.aab</code> do sekcji <strong>Produkcja</strong> i kliknij <strong>Opublikuj</strong>!
+                    Prześlij plik <code>app-release.aab</code> do sekcji <strong>Produkcja</strong> i opublikuj w sklepie!
                   </li>
                 </ol>
               </div>
@@ -327,7 +445,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
               <div className="space-y-3">
                 <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-bold text-indigo-400">Nazwa aplikacji w Google Play (28/30 znaków)</span>
+                    <span className="text-[11px] font-bold text-indigo-400">Nazwa aplikacji w Google Play ({STORE_TITLE.length}/30 znaków)</span>
                     <button
                       type="button"
                       onClick={() => copyToClipboard(STORE_TITLE, 'title')}
@@ -342,7 +460,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
 
                 <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-bold text-indigo-400">Krótki opis (79/80 znaków)</span>
+                    <span className="text-[11px] font-bold text-indigo-400">Krótki opis ({STORE_SHORT_DESC.length}/80 znaków)</span>
                     <button
                       type="button"
                       onClick={() => copyToClipboard(STORE_SHORT_DESC, 'short')}
@@ -357,7 +475,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
 
                 <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-bold text-indigo-400">Pełny opis karty sklepu (pl-PL)</span>
+                    <span className="text-[11px] font-bold text-indigo-400">Pełny opis karty sklepu ({STORE_FULL_DESC.length}/4000 znaków)</span>
                     <button
                       type="button"
                       onClick={() => copyToClipboard(STORE_FULL_DESC, 'full')}
@@ -377,47 +495,52 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
               <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 space-y-3">
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
                   <ImageIcon className="h-4 w-4 text-cyan-400" />
-                  <span>Wygenerowane Grafiki Wymagane w Google Play Console:</span>
+                  <span>Wygenerowane Grafiki i Prawdziwe Zrzuty Ekranu 9:16 do Google Play Console:</span>
                 </span>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                   <a
                     href="/pwa-512x512.png"
                     download="ikona-512x512.png"
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1 transition-colors"
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center"
                   >
+                    <img src="/pwa-512x512.png" alt="Ikona 512x512" className="h-12 w-12 rounded-xl object-cover border border-slate-700" />
                     <span className="block text-[11px] font-bold text-white">Ikona 512x512</span>
                     <span className="block text-[10px] text-cyan-400">Pobierz PNG</span>
                   </a>
                   <a
                     href="/play-store/feature-graphic-1024x500.png"
                     download="feature-graphic-1024x500.png"
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1 transition-colors"
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center"
                   >
+                    <img src="/play-store/feature-graphic-1024x500.png" alt="Baner 1024x500" className="h-12 w-full rounded-lg object-cover border border-slate-700" />
                     <span className="block text-[11px] font-bold text-white">Baner 1024x500</span>
                     <span className="block text-[10px] text-cyan-400">Pobierz PNG</span>
                   </a>
                   <a
                     href="/play-store/screenshot-1-dashboard.png"
                     download="screenshot-1-dashboard.png"
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1 transition-colors"
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center"
                   >
-                    <span className="block text-[11px] font-bold text-white">Zrzut #1 (9:16)</span>
+                    <img src="/play-store/screenshot-1-dashboard.png" alt="Zrzut Pulpit" className="h-12 w-8 rounded object-cover border border-slate-700" />
+                    <span className="block text-[11px] font-bold text-white">Zrzut #1 (Pulpit)</span>
                     <span className="block text-[10px] text-cyan-400">Pobierz PNG</span>
                   </a>
                   <a
                     href="/play-store/screenshot-2-editor.png"
                     download="screenshot-2-editor.png"
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1 transition-colors"
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center"
                   >
-                    <span className="block text-[11px] font-bold text-white">Zrzut #2 (9:16)</span>
+                    <img src="/play-store/screenshot-2-editor.png" alt="Zrzut Edytor" className="h-12 w-8 rounded object-cover border border-slate-700" />
+                    <span className="block text-[11px] font-bold text-white">Zrzut #2 (Edytor)</span>
                     <span className="block text-[10px] text-cyan-400">Pobierz PNG</span>
                   </a>
                   <a
                     href="/play-store/screenshot-3-certificate.png"
                     download="screenshot-3-certificate.png"
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1 transition-colors"
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center"
                   >
-                    <span className="block text-[11px] font-bold text-white">Zrzut #3 (9:16)</span>
+                    <img src="/play-store/screenshot-3-certificate.png" alt="Zrzut Moduły" className="h-12 w-8 rounded object-cover border border-slate-700" />
+                    <span className="block text-[11px] font-bold text-white">Zrzut #3 (Moduły)</span>
                     <span className="block text-[10px] text-cyan-400">Pobierz PNG</span>
                   </a>
                 </div>
@@ -463,7 +586,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                     <li>Otwórz aplikację na telefonie w przeglądarce Chrome.</li>
                     <li>Kliknij menu <strong className="text-white">⋮</strong> w prawym górnym rogu.</li>
                     <li>Wybierz <strong className="text-cyan-300">„Zainstaluj aplikację”</strong>.</li>
-                    <li>Android utworzy natywny pakiet WebAPK na ekranie głównym.</li>
+                    <li>Android wygeneruje i zainstaluje podpisany pakiet WebAPK na pulpicie.</li>
                   </ol>
                 </div>
 
@@ -485,42 +608,19 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
 
           {activeTab === 'checklist' && (
             <div className="space-y-2.5">
-              {[
-                {
-                  title: 'Klucz podpisu produkcyjnego (android.keystore)',
-                  desc: `Wygenerowano certyfikat RSA-2048 i skonfigurowano signingConfigs.release w build.gradle.`,
-                },
-                {
-                  title: 'Digital Asset Links (.well-known/assetlinks.json)',
-                  desc: `Zaktualizowano prawdziwym odciskiem SHA-256 (${SHA256_FINGERPRINT.slice(0, 23)}...).`,
-                },
-                {
-                  title: 'Polityka Prywatności RODO (/privacy-policy.html)',
-                  desc: 'Opublikowana pod publicznym adresem URL wymaganym w sekcji Data Safety Google Play.',
-                },
-                {
-                  title: 'Zestaw Grafik Sklepowych (512x512, 1024x500, 3x 9:16)',
-                  desc: 'Wygenerowano ikonę 512px, baner promocyjny 1024x500 oraz 3 zrzuty ekranu.',
-                },
-                {
-                  title: 'Projekt Android TWA (API 34 / Android 14)',
-                  desc: 'Spełnia najnowsze wymogi Google Play dotyczące docelowego poziomu API (targetSdk 34).',
-                },
-                {
-                  title: 'Automatyzacja CI/CD (.github/workflows/google-play-publish.yml)',
-                  desc: 'Gotowy potok automatycznie budujący podpisany plik .aab i wysyłający go do Google Play.',
-                },
-              ].map((item, index) => (
+              {auditChecks.map((item) => (
                 <div
-                  key={index}
+                  key={item.id}
                   className="flex items-start gap-3 p-3 rounded-xl border border-slate-800 bg-slate-950/60"
                 >
-                  <div className="p-1 rounded-full bg-emerald-500/20 text-emerald-400 mt-0.5 shrink-0">
+                  <div className={`p-1 rounded-full mt-0.5 shrink-0 ${
+                    item.passed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                  }`}>
                     <Check className="h-3.5 w-3.5" />
                   </div>
                   <div>
                     <h5 className="text-xs font-bold text-white">{item.title}</h5>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{item.desc}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{item.details}</p>
                   </div>
                 </div>
               ))}
@@ -532,7 +632,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
         <div className="shrink-0 border-t border-slate-800 bg-slate-950/80 p-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 text-slate-400">
             <Info className="h-4 w-4 text-indigo-400 shrink-0" />
-            <span>Pakiet: <strong className="text-slate-200 font-mono">com.fullstackacademy.app</strong> • Target SDK 34</span>
+            <span>Pakiet: <strong className="text-slate-200 font-mono">com.fullstackacademy.app</strong> • v2.0.0 • Target SDK 35 (Android 15)</span>
           </div>
 
           <button

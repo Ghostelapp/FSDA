@@ -135,3 +135,43 @@ test('generateSandboxDocument produces valid HTML with console interception', ()
   assert.ok(doc.includes('sendToParent'));
 });
 
+test('MODULES_DATA enforces sequential 1..N lesson order, pedagogical progression, and accurate totalXp sums', () => {
+  assert.equal(MODULES_DATA.length, 15);
+  const seenLessonIds = new Set<string>();
+
+  for (const mod of MODULES_DATA) {
+    assert.ok(mod.lessons.length >= 3, `Module ${mod.id} should have at least 3 lessons`);
+    const expectedSumXp = mod.lessons.reduce((sum, l) => sum + l.xpReward, 0);
+    assert.equal(mod.totalXp, expectedSumXp, `Module ${mod.id} totalXp must equal sum of lesson xpRewards`);
+
+    mod.lessons.forEach((lesson, idx) => {
+      assert.equal(lesson.order, idx + 1, `Lesson ${lesson.id} in Module ${mod.id} must have sequential order ${idx + 1}`);
+      assert.equal(lesson.moduleId, mod.id);
+      assert.equal(seenLessonIds.has(lesson.id), false, `Duplicate lesson id ${lesson.id}`);
+      seenLessonIds.add(lesson.id);
+    });
+  }
+
+  // Verify key pedagogical order fixes:
+  // In TypeScript (Mod 6): Type Narrowing (ts-3) comes BEFORE Generics (ts-2)
+  const tsIds = MODULES_DATA[5].lessons.map((l) => l.id);
+  assert.ok(tsIds.indexOf('ts-3') < tsIds.indexOf('ts-2'));
+
+  // In React (Mod 7): Conditional Rendering & Lists (react-4) and Forms (react-5) come BEFORE Context/useReducer/useMemo (react-3)
+  const reactIds = MODULES_DATA[6].lessons.map((l) => l.id);
+  assert.ok(reactIds.indexOf('react-4') < reactIds.indexOf('react-3'));
+  assert.ok(reactIds.indexOf('react-5') < reactIds.indexOf('react-3'));
+
+  // In Databases (Mod 9): SQL INSERT/UPDATE/DELETE (db-3), JOINs (db-4), and ACID Transactions (db-5) come BEFORE Prisma ORM (db-2)
+  const dbIds = MODULES_DATA[8].lessons.map((l) => l.id);
+  assert.ok(dbIds.indexOf('db-3') < dbIds.indexOf('db-2'));
+  assert.ok(dbIds.indexOf('db-4') < dbIds.indexOf('db-2'));
+  assert.ok(dbIds.indexOf('db-5') < dbIds.indexOf('db-2'));
+
+  assert.equal(seenLessonIds.size, 91, 'Full Stack curriculum should have 91 lessons across 15 modules');
+  for (const id of ['css-9', 'js-10', 'git-6', 'sec-5', 'fullstack-4', 'fullstack-5', 'test-4', 'devops-4', 'next-4', 'career-4']) {
+    assert.ok(seenLessonIds.has(id), `Expected lesson ${id} to be included in MODULES_DATA`);
+  }
+});
+
+

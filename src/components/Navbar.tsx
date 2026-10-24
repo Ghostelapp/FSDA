@@ -166,6 +166,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
               <kbd className="hidden xl:inline text-[10px] font-mono text-slate-400">Ctrl+K</kbd>
             </button>
           )}
+
+          {/* Google Play Store / APK Release Center Button */}
+          <PWAInstallButton className="hidden md:inline-flex" />
           
           {/* Hearts / Lives indicator */}
           <button
