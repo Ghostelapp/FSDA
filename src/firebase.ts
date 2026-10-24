@@ -112,7 +112,7 @@ export function serializeUserForFirestore(uid: string, user: User): Record<strin
     id: user.id || uid,
     name: (user.name || 'Kursant Akademii').slice(0, 120),
     email: (user.email || 'kursant@akademia.pl').slice(0, 254),
-    role: isAdminEmail ? 'admin' : user.role === 'admin' ? 'admin' : 'student',
+    role: isAdminEmail ? 'admin' : 'student',
     status: user.status || 'active',
     xp: Math.max(0, Math.min(10000000, Number(user.xp) || 0)),
     level: Math.max(1, Math.min(1000, Number(user.level) || 1)),
@@ -171,6 +171,7 @@ export async function fetchOrCreateCloudUserProfile(
   const uid = fbUser.uid;
   const path = `users/${uid}`;
   const isAdminEmail =
+    Boolean(fbUser.emailVerified) &&
     (fbUser.email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com';
 
   try {
@@ -181,7 +182,7 @@ export async function fetchOrCreateCloudUserProfile(
         id: data.id || uid,
         name: data.name || fbUser.displayName || 'Kursant Google',
         email: data.email || fbUser.email || 'user@gmail.com',
-        role: isAdminEmail ? 'admin' : data.role || 'student',
+        role: isAdminEmail ? 'admin' : 'student',
         status: data.status || 'active',
         antiBotVerified: true,
         antiBotScore: 100,

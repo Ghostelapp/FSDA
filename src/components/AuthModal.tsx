@@ -50,7 +50,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   } = useApp();
 
   const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'profile'>('login');
-  const [demoRoleFilter, setDemoRoleFilter] = useState<'all' | 'students' | 'admins' | 'blocked'>('all');
+  const [demoRoleFilter, setDemoRoleFilter] = useState<'all' | 'students' | 'blocked'>('all');
 
   // Form fields (Login / Register / Forgot)
   const [email, setEmail] = useState('');
@@ -58,7 +58,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [password, setPassword] = useState('');
   const [newResetPassword, setNewResetPassword] = useState('akademia2026!');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<UserRole>('student');
   const [bio, setBio] = useState('');
 
   // Profile Edit Fields
@@ -188,7 +187,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       name: name.trim(),
       email: email.trim(),
       password,
-      role,
+      role: 'student',
       antiBotPassed: botCheck.isHuman,
       antiBotScore: botCheck.score,
       bio: bio.trim(),
@@ -261,9 +260,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setMode('login');
   };
 
-  const filteredDemoUsers = allUsers.filter((u) => {
+  const publicDemoUsers = allUsers.filter(
+    (u) =>
+      u.role !== 'admin' &&
+      u.id !== 'user-admin' &&
+      u.email.trim().toLowerCase() !== 'zordonzordon1@gmail.com'
+  );
+
+  const filteredDemoUsers = publicDemoUsers.filter((u) => {
     if (demoRoleFilter === 'students') return u.role === 'student' && u.status === 'active';
-    if (demoRoleFilter === 'admins') return u.role === 'admin';
     if (demoRoleFilter === 'blocked')
       return u.status === 'suspended' || u.status === 'banned' || u.status === 'pending_verification';
     return true;
@@ -448,7 +453,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                  Szybkie logowanie testowe:
+                  Profile testowe kursantów:
                 </span>
                 <div className="flex flex-wrap gap-1 text-[10px]">
                   <button
@@ -458,7 +463,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                       demoRoleFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-300'
                     }`}
                   >
-                    Wszyscy ({allUsers.length})
+                    Wszyscy ({publicDemoUsers.length})
                   </button>
                   <button
                     type="button"
@@ -469,16 +474,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                         : 'text-slate-500 hover:text-slate-300'
                     }`}
                   >
-                    Kursanci
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDemoRoleFilter('admins')}
-                    className={`px-2 py-0.5 rounded-lg font-medium transition-colors ${
-                      demoRoleFilter === 'admins' ? 'bg-slate-800 text-rose-300' : 'text-slate-500 hover:text-slate-300'
-                    }`}
-                  >
-                    Admin
+                    Aktywni kursanci
                   </button>
                   <button
                     type="button"
@@ -702,18 +698,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </div>
 
                 <div className="space-y-1">
-                  <label htmlFor="reg-role" className="text-xs font-semibold text-slate-300 block">
-                    Rola początkowa:
-                  </label>
-                  <select
-                    id="reg-role"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="student">Kursant (Student)</option>
-                    <option value="admin">Instruktor / Administrator</option>
-                  </select>
+                  <span className="text-xs font-semibold text-slate-300 block">
+                    Typ rejestrowanego konta:
+                  </span>
+                  <div className="w-full rounded-xl border border-slate-800 bg-slate-950/90 px-3 py-2 text-xs text-indigo-300 font-semibold flex items-center justify-between">
+                    <span>Kursant (Student)</span>
+                    <span className="text-[10px] text-slate-500 font-normal">Standard</span>
+                  </div>
                 </div>
               </div>
 

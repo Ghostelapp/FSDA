@@ -7,6 +7,8 @@ import {
   authenticateUserCredentials,
   validateAndCreateUser,
   canSwitchToUser,
+  canResetUserPassword,
+  sanitizeImportedUser,
   createGuestUser,
 } from '../utils/authValidation';
 import {
@@ -167,7 +169,6 @@ const DEFAULT_USERS: User[] = [
     status: 'active',
     antiBotVerified: true,
     antiBotScore: 100,
-    password: 'admin123',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     xp: 9999,
     level: 10,
@@ -317,7 +318,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const stored = localStorage.getItem(STORAGE_KEY_USERS);
       if (stored) {
-        const parsed: User[] = JSON.parse(stored);
+        const parsed: User[] = JSON.parse(stored).map((u: User) => {
+          const isOwnerAdmin =
+            u.id === 'user-admin' || u.email.trim().toLowerCase() === 'zordonzordon1@gmail.com';
+          if (isOwnerAdmin) {
+            const { password: _removed, ...rest } = u;
+            return { ...rest, role: 'admin' as UserRole };
+          }
+          return { ...u, role: 'student' as UserRole };
+        });
         const existingIds = new Set(parsed.map((u) => u.id));
         const missingDefaults = DEFAULT_USERS.filter((d) => !existingIds.has(d.id));
         return [...parsed, ...missingDefaults];
@@ -348,11 +357,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
       const stored = localStorage.getItem(STORAGE_KEY_USER);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed: User = JSON.parse(stored);
+        // Never restore an admin session from localStorage without active verified Firebase OAuth
+        const hasVerifiedFirebaseAdmin =
+          Boolean(auth.currentUser?.emailVerified) &&
+          (auth.currentUser?.email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com';
+        if (
+          (parsed.role === 'admin' ||
+            parsed.id === 'user-admin' ||
+            (parsed.email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com') &&
+          !hasVerifiedFirebaseAdmin
+        ) {
+          return DEFAULT_USERS[1];
+        }
+        return parsed.role === 'admin' && !hasVerifiedFirebaseAdmin
+          ? { ...parsed, role: 'student' }
+          : parsed;
       }
-      return DEFAULT_USERS[0];
+      return DEFAULT_USERS[1];
     } catch {
-      return DEFAULT_USERS[0];
+      return DEFAULT_USERS[1];
     }
   });
 
@@ -374,7 +398,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   });
 
-  const [activeTab, setActiveTabState] = useState<AppTab>('dashboard');
+  const [activeTab, setActiveTabState] = useState<AppTab>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') as AppTab | null;
+      const validTabs: AppTab[] = [
+        'dashboard',
+        'modules',
+        'lesson',
+        'editor',
+        'projects',
+        'reviews',
+        'certificate',
+        'terminal',
+        'sql_studio',
+        'interview',
+        'api_studio',
+        'event_loop',
+        'leaderboard',
+        'flashcards',
+        'career',
+        'admin',
+        'deployment',
+      ];
+      if (tabParam && validTabs.includes(tabParam)) {
+        return tabParam;
+      }
+      return 'dashboard';
+    } catch {
+      return 'dashboard';
+    }
+  });
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>('html-1');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>('proj-1');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'badge' | 'danger' } | null>(null);
@@ -752,6 +806,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
 
   const setActiveTab = (tab: AppTab, lessonId?: string, projectId?: string) => {
+    if (tab === 'admin' && (!isAuthenticated || currentUser.role !== 'admin')) {
+      showToast(
+        !isAuthenticated || currentUser.id === 'user-guest'
+          ? 'Dostęp zablokowany dla gości! Zaloguj się, aby uzyskać dostęp do chronionej sekcji.'
+          : 'Brak uprawnień! Panel Administratora jest chroniony przez ProtectedRoute.',
+        'danger'
+      );
+    }
     setActiveTabState(tab);
     if (lessonId) setSelectedLessonId(lessonId);
     if (projectId) setSelectedProjectId(projectId);
@@ -899,10 +961,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const deleteUser = (userId: string) => {
+    if (!isAuthenticated || currentUser.role !== 'admin') {
+      showToast('Brak uprawnień administratora.', 'danger');
+      return;
+    }
     const userToDelete = allUsers.find((u) => u.id === userId);
     if (!userToDelete) return;
 
-    if (userId === 'user-admin') {
+    if (userId === 'user-admin' || userToDelete.role === 'admin') {
       showToast('Nie można usunąć głównego konta administratora.', 'danger');
       return;
     }
@@ -922,6 +988,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const setUserStatus = (userId: string, status: UserStatus, reason?: string) => {
+    if (!isAuthenticated || currentUser.role !== 'admin') {
+      showToast('Brak uprawnień administratora.', 'danger');
+      return;
+    }
     setAllUsers((prev) =>
       prev.map((u) => {
         if (u.id === userId) {
@@ -948,8 +1018,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const resetUserPassword = (email: string, newPassword: string = 'noweHaslo2026!'): { success: boolean; message: string } => {
     const cleanEmail = (email || '').trim().toLowerCase();
     const found = allUsers.find((u) => u.email.trim().toLowerCase() === cleanEmail);
-    if (!found) {
-      return { success: false, message: 'Nie znaleziono konta z podanym adresem e-mail.' };
+    const resetCheck = canResetUserPassword(found);
+    if (!resetCheck.allowed || !found) {
+      return { success: false, message: resetCheck.error || 'Nie znaleziono konta z podanym adresem e-mail.' };
     }
 
     if (!newPassword || newPassword.length < 6) {
@@ -967,6 +1038,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const verifyUserAntiBot = (userId: string) => {
+    if (!isAuthenticated || currentUser.role !== 'admin') {
+      showToast('Brak uprawnień administratora.', 'danger');
+      return;
+    }
     setAllUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, antiBotVerified: true, antiBotScore: 100, status: 'active' } : u))
     );
@@ -977,6 +1052,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const giveProByAdmin = (userId: string, isPro: boolean, plan: 'monthly' | 'yearly' = 'yearly') => {
+    if (!isAuthenticated || currentUser.role !== 'admin') {
+      showToast('Brak uprawnień administratora.', 'danger');
+      return;
+    }
     setAllUsers((prev) =>
       prev.map((u) => {
         if (u.id === userId) {
@@ -993,6 +1072,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const refillUserLivesByAdmin = (userId: string) => {
+    if (!isAuthenticated || currentUser.role !== 'admin') {
+      showToast('Brak uprawnień administratora.', 'danger');
+      return;
+    }
     setAllUsers((prev) =>
       prev.map((u) => {
         if (u.id === userId) {
@@ -1010,7 +1093,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const switchUser = (userId: string) => {
     const found = allUsers.find((u) => u.id === userId);
-    const check = canSwitchToUser(found);
+    const check = canSwitchToUser(found, currentUser, isAuthenticated);
     if (!check.allowed || !found) {
       showToast(check.error || 'Nie można przełączyć na to konto.', 'danger');
       return;
@@ -1162,6 +1245,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const addAnnouncement = (title: string, content: string, category: Announcement['category']) => {
+    if (!isAuthenticated || currentUser.role !== 'admin') {
+      showToast('Brak uprawnień administratora.', 'danger');
+      return;
+    }
     const newAnn: Announcement = {
       id: `ann-${Date.now()}`,
       title,
@@ -1178,6 +1265,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const deleteAnnouncement = (id: string) => {
+    if (!isAuthenticated || currentUser.role !== 'admin') {
+      showToast('Brak uprawnień administratora.', 'danger');
+      return;
+    }
     setAnnouncements((prev) => prev.filter((a) => a.id !== id));
     if (isCloudConnected && currentUser.role === 'admin') {
       void deleteAnnouncementFromCloud(id);
@@ -1186,6 +1277,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const updateUserByAdmin = (userId: string, partial: Partial<User>) => {
+    if (!isAuthenticated || currentUser.role !== 'admin') {
+      showToast('Brak uprawnień administratora.', 'danger');
+      return;
+    }
     setAllUsers((prev) =>
       prev.map((u) => {
         if (u.id === userId) {
@@ -1235,19 +1330,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return true;
   }, []);
 
-  const importUserBackup = useCallback((restoredUser: User) => {
-    setCurrentUser(restoredUser);
-    setIsAuthenticated(true);
-    setAllUsers((prev) => {
-      const exists = prev.some((u) => u.id === restoredUser.id);
-      if (exists) {
-        return prev.map((u) => (u.id === restoredUser.id ? restoredUser : u));
-      }
-      return [...prev, restoredUser];
-    });
-    soundManager.playLevelUp();
-    showToast(`Przywrócono kopię zapasową profilu: ${restoredUser.name}`, 'badge');
-  }, []);
+  const importUserBackup = useCallback(
+    (restoredUser: User) => {
+      const safeUser = sanitizeImportedUser(restoredUser, currentUser, isAuthenticated);
+      setCurrentUser(safeUser);
+      setIsAuthenticated(true);
+      setAllUsers((prev) => {
+        const exists = prev.some((u) => u.id === safeUser.id);
+        if (exists) {
+          return prev.map((u) => (u.id === safeUser.id ? safeUser : u));
+        }
+        return [...prev, safeUser];
+      });
+      soundManager.playLevelUp();
+      showToast(`Przywrócono kopię zapasową profilu: ${safeUser.name}`, 'badge');
+    },
+    [currentUser, isAuthenticated]
+  );
 
   const weakAreas = useMemo(
     () => findWeakAreas(currentUser.quizScores || {}, allLessons),

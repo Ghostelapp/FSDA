@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { MODULES_DATA } from '../data/modulesData';
 import { User, UserRole, UserStatus, UserFilters, Announcement } from '../types';
 import { filterAndSortUsers } from '../utils/userFilters';
+import { ProtectedRoute } from './ProtectedRoute';
 import { 
   ShieldCheck, 
   Users, 
@@ -31,7 +32,11 @@ import {
   ChevronDown
 } from 'lucide-react';
 
-export const AdminPanelView: React.FC = () => {
+interface AdminPanelViewProps {
+  onOpenAuthModal?: () => void;
+}
+
+export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal }) => {
   const { 
     currentUser, 
     allUsers, 
@@ -138,7 +143,12 @@ export const AdminPanelView: React.FC = () => {
   const totalCompletedLessons = allUsers.reduce((sum, u) => sum + u.completedLessons.length, 0);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+    <ProtectedRoute
+      requiredRole="admin"
+      allowGuests={false}
+      onOpenAuthModal={onOpenAuthModal}
+    >
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
@@ -154,20 +164,6 @@ export const AdminPanelView: React.FC = () => {
             Zaawansowana filtracja bazy użytkowników, inspekcja zabezpieczeń, moderacja i analiza postępów.
           </p>
         </div>
-
-        {currentUser.role !== 'admin' && (
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-center gap-3">
-            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
-            <span>Zalogowano jako kursant ({currentUser.name}).</span>
-            <button
-              type="button"
-              onClick={() => switchUser('user-admin')}
-              className="px-2.5 py-1 rounded bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-colors"
-            >
-              Przełącz na konto Admina
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Quick KPI stats */}
@@ -969,5 +965,6 @@ export const AdminPanelView: React.FC = () => {
       )}
 
     </div>
+    </ProtectedRoute>
   );
 };

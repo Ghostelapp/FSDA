@@ -82,8 +82,16 @@ export function authenticateUserCredentials(
     };
   }
 
-  const expectedPassword = found.password || 'password123';
-  if (password !== expectedPassword) {
+  if (found.role === 'admin' || cleanEmail === 'zordonzordon1@gmail.com') {
+    return {
+      success: false,
+      error:
+        'Konto Administratora jest chronione i wymaga weryfikacji tożsamości przez Google Firebase Auth (przycisk „Zaloguj przez Google”).',
+    };
+  }
+
+  const expectedPassword = found.password;
+  if (!expectedPassword || password !== expectedPassword) {
     return {
       success: false,
       error: 'Nieprawidłowe hasło dostępowe. Sprawdź poprawność lub skorzystaj z resetu hasła.',
@@ -92,6 +100,7 @@ export function authenticateUserCredentials(
 
   const updatedUser: User = {
     ...found,
+    role: 'student',
     lastLoginAt: new Date().toISOString(),
   };
 
@@ -112,6 +121,13 @@ export function validateAndCreateUser(
 
   if (!cleanEmail || !validateEmailFormat(cleanEmail)) {
     return { success: false, error: 'Podaj poprawny adres e-mail (np. kursant@domena.pl).' };
+  }
+
+  if (params.role === 'admin' || cleanEmail === 'zordonzordon1@gmail.com') {
+    return {
+      success: false,
+      error: 'Samodzielna rejestracja konta Administratora jest zablokowana ze względów bezpieczeństwa.',
+    };
   }
 
   if (rawPassword.length < 6) {
@@ -136,7 +152,7 @@ export function validateAndCreateUser(
     id: `user-${Date.now()}`,
     name: cleanName,
     email: cleanEmail,
-    role: params.role || 'student',
+    role: 'student',
     status: 'active',
     antiBotVerified: true,
     antiBotScore: params.antiBotScore ?? 100,
@@ -165,9 +181,25 @@ export function validateAndCreateUser(
   return { success: true, user: newUser };
 }
 
-export function canSwitchToUser(user: User | undefined): { allowed: boolean; error?: string } {
+export function canSwitchToUser(
+  user: User | undefined,
+  actor?: User,
+  isActorAuthenticated: boolean = false
+): { allowed: boolean; error?: string } {
   if (!user) {
     return { allowed: false, error: 'Nie znaleziono wybranego profilu użytkownika.' };
+  }
+  if (user.role === 'admin' || user.id === 'user-admin' || user.email.trim().toLowerCase() === 'zordonzordon1@gmail.com') {
+    const isAlreadyVerifiedAdmin =
+      isActorAuthenticated &&
+      actor?.role === 'admin' &&
+      actor?.email.trim().toLowerCase() === 'zordonzordon1@gmail.com';
+    if (!isAlreadyVerifiedAdmin) {
+      return {
+        allowed: false,
+        error: 'Konto Administratora jest chronione. Zaloguj się przez autoryzację Google Firebase OAuth jako właściciel.',
+      };
+    }
   }
   if (user.status === 'banned') {
     return {
@@ -188,6 +220,52 @@ export function canSwitchToUser(user: User | undefined): { allowed: boolean; err
     };
   }
   return { allowed: true };
+}
+
+export function canResetUserPassword(targetUser: User | undefined): { allowed: boolean; error?: string } {
+  if (!targetUser) {
+    return { allowed: false, error: 'Nie znaleziono konta z podanym adresem e-mail.' };
+  }
+  if (
+    targetUser.role === 'admin' ||
+    targetUser.id === 'user-admin' ||
+    targetUser.email.trim().toLowerCase() === 'zordonzordon1@gmail.com'
+  ) {
+    return {
+      allowed: false,
+      error:
+        'Ze względów bezpieczeństwa hasło konta Administratora nie może zostać zresetowane publicznie. Użyj logowania Google Firebase OAuth.',
+    };
+  }
+  return { allowed: true };
+}
+
+export function sanitizeImportedUser(
+  restoredUser: User,
+  actor?: User,
+  isActorAuthenticated: boolean = false
+): User {
+  const isVerifiedAdmin =
+    isActorAuthenticated &&
+    actor?.role === 'admin' &&
+    actor?.email.trim().toLowerCase() === 'zordonzordon1@gmail.com';
+
+  const safeEmail =
+    !isVerifiedAdmin && (restoredUser.email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com'
+      ? 'kursant.import@akademia.pl'
+      : restoredUser.email;
+
+  const safeId =
+    !isVerifiedAdmin && restoredUser.id === 'user-admin'
+      ? `user-import-${Date.now()}`
+      : restoredUser.id;
+
+  return {
+    ...restoredUser,
+    id: safeId,
+    email: safeEmail,
+    role: isVerifiedAdmin && restoredUser.role === 'admin' ? 'admin' : 'student',
+  };
 }
 
 export function createGuestUser(): User {
@@ -220,3 +298,92 @@ export function createGuestUser(): User {
     createdAt: todayDate,
   };
 }
+
+export interface ProtectedRouteOptions {
+  requiredRole?: UserRole;
+  allowGuests?: boolean;
+}
+
+export interface ProtectedRouteCheckResult {
+  allowed: boolean;
+  reason?: 'guest_blocked' | 'account_inactive' | 'insufficient_role';
+  title?: string;
+  message?: string;
+}
+
+export function isGuestUser(user: User | null | undefined, isAuthenticated: boolean): boolean {
+  if (!isAuthenticated || !user) return true;
+  if (user.id === 'user-guest') return true;
+  if ((user.email || '').trim().toLowerCase() === 'gosc@fullstack-academy.pl') return true;
+  return false;
+}
+
+export function checkProtectedRouteAccess(
+  user: User | null | undefined,
+  isAuthenticated: boolean,
+  options: ProtectedRouteOptions = {}
+): ProtectedRouteCheckResult {
+  const { requiredRole, allowGuests = false } = options;
+
+  // 1. Always block guests when allowGuests is false or when admin role is required
+  if ((!allowGuests || requiredRole === 'admin') && isGuestUser(user, isAuthenticated)) {
+    return {
+      allowed: false,
+      reason: 'guest_blocked',
+      title: 'Dostęp Zablokowany dla Gości — Wymagane Logowanie',
+      message:
+        'Przeglądasz platformę w trybie Gościa (Niezalogowany). Dostęp do Panelu Administratora oraz chronionych sekcji jest zablokowany dla gości — zaloguj się na zweryfikowane konto.',
+    };
+  }
+
+  if (!user) {
+    return {
+      allowed: false,
+      reason: 'guest_blocked',
+      title: 'Dostęp Zablokowany dla Gości — Wymagane Logowanie',
+      message: 'Zaloguj się, aby uzyskać dostęp do tej sekcji.',
+    };
+  }
+
+  // 2. Block inactive, banned, or suspended accounts
+  if (user.status && user.status !== 'active') {
+    return {
+      allowed: false,
+      reason: 'account_inactive',
+      title: 'Konto Nieaktywne lub Zawieszone',
+      message:
+        user.status === 'banned'
+          ? `Twoje konto zostało zablokowane. Powód: ${user.banReason || 'Naruszenie regulaminu platformy.'}`
+          : 'Twoje konto oczekuje na weryfikację bezpieczeństwa lub zostało tymczasowo zawieszone.',
+    };
+  }
+
+  // 3. Check requiredRole permissions
+  if (requiredRole) {
+    if (requiredRole === 'admin') {
+      const isAuthorizedAdmin =
+        !isGuestUser(user, isAuthenticated) &&
+        user.role === 'admin' &&
+        (user.email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com';
+      if (!isAuthorizedAdmin) {
+        return {
+          allowed: false,
+          reason: 'insufficient_role',
+          title: 'Brak Dostępu — Strefa Autoryzowanego Administratora',
+          message:
+            'Panel zarządzania akademią jest chroniony przez komponent ProtectedRoute i dostępny wyłącznie dla zweryfikowanego właściciela platformy (rola: Administrator). Konta kursantów oraz gości nie posiadają uprawnień administracyjnych.',
+        };
+      }
+    } else if (user.role !== requiredRole && user.role !== 'admin') {
+      return {
+        allowed: false,
+        reason: 'insufficient_role',
+        title: 'Brak Wymaganych Uprawnień',
+        message: `Ta sekcja wymaga uprawnień roli: ${requiredRole}.`,
+      };
+    }
+  }
+
+  return { allowed: true };
+}
+

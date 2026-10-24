@@ -10,6 +10,7 @@ import { ProjectsView } from './components/ProjectsView';
 import { CertificateView } from './components/CertificateView';
 import { ReviewCenterView } from './components/ReviewCenterView';
 import { AdminPanelView } from './components/AdminPanelView';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { DeploymentGuideView } from './components/DeploymentGuideView';
 import { TerminalSimulator } from './components/TerminalSimulator';
 import { SqlStudioView } from './components/SqlStudioView';
@@ -37,8 +38,13 @@ const MainContent: React.FC = () => {
         setIsCommandPaletteOpen((prev) => !prev);
       }
     };
+    const handleOpenAuth = () => setIsAuthModalOpen(true);
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('akademia:open-auth-modal', handleOpenAuth);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('akademia:open-auth-modal', handleOpenAuth);
+    };
   }, []);
 
   // Retrieve current active lesson
@@ -106,7 +112,15 @@ const MainContent: React.FC = () => {
           {activeTab === 'leaderboard' && <LeaderboardChallengeView />}
           {activeTab === 'flashcards' && <FlashcardsCheatSheetView />}
           {activeTab === 'career' && <CareerBackupView />}
-          {activeTab === 'admin' && <AdminPanelView />}
+          {activeTab === 'admin' && (
+            <ProtectedRoute
+              requiredRole="admin"
+              allowGuests={false}
+              onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            >
+              <AdminPanelView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
+            </ProtectedRoute>
+          )}
           {activeTab === 'deployment' && <DeploymentGuideView />}
         </main>
       </div>
@@ -136,6 +150,13 @@ const MainContent: React.FC = () => {
               className="hover:text-white transition-colors"
             >
               Weryfikacja Certyfikatów
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('admin')}
+              className="hover:text-rose-400 transition-colors"
+            >
+              Panel Administratora
             </button>
             <button
               type="button"

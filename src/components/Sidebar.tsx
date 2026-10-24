@@ -9,6 +9,7 @@ import {
   RotateCcw, 
   Award, 
   ShieldCheck, 
+  Lock,
   BookMarked,
   CheckCircle2,
   Clock,
@@ -33,7 +34,7 @@ interface SidebarNavItem {
 }
 
 export const Sidebar: React.FC = () => {
-  const { activeTab, setActiveTab, currentUser, weakAreas } = useApp();
+  const { activeTab, setActiveTab, currentUser, isAuthenticated, weakAreas } = useApp();
 
   const primaryItems: SidebarNavItem[] = [
     { id: 'dashboard', label: 'Pulpit Kursanta', icon: LayoutDashboard },
@@ -117,28 +118,32 @@ export const Sidebar: React.FC = () => {
         {renderNavGroup('Warsztat & Symulatory', toolsItems)}
         {renderNavGroup('Zasoby', extraItems)}
 
-        {currentUser.role === 'admin' && (
-          <div className="pt-3">
-            <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Instruktor
-            </div>
-            <button
-              type="button"
-              onClick={() => setActiveTab('admin')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'admin'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-600/20'
-                  : 'text-rose-400 hover:bg-rose-950/30 border border-rose-900/30'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <ShieldCheck className="h-4 w-4" />
-                <span>Panel Administratora</span>
-              </div>
-              <ChevronRight className="h-3.5 w-3.5 opacity-60" />
-            </button>
+        <div className="pt-3">
+          <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            Administracja
           </div>
-        )}
+          <button
+            type="button"
+            onClick={() => setActiveTab('admin')}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+              activeTab === 'admin'
+                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/20'
+                : isAuthenticated && currentUser.role === 'admin'
+                ? 'text-rose-400 hover:bg-rose-950/30 border border-rose-900/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-slate-800/80'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              {isAuthenticated && currentUser.role === 'admin' ? (
+                <ShieldCheck className="h-4 w-4 text-rose-400" />
+              ) : (
+                <Lock className="h-4 w-4 text-amber-400" />
+              )}
+              <span>Panel Administratora</span>
+            </div>
+            <ChevronRight className="h-3.5 w-3.5 opacity-60" />
+          </button>
+        </div>
       </div>
 
       {/* Current Curriculum Progress Quick Glance */}
