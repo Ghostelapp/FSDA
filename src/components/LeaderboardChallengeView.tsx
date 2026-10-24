@@ -32,7 +32,20 @@ export const LeaderboardChallengeView: React.FC = () => {
   });
 
   const [evalResult, setEvalResult] = useState<ChallengeEvalResult | null>(null);
-  const [solvedIds, setSolvedIds] = useState<string[]>([]);
+  const [localSolvedIds, setLocalSolvedIds] = useState<string[]>([]);
+
+  const solvedIds = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...localSolvedIds,
+          ...DAILY_CHALLENGES.filter((c) => (currentUser.claimedRewards || []).includes(`daily-${c.id}`)).map(
+            (c) => c.id
+          ),
+        ])
+      ),
+    [localSolvedIds, currentUser.claimedRewards]
+  );
 
   const leaderboard = useMemo(
     () => buildWeeklyLeaderboard(currentUser, allUsers),
@@ -44,9 +57,13 @@ export const LeaderboardChallengeView: React.FC = () => {
     const res = evaluateDailyChallenge(activeChallenge, userCode);
     setEvalResult(res);
 
-    if (res.passedAll && !solvedIds.includes(activeChallenge.id)) {
-      setSolvedIds((prev) => [...prev, activeChallenge.id]);
-      awardCustomXp(activeChallenge.xpReward, `Rozwiązano Wyzwanie Dnia: ${activeChallenge.title}`);
+    if (res.passedAll) {
+      setLocalSolvedIds((prev) => (prev.includes(activeChallenge.id) ? prev : [...prev, activeChallenge.id]));
+      awardCustomXp(
+        activeChallenge.xpReward,
+        `Rozwiązano Wyzwanie Dnia: ${activeChallenge.title}`,
+        `daily-${activeChallenge.id}`
+      );
     }
   };
 

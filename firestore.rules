@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (matches request.auth.uid)
+    // Fields:
+    //   - uid: string (required, immutable) - Firebase Auth UID
+    //   - id: string (required) - Application user ID
+    //   - name: string (required, 1..120 chars) - Display name
+    //   - email: string (required, valid email) - User email address
+    //   - role: string (required, 'student' | 'admin') - Role
+    //   - status: string (required, 'active' | 'suspended' | 'banned' | 'pending_verification')
+    //   - xp: number (required, >= 0)
+    //   - level: number (required, >= 1)
+    //   - streakDays: number (required, >= 0)
+    //   - completedLessons: list (required, <= 500 items)
+    //   - completedProjects: list (optional, <= 100 items)
+    //   - unlockedBadges: list (optional, <= 100 items)
+    //   - claimedRewards: list (optional, <= 1000 items)
+    //   - lives: number (optional, 0..10)
+    //   - maxLives: number (optional, 1..10)
+    //   - isPro: bool (optional)
+    //   - bio: string (optional, <= 600 chars)
+    //   - createdAt: string (optional, <= 60 chars)
+    //   - updatedAt: string (optional, <= 60 chars)
+    //
+    // Collection: announcements
+    // Document ID: {announcementId}
+    // Fields:
+    //   - id: string (required, 1..100 chars)
+    //   - title: string (required, 1..200 chars)
+    //   - content: string (required, 1..4000 chars)
+    //   - date: string (required, 1..40 chars)
+    //   - category: string (required, 'update' | 'tip' | 'event')
+    //   - author: string (required, 1..120 chars)
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+          (request.auth.token.email == "zordonzordon1@gmail.com" && request.auth.token.email_verified == true)
+        );
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.size() >= 3 &&
+        email.size() <= 254 &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'id', 'name', 'email', 'role', 'status', 'xp', 'level', 'streakDays', 'completedLessons']) &&
+        data.uid is string && data.uid == userId &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 128 &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+        isValidEmail(data.email) &&
+        data.role in ['student', 'admin'] &&
+        data.status in ['active', 'suspended', 'banned', 'pending_verification'] &&
+        data.xp is number && data.xp >= 0 && data.xp <= 10000000 &&
+        data.level is number && data.level >= 1 && data.level <= 1000 &&
+        data.streakDays is number && data.streakDays >= 0 && data.streakDays <= 10000 &&
+        data.completedLessons is list && data.completedLessons.size() <= 500 &&
+        (!('completedProjects' in data) || (data.completedProjects is list && data.completedProjects.size() <= 100)) &&
+        (!('unlockedBadges' in data) || (data.unlockedBadges is list && data.unlockedBadges.size() <= 100)) &&
+        (!('claimedRewards' in data) || (data.claimedRewards is list && data.claimedRewards.size() <= 1000)) &&
+        (!('lives' in data) || (data.lives is number && data.lives >= 0 && data.lives <= 10)) &&
+        (!('maxLives' in data) || (data.maxLives is number && data.maxLives >= 1 && data.maxLives <= 10)) &&
+        (!('isPro' in data) || data.isPro is bool) &&
+        (!('bio' in data) || (data.bio is string && data.bio.size() <= 600));
+    }
+
+    function isValidAnnouncement(data) {
+      return data.keys().hasAll(['id', 'title', 'content', 'date', 'category', 'author']) &&
+        data.keys().hasOnly(['id', 'title', 'content', 'date', 'category', 'author']) &&
+        data.id is string && data.id.size() >= 1 && data.id.size() <= 100 &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        data.content is string && data.content.size() >= 1 && data.content.size() <= 4000 &&
+        data.date is string && data.date.size() >= 1 && data.date.size() <= 40 &&
+        data.category in ['update', 'tip', 'event'] &&
+        data.author is string && data.author.size() >= 1 && data.author.size() <= 120;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() &&
+        isValidUserProfile(request.resource.data, userId) &&
+        (
+          (isOwner(userId) && request.resource.data.role == 'student' && request.resource.data.status == 'active') ||
+          isAdmin()
+        );
+      allow update: if isAuthenticated() &&
+        isValidUserProfile(request.resource.data, userId) &&
+        request.resource.data.uid == resource.data.uid &&
+        (
+          (isOwner(userId) &&
+           request.resource.data.role == resource.data.role &&
+           request.resource.data.status == resource.data.status) ||
+          isAdmin()
+        );
+      allow delete: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() && isValidAnnouncement(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}

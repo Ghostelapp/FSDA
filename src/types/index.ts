@@ -30,6 +30,7 @@ export interface User {
   completedProjects: string[]; // project IDs
   quizScores: Record<string, number>; // lessonId -> percentage score
   unlockedBadges: string[]; // badge IDs
+  claimedRewards?: string[]; // unique reward IDs to prevent duplicate XP farming
   savedCode: Record<string, { html: string; css: string; js: string }>; // exerciseId -> code
   // Gamification & Subscription
   lives: number; // current hearts (0 to maxLives)

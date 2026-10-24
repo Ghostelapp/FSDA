@@ -42,7 +42,8 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
     allLessons,
     loseLife,
     livesInfo,
-    setIsLivesModalOpen
+    setIsLivesModalOpen,
+    awardCustomXp
   } = useApp();
 
   const isCompleted = currentUser.completedLessons.includes(lesson.id);
@@ -299,7 +300,11 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
         <CodeEditor
           exercise={lesson.interactiveExercise}
           onSuccess={() => {
-            // Give reward feedback
+            awardCustomXp(
+              25,
+              `Zaliczono ćwiczenie w edytorze: ${lesson.interactiveExercise.title}`,
+              `exercise-${lesson.interactiveExercise.id}`
+            );
           }}
           savedCode={currentUser.savedCode?.[lesson.interactiveExercise.id]}
           onSave={(code) => saveCodeSnippet(lesson.interactiveExercise.id, code)}

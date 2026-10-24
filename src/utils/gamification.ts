@@ -236,6 +236,72 @@ export function calculateRegeneratedLives(user: User, nowMs: number = Date.now()
 }
 
 /**
+ * Applies regenerated lives to a User object and properly advances lastHeartLostTimestamp
+ * so subsequent ticks do not cascade-refill all remaining hearts at once.
+ */
+export function applyRegeneratedLives(user: User, nowMs: number = Date.now()): {
+  user: User;
+  info: LivesCalculationResult;
+  changed: boolean;
+} {
+  const info = calculateRegeneratedLives(user, nowMs);
+  if (info.regeneratedCount <= 0 || info.currentLives === user.lives) {
+    return { user, info, changed: false };
+  }
+
+  const nextTimestamp = info.isFull
+    ? undefined
+    : user.lastHeartLostTimestamp
+    ? user.lastHeartLostTimestamp + info.regeneratedCount * HEART_REGEN_INTERVAL_MS
+    : nowMs;
+
+  const updatedUser: User = {
+    ...user,
+    lives: info.currentLives,
+    lastHeartLostTimestamp: nextTimestamp,
+  };
+
+  return {
+    user: updatedUser,
+    info: calculateRegeneratedLives(updatedUser, nowMs),
+    changed: true,
+  };
+}
+
+/**
+ * Grants XP for a specific rewardId only once per user (idempotency guard against XP farming).
+ */
+export function claimIdempotentReward(
+  user: User,
+  rewardId: string,
+  xpAmount: number
+): { updatedUser: User; granted: boolean } {
+  const cleanId = rewardId.trim();
+  const claimed = user.claimedRewards || [];
+  if (cleanId && claimed.includes(cleanId)) {
+    return { updatedUser: user, granted: false };
+  }
+
+  const newXp = Math.max(0, user.xp + xpAmount);
+  const levelInfo = calculateLevel(newXp);
+  const nextClaimed = cleanId ? [...claimed, cleanId] : claimed;
+
+  const updatedUser: User = {
+    ...user,
+    xp: newXp,
+    level: levelInfo.level,
+    claimedRewards: nextClaimed,
+  };
+
+  const newBadges = checkBadgesToUnlock(updatedUser);
+  if (newBadges.length > 0) {
+    updatedUser.unlockedBadges = [...(updatedUser.unlockedBadges || []), ...newBadges];
+  }
+
+  return { updatedUser, granted: true };
+}
+
+/**
  * Deducts 1 heart if user is on Free tier and has hearts.
  */
 export function deductLife(user: User, nowMs: number = Date.now()): { updatedUser: User; lost: boolean } {
@@ -303,11 +369,13 @@ export function buyHeartWithXP(user: User): { success: boolean; user: User; erro
   }
 
   const newLives = Math.min(maxLives, currentLives + 1);
+  const newXp = user.xp - XP_COST_ONE_HEART;
   return {
     success: true,
     user: {
       ...user,
-      xp: user.xp - XP_COST_ONE_HEART,
+      xp: newXp,
+      level: calculateLevel(newXp).level,
       lives: newLives,
       lastHeartLostTimestamp: newLives >= maxLives ? undefined : user.lastHeartLostTimestamp,
     },
@@ -329,11 +397,13 @@ export function buyFullRefillWithXP(user: User): { success: boolean; user: User;
     return { success: false, user, error: `Potrzebujesz ${XP_COST_FULL_REFILL} XP. Masz obecnie ${user.xp} XP.` };
   }
 
+  const newXp = user.xp - XP_COST_FULL_REFILL;
   return {
     success: true,
     user: {
       ...user,
-      xp: user.xp - XP_COST_FULL_REFILL,
+      xp: newXp,
+      level: calculateLevel(newXp).level,
       lives: maxLives,
       lastHeartLostTimestamp: undefined,
     },
@@ -348,11 +418,13 @@ export function buyStreakFreezeWithXP(user: User): { success: boolean; user: Use
     return { success: false, user, error: `Potrzebujesz ${XP_COST_STREAK_FREEZE} XP. Masz obecnie ${user.xp} XP.` };
   }
 
+  const newXp = user.xp - XP_COST_STREAK_FREEZE;
   return {
     success: true,
     user: {
       ...user,
-      xp: user.xp - XP_COST_STREAK_FREEZE,
+      xp: newXp,
+      level: calculateLevel(newXp).level,
       streakFreezes: (user.streakFreezes ?? 0) + 1,
     },
   };

@@ -45,17 +45,19 @@ const MainContent: React.FC = () => {
   const currentLesson = allLessons.find((l) => l.id === selectedLessonId) || allLessons[1]; // defaults to HTML lesson 1
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white print:bg-white print:text-slate-900">
       
       {/* Top Navbar */}
-      <Navbar
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-      />
+      <div className="print:hidden">
+        <Navbar
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        />
+      </div>
 
       {/* Toast Notification Banner */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-300 print:hidden">
           <div className={`flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-md ${
             toast.type === 'badge'
               ? 'bg-amber-950/90 border-amber-500/50 text-amber-200'
@@ -84,9 +86,11 @@ const MainContent: React.FC = () => {
 
       {/* App Body with Sidebar */}
       <div className="flex flex-1">
-        <Sidebar />
+        <div className="print:hidden">
+          <Sidebar />
+        </div>
 
-        <main className="flex-1 overflow-x-hidden pb-16">
+        <main className="flex-1 overflow-x-hidden pb-16 print:pb-0">
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'modules' && <ModulesView />}
           {activeTab === 'lesson' && <LessonDetailView lesson={currentLesson} />}
@@ -108,7 +112,7 @@ const MainContent: React.FC = () => {
       </div>
 
       {/* Global Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 px-4 py-8 text-xs text-slate-400">
+      <footer className="border-t border-slate-900 bg-slate-950 px-4 py-8 text-xs text-slate-400 print:hidden">
         <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-600 text-white">

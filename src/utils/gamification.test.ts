@@ -4,7 +4,9 @@ import {
   calculateLevel, 
   updateStreak, 
   checkBadgesToUnlock, 
-  calculateRegeneratedLives, 
+  calculateRegeneratedLives,
+  applyRegeneratedLives,
+  claimIdempotentReward,
   deductLife, 
   buyHeartWithXP, 
   formatCountdown 
@@ -147,6 +149,82 @@ test('calculateRegeneratedLives regenerates hearts after elapsed time', () => {
   assert.equal(result.currentLives, 4);
   assert.equal(result.isFull, false);
   assert.ok(result.secondsToNextHeart !== null && result.secondsToNextHeart <= 900);
+});
+
+test('applyRegeneratedLives advances timestamp so next tick does not cascade-refill remaining hearts', () => {
+  const now = 1700000000000;
+  const fifteenMinutesMs = 15 * 60 * 1000;
+  const user: User = {
+    id: 'u-regen',
+    name: 'Regen User',
+    email: 'regen@example.com',
+    role: 'student',
+    xp: 100,
+    level: 1,
+    streakDays: 1,
+    lastActiveDate: '2026-10-21',
+    weeklyGoalMinutes: 120,
+    weeklySpentMinutes: 30,
+    completedLessons: [],
+    completedProjects: [],
+    quizScores: {},
+    unlockedBadges: [],
+    savedCode: {},
+    lives: 2,
+    maxLives: 5,
+    lastHeartLostTimestamp: now - (fifteenMinutesMs + 5000), // 15m 5s ago -> 1 heart recovered
+    isPro: false,
+    streakFreezes: 1,
+    status: 'active',
+    antiBotVerified: true,
+    createdAt: '2026-10-21',
+  };
+
+  const firstTick = applyRegeneratedLives(user, now);
+  assert.equal(firstTick.changed, true);
+  assert.equal(firstTick.user.lives, 3);
+
+  // 1 second later: should NOT recover another heart!
+  const secondTick = applyRegeneratedLives(firstTick.user, now + 1000);
+  assert.equal(secondTick.changed, false);
+  assert.equal(secondTick.user.lives, 3);
+});
+
+test('claimIdempotentReward grants XP only once per rewardId', () => {
+  const user: User = {
+    id: 'u-idem',
+    name: 'Idempotent User',
+    email: 'idem@example.com',
+    role: 'student',
+    xp: 100,
+    level: 1,
+    streakDays: 1,
+    lastActiveDate: '2026-10-21',
+    weeklyGoalMinutes: 120,
+    weeklySpentMinutes: 30,
+    completedLessons: [],
+    completedProjects: [],
+    quizScores: {},
+    unlockedBadges: [],
+    savedCode: {},
+    lives: 5,
+    maxLives: 5,
+    isPro: false,
+    streakFreezes: 1,
+    status: 'active',
+    antiBotVerified: true,
+    createdAt: '2026-10-21',
+  };
+
+  const firstClaim = claimIdempotentReward(user, 'terminal-mission-m-1', 60);
+  assert.equal(firstClaim.granted, true);
+  assert.equal(firstClaim.updatedUser.xp, 160);
+  assert.equal(firstClaim.updatedUser.level, 2);
+
+  // Second claim with same rewardId must be blocked
+  const duplicateClaim = claimIdempotentReward(firstClaim.updatedUser, 'terminal-mission-m-1', 60);
+  assert.equal(duplicateClaim.granted, false);
+  assert.equal(duplicateClaim.updatedUser.xp, 160);
 });
 
 test('deductLife deducts 1 life on free tier, never drops below 0, and protects PRO', () => {

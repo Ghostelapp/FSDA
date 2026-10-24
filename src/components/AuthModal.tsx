@@ -25,6 +25,7 @@ import {
   LogOut,
   Settings,
   Save,
+  Cloud,
 } from 'lucide-react';
 
 interface AuthModalProps {
@@ -36,8 +37,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const {
     currentUser,
     isAuthenticated,
+    isCloudConnected,
+    isSyncingCloud,
     allUsers,
     loginUser,
+    loginWithGoogle,
+    syncNowToCloud,
     registerUser,
     updateCurrentUserProfile,
     resetUserPassword,
@@ -125,6 +130,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       onClose();
     } else {
       setErrorMessage(res.error || 'Błąd logowania.');
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setErrorMessage('');
+    setSuccessMessage('');
+    const res = await loginWithGoogle();
+    if (res.success) {
+      onClose();
+    } else if (res.error) {
+      setErrorMessage(res.error);
     }
   };
 
@@ -276,7 +292,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 {mode === 'profile' && 'Ustawienia Konta i Profilu'}
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-400">
-                {mode === 'login' && 'Wprowadź dane logowania lub wybierz profil testowy.'}
+                {mode === 'login' && 'Zaloguj się przez Chmurę Google Firebase lub wybierz profil.'}
                 {mode === 'register' && 'Wypełnij dane i potwierdź tożsamość człowieka.'}
                 {mode === 'forgot' && 'Ustaw nowe hasło dostępowe dla swojego konta.'}
                 {mode === 'profile' && 'Zarządzaj swoimi danymi, hasłem i aktywną sesją.'}
@@ -307,9 +323,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 {isAuthenticated ? currentUser.name : 'Gość (Niezalogowany)'}
               </strong>
             </span>
+            {isCloudConnected && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold shrink-0">
+                <Cloud className="h-3 w-3" />
+                {isSyncingCloud ? 'Sync...' : 'Firestore'}
+              </span>
+            )}
           </div>
           {isAuthenticated ? (
             <div className="flex items-center gap-1.5 shrink-0">
+              {isCloudConnected && (
+                <button
+                  type="button"
+                  onClick={() => void syncNowToCloud()}
+                  disabled={isSyncingCloud}
+                  title="Wymuś natychmiastowy zapis postępów do Cloud Firestore"
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold transition-colors"
+                >
+                  <Cloud className="h-3 w-3" />
+                  <span className="hidden sm:inline">Zapisz w Chmurze</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -383,6 +417,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               Reset hasła
             </button>
           </div>
+
+          {/* Firebase Cloud Google Sign-In Banner */}
+          {mode !== 'profile' && (
+            <div className="rounded-2xl border border-indigo-500/30 bg-indigo-950/25 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+                  <Cloud className="h-4 w-4 text-cyan-400" />
+                  <span>Chmura Firebase Auth & Cloud Firestore</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Zaloguj się kontem Google, aby synchronizować XP, odznaki, serca i kod w czasie rzeczywistym między urządzeniami.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleGoogleLogin()}
+                disabled={isSyncingCloud}
+                className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold shadow-md transition-all cursor-pointer disabled:opacity-60"
+              >
+                <Cloud className="h-4 w-4 text-indigo-600" />
+                <span>{isSyncingCloud ? 'Łączenie...' : 'Zaloguj przez Google'}</span>
+              </button>
+            </div>
+          )}
 
           {/* Quick Demo Accounts Palette (Filtered) */}
           {mode !== 'profile' && (

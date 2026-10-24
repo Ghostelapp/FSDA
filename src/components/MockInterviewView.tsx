@@ -38,7 +38,7 @@ interface InterviewTask {
 }
 
 export const MockInterviewView: React.FC = () => {
-  const { awardCustomXp } = useApp();
+  const { currentUser, awardCustomXp } = useApp();
 
   const TASKS: InterviewTask[] = [
     {
@@ -174,7 +174,13 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [testResults, setTestResults] = useState<{ passed: boolean; message: string }[] | null>(null);
   const [activeHintIdx, setActiveHintIdx] = useState<number>(-1);
-  const [isCompleted, setIsCompleted] = useState<boolean>(false);
+  const [isCompleted, setIsCompleted] = useState<boolean>(() =>
+    Boolean(currentUser.claimedRewards?.includes(`interview-${currentTask.id}`))
+  );
+
+  useEffect(() => {
+    setIsCompleted(Boolean(currentUser.claimedRewards?.includes(`interview-${currentTask.id}`)));
+  }, [currentTask.id, currentUser.claimedRewards]);
 
   // Timer tick
   useEffect(() => {
@@ -199,7 +205,7 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
     setIsTimerRunning(false);
     setTestResults(null);
     setActiveHintIdx(-1);
-    setIsCompleted(false);
+    setIsCompleted(Boolean(currentUser.claimedRewards?.includes(`interview-${task.id}`)));
   };
 
   const formatTimer = (secs: number) => {
@@ -268,9 +274,11 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
       setTestResults(results);
 
       if (allPassed) {
-        if (!isCompleted) {
-          awardCustomXp(currentTask.xpReward, `Zadanie Live Coding: ${currentTask.title}`);
-        }
+        awardCustomXp(
+          currentTask.xpReward,
+          `Zadanie Live Coding: ${currentTask.title}`,
+          `interview-${currentTask.id}`
+        );
         setIsCompleted(true);
         setIsTimerRunning(false);
         soundManager.playSuccess();

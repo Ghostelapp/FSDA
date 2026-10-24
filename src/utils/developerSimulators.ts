@@ -954,20 +954,179 @@ export interface BackupValidationResult {
 }
 
 export function validateBackupPayload(rawJson: string): BackupValidationResult {
+  if (!rawJson || !rawJson.trim()) {
+    return { valid: false, error: 'Wklej zawartość pliku JSON lub wgraj plik z dysku.' };
+  }
+
   try {
     const parsed = JSON.parse(rawJson);
     const candidate = parsed?.user || parsed;
-    if (!candidate || typeof candidate !== 'object') {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
       return { valid: false, error: 'Plik nie zawiera poprawnego obiektu profilu.' };
     }
-    if (typeof candidate.id !== 'string' || typeof candidate.name !== 'string' || typeof candidate.email !== 'string') {
-      return { valid: false, error: 'Brakuje wymaganych pól profilu (id, name, email).' };
+    if (
+      typeof candidate.id !== 'string' ||
+      !candidate.id.trim() ||
+      typeof candidate.name !== 'string' ||
+      candidate.name.trim().length < 2 ||
+      typeof candidate.email !== 'string' ||
+      !candidate.email.includes('@')
+    ) {
+      return {
+        valid: false,
+        error: 'Brakuje wymaganych lub poprawnych pól profilu (id, name min. 2 znaki, poprawny email).',
+      };
     }
-    if (typeof candidate.xp !== 'number' || !Array.isArray(candidate.completedLessons)) {
-      return { valid: false, error: 'Nieprawidłowa struktura postępów (xp lub completedLessons).' };
+    if (
+      typeof candidate.xp !== 'number' ||
+      !Number.isFinite(candidate.xp) ||
+      candidate.xp < 0 ||
+      !Array.isArray(candidate.completedLessons)
+    ) {
+      return {
+        valid: false,
+        error: 'Nieprawidłowa struktura postępów (xp musi być liczbą >= 0, a completedLessons tablicą).',
+      };
     }
-    return { valid: true, user: candidate as User };
+
+    const safeXp = Math.max(0, Math.floor(candidate.xp));
+    const safeLessons = candidate.completedLessons.filter((item: unknown): item is string => typeof item === 'string');
+    const safeProjects = Array.isArray(candidate.completedProjects)
+      ? candidate.completedProjects.filter((item: unknown): item is string => typeof item === 'string')
+      : [];
+    const safeBadges = Array.isArray(candidate.unlockedBadges)
+      ? candidate.unlockedBadges.filter((item: unknown): item is string => typeof item === 'string')
+      : [];
+    const safeClaimed = Array.isArray(candidate.claimedRewards)
+      ? candidate.claimedRewards.filter((item: unknown): item is string => typeof item === 'string')
+      : [];
+
+    const normalizedUser: User = {
+      id: candidate.id.trim(),
+      name: candidate.name.trim(),
+      email: candidate.email.trim(),
+      role: candidate.role === 'admin' ? 'admin' : 'student',
+      status:
+        candidate.status === 'active' ||
+        candidate.status === 'suspended' ||
+        candidate.status === 'pending_verification' ||
+        candidate.status === 'banned'
+          ? candidate.status
+          : 'active',
+      antiBotVerified: typeof candidate.antiBotVerified === 'boolean' ? candidate.antiBotVerified : true,
+      antiBotScore: typeof candidate.antiBotScore === 'number' ? candidate.antiBotScore : 100,
+      avatar:
+        typeof candidate.avatar === 'string' && candidate.avatar.trim()
+          ? candidate.avatar
+          : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(candidate.name.trim())}`,
+      xp: safeXp,
+      level: typeof candidate.level === 'number' && candidate.level >= 1 ? candidate.level : Math.max(1, Math.floor(safeXp / 500) + 1),
+      streakDays: typeof candidate.streakDays === 'number' && candidate.streakDays >= 0 ? candidate.streakDays : 1,
+      lastActiveDate:
+        typeof candidate.lastActiveDate === 'string' && candidate.lastActiveDate
+          ? candidate.lastActiveDate
+          : new Date().toISOString().split('T')[0],
+      weeklyGoalMinutes:
+        typeof candidate.weeklyGoalMinutes === 'number' && candidate.weeklyGoalMinutes >= 30
+          ? candidate.weeklyGoalMinutes
+          : 180,
+      weeklySpentMinutes:
+        typeof candidate.weeklySpentMinutes === 'number' && candidate.weeklySpentMinutes >= 0
+          ? candidate.weeklySpentMinutes
+          : 0,
+      completedLessons: safeLessons,
+      completedProjects: safeProjects,
+      quizScores:
+        candidate.quizScores && typeof candidate.quizScores === 'object' && !Array.isArray(candidate.quizScores)
+          ? candidate.quizScores
+          : {},
+      unlockedBadges: safeBadges,
+      claimedRewards: safeClaimed,
+      savedCode:
+        candidate.savedCode && typeof candidate.savedCode === 'object' && !Array.isArray(candidate.savedCode)
+          ? candidate.savedCode
+          : {},
+      lives: typeof candidate.lives === 'number' ? Math.max(0, Math.min(5, candidate.lives)) : 5,
+      maxLives: typeof candidate.maxLives === 'number' && candidate.maxLives > 0 ? candidate.maxLives : 5,
+      isPro: Boolean(candidate.isPro),
+      proPlan: candidate.proPlan || null,
+      streakFreezes: typeof candidate.streakFreezes === 'number' && candidate.streakFreezes >= 0 ? candidate.streakFreezes : 1,
+      bio: typeof candidate.bio === 'string' ? candidate.bio : undefined,
+      password: typeof candidate.password === 'string' ? candidate.password : 'student123',
+      createdAt:
+        typeof candidate.createdAt === 'string' && candidate.createdAt
+          ? candidate.createdAt
+          : new Date().toISOString().split('T')[0],
+    };
+
+    return { valid: true, user: normalizedUser };
   } catch {
     return { valid: false, error: 'Plik nie jest poprawnym dokumentem JSON.' };
   }
 }
+
+export function generateCertificateCode(user: User): string {
+  const cleanId = (user.id || 'guest').replace(/^user-/, '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase();
+  return `FSDA-2026-${cleanId || 'STUDENT'}-${user.level || 1}X`;
+}
+
+export interface CertificateVerificationResult {
+  valid: boolean;
+  code: string;
+  holderName?: string;
+  holderEmail?: string;
+  level?: number;
+  xp?: number;
+  completedLessonsCount?: number;
+  completedProjectsCount?: number;
+  isOfficial?: boolean;
+  message: string;
+}
+
+export function verifyCertificateCode(
+  inputCode: string,
+  allUsers: User[],
+  currentUser?: User
+): CertificateVerificationResult {
+  const clean = (inputCode || '').trim().toUpperCase();
+  if (!clean) {
+    return {
+      valid: false,
+      code: '',
+      message: 'Wprowadź kod identyfikacyjny certyfikatu (np. FSDA-2026-ADMIN-10X).',
+    };
+  }
+
+  const pool = currentUser
+    ? [...allUsers.filter((u) => u.id !== currentUser.id), currentUser]
+    : allUsers;
+
+  const matchedUser = pool.find((u) => generateCertificateCode(u).toUpperCase() === clean);
+  if (!matchedUser) {
+    return {
+      valid: false,
+      code: clean,
+      message: 'Nie znaleziono certyfikatu o podanym identyfikatorze w rejestrze Akademii.',
+    };
+  }
+
+  const isOfficial =
+    matchedUser.role === 'admin' ||
+    (matchedUser.completedLessons.length >= 3 && matchedUser.completedProjects.length >= 1);
+
+  return {
+    valid: true,
+    code: generateCertificateCode(matchedUser),
+    holderName: matchedUser.name,
+    holderEmail: matchedUser.email,
+    level: matchedUser.level,
+    xp: matchedUser.xp,
+    completedLessonsCount: matchedUser.completedLessons.length,
+    completedProjectsCount: matchedUser.completedProjects.length,
+    isOfficial,
+    message: isOfficial
+      ? `Certyfikat autentyczny i oficjalnie zatwierdzony dla: ${matchedUser.name}.`
+      : `Certyfikat przypisany do: ${matchedUser.name} (status: w trakcie realizacji wymagań końcowych).`,
+  };
+}
+

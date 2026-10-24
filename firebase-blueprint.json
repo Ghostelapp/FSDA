@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private user learning profile, progress, XP, hearts, badges, and saved code snippets.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID of the user." },
+        "id": { "type": "string", "description": "Application user ID." },
+        "name": { "type": "string", "description": "Display name of the student or instructor." },
+        "email": { "type": "string", "format": "email", "description": "Email address of the user." },
+        "role": { "type": "string", "enum": ["student", "admin"], "description": "Role of the user." },
+        "status": { "type": "string", "enum": ["active", "suspended", "banned", "pending_verification"], "description": "Account status." },
+        "xp": { "type": "number", "description": "Total experience points earned." },
+        "level": { "type": "number", "description": "Current gamification level." },
+        "streakDays": { "type": "number", "description": "Current learning streak in days." },
+        "lastActiveDate": { "type": "string", "description": "Last active date in YYYY-MM-DD format." },
+        "weeklyGoalMinutes": { "type": "number", "description": "Target weekly study duration in minutes." },
+        "weeklySpentMinutes": { "type": "number", "description": "Minutes studied during the current week." },
+        "completedLessons": { "type": "array", "items": { "type": "string" }, "description": "Completed lesson IDs." },
+        "completedProjects": { "type": "array", "items": { "type": "string" }, "description": "Completed project IDs." },
+        "unlockedBadges": { "type": "array", "items": { "type": "string" }, "description": "Unlocked badge IDs." },
+        "claimedRewards": { "type": "array", "items": { "type": "string" }, "description": "Claimed idempotent reward IDs." },
+        "quizScores": { "type": "object", "description": "Map of lessonId to highest quiz percentage score." },
+        "savedCode": { "type": "object", "description": "Map of exerciseId to saved HTML/CSS/JS code." },
+        "lives": { "type": "number", "description": "Current available hearts (0-5)." },
+        "maxLives": { "type": "number", "description": "Maximum hearts (5)." },
+        "isPro": { "type": "boolean", "description": "Whether user has active Full Stack PRO subscription." },
+        "proPlan": { "type": "string", "description": "Subscription tier (monthly, yearly, lifetime)." },
+        "streakFreezes": { "type": "number", "description": "Available streak freeze shields." },
+        "bio": { "type": "string", "description": "User bio or career objective." },
+        "avatar": { "type": "string", "description": "Avatar image URL." },
+        "createdAt": { "type": "string", "description": "Account creation date string." },
+        "updatedAt": { "type": "string", "description": "Last update ISO timestamp." }
+      },
+      "required": ["uid", "id", "name", "email", "role", "status", "xp", "level", "streakDays", "completedLessons"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Academy-wide announcement published by instructors/administrators.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Announcement unique ID." },
+        "title": { "type": "string", "description": "Announcement headline." },
+        "content": { "type": "string", "description": "Announcement body content." },
+        "date": { "type": "string", "description": "Publication date YYYY-MM-DD." },
+        "category": { "type": "string", "enum": ["update", "tip", "event"], "description": "Announcement category." },
+        "author": { "type": "string", "description": "Author display name." }
+      },
+      "required": ["id", "title", "content", "date", "category", "author"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user learning profiles accessible by the owner or an administrator."
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Academy announcements readable by authenticated users and writable by admins."
+    }
+  }
+}

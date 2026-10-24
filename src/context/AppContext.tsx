@@ -20,12 +20,14 @@ import {
   sendServiceWorkerNotification,
   syncScheduleWithServiceWorker,
 } from '../utils/pushNotifications';
-import { 
+import {
   calculateLevel, 
   updateStreak, 
   checkBadgesToUnlock, 
   findWeakAreas,
   calculateRegeneratedLives,
+  applyRegeneratedLives,
+  claimIdempotentReward,
   deductLife,
   addLife,
   refillAllLives,
@@ -38,6 +40,19 @@ import {
   XP_COST_FULL_REFILL,
   XP_COST_STREAK_FREEZE
 } from '../utils/gamification';
+import {
+  auth,
+  onAuthStateChanged,
+  testFirebaseConnection,
+  signInWithGoogleFirebase,
+  signOutFromFirebase,
+  fetchOrCreateCloudUserProfile,
+  saveUserProfileToCloud,
+  subscribeToUserProfile,
+  subscribeToCloudAnnouncements,
+  saveAnnouncementToCloud,
+  deleteAnnouncementFromCloud,
+} from '../firebase';
 
 export type AppTab = 
   | 'dashboard' 
@@ -61,6 +76,9 @@ export type AppTab =
 interface AppContextType {
   currentUser: User;
   isAuthenticated: boolean;
+  isCloudConnected: boolean;
+  isSyncingCloud: boolean;
+  firebaseUid: string | null;
   allUsers: User[];
   activeTab: AppTab;
   selectedLessonId: string | null;
@@ -83,6 +101,8 @@ interface AppContextType {
   toggleTheme: () => void;
   setActiveTab: (tab: AppTab, lessonId?: string, projectId?: string) => void;
   loginUser: (email: string, password?: string) => { success: boolean; error?: string };
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  syncNowToCloud: () => Promise<boolean>;
   registerUser: (params: {
     name: string;
     email: string;
@@ -127,7 +147,7 @@ interface AppContextType {
   requestNotificationPermission: () => Promise<NotificationPermission | 'unsupported'>;
   updateReminderSettings: (partial: Partial<DailyReminderSettings>) => void;
   triggerGoalReminderNow: (isTest?: boolean) => Promise<boolean>;
-  awardCustomXp: (xpAmount: number, reason: string) => void;
+  awardCustomXp: (xpAmount: number, reason: string, rewardId?: string) => boolean;
   importUserBackup: (restoredUser: User) => void;
 }
 
@@ -359,6 +379,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>('proj-1');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'badge' | 'danger' } | null>(null);
 
+  // Firebase Auth & Firestore Cloud State
+  const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
+  const [isSyncingCloud, setIsSyncingCloud] = useState<boolean>(false);
+  const lastCloudSyncHashRef = useRef<string>('');
+  const currentUserRef = useRef<User>(currentUser);
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
   const [isSoundMuted, setIsSoundMuted] = useState<boolean>(() => soundManager.getIsMuted());
 
   const toggleSound = () => {
@@ -402,20 +432,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Live countdown and heart regeneration timer
   useEffect(() => {
     const interval = setInterval(() => {
-      const updated = calculateRegeneratedLives(currentUser);
+      const { user: userWithRegen, info: updated, changed } = applyRegeneratedLives(currentUser);
       setLivesInfo(updated);
 
-      // If hearts were regenerated over time, persist to user state
-      if (updated.regeneratedCount > 0 && updated.currentLives !== currentUser.lives) {
-        setCurrentUser((prev) => {
-          const userWithRegen: User = {
-            ...prev,
-            lives: updated.currentLives,
-            lastHeartLostTimestamp: updated.isFull ? undefined : prev.lastHeartLostTimestamp,
-          };
-          setAllUsers((users) => users.map((u) => (u.id === userWithRegen.id ? userWithRegen : u)));
-          return userWithRegen;
-        });
+      // If hearts were regenerated over time, persist to user state with advanced timestamp
+      if (changed) {
+        setCurrentUser(userWithRegen);
+        setAllUsers((users) => users.map((u) => (u.id === userWithRegen.id ? userWithRegen : u)));
       }
     }, 1000);
 
@@ -457,6 +480,129 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.warn('Storage sync error', e);
     }
   }, [announcements]);
+
+  // Verify Firestore connection and subscribe to Firebase Auth state
+  useEffect(() => {
+    void testFirebaseConnection();
+
+    let unsubProfile: (() => void) | null = null;
+    let unsubAnnouncements: (() => void) | null = null;
+
+    const unsubAuth = onAuthStateChanged(auth, async (fbUser) => {
+      if (unsubProfile) {
+        unsubProfile();
+        unsubProfile = null;
+      }
+      if (unsubAnnouncements) {
+        unsubAnnouncements();
+        unsubAnnouncements = null;
+      }
+
+      if (fbUser) {
+        setFirebaseUid(fbUser.uid);
+        setIsCloudConnected(true);
+        setIsSyncingCloud(true);
+        try {
+          const cloudProfile = await fetchOrCreateCloudUserProfile(fbUser, currentUserRef.current);
+          lastCloudSyncHashRef.current = JSON.stringify({
+            xp: cloudProfile.xp,
+            level: cloudProfile.level,
+            lives: cloudProfile.lives,
+            isPro: cloudProfile.isPro,
+            name: cloudProfile.name,
+            bio: cloudProfile.bio,
+            completedLessons: cloudProfile.completedLessons,
+            completedProjects: cloudProfile.completedProjects,
+            unlockedBadges: cloudProfile.unlockedBadges,
+            claimedRewards: cloudProfile.claimedRewards,
+            quizScores: cloudProfile.quizScores,
+          });
+          setCurrentUser(cloudProfile);
+          setIsAuthenticated(true);
+          setLivesInfo(calculateRegeneratedLives(cloudProfile));
+          setAllUsers((prev) => {
+            const exists = prev.some((u) => u.id === cloudProfile.id);
+            if (exists) {
+              return prev.map((u) => (u.id === cloudProfile.id ? cloudProfile : u));
+            }
+            return [cloudProfile, ...prev];
+          });
+
+          unsubProfile = subscribeToUserProfile(fbUser.uid, (remoteUser) => {
+            const remoteHash = JSON.stringify({
+              xp: remoteUser.xp,
+              level: remoteUser.level,
+              lives: remoteUser.lives,
+              isPro: remoteUser.isPro,
+              name: remoteUser.name,
+              bio: remoteUser.bio,
+              completedLessons: remoteUser.completedLessons,
+              completedProjects: remoteUser.completedProjects,
+              unlockedBadges: remoteUser.unlockedBadges,
+              claimedRewards: remoteUser.claimedRewards,
+              quizScores: remoteUser.quizScores,
+            });
+            if (remoteHash !== lastCloudSyncHashRef.current) {
+              lastCloudSyncHashRef.current = remoteHash;
+              setCurrentUser(remoteUser);
+              setAllUsers((prev) =>
+                prev.map((u) => (u.id === remoteUser.id ? remoteUser : u))
+              );
+            }
+          });
+
+          unsubAnnouncements = subscribeToCloudAnnouncements((remoteAnns) => {
+            if (remoteAnns.length > 0) {
+              setAnnouncements(remoteAnns);
+            }
+          });
+        } catch (err) {
+          console.error('Failed to initialize cloud user profile:', err);
+        } finally {
+          setIsSyncingCloud(false);
+        }
+      } else {
+        setFirebaseUid(null);
+        setIsCloudConnected(false);
+      }
+    });
+
+    return () => {
+      unsubAuth();
+      if (unsubProfile) unsubProfile();
+      if (unsubAnnouncements) unsubAnnouncements();
+    };
+  }, []);
+
+  // Automatically sync currentUser changes to Cloud Firestore when connected via Firebase Auth
+  useEffect(() => {
+    if (!firebaseUid || !isCloudConnected || currentUser.id !== firebaseUid) return;
+
+    const currentHash = JSON.stringify({
+      xp: currentUser.xp,
+      level: currentUser.level,
+      lives: currentUser.lives,
+      isPro: currentUser.isPro,
+      name: currentUser.name,
+      bio: currentUser.bio,
+      completedLessons: currentUser.completedLessons,
+      completedProjects: currentUser.completedProjects,
+      unlockedBadges: currentUser.unlockedBadges,
+      claimedRewards: currentUser.claimedRewards,
+      quizScores: currentUser.quizScores,
+    });
+
+    if (currentHash === lastCloudSyncHashRef.current) return;
+    lastCloudSyncHashRef.current = currentHash;
+
+    const timer = setTimeout(async () => {
+      setIsSyncingCloud(true);
+      await saveUserProfileToCloud(firebaseUid, currentUser);
+      setIsSyncingCloud(false);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [currentUser, firebaseUid, isCloudConnected]);
 
   useEffect(() => {
     try {
@@ -528,10 +674,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const earnPracticeLife = () => {
+    const maxLives = currentUser.maxLives ?? 5;
+    const currentLives = typeof currentUser.lives === 'number' ? currentUser.lives : maxLives;
+    if (currentUser.isPro || currentLives >= maxLives) {
+      const newXp = currentUser.xp + 15;
+      const levelInfo = calculateLevel(newXp);
+      const updated: User = {
+        ...currentUser,
+        xp: newXp,
+        level: levelInfo.level,
+      };
+      setCurrentUser(updated);
+      setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
+      soundManager.playSuccess();
+      showToast('Masz już 5/5 serc — przyznano bonus +15 XP za szybką powtórkę!', 'success');
+      return;
+    }
+
     const updated = addLife(currentUser, 1);
     setCurrentUser(updated);
     setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
     setLivesInfo(calculateRegeneratedLives(updated));
+    soundManager.playSuccess();
     showToast('+1 Serce zdobyte za aktywność w powtórkach!', 'success');
   };
 
@@ -611,6 +775,59 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     soundManager.playSuccess();
     showToast(`Witaj ponownie, ${updatedUser.name}! Zalogowano pomyślnie.`, 'success');
     return { success: true };
+  };
+
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setIsSyncingCloud(true);
+      const fbUser = await signInWithGoogleFirebase();
+      const cloudProfile = await fetchOrCreateCloudUserProfile(fbUser, currentUser);
+      setFirebaseUid(fbUser.uid);
+      setIsCloudConnected(true);
+      setCurrentUser(cloudProfile);
+      setIsAuthenticated(true);
+      setLivesInfo(calculateRegeneratedLives(cloudProfile));
+      setAllUsers((prev) => {
+        const exists = prev.some((u) => u.id === cloudProfile.id);
+        if (exists) {
+          return prev.map((u) => (u.id === cloudProfile.id ? cloudProfile : u));
+        }
+        return [cloudProfile, ...prev];
+      });
+      soundManager.playLevelUp();
+      showToast(
+        `Połączono z chmurą Firebase! Witaj, ${cloudProfile.name}. Postępy synchronizują się z Firestore.`,
+        'badge'
+      );
+      return { success: true };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Nie udało się zalogować przez Google.';
+      return {
+        success: false,
+        error: msg.includes('popup-closed-by-user')
+          ? 'Okno logowania Google zostało zamknięte przed zakończeniem autoryzacji.'
+          : `Błąd autoryzacji Firebase Google: ${msg}`,
+      };
+    } finally {
+      setIsSyncingCloud(false);
+    }
+  };
+
+  const syncNowToCloud = async (): Promise<boolean> => {
+    if (!firebaseUid || !isCloudConnected) {
+      showToast('Zaloguj się przez Google (Firebase Auth), aby włączyć synchronizację w chmurze.', 'info');
+      return false;
+    }
+    setIsSyncingCloud(true);
+    const ok = await saveUserProfileToCloud(firebaseUid, currentUser);
+    setIsSyncingCloud(false);
+    if (ok) {
+      soundManager.playSuccess();
+      showToast('Profil i postępy zostały pomyślnie zapisane w bazie Cloud Firestore!', 'success');
+    } else {
+      showToast('Nie udało się zsynchronizować profilu z bazą Firestore.', 'danger');
+    }
+    return ok;
   };
 
   const registerUser = (params: {
@@ -815,6 +1032,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const logout = () => {
     const prevName = currentUser.name;
+    void signOutFromFirebase();
+    setFirebaseUid(null);
+    setIsCloudConnected(false);
     const guest = createGuestUser();
     setIsAuthenticated(false);
     setCurrentUser(guest);
@@ -951,11 +1171,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       author: currentUser.name,
     };
     setAnnouncements((prev) => [newAnn, ...prev]);
+    if (isCloudConnected && currentUser.role === 'admin') {
+      void saveAnnouncementToCloud(newAnn);
+    }
     showToast('Opublikowano nowe ogłoszenie dla kursantów.', 'info');
   };
 
   const deleteAnnouncement = (id: string) => {
     setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+    if (isCloudConnected && currentUser.role === 'admin') {
+      void deleteAnnouncementFromCloud(id);
+    }
     showToast('Ogłoszenie zostało usunięte.', 'info');
   };
 
@@ -975,8 +1201,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast('Zaktualizowano profil użytkownika w bazie danych.', 'success');
   };
 
-  const awardCustomXp = useCallback((xpAmount: number, reason: string) => {
+  const awardCustomXp = useCallback((xpAmount: number, reason: string, rewardId?: string): boolean => {
+    let wasGranted = true;
     setCurrentUser((prev) => {
+      if (rewardId) {
+        const res = claimIdempotentReward(prev, rewardId, xpAmount);
+        if (!res.granted) {
+          wasGranted = false;
+          return prev;
+        }
+        setAllUsers((users) => users.map((u) => (u.id === res.updatedUser.id ? res.updatedUser : u)));
+        return res.updatedUser;
+      }
+
       const newXp = prev.xp + xpAmount;
       const levelInfo = calculateLevel(newXp);
       const updatedUser: User = {
@@ -987,8 +1224,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setAllUsers((users) => users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
       return updatedUser;
     });
+
+    if (!wasGranted) {
+      showToast(`Zadanie zostało już wcześniej zaliczone (punkty XP zostały już przyznane).`, 'info');
+      return false;
+    }
+
     soundManager.playSuccess();
     showToast(`${reason} (+${xpAmount} XP)`, 'success');
+    return true;
   }, []);
 
   const importUserBackup = useCallback((restoredUser: User) => {
@@ -1182,6 +1426,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       value={{
         currentUser,
         isAuthenticated,
+        isCloudConnected,
+        isSyncingCloud,
+        firebaseUid,
         allUsers,
         activeTab,
         selectedLessonId,
@@ -1204,6 +1451,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         toggleTheme,
         setActiveTab,
         loginUser,
+        loginWithGoogle,
+        syncNowToCloud,
         registerUser,
         updateCurrentUserProfile,
         switchUser,

@@ -13,6 +13,8 @@ import {
   CHEAT_SHEETS_DATA,
   generateGithubPortfolioMarkdown,
   validateBackupPayload,
+  generateCertificateCode,
+  verifyCertificateCode,
 } from './developerSimulators';
 import { User } from '../types';
 
@@ -143,6 +145,37 @@ test('Cheat Sheets filter by category and query and CV/Backup helpers work', () 
   assert.equal(validBackup.valid, true);
   assert.equal(validBackup.user?.email, 'jan@test.pl');
 
+  // Minimal partial backup normalization test
+  const partialBackup = validateBackupPayload(
+    JSON.stringify({
+      user: {
+        id: 'user-minimal',
+        name: 'Minimal User',
+        email: 'min@akademia.pl',
+        xp: 1200,
+        completedLessons: ['fund-1'],
+      },
+    })
+  );
+  assert.equal(partialBackup.valid, true);
+  assert.deepEqual(partialBackup.user?.completedProjects, []);
+  assert.deepEqual(partialBackup.user?.unlockedBadges, []);
+  assert.equal(partialBackup.user?.lives, 5);
+
   const invalidBackup = validateBackupPayload('{broken json');
   assert.equal(invalidBackup.valid, false);
 });
+
+test('Certificate code generation and verification work accurately', () => {
+  const code = generateCertificateCode(mockUser);
+  assert.equal(code, 'FSDA-2026-TEST-6X');
+
+  const verified = verifyCertificateCode(code, [mockUser]);
+  assert.equal(verified.valid, true);
+  assert.equal(verified.isOfficial, true);
+  assert.equal(verified.holderName, 'Jan Testowy');
+
+  const invalid = verifyCertificateCode('FSDA-2026-FAKE-99X', [mockUser]);
+  assert.equal(invalid.valid, false);
+});
+

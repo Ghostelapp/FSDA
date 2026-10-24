@@ -153,6 +153,10 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
   };
 
   const handleRestartQuiz = () => {
+    if (!currentUser.isPro && currentLives <= 0) {
+      setIsLivesModalOpen(true);
+      return;
+    }
     setCurrentStep(0);
     setSelectedOption(null);
     setIsAnswerChecked(false);
@@ -224,6 +228,27 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
           </button>
         </div>
       </div>
+
+      {!currentUser.isPro && currentLives <= 0 && (
+        <div className="p-4 rounded-xl bg-rose-950/40 border border-rose-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5 text-rose-200">
+            <Heart className="h-5 w-5 text-rose-500 fill-rose-500 shrink-0" />
+            <div>
+              <span className="font-bold">Brak serc (0/5)!</span>
+              <p className="text-[11px] text-slate-300">
+                Uzupełnij serce za darmo w Szybkiej Powtórce lub wymień XP w Sklepie, aby kontynuować quiz.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsLivesModalOpen(true)}
+            className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shrink-0 transition-colors"
+          >
+            Odnów serca (+1 ❤️)
+          </button>
+        </div>
+      )}
 
       {!isFinished ? (
         <div className="space-y-6">

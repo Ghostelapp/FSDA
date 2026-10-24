@@ -100,6 +100,16 @@ export const TerminalSimulator: React.FC = () => {
     },
   ]);
 
+  useEffect(() => {
+    const claimed = currentUser.claimedRewards || [];
+    setMissions((prev) =>
+      prev.map((m) => ({
+        ...m,
+        completed: claimed.includes(`terminal-mission-${m.id}`),
+      }))
+    );
+  }, [currentUser.id, currentUser.claimedRewards]);
+
   const [lines, setLines] = useState<TerminalLine[]>([
     { id: '1', type: 'system', text: 'Full Stack Academy Cloud Terminal v2.5 (Linux x86_64 Ubuntu 24.04 LTS)' },
     { id: '2', type: 'system', text: 'Wpisz "help" aby wyświetlić listę dostępnych komend lub wykonaj misje po prawej.' },
@@ -137,12 +147,14 @@ export const TerminalSimulator: React.FC = () => {
       if (!m.completed && m.expectedCommandRegex.test(cmd)) {
         matchedMissionIds.push(m.id);
         soundManager.playSuccess();
-        awardCustomXp(m.xpReward, `Misja terminalowa: ${m.title}`);
-        newOutputs.push({
-          id: `succ-${Date.now()}-${m.id}`,
-          type: 'success',
-          text: `MISJA ZALICZONA: "${m.title}"! Zdobywasz +${m.xpReward} XP.`,
-        });
+        const granted = awardCustomXp(m.xpReward, `Misja terminalowa: ${m.title}`, `terminal-mission-${m.id}`);
+        if (granted) {
+          newOutputs.push({
+            id: `succ-${Date.now()}-${m.id}`,
+            type: 'success',
+            text: `MISJA ZALICZONA: "${m.title}"! Zdobywasz +${m.xpReward} XP.`,
+          });
+        }
       }
     });
     if (matchedMissionIds.length > 0) {

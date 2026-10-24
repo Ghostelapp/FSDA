@@ -34,7 +34,7 @@ const PRESET_ENDPOINTS: { label: string; method: HttpMethod; endpoint: string; b
 ];
 
 export const ApiStudioView: React.FC = () => {
-  const { awardCustomXp } = useApp();
+  const { currentUser, awardCustomXp } = useApp();
   const [method, setMethod] = useState<HttpMethod>('GET');
   const [endpoint, setEndpoint] = useState<string>('/api/users');
   const [headers, setHeaders] = useState<{ key: string; value: string }[]>([
@@ -52,8 +52,15 @@ export const ApiStudioView: React.FC = () => {
       bodyRaw: '',
     })
   );
-  const [completedMissions, setCompletedMissions] = useState<string[]>([]);
+  const [localCompletedMissions, setLocalCompletedMissions] = useState<string[]>([]);
   const [activeHintId, setActiveHintId] = useState<string | null>(null);
+
+  const completedMissions = Array.from(
+    new Set([
+      ...localCompletedMissions,
+      ...API_MISSIONS.filter((m) => (currentUser.claimedRewards || []).includes(`api-${m.id}`)).map((m) => m.id),
+    ])
+  );
 
   const handleSendRequest = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -75,8 +82,8 @@ export const ApiStudioView: React.FC = () => {
     // Check missions
     API_MISSIONS.forEach((mission) => {
       if (!completedMissions.includes(mission.id) && checkApiMissionCompleted(mission, req, res)) {
-        setCompletedMissions((prev) => [...prev, mission.id]);
-        awardCustomXp(mission.xpReward, `Ukończono misję API: ${mission.title}`);
+        setLocalCompletedMissions((prev) => [...prev, mission.id]);
+        awardCustomXp(mission.xpReward, `Ukończono misję API: ${mission.title}`, `api-${mission.id}`);
       }
     });
   };
