@@ -1052,12 +1052,21 @@ export function validateBackupPayload(rawJson: string): BackupValidationResult {
       proPlan: candidate.proPlan || null,
       streakFreezes: typeof candidate.streakFreezes === 'number' && candidate.streakFreezes >= 0 ? candidate.streakFreezes : 1,
       bio: typeof candidate.bio === 'string' ? candidate.bio : undefined,
-      password: typeof candidate.password === 'string' ? candidate.password : 'student123',
       createdAt:
         typeof candidate.createdAt === 'string' && candidate.createdAt
           ? candidate.createdAt
           : new Date().toISOString().split('T')[0],
     };
+
+    if (
+      normalizedUser.id === 'user-guest' ||
+      normalizedUser.email.toLowerCase() === 'gosc@fullstack-academy.pl'
+    ) {
+      return {
+        valid: false,
+        error: 'Nie można zaimportować tymczasowego profilu Gościa. Zaloguj się na konto kursanta.',
+      };
+    }
 
     return { valid: true, user: normalizedUser };
   } catch {
@@ -1065,8 +1074,16 @@ export function validateBackupPayload(rawJson: string): BackupValidationResult {
   }
 }
 
+export function sanitizeUserForExport(user: User): Omit<User, 'password'> {
+  const { password: _removedPassword, ...safeUser } = user;
+  return safeUser;
+}
+
 export function generateCertificateCode(user: User): string {
-  const cleanId = (user.id || 'guest').replace(/^user-/, '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase();
+  if (user.id === 'user-guest' || (user.email || '').trim().toLowerCase() === 'gosc@fullstack-academy.pl') {
+    return 'FSDA-GUEST-LOCKED';
+  }
+  const cleanId = (user.id || 'student').replace(/^user-/, '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase();
   return `FSDA-2026-${cleanId || 'STUDENT'}-${user.level || 1}X`;
 }
 
@@ -1097,9 +1114,18 @@ export function verifyCertificateCode(
     };
   }
 
-  const pool = currentUser
+  if (clean.includes('GUEST')) {
+    return {
+      valid: false,
+      code: clean,
+      message:
+        'Konto Gościa (Niezalogowany) nie posiada uprawnień do wystawienia certyfikatu. Zaloguj się na zweryfikowane konto kursanta.',
+    };
+  }
+
+  const pool = currentUser && currentUser.id !== 'user-guest'
     ? [...allUsers.filter((u) => u.id !== currentUser.id), currentUser]
-    : allUsers;
+    : allUsers.filter((u) => u.id !== 'user-guest');
 
   const matchedUser = pool.find((u) => generateCertificateCode(u).toUpperCase() === clean);
   if (!matchedUser) {
@@ -1129,4 +1155,60 @@ export function verifyCertificateCode(
       : `Certyfikat przypisany do: ${matchedUser.name} (status: w trakcie realizacji wymagań końcowych).`,
   };
 }
+
+export interface SqlMission {
+  id: string;
+  title: string;
+  description: string;
+  xpReward: number;
+  checkQuery: (cleanSql: string, rowCount: number) => boolean;
+}
+
+export const SQL_MISSIONS: SqlMission[] = [
+  {
+    id: 'sql-join-orders',
+    title: 'Złączenie relacyjne INNER JOIN',
+    description: 'Pobierz opłacone zamówienia wraz z danymi użytkowników za pomocą INNER JOIN orders i users.',
+    xpReward: 50,
+    checkQuery: (sql, count) =>
+      /from\s+orders/i.test(sql) && /join\s+users/i.test(sql) && count > 0,
+  },
+  {
+    id: 'sql-filter-courses',
+    title: 'Filtrowanie katalogu kursów (WHERE)',
+    description: 'Wyszukaj moduły z tabeli courses posiadające co najmniej 700 XP (WHERE xp >= 700 lub xp > 700).',
+    xpReward: 40,
+    checkQuery: (sql, count) =>
+      /from\s+courses/i.test(sql) && /where\s+.*xp\s*>=?\s*\d+/i.test(sql) && count > 0,
+  },
+  {
+    id: 'sql-high-quizzes',
+    title: 'Analiza wyników quizów',
+    description: 'Pobierz wyniki z tabeli quizzes posortowane malejąco (ORDER BY ... DESC).',
+    xpReward: 45,
+    checkQuery: (sql, count) =>
+      /from\s+quizzes/i.test(sql) && /order\s+by\s+.*desc/i.test(sql) && count > 0,
+  },
+];
+
+export function validateSqlQuerySyntax(rawQuery: string): { valid: boolean; cleanQuery: string; error?: string } {
+  const clean = (rawQuery || '').trim().replace(/;+\s*$/, '');
+  if (!clean) {
+    return {
+      valid: false,
+      cleanQuery: '',
+      error: 'ERROR 42601: Zapytanie SQL nie może być puste. Wprowadź instrukcję SELECT ... FROM <tabela>.',
+    };
+  }
+  if (!/^select\s+.+\s+from\s+(users|courses|orders|quizzes)\b/is.test(clean)) {
+    return {
+      valid: false,
+      cleanQuery: clean,
+      error:
+        'ERROR 42601: Błąd składniowy SQL. Dozwolone są zapytania SELECT <kolumny> FROM <users | courses | orders | quizzes>.',
+    };
+  }
+  return { valid: true, cleanQuery: clean };
+}
+
 

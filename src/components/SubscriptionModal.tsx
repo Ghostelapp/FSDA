@@ -13,12 +13,15 @@ import {
   Award,
   Layers,
   ArrowRight,
-  Heart
+  Heart,
+  Lock
 } from 'lucide-react';
+import { isGuestUser } from '../utils/authValidation';
 
 export const SubscriptionModal: React.FC = () => {
   const { 
     currentUser, 
+    isAuthenticated,
     isSubModalOpen, 
     setIsSubModalOpen, 
     togglePro 
@@ -28,9 +31,15 @@ export const SubscriptionModal: React.FC = () => {
 
   if (!isSubModalOpen) return null;
 
-  const isPro = currentUser.isPro;
+  const isGuest = isGuestUser(currentUser, isAuthenticated);
+  const isPro = !isGuest && currentUser.isPro;
 
   const handleActivatePro = () => {
+    if (isGuest) {
+      setIsSubModalOpen(false);
+      window.dispatchEvent(new CustomEvent('akademia:open-auth-modal'));
+      return;
+    }
     togglePro(true, billingCycle);
     setIsSubModalOpen(false);
   };

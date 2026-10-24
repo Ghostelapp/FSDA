@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { soundManager } from '../utils/audioFx';
+import { validateSqlQuerySyntax, SQL_MISSIONS } from '../utils/developerSimulators';
 import { 
   Database, 
   Play, 
@@ -20,7 +21,7 @@ interface DbRow {
 }
 
 export const SqlStudioView: React.FC = () => {
-  const { allUsers } = useApp();
+  const { allUsers, currentUser, awardCustomXp } = useApp();
 
   const [activeTab, setActiveTab] = useState<'editor' | 'erd'>('editor');
   const [queryInput, setQueryInput] = useState<string>(
@@ -75,7 +76,15 @@ export const SqlStudioView: React.FC = () => {
   const handleRunQuery = () => {
     soundManager.playClick();
     const t0 = performance.now();
-    const clean = queryInput.trim().replace(/;$/, '');
+    const syntax = validateSqlQuerySyntax(queryInput);
+    if (!syntax.valid) {
+      soundManager.playHeartLost();
+      setQueryError(syntax.error || 'Błąd składniowy zapytania SQL.');
+      setResults([]);
+      setExecutionStats(null);
+      return;
+    }
+    const clean = syntax.cleanQuery;
 
     try {
       setQueryError(null);
@@ -104,14 +113,20 @@ export const SqlStudioView: React.FC = () => {
         output = [...mockDb.orders];
       } else if (/from\s+users/i.test(clean)) {
         output = [...mockDb.users];
-      } else {
-        output = mockDb.users;
       }
 
       // WHERE clause simulation
-      if (/where\s+.*xp\s*>\s*(\d+)/i.test(clean)) {
-        const threshold = Number(clean.match(/xp\s*>\s*(\d+)/i)?.[1] || 0);
-        output = output.filter((r) => (r.xp || 0) > threshold);
+      if (/where\s+.*xp\s*>=?\s*(\d+)/i.test(clean)) {
+        const isGte = /xp\s*>=\s*\d+/i.test(clean);
+        const threshold = Number(clean.match(/xp\s*>=?\s*(\d+)/i)?.[1] || 0);
+        output = output.filter((r) => (isGte ? (r.xp || 0) >= threshold : (r.xp || 0) > threshold));
+      }
+      if (/where\s+.*score_percent\s*>=?\s*(\d+)/i.test(clean)) {
+        const isGte = /score_percent\s*>=\s*\d+/i.test(clean);
+        const threshold = Number(clean.match(/score_percent\s*>=?\s*(\d+)/i)?.[1] || 0);
+        output = output.filter((r) =>
+          isGte ? (r.score_percent || 0) >= threshold : (r.score_percent || 0) > threshold
+        );
       }
       if (/where\s+.*status\s*=\s*['"](\w+)['"]/i.test(clean)) {
         const status = clean.match(/status\s*=\s*['"](\w+)['"]/i)?.[1];
@@ -131,6 +146,15 @@ export const SqlStudioView: React.FC = () => {
       setResults(output);
       setExecutionStats({ timeMs: Math.max(0.4, elapsed), count: output.length });
       soundManager.playSuccess();
+
+      // Check idempotent SQL Missions
+      const claimed = currentUser.claimedRewards || [];
+      SQL_MISSIONS.forEach((m) => {
+        const rewardKey = `sql-mission-${m.id}`;
+        if (!claimed.includes(rewardKey) && m.checkQuery(clean, output.length)) {
+          awardCustomXp(m.xpReward, `Misja SQL: ${m.title}`, rewardKey);
+        }
+      });
     } catch (err: any) {
       soundManager.playHeartLost();
       setQueryError(err.message || 'Błąd składniowy zapytania SQL.');
@@ -308,6 +332,38 @@ export const SqlStudioView: React.FC = () => {
 
           {/* Templates & Schema Inspector Sidebar (1 col) */}
           <div className="space-y-4">
+            {/* SQL Missions Panel */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  <span>Misje SQL (Jednorazowe XP)</span>
+                </h3>
+              </div>
+              <div className="space-y-2 text-xs">
+                {SQL_MISSIONS.map((m) => {
+                  const done = Boolean(currentUser.claimedRewards?.includes(`sql-mission-${m.id}`));
+                  return (
+                    <div
+                      key={m.id}
+                      className={`p-3 rounded-xl border ${
+                        done
+                          ? 'border-emerald-500/30 bg-emerald-950/20 text-emerald-200'
+                          : 'border-slate-800 bg-slate-950/60 text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between font-bold">
+                        <span>{m.title}</span>
+                        <span className="font-mono text-[11px] text-amber-300">
+                          {done ? 'Zaliczono' : `+${m.xpReward} XP`}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1">{m.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             
             <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-800 pb-3">

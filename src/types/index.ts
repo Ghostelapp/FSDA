@@ -222,3 +222,21 @@ export interface ReviewItem {
   lastAttempt: string;
   keyTopics: string[];
 }
+
+export interface SecurityAuditEvent {
+  id: string;
+  timestamp: string;
+  type:
+    | 'auth_blocked'
+    | 'route_blocked'
+    | 'admin_action'
+    | 'antibot_verified'
+    | 'password_reset'
+    | 'login_success';
+  severity: 'info' | 'warning' | 'critical';
+  actorEmail: string;
+  actorRole: string;
+  action: string;
+  details: string;
+}
+

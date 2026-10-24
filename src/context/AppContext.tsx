@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo, useRef } from 'react';
-import { User, UserRole, UserStatus, Announcement, Lesson, ReviewItem, DailyReminderSettings } from '../types';
+import { User, UserRole, UserStatus, Announcement, Lesson, ReviewItem, DailyReminderSettings, SecurityAuditEvent } from '../types';
 import { MODULES_DATA } from '../data/modulesData';
 import { DEFAULT_ANNOUNCEMENTS } from '../data/defaultAnnouncements';
 import { soundManager } from '../utils/audioFx';
@@ -151,6 +151,8 @@ interface AppContextType {
   triggerGoalReminderNow: (isTest?: boolean) => Promise<boolean>;
   awardCustomXp: (xpAmount: number, reason: string, rewardId?: string) => boolean;
   importUserBackup: (restoredUser: User) => void;
+  securityLogs: SecurityAuditEvent[];
+  clearSecurityLogs: () => void;
 }
 
 const STORAGE_KEY_USER = 'fsda_current_user_v5';
@@ -159,6 +161,40 @@ const STORAGE_KEY_USERS = 'fsda_all_users_v5';
 const STORAGE_KEY_ANNOUNCEMENTS = 'fsda_announcements_v5';
 const STORAGE_KEY_THEME = 'fsda_theme_v5';
 const STORAGE_KEY_REMINDERS = 'fsda_reminder_settings_v1';
+const STORAGE_KEY_SECURITY_LOGS = 'fsda_security_logs_v1';
+
+const DEFAULT_SECURITY_LOGS: SecurityAuditEvent[] = [
+  {
+    id: 'sec-1',
+    timestamp: '2026-10-24 10:15:02',
+    type: 'auth_blocked',
+    severity: 'critical',
+    actorEmail: 'scraper@spambot.io',
+    actorRole: 'student',
+    action: 'Zablokowano automatyczny skrypt (Honeypot Anty-Bot)',
+    details: 'Wykryto próbę rejestracji bota (czas wypełnienia formularza < 200ms). Konto oznaczono statusem BANNED.',
+  },
+  {
+    id: 'sec-2',
+    timestamp: '2026-10-24 11:04:19',
+    type: 'route_blocked',
+    severity: 'warning',
+    actorEmail: 'gosc@fullstack-academy.pl',
+    actorRole: 'guest',
+    action: 'ProtectedRoute zablokował dostęp Gościa do AdminPanelView',
+    details: 'Niezalogowany użytkownik (Gość) próbował wyświetlić chroniony Panel Administratora.',
+  },
+  {
+    id: 'sec-3',
+    timestamp: '2026-10-24 11:30:45',
+    type: 'auth_blocked',
+    severity: 'critical',
+    actorEmail: 'zordonzordon1@gmail.com',
+    actorRole: 'guest',
+    action: 'Odrzucono próbę logowania hasłem na konto Administratora',
+    details: 'Konto właściciela platformy wymaga uwierzytelnienia Google Firebase OAuth.',
+  },
+];
 
 const DEFAULT_USERS: User[] = [
   {
@@ -432,6 +468,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>('html-1');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>('proj-1');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'badge' | 'danger' } | null>(null);
+  const [securityLogs, setSecurityLogs] = useState<SecurityAuditEvent[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_SECURITY_LOGS);
+      return stored ? JSON.parse(stored) : DEFAULT_SECURITY_LOGS;
+    } catch {
+      return DEFAULT_SECURITY_LOGS;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_SECURITY_LOGS, JSON.stringify(securityLogs));
+    } catch {
+      // ignore storage errors
+    }
+  }, [securityLogs]);
+
+  const appendSecurityLog = useCallback(
+    (entry: Omit<SecurityAuditEvent, 'id' | 'timestamp'>) => {
+      const nowStr = new Date().toISOString().replace('T', ' ').slice(0, 19);
+      setSecurityLogs((prev) => [
+        {
+          ...entry,
+          id: `sec-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          timestamp: nowStr,
+        },
+        ...prev.slice(0, 99),
+      ]);
+    },
+    []
+  );
+
+  const clearSecurityLogs = useCallback(() => {
+    setSecurityLogs([]);
+  }, []);
 
   // Firebase Auth & Firestore Cloud State
   const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
@@ -792,13 +863,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const togglePro = (enable: boolean, plan: 'monthly' | 'yearly' = 'monthly') => {
+    if (!isAuthenticated || currentUser.id === 'user-guest') {
+      showToast('Zaloguj się lub utwórz konto, aby aktywować subskrypcję Full Stack PRO.', 'danger');
+      window.dispatchEvent(new CustomEvent('akademia:open-auth-modal'));
+      return;
+    }
     const updated = setProStatus(currentUser, enable, plan);
     setCurrentUser(updated);
     setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
     setLivesInfo(calculateRegeneratedLives(updated));
 
     if (enable) {
-      showToast('👑 Subskrypcja Full Stack PRO aktywna! Nielimitowane życia i pełen dostęp.', 'badge');
+      showToast('Subskrypcja Full Stack PRO aktywna! Nielimitowane życia i pełen dostęp.', 'badge');
     } else {
       showToast('Przełączono na plan bezpłatny z limitem 5 serc.', 'info');
     }
@@ -807,8 +883,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const setActiveTab = (tab: AppTab, lessonId?: string, projectId?: string) => {
     if (tab === 'admin' && (!isAuthenticated || currentUser.role !== 'admin')) {
+      const isGuest = !isAuthenticated || currentUser.id === 'user-guest';
+      appendSecurityLog({
+        type: 'route_blocked',
+        severity: isGuest ? 'warning' : 'critical',
+        actorEmail: currentUser.email,
+        actorRole: isGuest ? 'guest' : currentUser.role,
+        action: 'ProtectedRoute zablokował wejście do AdminPanelView',
+        details: isGuest
+          ? 'Próba wyświetlenia Panelu Administratora z sesji niezalogowanego Gościa.'
+          : `Kursant (${currentUser.name}) próbował uzyskać dostęp do strefy Administratora.`,
+      });
       showToast(
-        !isAuthenticated || currentUser.id === 'user-guest'
+        isGuest
           ? 'Dostęp zablokowany dla gości! Zaloguj się, aby uzyskać dostęp do chronionej sekcji.'
           : 'Brak uprawnień! Panel Administratora jest chroniony przez ProtectedRoute.',
         'danger'
@@ -823,10 +910,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const loginUser = (email: string, password?: string): { success: boolean; error?: string } => {
     const result = authenticateUserCredentials(allUsers, email, password);
     if (!result.success || !result.user) {
+      appendSecurityLog({
+        type: 'auth_blocked',
+        severity: (email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com' ? 'critical' : 'warning',
+        actorEmail: (email || 'nieznany').trim(),
+        actorRole: !isAuthenticated ? 'guest' : currentUser.role,
+        action: 'Nieudana próba logowania formularzem',
+        details: result.error || 'Błąd autoryzacji danych logowania.',
+      });
       return { success: false, error: result.error };
     }
 
     const updatedUser = result.user;
+    appendSecurityLog({
+      type: 'login_success',
+      severity: 'info',
+      actorEmail: updatedUser.email,
+      actorRole: updatedUser.role,
+      action: 'Pomyślne logowanie użytkownika',
+      details: `Zalogowano na konto kursanta: ${updatedUser.name}.`,
+    });
     setCurrentUser(updatedUser);
     setIsAuthenticated(true);
     setAllUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
@@ -1584,6 +1687,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         triggerGoalReminderNow,
         awardCustomXp,
         importUserBackup,
+        securityLogs,
+        clearSecurityLogs,
       }}
     >
       {children}

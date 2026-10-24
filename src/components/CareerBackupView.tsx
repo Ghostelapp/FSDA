@@ -5,7 +5,9 @@ import { PROJECTS_DATA } from '../data/projectsData';
 import {
   generateGithubPortfolioMarkdown,
   validateBackupPayload,
+  sanitizeUserForExport,
 } from '../utils/developerSimulators';
+import { ProtectedRoute } from './ProtectedRoute';
 import {
   FileText,
   Download,
@@ -60,12 +62,13 @@ export const CareerBackupView: React.FC = () => {
   };
 
   const handleExportJson = () => {
+    const safeUser = sanitizeUserForExport(currentUser);
     const payload = JSON.stringify(
       {
         exportedAt: new Date().toISOString(),
         platform: 'Full Stack Developer Academy',
         version: '2.5',
-        user: currentUser,
+        user: safeUser,
       },
       null,
       2
@@ -117,6 +120,12 @@ export const CareerBackupView: React.FC = () => {
   };
 
   return (
+    <ProtectedRoute
+      requiredRole="student"
+      allowGuests={false}
+      fallbackTitle="Kreator CV i Backup Zablokowany dla Gości"
+      fallbackMessage="Zaloguj się lub załóż bezpłatne konto kursanta, aby generować imienne CV Junior Full Stack Developera oraz pobierać i przywracać zaszyfrowane kopie zapasowe postępów (.JSON)."
+    >
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6 print:hidden">
@@ -345,5 +354,6 @@ export const CareerBackupView: React.FC = () => {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 };

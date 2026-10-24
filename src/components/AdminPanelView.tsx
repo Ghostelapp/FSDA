@@ -50,10 +50,13 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
     resetUserPassword,
     verifyUserAntiBot,
     giveProByAdmin,
-    refillUserLivesByAdmin
+    refillUserLivesByAdmin,
+    securityLogs,
+    clearSecurityLogs,
   } = useApp();
 
-  const [adminTab, setAdminTab] = useState<'students' | 'announcements' | 'analytics' | 'curriculum'>('students');
+  const [adminTab, setAdminTab] = useState<'students' | 'security' | 'announcements' | 'analytics' | 'curriculum'>('students');
+  const [securityFilter, setSecurityFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
 
   // Account Filters State
   const [filters, setFilters] = useState<UserFilters>({
@@ -260,6 +263,18 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
         >
           <BookOpen className="h-4 w-4" />
           <span>Przegląd Programu (15)</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setAdminTab('security')}
+          className={`pb-3 border-b-2 flex items-center gap-1.5 transition-colors ${
+            adminTab === 'security'
+              ? 'border-rose-500 text-rose-400'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <ShieldAlert className="h-4 w-4" />
+          <span>Dziennik Bezpieczeństwa ({securityLogs.length})</span>
         </button>
       </div>
 
@@ -787,6 +802,87 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: Security Audit Log */}
+      {adminTab === 'security' && (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-rose-400" />
+                <span>Rejestr Zdarzeń Bezpieczeństwa (ProtectedRoute & Anty-Bot Audit Log)</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Automatyczny zapis zablokowanych prób wejścia przez ProtectedRoute, odrzuconych logowań oraz weryfikacji anty-botowych.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {(['all', 'critical', 'warning', 'info'] as const).map((sev) => (
+                <button
+                  key={sev}
+                  type="button"
+                  onClick={() => setSecurityFilter(sev)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    securityFilter === sev
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  {sev === 'all' ? 'Wszystkie' : sev.toUpperCase()}
+                </button>
+              ))}
+              {securityLogs.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearSecurityLogs}
+                  className="px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/60 border border-rose-500/30 text-rose-300 text-xs font-semibold transition-colors"
+                >
+                  Wyczyść logi
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2.5 max-h-96 overflow-y-auto">
+            {securityLogs
+              .filter((e) => securityFilter === 'all' || e.severity === securityFilter)
+              .map((event) => (
+                <div
+                  key={event.id}
+                  className="p-3.5 rounded-xl border border-slate-800 bg-slate-950/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                >
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`font-bold uppercase tracking-wider text-[10px] ${
+                          event.severity === 'critical'
+                            ? 'text-rose-400'
+                            : event.severity === 'warning'
+                            ? 'text-amber-400'
+                            : 'text-emerald-400'
+                        }`}
+                      >
+                        [{event.severity}]
+                      </span>
+                      <span className="font-bold text-white">{event.action}</span>
+                      <span className="text-slate-500">·</span>
+                      <span className="font-mono text-[11px] text-slate-300">{event.actorEmail}</span>
+                      <span className="text-slate-500">·</span>
+                      <span className="text-[11px] text-slate-400">Rola: {event.actorRole}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">{event.details}</p>
+                  </div>
+                  <span className="font-mono text-[11px] text-slate-400 shrink-0">{event.timestamp}</span>
+                </div>
+              ))}
+            {securityLogs.filter((e) => securityFilter === 'all' || e.severity === securityFilter).length === 0 && (
+              <p className="py-8 text-center text-xs text-slate-400">
+                Brak zdarzeń bezpieczeństwa spełniających wybrane kryteria.
+              </p>
+            )}
           </div>
         </div>
       )}

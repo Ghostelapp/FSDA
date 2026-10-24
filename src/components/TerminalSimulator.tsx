@@ -141,10 +141,16 @@ export const TerminalSimulator: React.FC = () => {
 
     const newOutputs: TerminalLine[] = [inputLine];
 
-    // Check Missions
+    // Check Missions (enforce git state prerequisites so failed commands never award XP)
     const matchedMissionIds: string[] = [];
     missions.forEach((m) => {
-      if (!m.completed && m.expectedCommandRegex.test(cmd)) {
+      const requiresGitRepo = m.id === 'm-2' || m.id === 'm-3' || m.id === 'm-4';
+      const requiresStagedFiles = m.id === 'm-3';
+      const prerequisitesMet =
+        (!requiresGitRepo || isGitInitialized) &&
+        (!requiresStagedFiles || gitStaged.length > 0);
+
+      if (!m.completed && prerequisitesMet && m.expectedCommandRegex.test(cmd)) {
         matchedMissionIds.push(m.id);
         soundManager.playSuccess();
         const granted = awardCustomXp(m.xpReward, `Misja terminalowa: ${m.title}`, `terminal-mission-${m.id}`);

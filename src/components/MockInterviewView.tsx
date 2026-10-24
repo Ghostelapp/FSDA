@@ -243,18 +243,49 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
           message: 'Test 2: rozdzielenie planów monthly i yearly',
         });
       } else {
-        // Debounce test
+        // Debounce test with synchronous timer verification
         const codeWithoutComments = userCode.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '');
+        let capturedTimerFn: (() => void) | null = null;
+        let clearedCount = 0;
+        const mockSetTimeout = (cb: () => void) => {
+          capturedTimerFn = cb;
+          return 777;
+        };
+        const mockClearTimeout = () => {
+          clearedCount++;
+        };
         // eslint-disable-next-line no-new-func
-        const fn = new Function(`${userCode}; return debounce;`)();
-        const d = fn(() => {}, 100);
+        const fn = new Function(
+          'setTimeout',
+          'clearTimeout',
+          `${userCode}; return debounce;`
+        )(mockSetTimeout, mockClearTimeout);
+
+        let receivedArg = '';
+        const d = fn((val: string) => {
+          receivedArg = val;
+        }, 100);
+
         results.push({
           passed: typeof d === 'function',
           message: 'Test 1: funkcja zwraca właściwy wrapper closure',
         });
+
+        if (typeof d === 'function') {
+          d('pierwsze');
+          d('drugie');
+          if (capturedTimerFn) {
+            (capturedTimerFn as () => void)();
+          }
+        }
+
         results.push({
-          passed: /clearTimeout\s*\(/.test(codeWithoutComments) && /setTimeout\s*\(/.test(codeWithoutComments),
-          message: 'Test 2: wykorzystano clearTimeout() oraz setTimeout() wewnątrz domknięcia',
+          passed:
+            /clearTimeout\s*\(/.test(codeWithoutComments) &&
+            /setTimeout\s*\(/.test(codeWithoutComments) &&
+            clearedCount >= 1 &&
+            receivedArg === 'drugie',
+          message: 'Test 2: anuluje poprzedni timer (clearTimeout) i wywołuje docelowy callback z argumentami',
         });
       }
 

@@ -6,6 +6,7 @@ import {
   verifyCertificateCode,
   CertificateVerificationResult,
 } from '../utils/developerSimulators';
+import { isGuestUser } from '../utils/authValidation';
 import { 
   Award, 
   Printer, 
@@ -18,13 +19,17 @@ import {
   Check,
   Search,
   BookOpen,
-  Code2
+  Code2,
+  Lock,
+  LogIn
 } from 'lucide-react';
 
 export const CertificateView: React.FC = () => {
-  const { currentUser, allUsers, setActiveTab } = useApp();
+  const { currentUser, isAuthenticated, allUsers, setActiveTab } = useApp();
   const printRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+
+  const isGuest = isGuestUser(currentUser, isAuthenticated);
 
   const lessonsCount = (currentUser.completedLessons || []).length;
   const projectsCount = (currentUser.completedProjects || []).length;
@@ -80,38 +85,67 @@ export const CertificateView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            type="button"
-            onClick={handleCopyLink}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 px-3.5 py-2.5 text-xs font-bold transition-all"
-          >
-            {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-            <span>{copied ? 'Skopiowano link!' : 'Kopiuj link'}</span>
-          </button>
+        {!isGuest && (
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 px-3.5 py-2.5 text-xs font-bold transition-all"
+            >
+              {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+              <span>{copied ? 'Skopiowano link!' : 'Kopiuj link'}</span>
+            </button>
 
-          <a
-            href={linkedInShareUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => soundManager.playClick()}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#0077b5] hover:bg-[#006097] text-white px-3.5 py-2.5 text-xs font-bold transition-all shadow-md shadow-blue-900/30"
-          >
-            <Share2 className="h-4 w-4" />
-            <span>Dodaj na LinkedIn</span>
-          </a>
+            <a
+              href={linkedInShareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => soundManager.playClick()}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#0077b5] hover:bg-[#006097] text-white px-3.5 py-2.5 text-xs font-bold transition-all shadow-md shadow-blue-900/30"
+            >
+              <Share2 className="h-4 w-4" />
+              <span>Dodaj na LinkedIn</span>
+            </a>
 
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40"
-          >
-            <Printer className="h-4 w-4" />
-            <span>Drukuj / Pobierz PDF</span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40"
+            >
+              <Printer className="h-4 w-4" />
+              <span>Drukuj / Pobierz PDF</span>
+            </button>
+          </div>
+        )}
       </div>
 
+      {isGuest ? (
+        <div
+          data-testid="certificate-guest-lock"
+          className="rounded-2xl border border-amber-500/30 bg-slate-900/90 p-6 sm:p-8 text-center space-y-4 print:hidden"
+        >
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
+            <Lock className="h-7 w-7" />
+          </div>
+          <h2 className="text-xl font-extrabold text-white">
+            Imienny Certyfikat Zablokowany dla Gości
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
+            Konto Gościa (Niezalogowany) nie może generować ani drukować oficjalnych dyplomów ukończenia. Zaloguj się lub załóż bezpłatne konto kursanta, aby przypisać certyfikat do swojego imienia i nazwiska. Poniżej nadal możesz skorzystać z publicznej wyszukiwarki certyfikatów.
+          </p>
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('akademia:open-auth-modal'))}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors shadow-lg shadow-indigo-600/20"
+            >
+              <LogIn className="h-4 w-4" />
+              <span>Zaloguj się, aby wygenerować imienny certyfikat</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+      <>
       {/* Eligibility Status & Requirements Checklist */}
       <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 sm:p-5 space-y-3 print:hidden">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -321,6 +355,8 @@ export const CertificateView: React.FC = () => {
         </div>
 
       </div>
+      </>
+      )}
 
       {/* Interactive Certificate Authenticity Verifier (Hidden in Print) */}
       <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 space-y-4 print:hidden">

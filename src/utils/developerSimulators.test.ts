@@ -13,8 +13,10 @@ import {
   CHEAT_SHEETS_DATA,
   generateGithubPortfolioMarkdown,
   validateBackupPayload,
+  sanitizeUserForExport,
   generateCertificateCode,
   verifyCertificateCode,
+  validateSqlQuerySyntax,
 } from './developerSimulators';
 import { User } from '../types';
 
@@ -186,5 +188,48 @@ test('Certificate code generation and verification work accurately', () => {
 
   const invalid = verifyCertificateCode('FSDA-2026-FAKE-99X', [mockUser]);
   assert.equal(invalid.valid, false);
+
+  // Guest certificate is blocked
+  const guestUser: User = { ...mockUser, id: 'user-guest', email: 'gosc@fullstack-academy.pl' };
+  const guestCode = generateCertificateCode(guestUser);
+  assert.equal(guestCode, 'FSDA-GUEST-LOCKED');
+  const guestVerify = verifyCertificateCode(guestCode, [mockUser], guestUser);
+  assert.equal(guestVerify.valid, false);
+  assert.ok(guestVerify.message.includes('Gościa'));
 });
+
+test('sanitizeUserForExport strips password and validateBackupPayload blocks guest imports', () => {
+  const userWithPass: User = { ...mockUser, password: 'SuperSecretPassword!' };
+  const exported = sanitizeUserForExport(userWithPass);
+  assert.equal('password' in exported, false);
+  assert.equal(exported.email, 'jan@test.pl');
+
+  const guestImport = validateBackupPayload(
+    JSON.stringify({
+      user: {
+        id: 'user-guest',
+        name: 'Gość',
+        email: 'gosc@fullstack-academy.pl',
+        xp: 0,
+        completedLessons: [],
+      },
+    })
+  );
+  assert.equal(guestImport.valid, false);
+});
+
+test('validateSqlQuerySyntax accepts valid SELECT queries and rejects invalid SQL syntax', () => {
+  const validJoin = validateSqlQuerySyntax('SELECT * FROM orders INNER JOIN users ON orders.user_id = users.id;');
+  assert.equal(validJoin.valid, true);
+
+  const empty = validateSqlQuerySyntax('   ');
+  assert.equal(empty.valid, false);
+
+  const invalidTable = validateSqlQuerySyntax('SELECT * FROM hacked_secrets');
+  assert.equal(invalidTable.valid, false);
+
+  const randomGibberish = validateSqlQuerySyntax('drop table users');
+  assert.equal(randomGibberish.valid, false);
+});
+
 
