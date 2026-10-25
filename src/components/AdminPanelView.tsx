@@ -29,8 +29,10 @@ import {
   RotateCcw,
   Eye,
   SlidersHorizontal,
-  ChevronDown
+  ChevronDown,
+  Smartphone
 } from 'lucide-react';
+import { AndroidPlayStoreModal } from './AndroidPlayStoreModal';
 
 interface AdminPanelViewProps {
   onOpenAuthModal?: () => void;
@@ -57,6 +59,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
 
   const [adminTab, setAdminTab] = useState<'students' | 'security' | 'announcements' | 'analytics' | 'curriculum'>('students');
   const [securityFilter, setSecurityFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
+  const [isPlayStoreModalOpen, setIsPlayStoreModalOpen] = useState(false);
 
   // Account Filters State
   const [filters, setFilters] = useState<UserFilters>({
@@ -167,7 +170,21 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
             Zaawansowana filtracja bazy użytkowników, inspekcja zabezpieczeń, moderacja i analiza postępów.
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setIsPlayStoreModalOpen(true)}
+          className="px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-extrabold transition-all shadow-lg shadow-indigo-600/30 shrink-0 flex items-center gap-2 cursor-pointer"
+        >
+          <Smartphone className="h-4 w-4" />
+          <span>Publikacja Google Play (APK / AAB)</span>
+        </button>
       </div>
+
+      <AndroidPlayStoreModal
+        isOpen={isPlayStoreModalOpen}
+        onClose={() => setIsPlayStoreModalOpen(false)}
+      />
 
       {/* Quick KPI stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

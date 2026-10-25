@@ -13,8 +13,11 @@ import {
 import { CodeBlock } from './CodeBlock';
 import { AndroidPlayStoreModal } from './AndroidPlayStoreModal';
 import { downloadVerifiedPlayStoreZip } from '../utils/playStoreDownload';
+import { useApp } from '../context/AppContext';
 
 export const DeploymentGuideView: React.FC = () => {
+  const { currentUser, isAuthenticated } = useApp();
+  const isAdmin = isAuthenticated && currentUser.role === 'admin';
   const [isPlayStoreModalOpen, setIsPlayStoreModalOpen] = useState(false);
   const [isDownloadingZip, setIsDownloadingZip] = useState(false);
 
@@ -143,67 +146,70 @@ npx @bubblewrap/cli build`;
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-cyan-400 uppercase tracking-wider">
             <BookOpen className="h-4 w-4" />
-            <span>DevOps, Mobile APK & Production Engineering</span>
+            <span>DevOps & Production Engineering</span>
           </div>
           <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Przewodnik Wdrożenia Produkcyjnego i Google Play (APK / AAB)
+            Przewodnik Uruchomienia Lokalnego i Wdrożenia Produkcyjnego
           </h1>
           <p className="mt-2 text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
-            Dokładne instrukcje krok po kroku pozwalające uruchomić platformę lokalnie, wdrożyć ją na serwer VPS
-            oraz wygenerować podpisany pakiet Android APK / AAB gotowy do publikacji w Google Play Store.
+            Dokładne instrukcje krok po kroku pozwalające uruchomić platformę lokalnie oraz wdrożyć ją na serwer VPS z zachowaniem dobrych praktyk bezpieczeństwa (OWASP).
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsPlayStoreModalOpen(true)}
-          className="px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-extrabold transition-all shadow-lg shadow-indigo-600/30 shrink-0 flex items-center gap-2"
-        >
-          <PackageCheck className="h-4 w-4" />
-          <span>Otwórz Centrum Google Play (APK/AAB)</span>
-        </button>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setIsPlayStoreModalOpen(true)}
+            className="px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-extrabold transition-all shadow-lg shadow-indigo-600/30 shrink-0 flex items-center gap-2"
+          >
+            <PackageCheck className="h-4 w-4" />
+            <span>Centrum Google Play (Admin)</span>
+          </button>
+        )}
       </div>
 
-      {/* SECTION 0: Google Play Store APK / AAB Highlight Card */}
-      <section className="rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-950 p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
-              <Smartphone className="h-5 w-5" />
-              <h2 className="text-white">Pakiet Produkcyjny Google Play Store (Trusted Web Activity v2.0.0)</h2>
+      {/* SECTION 0: Google Play Store APK / AAB Highlight Card (Admin Only) */}
+      {isAdmin && (
+        <section className="rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-950 p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
+                <Smartphone className="h-5 w-5" />
+                <h2 className="text-white">Pakiet Produkcyjny Google Play Store (Tylko Administrator — TWA v2.0.0)</h2>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Projekt posiada skonfigurowany moduł Android Studio (<code className="text-indigo-300">com.fullstackacademy.app</code>, <strong>Target SDK 35 / Android 15</strong>), wygenerowany klucz podpisu <code className="text-amber-300">android.keystore</code>, plik weryfikacyjny <code className="text-emerald-300">/.well-known/assetlinks.json</code>, Politykę Prywatności RODO oraz gotowe zrzuty ekranu 9:16.
+              </p>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Projekt posiada skonfigurowany moduł Android Studio (<code className="text-indigo-300">com.fullstackacademy.app</code>, <strong>Target SDK 35 / Android 15</strong>), wygenerowany klucz podpisu <code className="text-amber-300">android.keystore</code>, plik weryfikacyjny <code className="text-emerald-300">/.well-known/assetlinks.json</code>, Politykę Prywatności RODO oraz gotowe zrzuty ekranu 9:16.
-            </p>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleDownloadZip}
+                disabled={isDownloadingZip}
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-md shadow-emerald-600/20 cursor-pointer"
+              >
+                <Download className="h-4 w-4" />
+                <span>{isDownloadingZip ? 'Weryfikacja...' : 'Pobierz Pakiet (.zip)'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPlayStoreModalOpen(true)}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold transition-colors"
+              >
+                Metadane, Keystore & Grafiki
+              </button>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleDownloadZip}
-              disabled={isDownloadingZip}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-md shadow-emerald-600/20 cursor-pointer"
-            >
-              <Download className="h-4 w-4" />
-              <span>{isDownloadingZip ? 'Weryfikacja...' : 'Pobierz Pakiet (.zip)'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsPlayStoreModalOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs font-bold transition-colors"
-            >
-              Metadane, Keystore & Grafiki
-            </button>
-          </div>
-        </div>
 
-        <CodeBlock 
-          code={androidPlaySnippet}
-          language="bash"
-          title="Kompilacja podpisanego pliku .APK i .AAB (Android SDK 35)"
-          badge="Google Play Ready"
-          badgeColor="emerald"
-        />
-      </section>
+          <CodeBlock 
+            code={androidPlaySnippet}
+            language="bash"
+            title="Kompilacja podpisanego pliku .APK i .AAB (Android SDK 35)"
+            badge="Google Play Ready"
+            badgeColor="emerald"
+          />
+        </section>
+      )}
 
       {/* SECTION 1: Local Setup */}
       <section className="space-y-3">

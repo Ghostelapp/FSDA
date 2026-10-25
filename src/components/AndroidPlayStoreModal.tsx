@@ -20,6 +20,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { useApp } from '../context/AppContext';
 import {
   validateAssetLinks,
   validateStoreListing,
@@ -131,11 +132,14 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { currentUser, isAuthenticated } = useApp();
   const { isInstallable, isInstalled, install } = usePWAInstall();
   const [activeTab, setActiveTab] = useState<'release_pack' | 'store_listing' | 'install' | 'checklist'>('release_pack');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadedSuccessId, setDownloadedSuccessId] = useState<string | null>(null);
+
+  const isAdmin = isAuthenticated && currentUser.role === 'admin';
 
   const auditChecks = useMemo(() => {
     const twaRes = validateTwaManifest(TWA_MANIFEST_CONFIG);
@@ -174,7 +178,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !isAdmin) return null;
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
