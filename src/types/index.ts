@@ -36,6 +36,9 @@ export interface User {
   lives: number; // current hearts (0 to maxLives)
   maxLives: number; // default 5
   lastHeartLostTimestamp?: number; // epoch ms of last lost life for timer regeneration
+  lastAdRewardTimestamp?: number; // epoch ms of last rewarded AdSense video/ad watched
+  dailyAdRewardsCount?: number; // number of rewarded ads watched today
+  lastAdRewardDate?: string; // "YYYY-MM-DD"
   isPro: boolean; // whether user has active PRO subscription (unlimited lives, etc.)
   proPlan?: 'monthly' | 'yearly' | 'lifetime' | null;
   proExpiresAt?: string;
@@ -49,6 +52,18 @@ export interface User {
   bio?: string;
   lastLoginAt?: string;
   createdAt: string;
+}
+
+export type AdPlacementKey = 'dashboard' | 'modules' | 'lesson' | 'sidebar' | 'rewarded';
+
+export interface AdSenseConfig {
+  enabled: boolean;
+  clientId: string; // e.g. "ca-pub-7482910384756192"
+  slots: Record<AdPlacementKey, string>;
+  placements: Record<AdPlacementKey, boolean>;
+  showFallbackSponsorCard: boolean;
+  rewardedCooldownSeconds: number;
+  maxDailyRewardedAds: number;
 }
 
 export interface UserFilters {

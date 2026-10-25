@@ -5,6 +5,7 @@ import { MODULES_DATA } from '../data/modulesData';
 import { BADGES_DATA } from '../data/badgesData';
 import { LearningProgressChart } from './LearningProgressChart';
 import { DailyGoalReminderCard } from './DailyGoalReminderCard';
+import { GoogleAdSenseBanner } from './GoogleAdSenseBanner';
 import { 
   Sparkles, 
   Flame, 
@@ -24,7 +25,7 @@ import {
 } from 'lucide-react';
 
 export const DashboardView: React.FC = () => {
-  const { currentUser, setActiveTab, announcements, weakAreas, allLessons } = useApp();
+  const { currentUser, isAuthenticated, setActiveTab, announcements, weakAreas, allLessons } = useApp();
   const levelInfo = calculateLevel(currentUser.xp);
 
   // Calculate overall progress across curriculum
@@ -41,6 +42,7 @@ export const DashboardView: React.FC = () => {
     currentUser.completedLessons.includes(l.id)
   ).length;
 
+  const isGuest = !isAuthenticated || currentUser.id === 'user-guest';
   const displayName = currentUser.name.replace(/\s*\(.*?\)\s*/g, '').trim();
 
   return (
@@ -58,15 +60,23 @@ export const DashboardView: React.FC = () => {
               <span>Ścieżka od Zera do Junior Full Stack Developera</span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
-              Witaj ponownie,{' '}
+              {isGuest ? 'Witaj w Akademii, ' : 'Witaj ponownie, '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
-                {displayName}
+                {isGuest ? 'przyszły Programisto' : displayName}
               </span>
               !
             </h1>
             <p className="text-xs sm:text-sm lg:text-base text-slate-300 leading-relaxed max-w-2xl">
-              Twój aktualny stopień: <strong className="text-indigo-300 font-semibold">{levelInfo.title}</strong> (Poziom {levelInfo.level}).
-              Lekcje są ułożone krok po kroku od najprostszych podstaw do zaawansowanych projektów.
+              {isGuest ? (
+                <>
+                  Przeglądasz kurs w <strong className="text-amber-300 font-semibold">trybie Gościa (Niezalogowany)</strong>. Możesz od razu rozpocząć naukę od Lekcji 1 lub zalogować się, aby zapisywać postępy w chmurze.
+                </>
+              ) : (
+                <>
+                  Twój aktualny stopień: <strong className="text-indigo-300 font-semibold">{levelInfo.title}</strong> (Poziom {levelInfo.level}).
+                  Lekcje są ułożone krok po kroku od najprostszych podstaw do zaawansowanych projektów.
+                </>
+              )}
             </p>
           </div>
 
@@ -80,14 +90,14 @@ export const DashboardView: React.FC = () => {
                 </span>
               </div>
               <p className="text-sm sm:text-base font-bold text-white line-clamp-2 leading-snug">
-                {nextLesson ? nextLesson.title : 'Jak działa strona internetowa?'}
+                {nextLesson ? nextLesson.title : 'Pierwsze znaczniki HTML: Nagłówki (h1–h6), akapity (p) i pogrubienie (strong)'}
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
               <button
                 type="button"
-                onClick={() => setActiveTab('lesson', nextLesson?.id || 'fund-1')}
+                onClick={() => setActiveTab('lesson', nextLesson?.id || 'html-7')}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-lg shadow-indigo-900/50 whitespace-nowrap"
               >
                 <Code2 className="h-4 w-4 shrink-0" />
@@ -96,10 +106,10 @@ export const DashboardView: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('lesson', 'fund-1')}
+                onClick={() => setActiveTab('lesson', 'html-7')}
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 px-4 py-2.5 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap shrink-0"
               >
-                <span>Lekcja 1 od zera</span>
+                <span>Lekcja 1 (Podstawy HTML)</span>
               </button>
             </div>
           </div>
@@ -184,6 +194,9 @@ export const DashboardView: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Google AdSense Display Unit (Shown only to authenticated Free-tier students) */}
+      <GoogleAdSenseBanner placement="dashboard" />
 
       {/* Daily Learning Goal & Service Worker Push Notification Scheduler */}
       <DailyGoalReminderCard />

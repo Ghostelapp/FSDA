@@ -2,14 +2,14 @@ import { Module } from '../../types';
 
 export const MODULE_2: Module = {
   id: 2,
-  title: 'HTML — Semantyczna Architektura Stron',
-  category: 'Frontend',
-  description: 'Kompletny moduł HTML5 od podstaw do zaawansowanych struktur. Poznaj semantykę, formularze z walidacją, multimedia, tabele, dostępność WCAG oraz optymalizację SEO.',
+  title: 'Podstawy HTML — Tworzenie Pierwszych Stron od Zera',
+  category: 'Podstawy',
+  description: 'Rozpocznij naukę całkowicie od zera! Poznaj proste znaczniki HTML, nagłówki, akapity, listy, obrazki, linki oraz budowę kompletnej strony internetowej krok po kroku.',
   badgeName: 'Mistrz Semantyki HTML5',
   badgeIcon: 'FileCode2',
   durationHours: 24,
   totalXp: 840,
-  prerequisites: ['Moduł 1: Fundamenty programowania'],
+  prerequisites: ['Brak — kurs zaczynamy całkowicie od zera!'],
   topics: [
     'Anatomia dokumentu HTML5, DOCTYPE i struktura drzewa DOM',
     'Typografia, formatowanie tekstu (h1-h6, p, strong, em, blockquote, code) i encje HTML',
@@ -149,79 +149,78 @@ Każda nowoczesna strona zaczyna się od tych **4 prostych klocków**:
     },
     {
       id: 'html-7',
-      moduleId: 2,
-      moduleTitle: 'HTML — Semantyczna Architektura Stron',
-      title: 'Tekst, typografia i formatowanie treści: h1–h6, p, strong, em, code i encje',
+      moduleId: 1,
+      moduleTitle: 'Podstawy HTML — Tworzenie Pierwszych Stron od Zera',
+      title: 'Pierwsze znaczniki HTML: Nagłówki (h1–h6), akapity (p) i pogrubienie (strong)',
       slug: 'tekst-typografia-formatowanie-html',
-      durationMinutes: 25,
+      durationMinutes: 20,
       xpReward: 60,
-      order: 2,
-      summary: 'Opanuj fundamenty pracy z tekstem w HTML: prawidłową hierarchię nagłówków h1–h6, różnicę między semantycznym <strong> a wizualnym <b>, cytaty <blockquote> oraz encje specjalne.',
+      order: 1,
+      summary: 'Witaj na pierwszej lekcji kursu! Dowiedz się całkowicie od zera, czym są znaczniki HTML i napisz swój pierwszy nagłówek, akapit tekstu oraz pogrubienie.',
       objectives: [
-        'Budować poprawną hierarchię nagłówków od <h1> do <h6> bez pomijania poziomów',
-        'Rozróżniać znaczniki semantyczne (<strong>, <em>, <mark>) od czysto wizualnych (<b>, <i>)',
-        'Stosować znaczniki dla kodu (<code>, <pre>) oraz encje HTML (&copy;, &nbsp;, &lt;, &gt;)',
+        'Zrozumieć czym jest znacznik (tag) otwierający np. <h1> i zamykający </h1>',
+        'Tworzyć nagłówki od największego <h1> do mniejszych <h2> i <h3> oraz akapity tekstu <p>',
+        'Wyróżniać ważne słowa pogrubieniem <strong>, kodem <code> oraz cytatem <blockquote>',
       ],
-      prerequisites: ['Lekcja 1: Anatomia dokumentu HTML5'],
-      theoryMarkdown: `Treść tekstowa to główny nośnik informacji w sieci i podstawa pozycjonowania w wyszukiwarce Google (SEO).
+      prerequisites: ['Brak — zaczynamy całkowicie od zera!'],
+      theoryMarkdown: `Witaj na pierwszej lekcji! Każda strona internetowa na świecie — od prostego bloga po YouTube czy Allegro — zaczyna się od języka **HTML**. Nie musisz nic instalować ani znać matematyki: HTML to po prostu układanie tekstu za pomocą prostych etykiet zwanych **znacznikami (tagami)**.
 
-**1. Hierarchia nagłówków (\`<h1>\` – \`<h6>\`):**
-- **\`<h1>\`** — Tytuł główny całej podstrony (dokładnie **jeden** na stronę!).
-- **\`<h2>\`** — Główne rozdziały lub sekcje strony.
-- **\`<h3>\`** — Podsekcje wewnątrz \`<h2>\`.
-*Złota zasada:* Nigdy nie wybieraj poziomu nagłówka ze względu na rozmiar czcionki (od tego jest CSS!). Nie przeskakuj z \`<h1>\` od razu do \`<h4>\`.
+**1. Jak działa znacznik HTML?**
+W HTML otaczamy tekst słowem w nawiasach ostrokątnych \`< >\`. Niemal każdy znacznik występuje w parze:
+- **Znacznik otwierający:** np. \`<h1>\` (mówi przeglądarce: *„tu zaczyna się główny tytuł”*),
+- **Znacznik zamykający (z ukośnikiem \`/\`):** np. \`</h1>\` (mówi: *„tu kończy się tytuł”*).
 
-**2. Semantyczne wyróżnienia tekstu:**
-- **\`<strong>\` vs \`<b>\`:** \`<strong>\` oznacza tekst o **wysokiej wadze i istotności** (czytniki ekranu zmieniają intonację głosu), natomiast \`<b>\` to tylko wizualne pogrubienie.
-- **\`<em>\` vs \`<i>\`:** \`<em>\` (emphasis) kładzie nacisk logiczny na słowo w zdaniu, a \`<i>\` służy do terminów technicznych lub obcojęzycznych.
-- **\`<blockquote>\` i \`<q>\`:** Długie cytaty blokowe oraz krótkie cytaty w linii tekstu.
-- **\`<code>\` i \`<pre>\`:** Wyświetlanie fragmentów kodu źródłowego z zachowaniem wcięć i czcionki monospace.
+**2. Nagłówki (\`<h1>\` – \`<h6>\`) i akapity (\`<p>\`):**
+- **\`<h1>\`** — Najważniejszy, największy tytuł na stronie (używamy jednego głównego \`<h1>\` na podstronę).
+- **\`<h2>\`** — Tytuł rozdziału lub sekcji pod głównym tytułem.
+- **\`<h3>\`** — Mniejszy podtytuł wewnątrz rozdziału \`<h2>\`.
+- **\`<p>\`** — Zwykły akapit tekstu (od ang. *paragraph*). Każdy nowy akapit zamykamy w osobnym \`<p>...</p>\`.
 
-**3. Encje znakowe (HTML Entities):**
-Gdy chcesz wyświetlić znak zastrzeżony w HTML (np. \`<\`) lub symbol specjalny:
-- \`&lt;\` (\`<\`), \`&gt;\` (\`>\`), \`&amp;\` (\`&\`), \`&copy;\` (©), \`&nbsp;\` (twarda spacja nierozdzielająca słów).`,
+**3. Wyróżnianie ważnych słów w tekście:**
+- **\`<strong>\`:** Pogrubia najważniejsze słowa w zdaniu (np. \`<strong>ważna informacja</strong>\`).
+- **\`<em>\`:** Pochyla tekst (kursywa), aby położyć nacisk na dane słowo.
+- **\`<code>\`:** Wyróżnia krótką nazwę polecenia lub kodu komputerowego w zdaniu.
+- **\`<blockquote>\`:** Tworzy ładnie wcięty cytat lub złotą myśl.`,
       codeExamples: [
         {
-          title: 'Wzorcowe formatowanie artykułu technicznego',
+          title: 'Twoja pierwsza strona z tytułem, akapitem i cytatem',
           language: 'html',
-          code: `<article>
-  <h1>Przewodnik po czystym kodzie</h1>
-  <h2>Dlaczego nazewnictwo zmiennych ma znaczenie?</h2>
-  <p>
-    Pamiętaj, że kod jest <strong>znacznie częściej czytany</strong> niż pisany.
-    Nigdy nie używaj jednoliterowych nazw takich jak <code>let x = 10;</code>.
-  </p>
-  <blockquote>
-    "Każdy potrafi napisać kod, który zrozumie komputer. Dobrzy programiści piszą kod, który zrozumieją ludzie." — <em>Martin Fowler</em>
-  </blockquote>
-</article>`,
-          explanation: 'Połączenie h1 -> h2, strong, code oraz blockquote tworzy przejrzysty i bogaty semantycznie artykuł.',
+          code: `<h1>Moja pierwsza strona w HTML</h1>
+<h2>Dlaczego uczę się tworzenia stron?</h2>
+<p>
+  Tworzenie stron w języku <strong>HTML</strong> jest proste i daje natychmiastowy efekt.
+  Wystarczy wpisać znacznik <code>&lt;h1&gt;</code>, aby wyświetlić duży nagłówek!
+</p>
+<blockquote>
+  "Każdy ekspert był kiedyś początkującym, który napisał swoją pierwszą linijkę kodu."
+</blockquote>`,
+          explanation: 'Zwróć uwagę, że każdy znacznik otwarty np. <h2> lub <p> ma na końcu swoje zamknięcie z ukośnikiem </h2> oraz </p>.',
         },
       ],
       stepByStepGuide: [
-        { step: 1, title: 'Zacznij od pojedynczego <h1>', description: 'Opisz główny temat bieżącego widoku.' },
-        { step: 2, title: 'Podziel tekst na akapity <p>', description: 'Każda myśl powinna znajdować się w osobnym znaczniku <p>.' },
-        { step: 3, title: 'Wyróżnij kluczowe pojęcia za pomocą <strong> i <code>', description: 'Nadaj treści strukturę łatwą do skanowania wzrokiem.' },
+        { step: 1, title: 'Napisz nagłówek <h2>', description: 'Wpisz <h2>Tytuł notatki</h2> w edytorze poniżej.' },
+        { step: 2, title: 'Dodaj akapit <p> z pogrubieniem <strong> i kodem <code>', description: 'Wewnątrz <p>...</p> umieść <strong>ważne słowo</strong> oraz <code>kod</code>.' },
+        { step: 3, title: 'Dodaj cytat <blockquote>', description: 'Na końcu dopisz <blockquote>Twój ulubiony cytat</blockquote>.' },
       ],
       interactiveExercise: {
         id: 'ex-html-text',
-        title: 'Sformatuj notatkę programistyczną z użyciem strong, code i blockquote',
-        instructions: 'W edytorze HTML stwórz podtytuł <h2>, akapit <p> zawierający pogrubienie <strong> oraz wstawkę kodu <code>, a pod spodem cytat <blockquote>.',
-        task: 'Użyj znaczników h2, p, strong, code oraz blockquote.',
+        title: 'Napisz swój pierwszy kod HTML: nagłówek, akapit i cytat',
+        instructions: 'W edytorze HTML poniżej przygotowaliśmy już początek kodu. Dopisz brakujące elementy lub uzupełnij szablon tak, aby zawierał: nagłówek <h2>, akapit <p> z pogrubieniem <strong> i znacznikiem <code>, oraz cytat <blockquote>.',
+        task: 'Użyj w kodzie HTML znaczników: <h2>, <p>, <strong>, <code> oraz <blockquote>.',
         starterCode: {
-          html: '<!-- Sformatuj notatkę poniżej -->\n',
+          html: '<!-- 1. Nagłówek drugiego stopnia: -->\n<h2>Moja pierwsza notatka z HTML</h2>\n\n<!-- 2. Akapit z pogrubieniem <strong> i znacznikiem <code>: -->\n<p>Uczę się <strong>podstaw HTML</strong> i znam już znacznik <code>h2</code>.</p>\n\n<!-- 3. Dopisz poniżej cytat w znaczniku <blockquote>Tekst cytatu</blockquote>: -->\n',
           css: 'body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.6; color: #1e293b; }\ncode { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #db2777; font-family: monospace; }\nblockquote { border-left: 4px solid #4f46e5; padding-left: 14px; color: #475569; font-style: italic; margin: 16px 0; }',
-          js: 'console.log("Typografia HTML5 aktywna.");',
+          js: 'console.log("Brawo! Twój pierwszy kod HTML działa.");',
         },
         solutionCode: {
-          html: '<h2>Zasada DRY w programowaniu</h2>\n<p>Reguła <strong>Don\'t Repeat Yourself</strong> pomaga unikać duplikacji w funkcjach takich jak <code>calculateTax()</code>.</p>\n<blockquote>Powtarzanie kodu to prosta droga do trudnych w utrzymaniu błędów.</blockquote>',
+          html: '<h2>Moja pierwsza notatka z HTML</h2>\n<p>Uczę się <strong>podstaw HTML</strong> i znam już znacznik <code>h2</code>.</p>\n<blockquote>Każda wielka strona internetowa zaczyna się od pierwszego znacznika HTML.</blockquote>',
           css: 'body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.6; color: #1e293b; }\ncode { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #db2777; font-family: monospace; }\nblockquote { border-left: 4px solid #4f46e5; padding-left: 14px; color: #475569; font-style: italic; margin: 16px 0; }',
-          js: 'console.log("Typografia HTML5 aktywna.");',
+          js: 'console.log("Brawo! Twój pierwszy kod HTML działa.");',
         },
         hints: [
-          'Dodaj <h2>Tytuł sekcji</h2>.',
-          'Wewnątrz <p> umieść <strong>ważny tekst</strong> oraz <code>fragmentKodu()</code>.',
-          'Dodaj na dole <blockquote>Treść cytatu</blockquote>.',
+          'Nagłówek <h2> i akapit <p> ze <strong> oraz <code> są już gotowe w edytorze!',
+          'Na samym dole dopisz linijkę: <blockquote>Krok po kroku do celu!</blockquote>',
+          'Kliknij przycisk „Uruchom i sprawdź kod” lub „Rozwiązanie”, jeśli chcesz zobaczyć gotowy wzór.',
         ],
         rules: [
           { id: 'r1', description: 'Znacznik <strong> obecny w kodzie', ruleType: 'html_tag_exists', target: 'strong' },

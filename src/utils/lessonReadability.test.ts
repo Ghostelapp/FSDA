@@ -85,16 +85,22 @@ test('All 91 lessons across 15 modules parse without leaking raw backticks and p
   }
 });
 
-test('MODULES_DATA orders lessons from easiest to advanced with sequential order and accurate prerequisites', () => {
-  // Check HTML starts with simple headings (html-7), CSS starts with colors & fonts (css-7), JS starts with variables -> if/else -> functions -> loops -> objects -> DOM -> map/filter
+test('MODULES_DATA starts with HTML basics (Module 1), then CSS (Module 2), JS (Module 3), and orders lessons from easiest to advanced', () => {
+  // Module 1 is HTML starting with simple headings (html-7)
+  const mod1Ids = MODULES_DATA.find((m) => m.id === 1)?.lessons.map((l) => l.id);
+  assert.deepEqual(mod1Ids?.slice(0, 4), ['html-7', 'html-8', 'html-4', 'html-9']);
+
+  // Module 2 is CSS starting with colors & fonts (css-7)
   const mod2Ids = MODULES_DATA.find((m) => m.id === 2)?.lessons.map((l) => l.id);
-  assert.deepEqual(mod2Ids?.slice(0, 4), ['html-7', 'html-8', 'html-4', 'html-9']);
+  assert.deepEqual(mod2Ids?.slice(0, 3), ['css-7', 'css-6', 'css-1']);
 
+  // Module 3 is JS starting with variables -> if/else -> functions -> loops -> objects -> DOM -> map/filter
   const mod3Ids = MODULES_DATA.find((m) => m.id === 3)?.lessons.map((l) => l.id);
-  assert.deepEqual(mod3Ids?.slice(0, 3), ['css-7', 'css-6', 'css-1']);
+  assert.deepEqual(mod3Ids?.slice(0, 7), ['js-1', 'js-6', 'js-8', 'js-7', 'js-9', 'js-3', 'js-2']);
 
+  // Module 4 is Internet/Tools starting with fund-1
   const mod4Ids = MODULES_DATA.find((m) => m.id === 4)?.lessons.map((l) => l.id);
-  assert.deepEqual(mod4Ids?.slice(0, 7), ['js-1', 'js-6', 'js-8', 'js-7', 'js-9', 'js-3', 'js-2']);
+  assert.deepEqual(mod4Ids?.slice(0, 4), ['fund-1', 'fund-2', 'fund-3', 'fund-4']);
 
   for (const mod of MODULES_DATA) {
     mod.lessons.forEach((lesson, idx) => {

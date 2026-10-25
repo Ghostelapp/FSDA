@@ -1,8 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo, useRef } from 'react';
-import { User, UserRole, UserStatus, Announcement, Lesson, ReviewItem, DailyReminderSettings, SecurityAuditEvent } from '../types';
+import { User, UserRole, UserStatus, Announcement, Lesson, ReviewItem, DailyReminderSettings, SecurityAuditEvent, AdSenseConfig } from '../types';
 import { MODULES_DATA } from '../data/modulesData';
 import { DEFAULT_ANNOUNCEMENTS } from '../data/defaultAnnouncements';
 import { soundManager } from '../utils/audioFx';
+import {
+  DEFAULT_ADSENSE_CONFIG,
+  shouldShowAdsForUser,
+  checkRewardedAdEligibility,
+  ensureAdSenseScriptLoaded,
+} from '../utils/adsense';
 import {
   authenticateUserCredentials,
   validateAndCreateUser,
@@ -96,6 +102,9 @@ interface AppContextType {
   loseLife: (reason?: string) => boolean;
   refillLives: () => void;
   earnPracticeLife: () => void;
+  earnAdRewardLife: () => { success: boolean; message: string };
+  adSenseConfig: AdSenseConfig;
+  updateAdSenseConfig: (partial: Partial<AdSenseConfig>) => void;
   buyHeart: () => boolean;
   buyRefill: () => boolean;
   buyFreeze: () => boolean;
@@ -155,13 +164,20 @@ interface AppContextType {
   clearSecurityLogs: () => void;
 }
 
-const STORAGE_KEY_USER = 'fsda_current_user_v5';
-const STORAGE_KEY_AUTH = 'fsda_is_authenticated_v5';
-const STORAGE_KEY_USERS = 'fsda_all_users_v5';
+const STORAGE_KEY_USER = 'fsda_current_user_v7';
+const STORAGE_KEY_AUTH = 'fsda_is_authenticated_v7';
+const STORAGE_KEY_USERS = 'fsda_all_users_v7';
 const STORAGE_KEY_ANNOUNCEMENTS = 'fsda_announcements_v5';
 const STORAGE_KEY_THEME = 'fsda_theme_v5';
 const STORAGE_KEY_REMINDERS = 'fsda_reminder_settings_v1';
 const STORAGE_KEY_SECURITY_LOGS = 'fsda_security_logs_v1';
+const STORAGE_KEY_ADSENSE_CONFIG = 'fsda_adsense_config_v1';
+
+const LEGACY_TEST_USER_IDS = new Set([
+  'user-student-anna',
+  'user-student-piotr',
+  'user-bot-blocked',
+]);
 
 const DEFAULT_SECURITY_LOGS: SecurityAuditEvent[] = [
   {
@@ -181,8 +197,8 @@ const DEFAULT_SECURITY_LOGS: SecurityAuditEvent[] = [
     severity: 'warning',
     actorEmail: 'gosc@fullstack-academy.pl',
     actorRole: 'guest',
-    action: 'ProtectedRoute zablokował dostęp Gościa do AdminPanelView',
-    details: 'Niezalogowany użytkownik (Gość) próbował wyświetlić chroniony Panel Administratora.',
+    action: 'ProtectedRoute zablokował dostęp Gościa do sekcji chronionej',
+    details: 'Niezalogowany użytkownik (Gość) próbował wyświetlić chronioną zawartość kursu bez logowania.',
   },
   {
     id: 'sec-3',
@@ -251,97 +267,6 @@ const DEFAULT_USERS: User[] = [
     bio: 'Główny Administrator i Architekt Akademii Full Stack Developer.',
     createdAt: '2026-09-01',
   },
-  {
-    id: 'user-student-anna',
-    name: 'Anna Kowalska (Kursant PRO)',
-    email: 'anna.kowalska@akademia.pl',
-    role: 'student',
-    status: 'active',
-    antiBotVerified: true,
-    antiBotScore: 100,
-    password: 'student123',
-    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=AnnaKowalska',
-    xp: 1850,
-    level: 4,
-    streakDays: 12,
-    lastActiveDate: new Date().toISOString().split('T')[0],
-    weeklyGoalMinutes: 210,
-    weeklySpentMinutes: 145,
-    completedLessons: ['fund-1', 'fund-2'],
-    completedProjects: ['proj-1'],
-    quizScores: {
-      'fund-1': 100,
-      'fund-2': 95,
-    },
-    unlockedBadges: ['first-step', 'streak-3', 'streak-7', 'xp-500', 'xp-1500', 'project-first'],
-    savedCode: {},
-    lives: 5,
-    maxLives: 5,
-    isPro: true,
-    proPlan: 'yearly',
-    streakFreezes: 2,
-    bio: 'Kursantka ścieżki Frontend & React TypeScript.',
-    createdAt: '2026-09-15',
-  },
-  {
-    id: 'user-student-piotr',
-    name: 'Piotr Nowak (Kursant Free)',
-    email: 'piotr.nowak@akademia.pl',
-    role: 'student',
-    status: 'active',
-    antiBotVerified: true,
-    antiBotScore: 95,
-    password: 'student123',
-    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=PiotrNowak',
-    xp: 420,
-    level: 2,
-    streakDays: 3,
-    lastActiveDate: new Date().toISOString().split('T')[0],
-    weeklyGoalMinutes: 150,
-    weeklySpentMinutes: 60,
-    completedLessons: ['fund-1'],
-    completedProjects: [],
-    quizScores: {
-      'fund-1': 80,
-    },
-    unlockedBadges: ['first-step', 'streak-3'],
-    savedCode: {},
-    lives: 4,
-    maxLives: 5,
-    isPro: false,
-    streakFreezes: 1,
-    bio: 'Uczę się podstaw Web Developmentu od zera.',
-    createdAt: '2026-10-02',
-  },
-  {
-    id: 'user-bot-blocked',
-    name: 'AutoScraper Bot v3',
-    email: 'scraper@spambot.io',
-    role: 'student',
-    status: 'banned',
-    banReason: 'Zautomatyzowany skrypt wykryty przez system Anybot (honeypot + czas < 200ms).',
-    antiBotVerified: false,
-    antiBotScore: 0,
-    password: 'bot123',
-    avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=SpamBot',
-    xp: 0,
-    level: 1,
-    streakDays: 0,
-    lastActiveDate: '2026-10-05',
-    weeklyGoalMinutes: 180,
-    weeklySpentMinutes: 0,
-    completedLessons: [],
-    completedProjects: [],
-    quizScores: {},
-    unlockedBadges: [],
-    savedCode: {},
-    lives: 0,
-    maxLives: 5,
-    isPro: false,
-    streakFreezes: 0,
-    bio: 'Zablokowane konto testowe do demonstracji filtrów bezpieczeństwa.',
-    createdAt: '2026-10-05',
-  },
 ];
 
 
@@ -352,23 +277,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const stored = localStorage.getItem(STORAGE_KEY_USERS);
       if (stored) {
-        const parsed: User[] = JSON.parse(stored).map((u: User) => {
-          const isOwnerAdmin =
-            u.id === 'user-admin' || u.email.trim().toLowerCase() === 'zordonzordon1@gmail.com';
-          if (isOwnerAdmin) {
-            const { password: _removed, ...rest } = u;
-            return { ...rest, role: 'admin' as UserRole };
-          }
-          // Migrate legacy demo completedLessons that looked non-sequential after reordering
-          if (
-            u.id === 'user-student-anna' &&
-            Array.isArray(u.completedLessons) &&
-            u.completedLessons.join(',') === 'fund-1,fund-2,html-1,html-2,css-1,js-1'
-          ) {
-            return { ...u, role: 'student' as UserRole, completedLessons: ['fund-1', 'fund-2'] };
-          }
-          return { ...u, role: 'student' as UserRole };
-        });
+        const parsed: User[] = JSON.parse(stored)
+          .filter((u: User) => !LEGACY_TEST_USER_IDS.has(u.id))
+          .map((u: User) => {
+            const isOwnerAdmin =
+              u.id === 'user-admin' || u.email.trim().toLowerCase() === 'zordonzordon1@gmail.com';
+            if (isOwnerAdmin) {
+              const { password: _removed, ...rest } = u;
+              return { ...rest, role: 'admin' as UserRole };
+            }
+            return { ...u, role: 'student' as UserRole };
+          });
         const existingIds = new Set(parsed.map((u) => u.id));
         const missingDefaults = DEFAULT_USERS.filter((d) => !existingIds.has(d.id));
         return [...parsed, ...missingDefaults];
@@ -381,32 +300,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY_AUTH);
-      if (stored !== null) {
-        return JSON.parse(stored) === true;
+      const storedAuth = localStorage.getItem(STORAGE_KEY_AUTH);
+      const storedUser = localStorage.getItem(STORAGE_KEY_USER);
+      if (storedAuth !== null && storedUser !== null) {
+        const parsedUser: User = JSON.parse(storedUser);
+        if (
+          parsedUser &&
+          parsedUser.id &&
+          parsedUser.id !== 'user-guest' &&
+          !LEGACY_TEST_USER_IDS.has(parsedUser.id)
+        ) {
+          return JSON.parse(storedAuth) === true;
+        }
       }
-      return true;
+      return false;
     } catch {
-      return true;
+      return false;
     }
   });
 
   const [currentUser, setCurrentUser] = useState<User>(() => {
     try {
       const storedAuth = localStorage.getItem(STORAGE_KEY_AUTH);
-      if (storedAuth !== null && JSON.parse(storedAuth) === false) {
+      if (storedAuth === null || JSON.parse(storedAuth) !== true) {
         return createGuestUser();
       }
       const stored = localStorage.getItem(STORAGE_KEY_USER);
       if (stored) {
         const parsed: User = JSON.parse(stored);
-        // Migrate legacy demo completedLessons that looked non-sequential after reordering
-        if (
-          parsed.id === 'user-student-anna' &&
-          Array.isArray(parsed.completedLessons) &&
-          parsed.completedLessons.join(',') === 'fund-1,fund-2,html-1,html-2,css-1,js-1'
-        ) {
-          parsed.completedLessons = ['fund-1', 'fund-2'];
+        if (!parsed || !parsed.id || parsed.id === 'user-guest' || LEGACY_TEST_USER_IDS.has(parsed.id)) {
+          return createGuestUser();
         }
         // Never restore an admin session from localStorage without active verified Firebase OAuth
         const hasVerifiedFirebaseAdmin =
@@ -418,15 +341,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             (parsed.email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com') &&
           !hasVerifiedFirebaseAdmin
         ) {
-          return DEFAULT_USERS[1];
+          return createGuestUser();
         }
         return parsed.role === 'admin' && !hasVerifiedFirebaseAdmin
           ? { ...parsed, role: 'student' }
           : parsed;
       }
-      return DEFAULT_USERS[1];
+      return createGuestUser();
     } catch {
-      return DEFAULT_USERS[1];
+      return createGuestUser();
     }
   });
 
@@ -479,7 +402,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return 'dashboard';
     }
   });
-  const [selectedLessonId, setSelectedLessonId] = useState<string | null>('html-1');
+  const [selectedLessonId, setSelectedLessonId] = useState<string | null>('html-7');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>('proj-1');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'badge' | 'danger' } | null>(null);
   const [securityLogs, setSecurityLogs] = useState<SecurityAuditEvent[]>(() => {
@@ -498,6 +421,49 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // ignore storage errors
     }
   }, [securityLogs]);
+
+  // Google AdSense Configuration State (for Free Accounts)
+  const [adSenseConfig, setAdSenseConfig] = useState<AdSenseConfig>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_ADSENSE_CONFIG);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return {
+          ...DEFAULT_ADSENSE_CONFIG,
+          ...parsed,
+          slots: { ...DEFAULT_ADSENSE_CONFIG.slots, ...(parsed.slots || {}) },
+          placements: { ...DEFAULT_ADSENSE_CONFIG.placements, ...(parsed.placements || {}) },
+        };
+      }
+      return DEFAULT_ADSENSE_CONFIG;
+    } catch {
+      return DEFAULT_ADSENSE_CONFIG;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_ADSENSE_CONFIG, JSON.stringify(adSenseConfig));
+    } catch {
+      // ignore storage errors
+    }
+  }, [adSenseConfig]);
+
+  // Dynamically load Google AdSense SDK ONLY when a free-tier authenticated student is active
+  useEffect(() => {
+    if (shouldShowAdsForUser(currentUser, isAuthenticated, adSenseConfig)) {
+      ensureAdSenseScriptLoaded(adSenseConfig.clientId);
+    }
+  }, [currentUser, isAuthenticated, adSenseConfig]);
+
+  const updateAdSenseConfig = useCallback((partial: Partial<AdSenseConfig>) => {
+    setAdSenseConfig((prev) => ({
+      ...prev,
+      ...partial,
+      slots: partial.slots ? { ...prev.slots, ...partial.slots } : prev.slots,
+      placements: partial.placements ? { ...prev.placements, ...partial.placements } : prev.placements,
+    }));
+  }, []);
 
   const appendSecurityLog = useCallback(
     (entry: Omit<SecurityAuditEvent, 'id' | 'timestamp'>) => {
@@ -836,6 +802,61 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setLivesInfo(calculateRegeneratedLives(updated));
     soundManager.playSuccess();
     showToast('+1 Serce zdobyte za aktywność w powtórkach!', 'success');
+  };
+
+  const earnAdRewardLife = (): { success: boolean; message: string } => {
+    const todayKey = formatLocalDateKey(new Date());
+    const nowMs = Date.now();
+    const eligibility = checkRewardedAdEligibility({
+      user: currentUser,
+      config: adSenseConfig,
+      nowMs,
+      todayDateKey: todayKey,
+    });
+
+    if (!eligibility.allowed) {
+      const msg = eligibility.reason || 'Nie można teraz odebrać nagrody z reklamy.';
+      showToast(msg, 'danger');
+      return { success: false, message: msg };
+    }
+
+    const maxLives = currentUser.maxLives ?? 5;
+    const currentLives = typeof currentUser.lives === 'number' ? currentUser.lives : maxLives;
+    const nextDailyCount = eligibility.watchedToday + 1;
+
+    if (currentLives >= maxLives) {
+      const newXp = currentUser.xp + 20;
+      const levelInfo = calculateLevel(newXp);
+      const updated: User = {
+        ...currentUser,
+        xp: newXp,
+        level: levelInfo.level,
+        lastAdRewardTimestamp: nowMs,
+        lastAdRewardDate: todayKey,
+        dailyAdRewardsCount: nextDailyCount,
+      };
+      setCurrentUser(updated);
+      setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
+      soundManager.playSuccess();
+      const msg = 'Masz już 5/5 serc — przyznano bonus +20 XP za obejrzenie reklamy Google AdSense!';
+      showToast(msg, 'success');
+      return { success: true, message: msg };
+    }
+
+    const withHeart = addLife(currentUser, 1);
+    const updated: User = {
+      ...withHeart,
+      lastAdRewardTimestamp: nowMs,
+      lastAdRewardDate: todayKey,
+      dailyAdRewardsCount: nextDailyCount,
+    };
+    setCurrentUser(updated);
+    setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
+    setLivesInfo(calculateRegeneratedLives(updated));
+    soundManager.playSuccess();
+    const msg = `+1 Serce zdobyte dzięki reklamie Google AdSense! (${updated.lives}/${maxLives} ❤️)`;
+    showToast(msg, 'success');
+    return { success: true, message: msg };
   };
 
   const buyHeart = (): boolean => {
@@ -1660,6 +1681,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         loseLife,
         refillLives,
         earnPracticeLife,
+        earnAdRewardLife,
+        adSenseConfig,
+        updateAdSenseConfig,
         buyHeart,
         buyRefill,
         buyFreeze,

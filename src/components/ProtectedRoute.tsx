@@ -21,7 +21,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   fallbackTitle,
   fallbackMessage,
 }) => {
-  const { currentUser, isAuthenticated, setActiveTab } = useApp();
+  const { currentUser, isAuthenticated, isSyncingCloud, loginWithGoogle, setActiveTab } = useApp();
 
   const access = checkProtectedRouteAccess(currentUser, isAuthenticated, {
     requiredRole,
@@ -33,6 +33,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   const isGuest = isGuestUser(currentUser, isAuthenticated);
+  const isStudentAuthGate = requiredRole === 'student' && access.reason === 'guest_blocked';
+
   const handleTriggerLogin = () => {
     if (onOpenAuthModal) {
       onOpenAuthModal();
@@ -46,14 +48,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       data-testid="protected-route-guard"
       role="region"
       aria-label="Zabezpieczenie dostępu ProtectedRoute"
-      className="mx-auto max-w-2xl px-4 py-14 sm:py-20"
+      className="mx-auto max-w-2xl px-4 py-12 sm:py-16"
     >
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-2xl space-y-6">
+      <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-2xl space-y-6">
         {/* Icon & Security Header */}
         <div className="flex flex-col items-center text-center space-y-4">
           <div
             className={`flex h-16 w-16 items-center justify-center rounded-2xl border ${
-              access.reason === 'guest_blocked'
+              isStudentAuthGate
+                ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400'
+                : access.reason === 'guest_blocked'
                 ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
                 : 'bg-rose-500/15 border-rose-500/30 text-rose-400'
             }`}
@@ -66,14 +70,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           </div>
 
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Ochrona Trasy · ProtectedRoute
+            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-400">
+              {isStudentAuthGate ? 'Strefa Kursanta · Wymagane Logowanie' : 'Ochrona Trasy · ProtectedRoute'}
             </p>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
-              {fallbackTitle || access.title}
+            <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight">
+              {fallbackTitle || (isStudentAuthGate ? 'Zaloguj się, aby rozpocząć naukę' : access.title)}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
-              {fallbackMessage || access.message}
+            <p className="text-xs sm:text-base text-slate-300 leading-relaxed max-w-xl">
+              {fallbackMessage ||
+                (isStudentAuthGate
+                  ? 'Dostęp do 15 modułów kursu, 91 interaktywnych lekcji, edytora kodu oraz projektów jest dostępny wyłącznie dla zalogowanych użytkowników. Zaloguj się kontem Google lub utwórz darmowe konto e-mail.'
+                  : access.message)}
             </p>
           </div>
         </div>
@@ -83,31 +90,22 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           <span>
             Status sesji:{' '}
             <strong className={isGuest ? 'text-amber-300 font-semibold' : 'text-emerald-300 font-semibold'}>
-              {isGuest ? 'Gość (Zablokowany)' : 'Zalogowany użytkownik'}
+              {isGuest ? 'Niezalogowany (Wymagane konto)' : 'Zalogowany użytkownik'}
             </strong>
           </span>
           <span aria-hidden="true">·</span>
           <span>
-            Konto:{' '}
+            Dostęp do nauki:{' '}
             <strong className="text-slate-200 font-semibold">
-              {currentUser?.name || 'Gość'}
+              Tylko dla zalogowanych kursantów
             </strong>
           </span>
-          <span aria-hidden="true">·</span>
-          <span>
-            Aktualna rola:{' '}
-            <strong className="text-slate-200 font-semibold">
-              {isGuest ? 'Gość (Brak uprawnień)' : currentUser?.role === 'admin' ? 'Administrator' : 'Kursant'}
-            </strong>
-          </span>
-          {requiredRole && (
+          {requiredRole === 'admin' && (
             <>
               <span aria-hidden="true">·</span>
               <span>
                 Wymagana rola:{' '}
-                <strong className="text-rose-300 font-semibold">
-                  {requiredRole === 'admin' ? 'Administrator' : 'Kursant'}
-                </strong>
+                <strong className="text-rose-300 font-semibold">Administrator</strong>
               </span>
             </>
           )}
@@ -119,19 +117,20 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             <>
               <button
                 type="button"
-                onClick={handleTriggerLogin}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors shadow-lg shadow-indigo-600/20"
+                onClick={() => void loginWithGoogle()}
+                disabled={isSyncingCloud}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-xs sm:text-sm font-bold transition-colors shadow-lg cursor-pointer disabled:opacity-60"
               >
-                <LogIn className="h-4 w-4" />
-                <span>Zaloguj się / Utwórz konto</span>
+                <UserCheck className="h-4 w-4 text-indigo-600" />
+                <span>{isSyncingCloud ? 'Łączenie z Google...' : 'Zaloguj przez Google'}</span>
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('dashboard')}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-semibold transition-colors"
+                onClick={handleTriggerLogin}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold transition-colors shadow-lg shadow-indigo-600/20 cursor-pointer"
               >
-                <ArrowLeft className="h-4 w-4" />
-                <span>Powrót do Pulpitu Kursanta</span>
+                <LogIn className="h-4 w-4" />
+                <span>Zaloguj się e-mailem / Załóż konto</span>
               </button>
             </>
           ) : (

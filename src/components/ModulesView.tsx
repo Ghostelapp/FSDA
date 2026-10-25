@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { MODULES_DATA } from '../data/modulesData';
+import { GoogleAdSenseBanner } from './GoogleAdSenseBanner';
 import { 
   Layers, 
   Clock, 
@@ -56,11 +57,11 @@ export const ModulesView: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => setActiveTab('lesson', 'fund-1')}
+          onClick={() => setActiveTab('lesson', 'html-7')}
           className="inline-flex items-center gap-2.5 self-start lg:self-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold transition-colors shadow-lg shadow-emerald-950/50 shrink-0"
         >
           <BookOpen className="h-4 w-4" />
-          <span>Zacznij od Lekcji 1 (Całkowicie od zera)</span>
+          <span>Zacznij od Lekcji 1 (Podstawy HTML od zera)</span>
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>
@@ -82,6 +83,9 @@ export const ModulesView: React.FC = () => {
           </button>
         ))}
       </div>
+
+      {/* Google AdSense Display Unit (Shown only to authenticated Free-tier students) */}
+      <GoogleAdSenseBanner placement="modules" />
 
       {/* Modules List */}
       <div className="space-y-6">

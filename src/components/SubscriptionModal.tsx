@@ -219,7 +219,7 @@ export const SubscriptionModal: React.FC = () => {
               </div>
 
               {/* Row 5 */}
-              <div className="p-3.5 bg-slate-950/60 flex items-center justify-between">
+              <div className="p-3.5 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between">
                 <span className="font-semibold text-slate-300 flex items-center gap-2">
                   <Terminal className="h-4 w-4 text-emerald-400" />
                   Szablony DevOps & Docker
@@ -227,6 +227,18 @@ export const SubscriptionModal: React.FC = () => {
                 <div className="flex items-center gap-6">
                   <span className="text-slate-400 w-24 text-right">Tylko poradnik</span>
                   <span className="font-bold text-emerald-300 w-28 text-right">Gotowe konfiguracje</span>
+                </div>
+              </div>
+
+              {/* Row 6: Google AdSense */}
+              <div className="p-3.5 bg-slate-900/60 flex items-center justify-between">
+                <span className="font-semibold text-slate-300 flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-amber-400" />
+                  Reklamy Google AdSense
+                </span>
+                <div className="flex items-center gap-6">
+                  <span className="text-slate-400 w-24 text-right">Aktywne (Free)</span>
+                  <span className="font-bold text-emerald-400 w-28 text-right">0% Reklam (Brak)</span>
                 </div>
               </div>
 

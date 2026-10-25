@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { soundManager } from '../utils/audioFx';
+import { GoogleAdSenseBanner } from './GoogleAdSenseBanner';
 import { 
   LayoutDashboard, 
   Layers, 
@@ -200,6 +201,11 @@ export const Sidebar: React.FC = () => {
         <p className="mt-1.5 text-[10px] text-slate-400 text-center">
           {weeklyPercent >= 100 ? 'Cel zrealizowany! Wspaniała robota.' : `Pozostało ${Math.max(0, currentUser.weeklyGoalMinutes - currentUser.weeklySpentMinutes)} min do osiągnięcia celu`}
         </p>
+      </div>
+
+      {/* Google AdSense Sidebar Unit (Shown only to authenticated Free-tier students) */}
+      <div className="mt-4">
+        <GoogleAdSenseBanner placement="sidebar" variant="sidebar" />
       </div>
     </aside>
   );

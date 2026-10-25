@@ -2,20 +2,20 @@ import { Module } from '../../types';
 
 export const MODULE_1: Module = {
   id: 1,
-  title: 'Fundamenty programowania',
+  title: 'Jak działa Internet, Edytor Kodu i Terminal (Narzędzia)',
   category: 'Podstawy',
-  description: 'Poznaj architekturę sieci, model klient-serwer, system plików, terminal UNIX oraz profesjonalne techniki czytania błędów i debugowania.',
+  description: 'Gdy potrafisz już budować strony w HTML, CSS i JavaScript, dowiedz się jak przeglądarka łączy się z serwerem (HTTP/DNS), jak pracować w edytorze VS Code, używać Terminala oraz Narzędzi Deweloperskich (F12).',
   badgeName: 'Pionier Terminala',
   badgeIcon: 'Terminal',
   durationHours: 16,
   totalXp: 480,
-  prerequisites: ['Brak — kurs zaczynamy od zera'],
+  prerequisites: ['Podstawy HTML, CSS i JavaScript'],
   topics: [
-    'Jak działa internet: DNS, protokoły HTTP/HTTPS i pakiety TCP/IP',
-    'Jak komputer wykonuje kod: pamięć RAM, algorytmy, kompilacja vs interpretacja',
-    'Konfiguracja środowiska: VS Code, skróty klawiszowe, Prettier i ESLint',
-    'Terminal Bash/Zsh: nawigacja cd, ls, mkdir, rm, uprawnienia i zmienne środowiskowe .env',
-    'Sztuka debugowania: jak czytać Stack Trace i zadawać pytania w dokumentacji',
+    'Jak działa internet: przeglądarka (Klient), serwer i kody HTTP (200, 404)',
+    'Jak komputer wykonuje kod: algorytmy i zmienne w pamięci',
+    'Konfiguracja środowiska: VS Code, skróty klawiszowe i Prettier',
+    'Terminal od podstaw: tworzenie folderów i nawigacja po plikach',
+    'Narzędzia przeglądarki (DevTools F12) oraz pliki konfiguracyjne .env',
   ],
   projectBrief: 'Konfiguracja bezpiecznego środowiska programistycznego i skrypt startowy w bash.',
   lessons: [

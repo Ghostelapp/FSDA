@@ -4,6 +4,7 @@ import { Lesson } from '../types';
 import { CodeEditor } from './CodeEditor';
 import { CodeBlock } from './CodeBlock';
 import { PostLessonQuiz } from './PostLessonQuiz';
+import { GoogleAdSenseBanner } from './GoogleAdSenseBanner';
 import { checkLessonCompletionEligibility } from '../utils/codeRunner';
 import {
   parseTheoryBlocks,
@@ -777,6 +778,9 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
           )}
         </>
       )}
+
+      {/* Google AdSense Display Unit (Shown only to authenticated Free-tier students) */}
+      <GoogleAdSenseBanner placement="lesson" />
 
       {/* SECTION 7 & 10: Test wiedzy i Zaliczenie */}
       {showQuizSection && (

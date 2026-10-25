@@ -95,22 +95,7 @@ const MainContent: React.FC = () => {
         <Sidebar />
 
         <main className="flex-1 min-w-0 overflow-x-hidden pb-16 print:pb-0">
-          {activeTab === 'dashboard' && <DashboardView />}
-          {activeTab === 'modules' && <ModulesView />}
-          {activeTab === 'lesson' && <LessonDetailView lesson={currentLesson} />}
-          {activeTab === 'editor' && <SandboxView />}
-          {activeTab === 'projects' && <ProjectsView />}
-          {activeTab === 'reviews' && <ReviewCenterView />}
-          {activeTab === 'certificate' && <CertificateView />}
-          {activeTab === 'terminal' && <TerminalSimulator />}
-          {activeTab === 'sql_studio' && <SqlStudioView />}
-          {activeTab === 'interview' && <MockInterviewView />}
-          {activeTab === 'api_studio' && <ApiStudioView />}
-          {activeTab === 'event_loop' && <EventLoopView />}
-          {activeTab === 'leaderboard' && <LeaderboardChallengeView />}
-          {activeTab === 'flashcards' && <FlashcardsCheatSheetView />}
-          {activeTab === 'career' && <CareerBackupView />}
-          {activeTab === 'admin' && (
+          {activeTab === 'admin' ? (
             <ProtectedRoute
               requiredRole="admin"
               allowGuests={false}
@@ -118,8 +103,30 @@ const MainContent: React.FC = () => {
             >
               <AdminPanelView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
             </ProtectedRoute>
+          ) : (
+            <ProtectedRoute
+              requiredRole="student"
+              allowGuests={false}
+              onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            >
+              {activeTab === 'dashboard' && <DashboardView />}
+              {activeTab === 'modules' && <ModulesView />}
+              {activeTab === 'lesson' && <LessonDetailView lesson={currentLesson} />}
+              {activeTab === 'editor' && <SandboxView />}
+              {activeTab === 'projects' && <ProjectsView />}
+              {activeTab === 'reviews' && <ReviewCenterView />}
+              {activeTab === 'certificate' && <CertificateView />}
+              {activeTab === 'terminal' && <TerminalSimulator />}
+              {activeTab === 'sql_studio' && <SqlStudioView />}
+              {activeTab === 'interview' && <MockInterviewView />}
+              {activeTab === 'api_studio' && <ApiStudioView />}
+              {activeTab === 'event_loop' && <EventLoopView />}
+              {activeTab === 'leaderboard' && <LeaderboardChallengeView />}
+              {activeTab === 'flashcards' && <FlashcardsCheatSheetView />}
+              {activeTab === 'career' && <CareerBackupView />}
+              {activeTab === 'deployment' && <DeploymentGuideView />}
+            </ProtectedRoute>
           )}
-          {activeTab === 'deployment' && <DeploymentGuideView />}
         </main>
       </div>
 

@@ -3,6 +3,11 @@ import { useApp } from '../context/AppContext';
 import { MODULES_DATA } from '../data/modulesData';
 import { User, UserRole, UserStatus, UserFilters, Announcement } from '../types';
 import { filterAndSortUsers } from '../utils/userFilters';
+import {
+  isValidAdSenseClientId,
+  generateAdsTxtContent,
+  generateAdSenseHeadSnippet,
+} from '../utils/adsense';
 import { ProtectedRoute } from './ProtectedRoute';
 import { 
   ShieldCheck, 
@@ -55,11 +60,14 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
     refillUserLivesByAdmin,
     securityLogs,
     clearSecurityLogs,
+    adSenseConfig,
+    updateAdSenseConfig,
   } = useApp();
 
-  const [adminTab, setAdminTab] = useState<'students' | 'security' | 'announcements' | 'analytics' | 'curriculum'>('students');
+  const [adminTab, setAdminTab] = useState<'students' | 'security' | 'announcements' | 'analytics' | 'curriculum' | 'adsense'>('students');
   const [securityFilter, setSecurityFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
   const [isPlayStoreModalOpen, setIsPlayStoreModalOpen] = useState(false);
+  const [copiedAdSnippet, setCopiedAdSnippet] = useState<'none' | 'adstxt' | 'head'>('none');
 
   // Account Filters State
   const [filters, setFilters] = useState<UserFilters>({
@@ -280,6 +288,18 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
         >
           <BookOpen className="h-4 w-4" />
           <span>Przegląd Programu (15)</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setAdminTab('adsense')}
+          className={`pb-3 border-b-2 flex items-center gap-1.5 transition-colors ${
+            adminTab === 'adsense'
+              ? 'border-emerald-500 text-emerald-400'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Sparkles className="h-4 w-4" />
+          <span>Google AdSense (Free Konta)</span>
         </button>
         <button
           type="button"
@@ -819,6 +839,196 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: Google AdSense Monetization for Free Accounts */}
+      {adminTab === 'adsense' && (
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-emerald-500/30 bg-slate-900/80 p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Monetyzacja Darmowych Kont • Google AdSense</span>
+                </div>
+                <h3 className="mt-1 text-lg font-extrabold text-white">
+                  Konfiguracja Wydawcy AdSense i Jednostek Reklamowych
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Reklamy wyświetlają się wyłącznie zalogowanym kursantom na planie darmowym (Free). Konta PRO oraz Administrator są w 100% wolne od reklam.
+                </p>
+              </div>
+
+              <label className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-950 cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={adSenseConfig.enabled}
+                  onChange={(e) => updateAdSenseConfig({ enabled: e.target.checked })}
+                  className="h-4 w-4 accent-emerald-500 rounded"
+                />
+                <span className="text-xs font-bold text-white">
+                  {adSenseConfig.enabled ? 'AdSense Aktywne (Free)' : 'AdSense Wyłączone'}
+                </span>
+              </label>
+            </div>
+
+            {/* Publisher Client ID & Limits */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Identyfikator Wydawcy (Publisher Client ID):
+                </label>
+                <input
+                  type="text"
+                  value={adSenseConfig.clientId}
+                  onChange={(e) => updateAdSenseConfig({ clientId: e.target.value })}
+                  placeholder="ca-pub-7482910384756192"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-[11px] text-slate-400">
+                  {isValidAdSenseClientId(adSenseConfig.clientId) ? (
+                    <span className="text-emerald-400">✓ Poprawny format identyfikatora ca-pub</span>
+                  ) : (
+                    <span className="text-amber-400">Wymagany format: ca-pub-XXXXXXXXXXXXXXXX</span>
+                  )}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Dzienny limit reklam z nagrodą (+1 ❤️):
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={adSenseConfig.maxDailyRewardedAds}
+                  onChange={(e) => updateAdSenseConfig({ maxDailyRewardedAds: Number(e.target.value) || 5 })}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-[11px] text-slate-400">
+                  Maksymalna liczba serc za obejrzenie reklamy dziennie.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Odstęp czasowy między reklamami (sekundy):
+                </label>
+                <input
+                  type="number"
+                  min={5}
+                  max={600}
+                  value={adSenseConfig.rewardedCooldownSeconds}
+                  onChange={(e) => updateAdSenseConfig({ rewardedCooldownSeconds: Number(e.target.value) || 45 })}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-[11px] text-slate-400">
+                  Cooldown chroniący przed nadużyciami kliknięć.
+                </p>
+              </div>
+            </div>
+
+            {/* Individual Ad Slots & Toggles */}
+            <div className="space-y-3 pt-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Jednostki reklamowe (Ad Slots) i miejsca wyświetlania
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {(
+                  [
+                    { key: 'dashboard', label: 'Panel Główny (Dashboard Banner)' },
+                    { key: 'modules', label: 'Moduły Kursowe (In-Feed Banner)' },
+                    { key: 'lesson', label: 'Widok Lekcji (Pod teorią / przed quizem)' },
+                    { key: 'sidebar', label: 'Pasek Boczny (Sidebar Compact)' },
+                    { key: 'rewarded', label: 'Reklama z Nagrodą (+1 Serce w LivesModal)' },
+                  ] as const
+                ).map((item) => (
+                  <div
+                    key={item.key}
+                    className="p-3.5 rounded-xl border border-slate-800 bg-slate-950/80 space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-white">{item.label}</span>
+                      <input
+                        type="checkbox"
+                        checked={adSenseConfig.placements[item.key]}
+                        onChange={(e) =>
+                          updateAdSenseConfig({
+                            placements: {
+                              ...adSenseConfig.placements,
+                              [item.key]: e.target.checked,
+                            },
+                          })
+                        }
+                        className="h-4 w-4 accent-emerald-500 rounded cursor-pointer"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 block">Ad Slot ID (data-ad-slot):</span>
+                      <input
+                        type="text"
+                        value={adSenseConfig.slots[item.key]}
+                        onChange={(e) =>
+                          updateAdSenseConfig({
+                            slots: {
+                              ...adSenseConfig.slots,
+                              [item.key]: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs font-mono text-emerald-300"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ads.txt & Head Snippet Export */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-3 border-t border-slate-800">
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white">Plik weryfikacyjny /public/ads.txt</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(generateAdsTxtContent(adSenseConfig.clientId));
+                      setCopiedAdSnippet('adstxt');
+                      setTimeout(() => setCopiedAdSnippet('none'), 2000);
+                    }}
+                    className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 cursor-pointer"
+                  >
+                    {copiedAdSnippet === 'adstxt' ? 'Skopiowano!' : 'Kopiuj ads.txt'}
+                  </button>
+                </div>
+                <pre className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto">
+                  {generateAdsTxtContent(adSenseConfig.clientId)}
+                </pre>
+              </div>
+
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white">Kod skryptu Google AdSense (&lt;head&gt;)</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(generateAdSenseHeadSnippet(adSenseConfig.clientId));
+                      setCopiedAdSnippet('head');
+                      setTimeout(() => setCopiedAdSnippet('none'), 2000);
+                    }}
+                    className="text-[11px] font-bold text-emerald-400 hover:text-emerald-300 cursor-pointer"
+                  >
+                    {copiedAdSnippet === 'head' ? 'Skopiowano!' : 'Kopiuj kod HTML'}
+                  </button>
+                </div>
+                <pre className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto">
+                  {generateAdSenseHeadSnippet(adSenseConfig.clientId)}
+                </pre>
+              </div>
+            </div>
           </div>
         </div>
       )}

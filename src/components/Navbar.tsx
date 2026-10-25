@@ -236,44 +236,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
                   <p className="text-[10px] text-indigo-400 mt-1 font-mono">{levelInfo.title}</p>
                 </div>
 
-                <div className="px-2 py-1 text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
-                  Profile testowe kursantów:
-                </div>
-
-                {allUsers
-                  .filter(
-                    (u) =>
-                      u.status === 'active' &&
-                      u.role !== 'admin' &&
-                      u.id !== 'user-admin' &&
-                      u.email.trim().toLowerCase() !== 'zordonzordon1@gmail.com'
-                  )
-                  .map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => switchUser(u.id)}
-                      className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs text-left transition-colors ${
-                        isAuthenticated && u.id === currentUser.id
-                          ? 'bg-indigo-600/20 text-indigo-300 font-semibold border border-indigo-500/30'
-                          : 'text-slate-300 hover:bg-slate-800'
-                      }`}
-                    >
-                      <span className="truncate">{u.name}</span>
-                      <span className="text-[10px] text-slate-400 ml-2 shrink-0">
-                        {u.xp} XP
-                      </span>
-                    </button>
-                  ))}
-
-                <div className="border-t border-slate-800 mt-2 pt-1 space-y-0.5">
+                <div className="pt-1 space-y-0.5">
                   <button
                     type="button"
                     onClick={onOpenAuthModal}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-indigo-300 hover:bg-slate-800 font-medium"
                   >
                     <UserCheck className="h-3.5 w-3.5" />
-                    <span>{isAuthenticated ? 'Konto / Zmień profil / Rejestracja' : 'Zaloguj się / Załóż konto'}</span>
+                    <span>{isAuthenticated ? 'Ustawienia Konta i Profilu' : 'Zaloguj się / Załóż konto'}</span>
                   </button>
                   {currentUser.role === 'admin' && isAuthenticated && (
                     <button

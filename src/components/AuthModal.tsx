@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { UserRole } from '../types';
 import {
   getRandomAntiBotChallenge,
   verifyAntiBotSubmission,
@@ -19,7 +18,6 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  Sparkles,
   RefreshCw,
   KeyRound,
   LogOut,
@@ -39,7 +37,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     isAuthenticated,
     isCloudConnected,
     isSyncingCloud,
-    allUsers,
     loginUser,
     loginWithGoogle,
     syncNowToCloud,
@@ -50,7 +47,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   } = useApp();
 
   const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'profile'>('login');
-  const [demoRoleFilter, setDemoRoleFilter] = useState<'all' | 'students' | 'blocked'>('all');
 
   // Form fields (Login / Register / Forgot)
   const [email, setEmail] = useState('');
@@ -260,20 +256,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setMode('login');
   };
 
-  const publicDemoUsers = allUsers.filter(
-    (u) =>
-      u.role !== 'admin' &&
-      u.id !== 'user-admin' &&
-      u.email.trim().toLowerCase() !== 'zordonzordon1@gmail.com'
-  );
-
-  const filteredDemoUsers = publicDemoUsers.filter((u) => {
-    if (demoRoleFilter === 'students') return u.role === 'student' && u.status === 'active';
-    if (demoRoleFilter === 'blocked')
-      return u.status === 'suspended' || u.status === 'banned' || u.status === 'pending_verification';
-    return true;
-  });
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-in fade-in duration-200"
@@ -297,7 +279,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 {mode === 'profile' && 'Ustawienia Konta i Profilu'}
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-400">
-                {mode === 'login' && 'Zaloguj się przez Chmurę Google Firebase lub wybierz profil.'}
+                {mode === 'login' && 'Zaloguj się przez Chmurę Google Firebase lub adresem e-mail.'}
                 {mode === 'register' && 'Wypełnij dane i potwierdź tożsamość człowieka.'}
                 {mode === 'forgot' && 'Ustaw nowe hasło dostępowe dla swojego konta.'}
                 {mode === 'profile' && 'Zarządzaj swoimi danymi, hasłem i aktywną sesją.'}
@@ -444,135 +426,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <Cloud className="h-4 w-4 text-indigo-600" />
                 <span>{isSyncingCloud ? 'Łączenie...' : 'Zaloguj przez Google'}</span>
               </button>
-            </div>
-          )}
-
-          {/* Quick Demo Accounts Palette (Filtered) */}
-          {mode !== 'profile' && (
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-3.5 space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                  Profile testowe kursantów:
-                </span>
-                <div className="flex flex-wrap gap-1 text-[10px]">
-                  <button
-                    type="button"
-                    onClick={() => setDemoRoleFilter('all')}
-                    className={`px-2 py-0.5 rounded-lg font-medium transition-colors ${
-                      demoRoleFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-300'
-                    }`}
-                  >
-                    Wszyscy ({publicDemoUsers.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDemoRoleFilter('students')}
-                    className={`px-2 py-0.5 rounded-lg font-medium transition-colors ${
-                      demoRoleFilter === 'students'
-                        ? 'bg-slate-800 text-indigo-300'
-                        : 'text-slate-500 hover:text-slate-300'
-                    }`}
-                  >
-                    Aktywni kursanci
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDemoRoleFilter('blocked')}
-                    className={`px-2 py-0.5 rounded-lg font-medium transition-colors ${
-                      demoRoleFilter === 'blocked'
-                        ? 'bg-slate-800 text-amber-300'
-                        : 'text-slate-500 hover:text-slate-300'
-                    }`}
-                  >
-                    Zablokowani
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                {filteredDemoUsers.map((u) => {
-                  const isBlocked = u.status === 'suspended' || u.status === 'banned';
-                  const isPending = u.status === 'pending_verification';
-                  const isCurrentActive = isAuthenticated && u.id === currentUser.id;
-
-                  return (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => {
-                        setEmail(u.email);
-                        setPassword(u.password || 'password123');
-                        if (mode === 'forgot') {
-                          setSuccessMessage(`Wybrano konto ${u.email} do resetu hasła.`);
-                          setErrorMessage('');
-                          return;
-                        }
-                        setMode('login');
-                        const res = loginUser(u.email, u.password || 'password123');
-                        if (res.success) {
-                          onClose();
-                        } else {
-                          setErrorMessage(res.error || 'Konto niedostępne');
-                        }
-                      }}
-                      className={`w-full flex items-center justify-between p-2 rounded-xl border text-xs text-left transition-all ${
-                        isCurrentActive
-                          ? 'bg-indigo-950/60 border-indigo-500/50 ring-1 ring-indigo-500/30'
-                          : isBlocked
-                          ? 'bg-rose-950/20 border-rose-900/40 hover:bg-rose-900/30'
-                          : isPending
-                          ? 'bg-amber-950/20 border-amber-900/40 hover:bg-amber-900/30'
-                          : 'bg-slate-900 hover:bg-indigo-950/50 border-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <img
-                          src={
-                            u.avatar ||
-                            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80'
-                          }
-                          alt={u.name}
-                          className="h-6 w-6 rounded-lg object-cover shrink-0"
-                        />
-                        <div className="truncate">
-                          <span className="font-bold text-white block truncate">
-                            {u.name} {isCurrentActive ? '(Aktywne)' : ''}
-                          </span>
-                          <span className="text-[10px] text-slate-400 truncate">{u.email}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                        {u.isPro && (
-                          <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold">
-                            PRO
-                          </span>
-                        )}
-                        {isBlocked ? (
-                          <span className="text-[9px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded font-bold">
-                            Zablokowane
-                          </span>
-                        ) : isPending ? (
-                          <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold">
-                            Weryfikacja
-                          </span>
-                        ) : (
-                          <span
-                            className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${
-                              u.role === 'admin'
-                                ? 'bg-rose-500/20 text-rose-300'
-                                : 'bg-indigo-500/20 text-indigo-300'
-                            }`}
-                          >
-                            {u.role === 'admin' ? 'Admin' : `${u.xp} XP`}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
             </div>
           )}
 

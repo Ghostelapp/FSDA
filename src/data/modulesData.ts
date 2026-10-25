@@ -82,9 +82,11 @@ const FRIENDLY_LESSON_TITLES: Record<string, string> = {
 
 export function normalizeAndOrderModules(rawModules: Module[]): Module[] {
   return rawModules.map((mod, modIdx) => {
-    const extraLessons = MISSING_CURRICULUM_LESSONS[mod.id] || [];
+    const sourceModId = mod.id;
+    const newModuleId = modIdx + 1;
+    const extraLessons = MISSING_CURRICULUM_LESSONS[sourceModId] || [];
     const combinedLessons = [...mod.lessons, ...extraLessons];
-    const expectedIds = PEDAGOGICAL_LESSON_ORDER[mod.id] || [];
+    const expectedIds = PEDAGOGICAL_LESSON_ORDER[sourceModId] || [];
     const lessonMap = new Map<string, Lesson>();
     for (const l of combinedLessons) {
       lessonMap.set(l.id, l);
@@ -124,7 +126,7 @@ export function normalizeAndOrderModules(rawModules: Module[]): Module[] {
 
       return {
         ...lesson,
-        moduleId: mod.id,
+        moduleId: newModuleId,
         moduleTitle: mod.title,
         order: idx + 1,
         prerequisites: cleanPrerequisites,
@@ -135,19 +137,32 @@ export function normalizeAndOrderModules(rawModules: Module[]): Module[] {
 
     return {
       ...mod,
-      id: modIdx + 1,
+      id: newModuleId,
+      prerequisites:
+        modIdx === 0
+          ? ['Brak — zaczynamy całkowicie od zera!']
+          : [`Moduł ${modIdx}: ${rawModules[modIdx - 1].title.split('—')[0].trim()}`],
       totalXp: calculatedTotalXp > 0 ? calculatedTotalXp : mod.totalXp,
       lessons: normalizedLessons,
     };
   });
 }
 
+/**
+ * Pedagogical Module Order:
+ * 1. Podstawy HTML (Tworzenie Pierwszych Stron od Zera)
+ * 2. Podstawy CSS (Kolory, Czcionki i Układ Strony)
+ * 3. Podstawy JavaScript (Ożywianie Stron i Logika)
+ * 4. Narzędzia Programisty (Jak działa Internet, Edytor Kodu i Terminal)
+ * 5. Git i Współpraca Zespołowa
+ * 6–15. TypeScript, React, Node.js, Bazy danych, Bezpieczeństwo, Full Stack, Testy, DevOps, Next.js, Kariera
+ */
 const RAW_MODULES: Module[] = [
-  MODULE_1,
-  MODULE_2,
-  MODULE_3,
-  MODULE_4,
-  MODULE_5,
+  MODULE_2, // 1: Podstawy HTML
+  MODULE_3, // 2: CSS
+  MODULE_4, // 3: JavaScript
+  MODULE_1, // 4: Jak działa Internet, Edytor i Terminal
+  MODULE_5, // 5: Git
   MODULE_6,
   MODULE_7,
   MODULE_8,
@@ -157,3 +172,4 @@ const RAW_MODULES: Module[] = [
 ];
 
 export const MODULES_DATA: Module[] = normalizeAndOrderModules(RAW_MODULES);
+

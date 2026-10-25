@@ -418,15 +418,15 @@ export function getBeginnerLessonAid(lesson: Lesson): BeginnerLessonAid {
     'Nie próbuj uczyć się kodu na pamięć! Programiści w codziennej pracy rozumieją ogólną zasadę działania i zaglądają do przykładów. Przeczytaj najpierw prosty przykład poniżej, a potem zmień w nim jedną rzecz w edytorze.';
 
   if (!curated) {
-    if (lesson.moduleId === 2) {
+    if (lesson.id.startsWith('html-')) {
       defaultAnalogyTitle = 'HTML jak klocki LEGO z etykietami';
       defaultAnalogyText =
         'Każdy element na stronie to osobny klocek HTML z otwarciem (np. <znacznik>) i zamknięciem (</znacznik>). Przeglądarka układa te klocki od góry do dołu dokładnie w takiej kolejności, w jakiej je wpiszesz.';
-    } else if (lesson.moduleId === 3) {
+    } else if (lesson.id.startsWith('css-')) {
       defaultAnalogyTitle = 'CSS to stylista wnętrz Twojej strony';
       defaultAnalogyText =
         'W CSS najpierw wskazujesz palcem element, który chcesz upiększyć (tzw. selektor, np. h1 albo .karta), a potem w nawiasach klamrowych { } wpisujesz cechy wyglądu: kolor tekstu (color), tło (background) lub odstępy (padding).';
-    } else if (lesson.moduleId === 4) {
+    } else if (lesson.id.startsWith('js-')) {
       defaultAnalogyTitle = 'JavaScript to mózg i refleks strony';
       defaultAnalogyText =
         'HTML i CSS tworzą statyczny obrazek. Dopiero JavaScript sprawia, że po kliknięciu przycisku przelicza się koszyk, otwiera okienko lub sprawdza formularz.';
