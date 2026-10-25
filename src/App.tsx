@@ -90,13 +90,11 @@ const MainContent: React.FC = () => {
         </div>
       )}
 
-      {/* App Body with Sidebar */}
-      <div className="flex flex-1">
-        <div className="print:hidden">
-          <Sidebar />
-        </div>
+      {/* App Body with Sidebar (scrolls together as one page) */}
+      <div className="flex flex-1 items-stretch min-w-0">
+        <Sidebar />
 
-        <main className="flex-1 overflow-x-hidden pb-16 print:pb-0">
+        <main className="flex-1 min-w-0 overflow-x-hidden pb-16 print:pb-0">
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'modules' && <ModulesView />}
           {activeTab === 'lesson' && <LessonDetailView lesson={currentLesson} />}

@@ -315,7 +315,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       )}
 
       {/* Editor & Output Split Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-800 min-h-[420px]">
+      <div className="grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x divide-slate-800 min-h-[420px]">
         
         {/* LEFT COLUMN: Code Tabs & Interactive Syntax-Colored Editor */}
         <div className="flex flex-col bg-slate-950">

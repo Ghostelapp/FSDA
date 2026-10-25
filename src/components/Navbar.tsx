@@ -56,10 +56,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
   const levelInfo = calculateLevel(currentUser.xp);
   const isPro = currentUser.isPro;
   const currentLives = isPro ? 5 : (livesInfo.currentLives ?? currentUser.lives ?? 5);
+  const shortDisplayName = currentUser.name.replace(/\s*\(.*?\)\s*/g, '').trim();
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-950/90 backdrop-blur-md transition-colors">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="relative z-40 w-full border-b border-slate-800 bg-slate-950/95 transition-colors">
+      <div className="flex h-16 w-full items-center justify-between gap-2 sm:gap-4 px-4 sm:px-6">
         
         {/* Brand Logo */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -82,75 +83,25 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
           </button>
         </div>
 
-        {/* Desktop Quick Nav */}
-        <nav className="hidden xl:flex items-center gap-1 text-xs font-medium shrink-0">
-          <button
-            type="button"
-            onClick={() => setActiveTab('dashboard')}
-            className={`px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 ${
-              activeTab === 'dashboard' 
-                ? 'bg-slate-800/80 text-white font-semibold' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            Pulpit
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('modules')}
-            className={`px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 ${
-              activeTab === 'modules' || activeTab === 'lesson'
-                ? 'bg-slate-800/80 text-white font-semibold' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            Moduły (15)
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('editor')}
-            className={`px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 ${
-              activeTab === 'editor' 
-                ? 'bg-slate-800/80 text-white font-semibold' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            Piaskownica
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('projects')}
-            className={`px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 ${
-              activeTab === 'projects' 
-                ? 'bg-slate-800/80 text-white font-semibold' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            Projekty (12)
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('api_studio')}
-            className={`px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 ${
-              activeTab === 'api_studio' 
-                ? 'bg-slate-800/80 text-white font-semibold' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            REST API
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('certificate')}
-            className={`px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0 ${
-              activeTab === 'certificate' 
-                ? 'bg-slate-800/80 text-white font-semibold' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            Certyfikat
-          </button>
-        </nav>
+        {/* Center Quick Search & 2xl Quick Shortcuts */}
+        <div className="hidden md:flex flex-1 max-w-md lg:max-w-lg items-center justify-center gap-2 min-w-0">
+          {onOpenCommandPalette && (
+            <button
+              type="button"
+              onClick={onOpenCommandPalette}
+              aria-label="Szukaj w akademii (Ctrl+K)"
+              className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/90 hover:bg-slate-800 px-3 py-1.5 text-xs text-slate-300 transition-colors min-w-0"
+            >
+              <span className="flex items-center gap-2 truncate">
+                <Search className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+                <span className="truncate text-slate-400">Szukaj lekcji, znacznika lub tematu...</span>
+              </span>
+              <kbd className="hidden sm:inline-block rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 border border-slate-700 shrink-0">
+                Ctrl+K
+              </kbd>
+            </button>
+          )}
+        </div>
 
         {/* User stats & Profile widget */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -159,16 +110,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
               type="button"
               onClick={onOpenCommandPalette}
               aria-label="Szukaj w akademii (Ctrl+K)"
-              className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 px-2.5 py-1 text-xs text-slate-300 transition-colors whitespace-nowrap shrink-0"
+              className="md:hidden flex items-center justify-center rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 p-2 text-xs text-slate-300 transition-colors shrink-0"
             >
-              <Search className="h-3.5 w-3.5 text-indigo-400" />
-              <span className="hidden lg:inline">Szukaj</span>
-              <kbd className="hidden xl:inline text-[10px] font-mono text-slate-400">Ctrl+K</kbd>
+              <Search className="h-4 w-4 text-indigo-400" />
             </button>
           )}
 
-          {/* Google Play Store / APK Release Center Button */}
-          <PWAInstallButton className="hidden md:inline-flex" />
+          {/* Google Play Store / APK Release Center Button (visible on wide screens; also in left Sidebar) */}
+          <PWAInstallButton className="hidden 2xl:inline-flex" />
           
           {/* Hearts / Lives indicator */}
           <button
@@ -215,9 +164,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
             onClick={toggleSound}
             title={isSoundMuted ? 'Włącz efekty dźwiękowe (SFX)' : 'Wycisz efekty dźwiękowe (SFX)'}
             aria-label={isSoundMuted ? 'Włącz dźwięki' : 'Wycisz dźwięki'}
-            className="hidden sm:inline-flex rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+            className="hidden sm:inline-flex rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors shrink-0"
           >
-            {isSoundMuted ? <VolumeX className="h-4 w-4 text-slate-500" /> : <Volume2 className="h-4 w-4 text-cyan-400 animate-pulse" />}
+            {isSoundMuted ? <VolumeX className="h-4 w-4 text-slate-500" /> : <Volume2 className="h-4 w-4 text-cyan-400" />}
           </button>
 
           {/* Theme Toggle (desktop / tablet) */}
@@ -225,7 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
             type="button"
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Włącz jasny motyw' : 'Włącz ciemny motyw'}
-            className="hidden sm:inline-flex rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+            className="hidden sm:inline-flex rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors shrink-0"
           >
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
@@ -247,28 +196,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
             <button
               type="button"
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-              className="flex items-center gap-1.5 sm:gap-2 rounded-lg border border-slate-700 bg-slate-900 p-1 sm:p-1.5 text-left text-xs text-slate-200 hover:border-slate-600 transition-colors focus:outline-none"
+              className="flex items-center gap-1.5 sm:gap-2 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 sm:py-1.5 text-left text-xs text-slate-200 hover:border-slate-600 transition-colors focus:outline-none"
             >
               <img 
                 src={currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80'} 
                 alt={currentUser.name}
-                className="h-6 w-6 rounded-md object-cover ring-1 ring-indigo-500/50" 
+                className="h-6 w-6 rounded-md object-cover ring-1 ring-indigo-500/50 shrink-0" 
               />
-              <span className="hidden md:inline font-medium max-w-[100px] truncate">{currentUser.name}</span>
+              <span className="hidden md:inline font-medium max-w-[115px] xl:max-w-[140px] truncate">
+                {shortDisplayName}
+              </span>
               {!isAuthenticated ? (
-                <span className="hidden sm:inline-block bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-amber-500/30">
+                <span className="hidden xl:inline-block bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-amber-500/30">
                   Gość
                 </span>
               ) : currentUser.role === 'admin' ? (
-                <span className="hidden sm:inline-block bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-rose-500/30">
+                <span className="hidden xl:inline-block bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-rose-500/30">
                   Admin
                 </span>
-              ) : (
-                <span className="hidden sm:inline-block bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded text-[10px] font-medium border border-indigo-500/30">
-                  Kursant
-                </span>
-              )}
-              <ChevronDown className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-400" />
+              ) : null}
+              <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
             </button>
 
             {userDropdownOpen && (
@@ -353,21 +300,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
             )}
           </div>
 
-          {/* Mobile hamburger button */}
+          {/* Mobile / Tablet hamburger button (shown whenever left Sidebar is hidden: below lg) */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
-            aria-label="Otwórz menu mobilne"
+            className="lg:hidden rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white shrink-0"
+            aria-label="Otwórz menu nawigacji"
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
+      {/* Mobile & Tablet Drawer Menu (shown below lg) */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-slate-800 bg-slate-900 px-4 py-3 space-y-2 max-h-[85vh] overflow-y-auto">
+        <div className="lg:hidden border-b border-slate-800 bg-slate-900 px-4 py-3 space-y-2 max-h-[85vh] overflow-y-auto">
           
           {/* Mobile Hearts & Pro Bar */}
           <div className="flex items-center gap-2 pb-2 border-b border-slate-800">

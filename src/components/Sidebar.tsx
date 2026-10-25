@@ -113,7 +113,7 @@ export const Sidebar: React.FC = () => {
   );
 
   return (
-    <aside className="hidden lg:flex w-64 flex-col border-r border-slate-800 bg-slate-950/60 p-4 shrink-0 h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto">
+    <aside className="hidden lg:flex w-60 xl:w-64 flex-col border-r border-slate-800 bg-slate-950/60 p-4 shrink-0 print:hidden">
       <div className="space-y-2">
         {renderNavGroup('Ścieżka Nauki', primaryItems)}
         {renderNavGroup('Warsztat & Symulatory', toolsItems)}
@@ -181,7 +181,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Weekly Goal Progress Widget */}
-      <div className="mt-auto pt-4 border-t border-slate-800/80">
+      <div className="mt-6 pt-4 border-t border-slate-800/80">
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5 text-slate-300 font-medium">
             <Clock className="h-3.5 w-3.5 text-amber-400" />

@@ -41,53 +41,72 @@ export const DashboardView: React.FC = () => {
     currentUser.completedLessons.includes(l.id)
   ).length;
 
+  const displayName = currentUser.name.replace(/\s*\(.*?\)\s*/g, '').trim();
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
       
       {/* Hero Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 p-4 sm:p-8 shadow-2xl">
+      <div className="relative overflow-hidden rounded-3xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 p-5 sm:p-7 lg:p-8 shadow-2xl">
         <div className="absolute top-0 right-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 -mb-10 h-48 w-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
+        <div className="relative z-10 grid grid-cols-1 2xl:grid-cols-12 gap-6 items-center">
+          <div className="2xl:col-span-7 space-y-2.5 min-w-0">
             <div className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-300">
-              <Zap className="h-3.5 w-3.5 text-indigo-400" />
+              <Zap className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
               <span>Ścieżka od Zera do Junior Full Stack Developera</span>
             </div>
-            <h1 className="text-xl sm:text-4xl font-extrabold text-white tracking-tight">
-              Witaj ponownie, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">{currentUser.name}</span>!
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+              Witaj ponownie,{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+                {displayName}
+              </span>
+              !
             </h1>
-            <p className="text-xs sm:text-base text-slate-300">
+            <p className="text-xs sm:text-sm lg:text-base text-slate-300 leading-relaxed max-w-2xl">
               Twój aktualny stopień: <strong className="text-indigo-300 font-semibold">{levelInfo.title}</strong> (Poziom {levelInfo.level}).
               Lekcje są ułożone krok po kroku od najprostszych podstaw do zaawansowanych projektów.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full md:w-auto shrink-0">
-            <button
-              type="button"
-              onClick={() => setActiveTab('lesson', nextLesson?.id || 'fund-1')}
-              className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white px-4 sm:px-5 py-2.5 sm:py-3 text-xs font-bold transition-all shadow-lg shadow-indigo-900/50"
-            >
-              <Code2 className="h-4 w-4" />
-              <span>
-                Kontynuuj (Moduł {nextLesson?.moduleId || 1}, Lekcja {nextLesson?.order || 1}): {nextLesson ? nextLesson.title : 'Start od zera'}
-              </span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('lesson', 'fund-1')}
-              className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 px-4 py-2.5 sm:py-3 text-xs font-semibold transition-colors"
-            >
-              <span>Lekcja 1 od zera</span>
-            </button>
+          {/* Next Lesson Action Box — never clips or squeezes the heading */}
+          <div className="2xl:col-span-5 w-full rounded-2xl border border-indigo-500/30 bg-slate-950/75 p-4 sm:p-5 space-y-3.5">
+            <div className="space-y-1 min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wider text-indigo-300">
+                <span>Następny krok w nauce</span>
+                <span className="text-emerald-400 font-mono">
+                  Moduł {nextLesson?.moduleId || 1} · Lekcja {nextLesson?.order || 1}
+                </span>
+              </div>
+              <p className="text-sm sm:text-base font-bold text-white line-clamp-2 leading-snug">
+                {nextLesson ? nextLesson.title : 'Jak działa strona internetowa?'}
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab('lesson', nextLesson?.id || 'fund-1')}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 text-xs sm:text-sm font-bold transition-all shadow-lg shadow-indigo-900/50 whitespace-nowrap"
+              >
+                <Code2 className="h-4 w-4 shrink-0" />
+                <span>Kontynuuj lekcję</span>
+                <ArrowRight className="h-4 w-4 shrink-0" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('lesson', 'fund-1')}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 px-4 py-2.5 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap shrink-0"
+              >
+                <span>Lekcja 1 od zera</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Level XP Progress Bar */}
-        <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-slate-800/80">
+        <div className="mt-6 pt-4 sm:pt-5 border-t border-slate-800/80">
           <div className="flex flex-wrap items-center justify-between text-xs gap-1 mb-2">
             <div className="flex items-center gap-2">
               <span className="font-bold text-white">Poziom {levelInfo.level}</span>
