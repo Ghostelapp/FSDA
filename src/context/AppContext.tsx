@@ -428,9 +428,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const stored = localStorage.getItem(STORAGE_KEY_ADSENSE_CONFIG);
       if (stored) {
         const parsed = JSON.parse(stored);
+        const resolvedClientId =
+          !parsed.clientId || parsed.clientId === 'ca-pub-7482910384756192'
+            ? DEFAULT_ADSENSE_CONFIG.clientId
+            : parsed.clientId;
         return {
           ...DEFAULT_ADSENSE_CONFIG,
           ...parsed,
+          clientId: resolvedClientId,
           slots: { ...DEFAULT_ADSENSE_CONFIG.slots, ...(parsed.slots || {}) },
           placements: { ...DEFAULT_ADSENSE_CONFIG.placements, ...(parsed.placements || {}) },
         };

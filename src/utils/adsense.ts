@@ -10,7 +10,7 @@ const env = (typeof import.meta !== 'undefined' && (import.meta as unknown as { 
 
 export const DEFAULT_ADSENSE_CONFIG: AdSenseConfig = {
   enabled: true,
-  clientId: env.VITE_ADSENSE_CLIENT_ID || 'ca-pub-7482910384756192',
+  clientId: env.VITE_ADSENSE_CLIENT_ID || 'ca-pub-4030062340198648',
   slots: {
     dashboard: env.VITE_ADSENSE_SLOT_DASHBOARD || '1092837465',
     modules: env.VITE_ADSENSE_SLOT_MODULES || '2938475610',
@@ -162,7 +162,7 @@ export function generateAdSenseHeadSnippet(clientId: string): string {
 
 /**
  * Dynamically injects Google AdSense script and meta tag into document.head
- * when a free-tier user is active. Never loads tracking scripts for PRO users.
+ * when a free-tier user is active. Reuses the static script from index.html if present.
  */
 export function ensureAdSenseScriptLoaded(clientId: string): boolean {
   if (typeof document === 'undefined') return false;
@@ -178,12 +178,15 @@ export function ensureAdSenseScriptLoaded(clientId: string): boolean {
   }
   metaTag.content = cleanClient;
 
-  // Ensure AdSense script tag exists
-  const existingScript = document.getElementById('google-adsense-sdk') as HTMLScriptElement | null;
+  // Check if static or dynamic AdSense script tag already exists in head
   const targetSrc = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${cleanClient}`;
-  if (existingScript) {
-    if (existingScript.src !== targetSrc) {
-      existingScript.src = targetSrc;
+  const existingStaticOrDynamic = document.querySelector(
+    'script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]'
+  ) as HTMLScriptElement | null;
+
+  if (existingStaticOrDynamic) {
+    if (existingStaticOrDynamic.src !== targetSrc) {
+      existingStaticOrDynamic.src = targetSrc;
     }
     return true;
   }
