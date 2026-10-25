@@ -4,43 +4,235 @@ const SHA256_FINGERPRINT =
   'A6:5D:54:DB:3F:7C:C1:DF:CF:E4:45:1D:26:21:41:15:B8:49:58:D4:D2:D8:93:9D:AF:81:34:4F:81:23:86:23';
 const PRODUCTION_HOST = 'ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app';
 
+const EXPO_PACKAGE_JSON = JSON.stringify(
+  {
+    name: 'fullstack-academy-expo',
+    version: '2.0.0',
+    private: true,
+    main: 'App.tsx',
+    scripts: {
+      start: 'expo start',
+      android: 'expo start --android',
+      ios: 'expo start --ios',
+      web: 'expo start --web',
+      'build:apk': 'eas build -p android --profile preview',
+      'build:aab': 'eas build -p android --profile production',
+    },
+    dependencies: {
+      expo: '~52.0.0',
+      'expo-status-bar': '~2.0.0',
+      react: '18.3.1',
+      'react-native': '0.76.3',
+      'react-native-safe-area-context': '4.12.0',
+      'react-native-webview': '13.12.2',
+    },
+    devDependencies: {
+      '@babel/core': '^7.25.2',
+      '@types/react': '~18.3.12',
+      typescript: '~5.3.3',
+    },
+  },
+  null,
+  2
+);
+
+const EXPO_APP_JSON = JSON.stringify(
+  {
+    expo: {
+      name: 'Full Stack Academy',
+      slug: 'fullstack-academy',
+      version: '2.0.0',
+      orientation: 'portrait',
+      icon: './assets/icon.png',
+      userInterfaceStyle: 'dark',
+      newArchEnabled: true,
+      splash: {
+        image: './assets/splash.png',
+        resizeMode: 'contain',
+        backgroundColor: '#020617',
+      },
+      ios: {
+        supportsTablet: true,
+        bundleIdentifier: 'com.fullstackacademy.app',
+      },
+      android: {
+        package: 'com.fullstackacademy.app',
+        versionCode: 2,
+        adaptiveIcon: {
+          foregroundImage: './assets/adaptive-icon.png',
+          backgroundColor: '#020617',
+        },
+        permissions: ['INTERNET', 'ACCESS_NETWORK_STATE'],
+      },
+      extra: {
+        appUrl: `https://${PRODUCTION_HOST}`,
+      },
+    },
+  },
+  null,
+  2
+);
+
+const EXPO_EAS_JSON = JSON.stringify(
+  {
+    cli: {
+      version: '>= 12.0.0',
+      appVersionSource: 'local',
+    },
+    build: {
+      development: {
+        developmentClient: true,
+        distribution: 'internal',
+        android: { buildType: 'apk' },
+      },
+      preview: {
+        distribution: 'internal',
+        android: { buildType: 'apk' },
+      },
+      production: {
+        android: { buildType: 'app-bundle' },
+      },
+    },
+    submit: {
+      production: {},
+    },
+  },
+  null,
+  2
+);
+
+const EXPO_APP_TSX = `import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  BackHandler,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { WebView } from 'react-native-webview';
+
+const ACADEMY_URL = 'https://${PRODUCTION_HOST}';
+
+export default function App() {
+  const webViewRef = useRef<WebView>(null);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const onBackPress = () => {
+      if (canGoBack && webViewRef.current) {
+        webViewRef.current.goBack();
+        return true;
+      }
+      return false;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [canGoBack]);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#020617" />
+      {hasError ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Brak połączenia z Internetem</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              setHasError(false);
+              setIsLoading(true);
+              webViewRef.current?.reload();
+            }}
+          >
+            <Text style={styles.retryButtonText}>Spróbuj ponownie</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.webviewWrapper}>
+          <WebView
+            ref={webViewRef}
+            source={{ uri: ACADEMY_URL }}
+            style={styles.webview}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            startInLoadingState={true}
+            onNavigationStateChange={(nav) => setCanGoBack(nav.canGoBack)}
+            onLoadStart={() => setIsLoading(true)}
+            onLoadEnd={() => setIsLoading(false)}
+            onError={() => {
+              setIsLoading(false);
+              setHasError(true);
+            }}
+          />
+          {isLoading && (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="large" color="#6366f1" />
+              <Text style={styles.loadingText}>Uruchamianie Full Stack Academy...</Text>
+            </View>
+          )}
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#020617' },
+  webviewWrapper: { flex: 1, backgroundColor: '#020617' },
+  webview: { flex: 1, backgroundColor: '#020617' },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#020617',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: { marginTop: 14, color: '#cbd5e1', fontSize: 13, fontWeight: '600' },
+  errorContainer: { flex: 1, backgroundColor: '#020617', alignItems: 'center', justifyContent: 'center', padding: 28 },
+  errorTitle: { color: '#ffffff', fontSize: 18, fontWeight: '800', marginBottom: 16 },
+  retryButton: { backgroundColor: '#4f46e5', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+  retryButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
+});
+`;
+
 const QUICK_START_TXT = `========================================================================
-  FULL STACK ACADEMY — PAKIET PUBLIKACJI GOOGLE PLAY STORE (v2.0.0)
+  FULL STACK ACADEMY — PAKIET PUBLIKACJI GOOGLE PLAY & EXPO APK (v2.0.0)
   Pakiet Android: com.fullstackacademy.app | Target SDK: 35 (Android 15)
 ========================================================================
 
-WAŻNE — PRZECZYTAJ PRZED OTWARCIEM:
-Ten plik (.zip) to kompletny pakiet deweloperski zawierający projekt
-Android Studio / Gradle, klucz podpisu (android.keystore), konfigurację
-Digital Asset Links (assetlinks.json) oraz grafiki i opisy do sklepu.
+SPOSÓB 1 — NAJSZYBSZY: GENEROWANIE .APK PRZEZ EXPO (EAS BUILD W CHMURZE)
+Nie wymaga instalowania Android Studio ani Java JDK na komputerze!
+1. Wejdź do folderu expo-mobile-app:
+     cd expo-mobile-app
+     npm install
+2. Zaloguj się do darmowego konta Expo (https://expo.dev):
+     npx eas-cli login
+3. Wygeneruj instalator .APK (do bezpośredniej instalacji na telefonie):
+     npx eas-cli build -p android --profile preview
+   (Lub wygeneruj plik .AAB do sklepu Google Play Console):
+     npx eas-cli build -p android --profile production
+4. Po zakończeniu kompilacji w chmurze otrzymasz link oraz kod QR do pobrania
+   gotowego pliku .apk prosto na telefon!
 
-1. JAK ZAINSTALOWAĆ APLIKACJĘ BEZPOŚREDNIO NA TELEFONIE ANDROID (BEZ KOMPILACJI):
-   - Otwórz adres aplikacji w przeglądarce Google Chrome na telefonie Android:
+------------------------------------------------------------------------
+SPOSÓB 2 — BEZPOŚREDNIA INSTALACJA NA TELEFONIE (WebAPK / Chrome):
+1. Otwórz adres aplikacji w Chrome na telefonie Android:
      https://${PRODUCTION_HOST}
-   - Kliknij przycisk "App / Play Store" -> zakładka "Instalacja na Telefonie"
-     -> kliknij "Zainstaluj teraz" (lub w menu Chrome ⋮ wybierz "Zainstaluj aplikację").
-   - System Android automatycznie utworzy i zainstaluje natywny pakiet WebAPK.
+2. W menu Chrome (⋮) wybierz "Zainstaluj aplikację".
 
-2. JAK WYGENEROWAĆ PODPISANY PLIK .AAB (DO GOOGLE PLAY) LUB .APK (NA TELEFON):
-   Opcja A — Automatycznie w chmurze GitHub Actions (bez instalacji Android Studio):
-   - Wypchnij projekt na swoje konto GitHub.
-   - Wejdź w zakładkę "Actions" -> "Build Signed Android AAB/APK & Publish to Google Play".
-   - Kliknij "Run workflow", a po zakończeniu pobierz gotowy plik app-release.aab i app-release.apk!
-
-   Opcja B — Lokalnie na komputerze (Android Studio lub Gradle + JDK 17):
-   - Otwórz folder "android" z tego archiwum w programie Android Studio
-     LUB uruchom w terminalu:
-       cd android
-       gradle bundleRelease assembleRelease
-   - Gotowe, podpisane pliki znajdziesz w:
-     * AAB (do Google Play Console): android/app/build/outputs/bundle/release/app-release.aab
-     * APK (do instalacji na telefonie): android/app/build/outputs/apk/release/app-release.apk
-
-3. DANE KLUCZA PODPISU (KEYSTORE):
-   - Plik klucza: android/android.keystore (oraz public/play-store/android.keystore)
-   - Alias klucza: android
-   - Hasło Keystore / Klucza: fullstack2026
-   - Odcisk SHA-256: ${SHA256_FINGERPRINT}
+------------------------------------------------------------------------
+SPOSÓB 3 — ANDROID STUDIO / GRADLE (FOLDER android/):
+1. Otwórz folder "android" w Android Studio lub uruchom:
+     cd android && gradle bundleRelease assembleRelease
+2. Dane klucza podpisu (android.keystore):
+   - Alias: android
+   - Hasło: fullstack2026
+   - SHA-256: ${SHA256_FINGERPRINT}
 ========================================================================
 `;
 
@@ -160,6 +352,47 @@ async function fetchBinarySafe(url: string): Promise<Uint8Array | null> {
 }
 
 /**
+ * Downloads the dedicated Expo (React Native + EAS Build) project as a verified .zip archive
+ * so the user can build a signed .apk or .aab in Expo Cloud without installing Android Studio.
+ */
+export async function downloadVerifiedExpoZip(): Promise<void> {
+  const staticExpoZip = await fetchBinarySafe('/fullstack-academy-expo-apk.zip');
+  if (staticExpoZip && isValidZipBuffer(staticExpoZip)) {
+    triggerBlobDownload(staticExpoZip, 'fullstack-academy-expo-apk.zip', 'application/zip');
+    return;
+  }
+
+  const entries: ZipEntryInput[] = [
+    { path: 'expo-mobile-app/INSTRUKCJA_EXPO_APK.md', data: QUICK_START_TXT },
+    { path: 'expo-mobile-app/package.json', data: EXPO_PACKAGE_JSON },
+    { path: 'expo-mobile-app/app.json', data: EXPO_APP_JSON },
+    { path: 'expo-mobile-app/eas.json', data: EXPO_EAS_JSON },
+    { path: 'expo-mobile-app/App.tsx', data: EXPO_APP_TSX },
+    {
+      path: 'expo-mobile-app/babel.config.js',
+      data: `module.exports = function (api) {\n  api.cache(true);\n  return { presets: ['babel-preset-expo'] };\n};\n`,
+    },
+    {
+      path: 'expo-mobile-app/tsconfig.json',
+      data: `{\n  "extends": "expo/tsconfig.base",\n  "compilerOptions": { "strict": true }\n}\n`,
+    },
+  ];
+
+  const icon512 = await fetchBinarySafe('/pwa-512x512.png');
+  const maskable512 = await fetchBinarySafe('/pwa-maskable-512x512.png');
+  if (icon512) {
+    entries.push({ path: 'expo-mobile-app/assets/icon.png', data: icon512 });
+    entries.push({ path: 'expo-mobile-app/assets/splash.png', data: icon512 });
+  }
+  if (maskable512) {
+    entries.push({ path: 'expo-mobile-app/assets/adaptive-icon.png', data: maskable512 });
+  }
+
+  const zipBuffer = buildZipArchive(entries);
+  triggerBlobDownload(zipBuffer, 'fullstack-academy-expo-apk.zip', 'application/zip');
+}
+
+/**
  * Downloads the complete Google Play Store Release Pack as a standard, verified .zip file.
  * Verifies PKZIP magic bytes ("PK\x03\x04") and automatically falls back to building
  * a fresh PKZIP archive in memory if a proxy or cached Service Worker alters the stream.
@@ -171,9 +404,12 @@ export async function downloadVerifiedPlayStoreZip(): Promise<void> {
     return;
   }
 
-  // Fallback: build a verified PKZIP archive directly in memory
   const entries: ZipEntryInput[] = [
     { path: 'INSTRUKCJA_SZYBKI_START.txt', data: QUICK_START_TXT },
+    { path: 'expo-mobile-app/package.json', data: EXPO_PACKAGE_JSON },
+    { path: 'expo-mobile-app/app.json', data: EXPO_APP_JSON },
+    { path: 'expo-mobile-app/eas.json', data: EXPO_EAS_JSON },
+    { path: 'expo-mobile-app/App.tsx', data: EXPO_APP_TSX },
     { path: 'android/build.gradle', data: ANDROID_BUILD_GRADLE },
     { path: 'android/settings.gradle', data: `rootProject.name = "FullStackAcademy"\ninclude ':app'\n` },
     {
@@ -192,7 +428,10 @@ export async function downloadVerifiedPlayStoreZip(): Promise<void> {
     { url: '/play-store/android.keystore', zipPath: 'public/play-store/android.keystore' },
     { url: '/pwa-192x192.png', zipPath: 'public/pwa-192x192.png' },
     { url: '/pwa-512x512.png', zipPath: 'public/pwa-512x512.png' },
+    { url: '/pwa-512x512.png', zipPath: 'expo-mobile-app/assets/icon.png' },
+    { url: '/pwa-512x512.png', zipPath: 'expo-mobile-app/assets/splash.png' },
     { url: '/pwa-maskable-512x512.png', zipPath: 'public/pwa-maskable-512x512.png' },
+    { url: '/pwa-maskable-512x512.png', zipPath: 'expo-mobile-app/assets/adaptive-icon.png' },
     { url: '/play-store/feature-graphic-1024x500.png', zipPath: 'public/play-store/feature-graphic-1024x500.png' },
     { url: '/play-store/screenshot-1-dashboard.png', zipPath: 'public/play-store/screenshot-1-dashboard.png' },
     { url: '/play-store/screenshot-2-editor.png', zipPath: 'public/play-store/screenshot-2-editor.png' },

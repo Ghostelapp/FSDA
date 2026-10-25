@@ -17,7 +17,7 @@ import {
   FileText,
   ExternalLink,
   PackageCheck,
-  AlertCircle
+  Rocket
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { useApp } from '../context/AppContext';
@@ -31,6 +31,7 @@ import {
 } from '../utils/playStoreValidator';
 import {
   downloadVerifiedAssetFile,
+  downloadVerifiedExpoZip,
   downloadVerifiedPlayStoreZip,
 } from '../utils/playStoreDownload';
 
@@ -61,6 +62,19 @@ GŁÓWNE FUNKCJE APLIKACJI (WERSJA 2.0):
 
 Dla kogo?
 Kurs został zaprojektowany zarówno dla osób stawiających pierwsze kroki w branży IT, jak i początkujących programistów chcących uporządkować wiedzę i zbudować portfolio 12 projektów komercyjnych.`;
+
+const EXPO_BUILD_COMMANDS = `# 1. Wypakuj pobrany plik fullstack-academy-expo-apk.zip i wejdź do folderu:
+cd expo-mobile-app
+npm install
+
+# 2. Zaloguj się do darmowego konta Expo (https://expo.dev):
+npx eas-cli login
+
+# 3. Wygeneruj plik .APK w chmurze Expo (bez Android Studio i bez Java JDK!):
+npx eas-cli build -p android --profile preview
+
+# (Opcjonalnie) Wygeneruj plik .AAB do sklepu Google Play Console:
+npx eas-cli build -p android --profile production`;
 
 const BUILD_APK_COMMANDS = `# 1. Rozpakuj pobrane archiwum fullstack-academy-google-play-pack.zip
 unzip fullstack-academy-google-play-pack.zip -d fullstack-academy-play
@@ -134,7 +148,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
 }) => {
   const { currentUser, isAuthenticated } = useApp();
   const { isInstallable, isInstalled, install } = usePWAInstall();
-  const [activeTab, setActiveTab] = useState<'release_pack' | 'store_listing' | 'install' | 'checklist'>('release_pack');
+  const [activeTab, setActiveTab] = useState<'expo_apk' | 'release_pack' | 'store_listing' | 'install' | 'checklist'>('expo_apk');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadedSuccessId, setDownloadedSuccessId] = useState<string | null>(null);
@@ -147,6 +161,12 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
     const listingChecks = validateStoreListing(LISTING_META_CONFIG);
 
     return [
+      {
+        id: 'expo-eas',
+        title: 'Projekt Expo SDK 52 + EAS Build (buildType: "apk" & "app-bundle")',
+        passed: true,
+        details: 'Skonfigurowano expo-mobile-app (app.json, eas.json, App.tsx z obsługą gestu Wstecz i Offline) pod chmurę Expo EAS.',
+      },
       {
         id: 'twa-manifest',
         title: 'Manifest TWA (twa-manifest.json) & Keystore RSA-2048',
@@ -184,6 +204,17 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
     navigator.clipboard.writeText(text);
     setCopiedCode(id);
     setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const handleDownloadExpoZip = async () => {
+    setDownloadingId('expo_zip');
+    try {
+      await downloadVerifiedExpoZip();
+      setDownloadedSuccessId('expo_zip');
+      setTimeout(() => setDownloadedSuccessId(null), 3000);
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const handleDownloadZip = async () => {
@@ -233,10 +264,10 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
               <div>
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-emerald-400">
                   <Sparkles className="h-3 w-3" />
-                  <span>Gotowy Pakiet Produkcyjny v2.0.0 • Android 15 (SDK 35) • 91 Lekcji</span>
+                  <span>Tylko Administrator • Expo EAS Build & Google Play v2.0.0</span>
                 </div>
                 <h2 className="text-base sm:text-xl font-bold text-white mt-1">
-                  Centrum Publikacji Google Play Store (APK & AAB)
+                  Generator APK przez Expo (EAS) & Centrum Google Play
                 </h2>
               </div>
             </div>
@@ -255,6 +286,18 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
           <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-4">
             <button
               type="button"
+              onClick={() => setActiveTab('expo_apk')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'expo_apk'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <Rocket className="h-3.5 w-3.5" />
+              <span>Expo APK (EAS Build w Chmurze)</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab('release_pack')}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === 'release_pack'
@@ -263,7 +306,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
               }`}
             >
               <Download className="h-3.5 w-3.5" />
-              <span>Gotowa Paczka (.ZIP) & Keystore</span>
+              <span>Pełny Pakiet (.ZIP) & Keystore</span>
             </button>
             <button
               type="button"
@@ -287,7 +330,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
               }`}
             >
               <Smartphone className="h-3.5 w-3.5" />
-              <span>Instalacja na Telefonie</span>
+              <span>Instalacja WebAPK</span>
             </button>
             <button
               type="button"
@@ -299,13 +342,114 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
               }`}
             >
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Audyt Google Play ({passedCount}/{auditChecks.length})</span>
+              <span>Audyt ({passedCount}/{auditChecks.length})</span>
             </button>
           </div>
         </div>
 
         {/* Content Body */}
         <div className="flex-1 min-h-0 p-4 sm:p-5 overflow-y-auto space-y-4">
+          {activeTab === 'expo_apk' && (
+            <div className="space-y-4">
+              {/* Expo Cloud APK Builder Card */}
+              <div className="rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-950 p-4 sm:p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-400">
+                      Kompilacja .APK bez Android Studio i bez Java JDK (Expo SDK 52 + EAS)
+                    </span>
+                    <h3 className="text-base sm:text-lg font-extrabold text-white">
+                      Projekt Mobilny Expo React Native (`fullstack-academy-expo-apk.zip`)
+                    </h3>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      Gotowy projekt <strong>Expo + React Native WebView</strong> (<code>com.fullstackacademy.app</code>) skonfigurowany w pliku <code>eas.json</code> na budowanie bezpośredniego instalatora <strong><code>buildType: "apk"</code></strong> (profil <code>preview</code>) oraz paczki sklepowej <strong><code>buildType: "app-bundle"</code></strong> (profil <code>production</code>).
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadExpoZip}
+                    disabled={downloadingId === 'expo_zip'}
+                    className="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 disabled:opacity-60 text-white text-xs font-extrabold transition-all shadow-lg shadow-indigo-600/30 shrink-0 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {downloadedSuccessId === 'expo_zip' ? (
+                      <>
+                        <Check className="h-4 w-4 text-emerald-200" />
+                        <span>Pobrano Projekt Expo (.zip)!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        <span>
+                          {downloadingId === 'expo_zip'
+                            ? 'Przygotowywanie...'
+                            : 'Pobierz Projekt Expo (.zip)'}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Included Expo Files Summary */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-800/80 text-[11px]">
+                  <div className="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300">
+                    <span className="font-mono font-bold text-cyan-300 block">eas.json</span>
+                    <span className="text-[10px] text-slate-400">buildType: "apk" & "aab"</span>
+                  </div>
+                  <div className="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300">
+                    <span className="font-mono font-bold text-indigo-300 block">app.json</span>
+                    <span className="text-[10px] text-slate-400">com.fullstackacademy.app</span>
+                  </div>
+                  <div className="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300">
+                    <span className="font-mono font-bold text-emerald-300 block">App.tsx</span>
+                    <span className="text-[10px] text-slate-400">WebView + BackButton + Offline</span>
+                  </div>
+                  <div className="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300">
+                    <span className="font-mono font-bold text-amber-300 block">assets/*.png</span>
+                    <span className="text-[10px] text-slate-400">Ikona, Adaptive & Splash</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3 Commands to generate APK in Expo Cloud */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                    <Terminal className="h-4 w-4 text-cyan-400" />
+                    <span>Jak wygenerować plik .APK w chmurze Expo (3 proste kroki w terminalu):</span>
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(EXPO_BUILD_COMMANDS, 'expo_cmd')}
+                    className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-semibold cursor-pointer"
+                  >
+                    {copiedCode === 'expo_cmd' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>Kopiuj komendy</span>
+                  </button>
+                </div>
+
+                <pre className="rounded-xl bg-slate-900 p-3.5 font-mono text-[11px] text-emerald-300 border border-slate-800 overflow-x-auto leading-relaxed">
+                  {EXPO_BUILD_COMMANDS}
+                </pre>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs pt-1">
+                  <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span className="font-bold text-indigo-400 block mb-0.5">Krok 1: Rozpakuj .zip</span>
+                    <span className="text-[11px] text-slate-300">Rozpakuj <code>fullstack-academy-expo-apk.zip</code> na komputerze i uruchom <code>npm install</code>.</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span className="font-bold text-cyan-400 block mb-0.5">Krok 2: Uruchom EAS Build</span>
+                    <span className="text-[11px] text-slate-300">Wpisz <code>npx eas-cli build -p android --profile preview</code> — chmura Expo sama wygeneruje Keystore i skompiluje APK.</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span className="font-bold text-emerald-400 block mb-0.5">Krok 3: Pobierz .APK / Kod QR</span>
+                    <span className="text-[11px] text-slate-300">Po kompilacji otrzymasz w terminalu bezpośredni link oraz kod QR do pobrania pliku <code>.apk</code> na telefon!</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'release_pack' && (
             <div className="space-y-4">
               {/* Primary 1-Click Verified ZIP Download Bundle Card */}
@@ -313,13 +457,13 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-400">
-                      Zweryfikowane archiwum binarne PKZIP (Windows / macOS / Linux)
+                      Zweryfikowane archiwum binarne PKZIP (Expo + Android TWA + Keystore + Grafiki)
                     </span>
                     <h3 className="text-base sm:text-lg font-extrabold text-white">
                       Kompletny Pakiet Publikacji Google Play (.zip)
                     </h3>
                     <p className="text-xs text-slate-300 leading-relaxed">
-                      Standardowe archiwum <code>.zip</code> z weryfikacją sum kontrolnych CRC-32 (odporne na przechwytywanie przez Service Worker i podwójną kompresję gzip). Zawiera projekt Android Studio (<code>com.fullstackacademy.app</code>, <code>targetSdk 35</code>), klucz <code>android.keystore</code>, <code>assetlinks.json</code>, grafikę 1024x500, zrzuty ekranu 9:16 oraz instrukcję.
+                      Zawiera zarówno projekt <code>expo-mobile-app/</code>, jak i natywny projekt Android Studio <code>android/</code> (<code>targetSdk 35</code>), klucz podpisu <code>android.keystore</code>, <code>assetlinks.json</code>, grafikę 1024x500 oraz zrzuty ekranu 9:16.
                     </p>
                   </div>
 
@@ -434,20 +578,6 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                 </div>
               </div>
 
-              {/* Important Notice Box explaining ZIP vs APK on Phone */}
-              <div className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-3.5 flex items-start gap-3">
-                <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                <div className="text-xs text-slate-200 space-y-1">
-                  <p className="font-bold text-amber-300">
-                    Dlaczego wcześniejszy plik .tar.gz mógł zgłaszać błąd?
-                  </p>
-                  <p className="text-[11px] text-slate-300 leading-relaxed">
-                    1) Poprzedni link był przechwytywany przez <code>Service Worker NavigationRoute</code> oraz nagłówek <code>Content-Encoding: gzip</code> — zostało to naprawione, a pakiet jest teraz pobierany jako zweryfikowane binarnie archiwum <strong>.ZIP</strong>.<br />
-                    2) Jeśli chcesz zainstalować aplikację bezpośrednio na telefonie, <strong>nie otwieraj pliku .zip jako instalatora APK</strong> — przejdź do zakładki <button type="button" onClick={() => setActiveTab('install')} className="text-cyan-400 underline font-semibold">Instalacja na Telefonie</button>, aby zainstalować natywny pakiet WebAPK jednym kliknięciem.
-                  </p>
-                </div>
-              </div>
-
               {/* Generated Signing Credentials Box */}
               <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -498,7 +628,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-white flex items-center gap-2">
                     <Terminal className="h-4 w-4 text-indigo-400" />
-                    <span>Kompilacja podpisanego pliku .APK i .AAB (Lokalnie lub w GitHub Actions):</span>
+                    <span>Alternatywa: Kompilacja przez Gradle / Bubblewrap:</span>
                   </h4>
                   <button
                     type="button"
@@ -512,17 +642,6 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                 <pre className="rounded-xl bg-slate-900 p-3 font-mono text-[11px] text-emerald-300 border border-slate-800 overflow-x-auto leading-relaxed">
                   {BUILD_APK_COMMANDS}
                 </pre>
-                <ol className="text-xs text-slate-300 space-y-1 list-decimal list-inside pt-1">
-                  <li>
-                    Wypchnij repozytorium na GitHub — workflow <code>.github/workflows/google-play-publish.yml</code> automatycznie zbuduje podpisany plik <strong>app-release.aab</strong> oraz <strong>app-release.apk</strong> w chmurze.
-                  </li>
-                  <li>
-                    W <strong className="text-white">Google Play Console</strong> utwórz aplikację i wklej gotowe teksty oraz grafiki z zakładki <strong>„Teksty i Grafiki do Sklepu”</strong>.
-                  </li>
-                  <li>
-                    Prześlij plik <code>app-release.aab</code> do sekcji <strong>Produkcja</strong> i opublikuj w sklepie!
-                  </li>
-                </ol>
               </div>
             </div>
           )}
@@ -793,7 +912,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
         <div className="shrink-0 border-t border-slate-800 bg-slate-950/80 p-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 text-slate-400">
             <Info className="h-4 w-4 text-indigo-400 shrink-0" />
-            <span>Pakiet: <strong className="text-slate-200 font-mono">com.fullstackacademy.app</strong> • v2.0.0 • Target SDK 35 (Android 15)</span>
+            <span>Pakiet: <strong className="text-slate-200 font-mono">com.fullstackacademy.app</strong> • Expo SDK 52 & TWA v2.0.0</span>
           </div>
 
           <button

@@ -28,29 +28,42 @@ export const MODULE_1: Module = {
       durationMinutes: 25,
       xpReward: 50,
       order: 1,
-      summary: 'Zrozum jak przeglądarka komunikuje się z serwerem, czym są żądania i odpowiedzi HTTP oraz jak działa adresowanie w sieci.',
+      summary: 'Dowiedz się od absolutnych podstaw, co dzieje się po wpisaniu adresu strony w przeglądarce, czym różni się Klient od Serwera i czym są kody 200 oraz 404.',
       objectives: [
-        'Zrozumieć cykl Request -> Response w protokole HTTP/HTTPS',
-        'Poznać kody statusów HTTP (200, 301, 400, 401, 404, 500)',
-        'Rozróżniać rolę przeglądarki (klienta) od serwera aplikacyjnego',
+        'Zrozumieć prosty podział ról: Przeglądarka (Klient) pyta, a Serwer odpowiada',
+        'Rozumieć najważniejsze kody odpowiedzi: 200 (OK — strona działa) oraz 404 (Nie znaleziono)',
+        'Stworzyć swój pierwszy nagłówek <h1> i akapit <p> w edytorze kodu',
       ],
-      prerequisites: ['Brak'],
-      theoryMarkdown: `Gdy wpisujesz w przeglądarce adres URL (np. \`https://academy.dev\`), uruchamiasz łańcuch zdarzeń:
-1. **Rozwiązanie DNS (Domain Name System):** Przeglądarka tłumaczy nazwę domeny na adres IP (np. \`142.250.180.206\`), który identyfikuje fizyczny serwer w sieci.
-2. **Nawiązanie połączenia TCP/IP i uścisk dłoni TLS:** Zapewnia szyfrowane połączenie HTTPS.
-3. **Żądanie HTTP (Request):** Przeglądarka wysyła zapytanie (metoda \`GET\`, nagłówki, ciasteczka).
-4. **Odpowiedź serwera (Response):** Serwer zwraca status (np. \`200 OK\`), nagłówki oraz treść: dokument HTML, arkusze CSS i skrypty JS.
-5. **Renderowanie DOM:** Przeglądarka parsuje HTML, buduje drzewo DOM (Document Object Model) i prezentuje interfejs użytkownikowi.`,
+      prerequisites: ['Brak — zaczynamy zupełnie od zera!'],
+      theoryMarkdown: `Zanim napiszesz pierwszą linijkę kodu, zobaczmy jak działa każda strona internetowa. Nie musisz znać żadnych trudnych pojęć — cały internet opiera się na prostej rozmowie dwóch programów.
+
+**1. Dwóch bohaterów internetu: Klient i Serwer**
+- **Klient (Twoja przeglądarka):** To program, którego teraz używasz (np. Chrome, Firefox, Safari). Jego zadaniem jest wyświetlenie tekstu, przycisków i obrazków na Twoim ekranie.
+- **Serwer:** To komputer włączony 24 godziny na dobę w centrum danych, na którym zapisane są pliki strony internetowej.
+
+**2. Co dzieje się krok po kroku, gdy wpisujesz adres strony?**
+1. **Książka telefoniczna internetu (DNS):** Ludzie łatwo zapamiętują nazwy takie jak \`google.com\`, ale komputery porozumiewają się za pomocą numerów (adresów IP, np. \`142.250.180.206\`). System **DNS** automatycznie tłumaczy nazwę domeny na numer IP serwera.
+2. **Wysłanie prośby (Request HTTP):** Twoja przeglądarka wysyła do serwera krótką wiadomość: \`GET /strona-glowna\` — czyli *„Poproszę o przesłanie strony głównej”*.
+3. **Odpowiedź serwera (Response HTTP):** Serwer znajduje odpowiedni plik i odsyła go razem z krótkim kodem liczbowym:
+- **\`200 OK\`** — Wszystko się udało! Oto gotowa strona.
+- **\`404 Not Found\`** — Pod tym adresem nic nie ma (np. literówka w adresie).
+- **\`500 Server Error\`** — Serwer napotkał usterkę po swojej stronie.
+4. **Wyświetlenie strony na ekranie:** Przeglądarka odbiera przesłany kod **HTML** (tekst i strukturę), **CSS** (kolory i wygląd) oraz **JavaScript** (interakcje) i rysuje gotową stronę.`,
       codeExamples: [
         {
-          title: 'Struktura żądania HTTP (Request)',
+          title: 'Jak wygląda rozmowa przeglądarki z serwerem?',
           language: 'bash',
-          code: `GET /api/kursy HTTP/1.1
-Host: academy.dev
-User-Agent: Mozilla/5.0
-Accept: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1...`,
-          explanation: 'Metoda GET pobiera dane, nagłówek Host wskazuje domenę, a Authorization przesyła token tożsamości.',
+          code: `# 1. Przeglądarka pyta serwer (Request):
+GET /kurs-od-podstaw HTTP/1.1
+Host: akademia.pl
+
+# 2. Serwer odpowiada (Response):
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=UTF-8
+
+<h1>Witaj w Akademii</h1>
+<p>Twoja pierwsza strona została pobrana z serwera!</p>`,
+          explanation: 'Polecenie GET oznacza „pobierz stronę”, status 200 OK potwierdza sukces, a poniżej serwer przesyła zwykły kod HTML.',
         },
       ],
       stepByStepGuide: [

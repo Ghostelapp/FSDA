@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Full Stack Academy",
+    "slug": "fullstack-academy",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#020617"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fullstackacademy.app"
+    },
+    "android": {
+      "package": "com.fullstackacademy.app",
+      "versionCode": 2,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#020617"
+      },
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "extra": {
+      "appUrl": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app"
+    }
+  }
+}

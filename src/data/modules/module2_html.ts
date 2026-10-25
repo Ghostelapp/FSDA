@@ -32,21 +32,21 @@ export const MODULE_2: Module = {
       durationMinutes: 30,
       xpReward: 60,
       order: 1,
-      summary: 'Poznaj szkielet każdego współczesnego dokumentu webowego: deklarację <!DOCTYPE html>, korzeń <html>, sekcję <head> z metadanymi oraz ciało <body>.',
+      summary: 'Poznaj 4 proste elementy, z których składa się każda strona internetowa na świecie: deklarację <!DOCTYPE html>, korzeń <html>, zaplecze <head> oraz widoczną część <body>.',
       objectives: [
-        'Zrozumieć rolę deklaracji <!DOCTYPE html> w zapobieganiu trybowi Quirks Mode',
-        'Prawidłowo konfigurować tagi <meta charset="UTF-8"> oraz viewport dla urządzeń mobilnych',
-        'Zbudować hierarchiczne drzewo elementów DOM z nagłówkami h1-h6 i akapitami',
+        'Zrozumieć 4 podstawowe części każdego pliku HTML (DOCTYPE, html, head, body)',
+        'Wiedzieć dlaczego polskie znaki (ą, ę, ł) wymagają linijki <meta charset="UTF-8">',
+        'Stworzyć swój pierwszy nagłówek <h1> oraz akapit tekstu <p> wewnątrz sekcji <body>',
       ],
-      prerequisites: ['Podstawowa obsługa edytora tekstu'],
-      theoryMarkdown: `Dokument HTML to plik tekstowy interpretowany przez silnik przeglądarki (np. Blink w Chrome, Gecko w Firefox). 
+      prerequisites: ['Brak — zaczynamy naukę HTML od podstaw'],
+      theoryMarkdown: `Każda strona internetowa to zwykły plik tekstowy z końcówką \`.html\`. Składa się on ze **znaczników (tagów)** zapisywanych w nawiasach ostrokątnych, np. \`<h1>Tytuł</h1>\`. Większość znaczników występuje w parach: znacznik otwierający \`<h1>\` oraz zamykający z ukośnikiem \`</h1>\`.
 
-Każda profesjonalna strona zaczyna się od tzw. **boilerplate**:
+Każda nowoczesna strona zaczyna się od tych **4 prostych klocków**:
 
-1. **\`<!DOCTYPE html>\`**: Informuje przeglądarkę, że używamy standardu HTML5. Bez tego dokument przełącza się w archaiczny "Quirks Mode", w którym style i wymiary box-model renderowane są nieprawidłowo.
-2. **\`<html lang="pl">\`**: Korzeń dokumentu z deklaracją języka, kluczowy dla syntezatorów mowy (screen readers) i robotów wyszukiwarek.
-3. **\`<head>\`**: Sekcja metadanych niewidocznych bezpośrednio na ekranie. Zawiera kodowanie znaków, tytuł karty, konfigurację responsywności (viewport) i linki do arkuszy stylów.
-4. **\`<body>\`**: Część widoczna dla użytkownika, w której umieszczamy treść, komponenty i multimedia.`,
+1. **\`<!DOCTYPE html>\`**: Pierwsza linijka na samej górze pliku. Mówi przeglądarce wprost: *„To jest nowoczesna strona napisana w standardzie HTML5”*.
+2. **\`<html lang="pl">\`**: Główny kontener otaczający całą stronę. Dopisek \`lang="pl"\` informuje przeglądarkę i tłumacza Google, że strona jest po polsku.
+3. **\`<head>\`**: Niewidoczne zaplecze techniczne strony. Tutaj wpisujemy tytuł widoczny na karcie przeglądarki (\`<title>\`) oraz obsługę polskich znaków (\`<meta charset="UTF-8">\`).
+4. **\`<body>\`**: Widoczna część strony! Wszystko, co wpiszesz pomiędzy \`<body>\` a \`</body>\` — nagłówki \`<h1>\`, akapity \`<p>\`, zdjęcia i przyciski — pojawi się na ekranie użytkownika.`,
       codeExamples: [
         {
           title: 'Wzorcowy szkielet dokumentu HTML5',

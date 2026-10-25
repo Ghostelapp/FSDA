@@ -96,4 +96,15 @@ test('buildZipArchive produces valid PKZIP and public/fullstack-academy-google-p
   );
   assert.equal(isValidZipBuffer(diskZip), true, 'public/fullstack-academy-google-play-pack.zip must be a valid PKZIP archive');
   assert.ok(diskZip.length > 500_000, 'ZIP archive should include all Play Store graphics, keystore, and Android project');
+
+  const expoZip = new Uint8Array(
+    fs.readFileSync(path.resolve('public/fullstack-academy-expo-apk.zip'))
+  );
+  assert.equal(isValidZipBuffer(expoZip), true, 'public/fullstack-academy-expo-apk.zip must be a valid PKZIP archive');
+  assert.ok(expoZip.length > 20_000, 'Expo ZIP archive should include all Expo project files and PNG assets');
+
+  const easConfig = JSON.parse(fs.readFileSync(path.resolve('expo-mobile-app/eas.json'), 'utf-8'));
+  assert.equal(easConfig.build.preview.android.buildType, 'apk');
+  assert.equal(easConfig.build.production.android.buildType, 'app-bundle');
 });
+

@@ -20,7 +20,7 @@ import {
 export const ModulesView: React.FC = () => {
   const { currentUser, setActiveTab } = useApp();
   const [selectedCategory, setSelectedCategory] = useState<string>('Wszystkie');
-  const [expandedModuleId, setExpandedModuleId] = useState<number | null>(2); // Default expand HTML module
+  const [expandedModuleId, setExpandedModuleId] = useState<number | null>(1); // Default expand Module 1 (Fundamenty od zera)
 
   const categories = [
     'Wszystkie',
@@ -40,21 +40,32 @@ export const ModulesView: React.FC = () => {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
       
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 uppercase tracking-wider">
-          <Layers className="h-4 w-4" />
-          <span>Kompletny Program Nauki</span>
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400">
+            <Layers className="h-4 w-4" />
+            <span>Kompletny Program Nauki · Od Zera do Junior Full Stack</span>
+          </div>
+          <h1 className="mt-2 text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+            Ścieżka Full Stack Developera (15 Modułów)
+          </h1>
+          <p className="mt-3 text-sm sm:text-base text-slate-300 max-w-3xl leading-relaxed">
+            Każda lekcja zawiera tryb <strong className="text-white font-semibold">„Wyjaśnij od zera”</strong> z codziennymi analogiami, słowniczkiem prostych pojęć oraz podpowiedziami krok po kroku do ćwiczeń.
+          </p>
         </div>
-        <h1 className="mt-2 text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-          Ścieżka Full Stack Developera (15 Modułów)
-        </h1>
-        <p className="mt-3 text-sm sm:text-base text-slate-300 max-w-3xl leading-relaxed">
-          Od zera do samodzielnego architekta aplikacji. Każdy moduł łączy teorię, dobre praktyki branżowe,
-          interaktywne ćwiczenia z weryfikacją testów oraz praktyczne projekty komercyjne.
-        </p>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('lesson', 'fund-1')}
+          className="inline-flex items-center gap-2.5 self-start lg:self-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold transition-colors shadow-lg shadow-emerald-950/50 shrink-0"
+        >
+          <BookOpen className="h-4 w-4" />
+          <span>Zacznij od Lekcji 1 (Całkowicie od zera)</span>
+          <ArrowRight className="h-4 w-4" />
+        </button>
       </div>
 
-      {/* Category Pills */}
+      {/* Category Filter Controls */}
       <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-4">
         {categories.map((cat) => (
           <button
@@ -99,18 +110,23 @@ export const ModulesView: React.FC = () => {
                     {module.id}
                   </div>
 
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                      <span className="font-semibold text-slate-300">
                         {module.category}
                       </span>
-                      <span className="text-xs text-indigo-400 font-semibold flex items-center gap-1">
+                      <span aria-hidden="true">·</span>
+                      <span className="text-emerald-400 font-medium">
+                        {module.id <= 2 ? 'Poziom: Start od Zera' : module.id <= 5 ? 'Poziom: Podstawy' : module.id <= 10 ? 'Poziom: Średniozaawansowany' : 'Poziom: Zaawansowany'}
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <span className="text-indigo-400 font-semibold flex items-center gap-1">
                         <Award className="h-3.5 w-3.5" />
                         Odznaka: {module.badgeName}
                       </span>
                     </div>
                     <h3 className="text-lg sm:text-xl font-bold text-white">{module.title}</h3>
-                    <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">{module.description}</p>
+                    <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">{module.description}</p>
                   </div>
                 </div>
 
@@ -151,10 +167,10 @@ export const ModulesView: React.FC = () => {
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
                       Kluczowe zagadnienia modułu:
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-sm text-slate-300">
                       {module.topics.map((t, idx) => (
-                        <div key={idx} className="flex items-start gap-2">
-                          <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
+                        <div key={idx} className="flex items-start gap-2.5">
+                          <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0 mt-1" />
                           <span>{t}</span>
                         </div>
                       ))}
@@ -163,9 +179,9 @@ export const ModulesView: React.FC = () => {
 
                   {/* Project Brief if present */}
                   {module.projectBrief && (
-                    <div className="p-4 rounded-xl bg-indigo-950/20 border border-indigo-500/30 text-xs">
+                    <div className="p-4 rounded-xl bg-indigo-950/20 border border-indigo-500/30 text-sm">
                       <span className="font-bold text-indigo-300 block mb-1">Projekt praktyczny modułu:</span>
-                      <p className="text-slate-300">{module.projectBrief}</p>
+                      <p className="text-slate-200">{module.projectBrief}</p>
                     </div>
                   )}
 
@@ -173,9 +189,9 @@ export const ModulesView: React.FC = () => {
                   {module.lessons.length > 0 ? (
                     <div className="space-y-3 pt-2">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        Dostępne lekcje ({module.lessons.length}):
+                        Lekcje w tym module ({module.lessons.length} — ułożone od najprostszych do zaawansowanych):
                       </h4>
-                      <div className="space-y-2">
+                      <div className="space-y-2.5">
                         {module.lessons.map((lesson) => {
                           const isDone = currentUser.completedLessons.includes(lesson.id);
 
@@ -183,29 +199,38 @@ export const ModulesView: React.FC = () => {
                             <div
                               key={lesson.id}
                               onClick={() => setActiveTab('lesson', lesson.id)}
-                              className="flex items-center justify-between p-3.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800 hover:border-indigo-500/40 transition-all cursor-pointer group"
+                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800/90 hover:border-indigo-500/40 transition-all cursor-pointer group"
                             >
-                              <div className="flex items-center gap-3">
-                                <div className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold ${
-                                  isDone ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'
+                              <div className="flex items-start gap-3.5">
+                                <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                                  isDone ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-300'
                                 }`}>
                                   {isDone ? <CheckCircle2 className="h-4 w-4" /> : lesson.order}
                                 </div>
-                                <div>
-                                  <h5 className="text-xs sm:text-sm font-bold text-white group-hover:text-indigo-400 transition-colors">
+                                <div className="space-y-1">
+                                  <h5 className="text-sm sm:text-base font-bold text-white group-hover:text-indigo-400 transition-colors">
                                     {lesson.title}
                                   </h5>
-                                  <span className="text-[11px] text-slate-400">
-                                    {lesson.durationMinutes} min • +{lesson.xpReward} XP
-                                  </span>
+                                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
+                                    {lesson.summary}
+                                  </p>
+                                  <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs text-slate-400">
+                                    <span>{lesson.durationMinutes} min</span>
+                                    <span aria-hidden="true">·</span>
+                                    <span className="text-indigo-300 font-semibold">+{lesson.xpReward} XP</span>
+                                    <span aria-hidden="true">·</span>
+                                    <span className="text-emerald-400">
+                                      {lesson.order <= 2 && module.id <= 3 ? 'Start od zera (z analogią)' : 'Zawiera wyjaśnienie krok po kroku'}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
 
                               <button
                                 type="button"
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/30 text-indigo-300 group-hover:bg-indigo-600 group-hover:text-white text-xs font-semibold transition-all"
+                                className="self-end sm:self-center shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600/30 text-indigo-200 group-hover:bg-indigo-600 group-hover:text-white text-xs font-semibold transition-all"
                               >
-                                <span>{isDone ? 'Powtórz' : 'Otwórz'}</span>
+                                <span>{isDone ? 'Powtórz lekcję' : 'Otwórz lekcję'}</span>
                                 <ArrowRight className="h-3.5 w-3.5" />
                               </button>
                             </div>
