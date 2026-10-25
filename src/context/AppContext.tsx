@@ -1002,11 +1002,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return { success: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Nie udało się zalogować przez Google.';
+      const errCode = (err as { code?: string })?.code || '';
+      const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'aktualna-domena';
+
+      if (msg.includes('popup-closed-by-user') || errCode === 'auth/popup-closed-by-user') {
+        return {
+          success: false,
+          error: 'Okno logowania Google zostało zamknięte przed zakończeniem autoryzacji.',
+        };
+      }
+
+      if (msg.includes('unauthorized-domain') || errCode === 'auth/unauthorized-domain') {
+        const domainError = `Domena "${currentHostname}" wymaga autoryzacji w Firebase Console (Authentication -> Settings -> Authorized domains -> Add domain). Możesz też od razu zalogować się lub założyć konto przez e-mail i hasło poniżej.`;
+        showToast(
+          `Domena ${currentHostname} nie jest jeszcze na liście Authorized domains w Firebase. Użyj logowania e-mail lub dodaj domenę w konsoli Firebase.`,
+          'danger'
+        );
+        return {
+          success: false,
+          error: `Błąd autoryzacji Firebase Google (auth/unauthorized-domain): ${domainError}`,
+        };
+      }
+
+      showToast(`Błąd logowania Google: ${msg}`, 'danger');
       return {
         success: false,
-        error: msg.includes('popup-closed-by-user')
-          ? 'Okno logowania Google zostało zamknięte przed zakończeniem autoryzacji.'
-          : `Błąd autoryzacji Firebase Google: ${msg}`,
+        error: `Błąd autoryzacji Firebase Google: ${msg}`,
       };
     } finally {
       setIsSyncingCloud(false);

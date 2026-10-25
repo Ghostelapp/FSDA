@@ -22,6 +22,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   fallbackMessage,
 }) => {
   const { currentUser, isAuthenticated, isSyncingCloud, loginWithGoogle, setActiveTab } = useApp();
+  const [googleAuthError, setGoogleAuthError] = React.useState<string>('');
+  const [copiedHost, setCopiedHost] = React.useState(false);
 
   const access = checkProtectedRouteAccess(currentUser, isAuthenticated, {
     requiredRole,
@@ -42,6 +44,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       window.dispatchEvent(new CustomEvent('akademia:open-auth-modal'));
     }
   };
+
+  const handleGoogleLoginClick = async () => {
+    setGoogleAuthError('');
+    const res = await loginWithGoogle();
+    if (!res.success && res.error) {
+      setGoogleAuthError(res.error);
+    }
+  };
+
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
   return (
     <section
@@ -111,13 +123,50 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           )}
         </div>
 
+        {googleAuthError && (
+          <div className="rounded-2xl bg-rose-950/50 border border-rose-500/40 p-4 text-xs text-rose-200 space-y-2.5">
+            <p className="font-semibold">{googleAuthError}</p>
+            {googleAuthError.includes('unauthorized-domain') && (
+              <div className="rounded-xl bg-slate-950/90 border border-rose-500/30 p-3 space-y-2 text-[11px] text-slate-300">
+                <p>
+                  Dodaj domenę <strong className="text-emerald-300 font-mono">{currentHostname}</strong> w{' '}
+                  <a
+                    href="https://console.firebase.google.com/project/gen-lang-client-0198524417/authentication/settings"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-400 hover:text-indigo-300 underline font-semibold"
+                  >
+                    Firebase Console (Authentication → Settings → Authorized domains)
+                  </a>{' '}
+                  lub zaloguj się od razu kontem e-mail przyciskiem obok.
+                </p>
+                <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 font-mono text-emerald-300">
+                  <span className="truncate">{currentHostname}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator.clipboard) {
+                        void navigator.clipboard.writeText(currentHostname);
+                        setCopiedHost(true);
+                      }
+                    }}
+                    className="shrink-0 px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-sans font-semibold text-[10px]"
+                  >
+                    {copiedHost ? 'Skopiowano!' : 'Kopiuj domenę'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
           {access.reason === 'guest_blocked' ? (
             <>
               <button
                 type="button"
-                onClick={() => void loginWithGoogle()}
+                onClick={() => void handleGoogleLoginClick()}
                 disabled={isSyncingCloud}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-xs sm:text-sm font-bold transition-colors shadow-lg cursor-pointer disabled:opacity-60"
               >

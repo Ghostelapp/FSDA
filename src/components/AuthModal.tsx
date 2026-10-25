@@ -431,9 +431,69 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
           {/* Feedback Messages */}
           {errorMessage && (
-            <div className="p-3.5 rounded-2xl bg-rose-950/50 border border-rose-500/40 text-xs text-rose-200 flex items-start gap-2.5 animate-in slide-in-from-top-1">
-              <ShieldAlert className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
-              <div className="flex-1 leading-relaxed">{errorMessage}</div>
+            <div className="p-3.5 rounded-2xl bg-rose-950/50 border border-rose-500/40 text-xs text-rose-200 space-y-2.5 animate-in slide-in-from-top-1">
+              <div className="flex items-start gap-2.5">
+                <ShieldAlert className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                <div className="flex-1 leading-relaxed">{errorMessage}</div>
+              </div>
+              {errorMessage.includes('unauthorized-domain') && (
+                <div className="rounded-xl bg-slate-950/90 border border-rose-500/30 p-3 space-y-2 text-[11px] text-slate-300">
+                  <p className="font-bold text-amber-300">
+                    Jak odblokować logowanie Google dla tej domeny (1 minuta):
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1 text-slate-300">
+                    <li>
+                      Otwórz{' '}
+                      <a
+                        href="https://console.firebase.google.com/project/gen-lang-client-0198524417/authentication/settings"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-400 hover:text-indigo-300 underline font-semibold"
+                      >
+                        Firebase Console → Authentication → Settings → Authorized domains
+                      </a>
+                    </li>
+                    <li>
+                      Kliknij <strong>Add domain</strong> i wklej aktualną domenę aplikacji:
+                    </li>
+                  </ol>
+                  <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 font-mono text-[11px] text-emerald-300">
+                    <span className="truncate">
+                      {typeof window !== 'undefined' ? window.location.hostname : 'localhost'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const host = typeof window !== 'undefined' ? window.location.hostname : '';
+                        if (host && navigator.clipboard) {
+                          void navigator.clipboard.writeText(host);
+                          setSuccessMessage(`Skopiowano domenę: ${host}`);
+                        }
+                      }}
+                      className="shrink-0 px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-sans font-semibold text-[10px]"
+                    >
+                      Kopiuj domenę
+                    </button>
+                  </div>
+                  <div className="pt-1 flex items-center justify-between gap-2 border-t border-slate-800">
+                    <span className="text-slate-400">
+                      Nie chcesz czekać? Załóż darmowe konto e-mail poniżej:
+                    </span>
+                    {mode !== 'register' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('register');
+                          setErrorMessage('');
+                        }}
+                        className="shrink-0 px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-300 font-semibold"
+                      >
+                        Rejestracja e-mail →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
