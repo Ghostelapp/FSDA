@@ -12,9 +12,20 @@ import {
 } from 'lucide-react';
 import { CodeBlock } from './CodeBlock';
 import { AndroidPlayStoreModal } from './AndroidPlayStoreModal';
+import { downloadVerifiedPlayStoreZip } from '../utils/playStoreDownload';
 
 export const DeploymentGuideView: React.FC = () => {
   const [isPlayStoreModalOpen, setIsPlayStoreModalOpen] = useState(false);
+  const [isDownloadingZip, setIsDownloadingZip] = useState(false);
+
+  const handleDownloadZip = async () => {
+    setIsDownloadingZip(true);
+    try {
+      await downloadVerifiedPlayStoreZip();
+    } finally {
+      setIsDownloadingZip(false);
+    }
+  };
 
   const localSetupCommands = `# 1. Klonowanie repozytorium platformy
 git clone https://github.com/twoja-organizacja/fullstack-developer-academy.git
@@ -166,14 +177,15 @@ npx @bubblewrap/cli build`;
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <a
-              href="/fullstack-academy-google-play-pack.tar.gz"
-              download="fullstack-academy-google-play-pack.tar.gz"
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-md shadow-emerald-600/20"
+            <button
+              type="button"
+              onClick={handleDownloadZip}
+              disabled={isDownloadingZip}
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-md shadow-emerald-600/20 cursor-pointer"
             >
               <Download className="h-4 w-4" />
-              <span>Pobierz Pakiet (.tar.gz)</span>
-            </a>
+              <span>{isDownloadingZip ? 'Weryfikacja...' : 'Pobierz Pakiet (.zip)'}</span>
+            </button>
             <button
               type="button"
               onClick={() => setIsPlayStoreModalOpen(true)}

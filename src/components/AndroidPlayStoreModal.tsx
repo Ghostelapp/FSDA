@@ -16,7 +16,8 @@ import {
   Image as ImageIcon,
   FileText,
   ExternalLink,
-  PackageCheck
+  PackageCheck,
+  AlertCircle
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import {
@@ -27,6 +28,10 @@ import {
   type PlayStoreListingMeta,
   type TwaManifestConfig,
 } from '../utils/playStoreValidator';
+import {
+  downloadVerifiedAssetFile,
+  downloadVerifiedPlayStoreZip,
+} from '../utils/playStoreDownload';
 
 interface AndroidPlayStoreModalProps {
   isOpen: boolean;
@@ -56,11 +61,11 @@ GŁÓWNE FUNKCJE APLIKACJI (WERSJA 2.0):
 Dla kogo?
 Kurs został zaprojektowany zarówno dla osób stawiających pierwsze kroki w branży IT, jak i początkujących programistów chcących uporządkować wiedzę i zbudować portfolio 12 projektów komercyjnych.`;
 
-const BUILD_APK_COMMANDS = `# 1. Rozpakuj pobrany pakiet produkcyjny Google Play
-tar -xzvf fullstack-academy-google-play-pack.tar.gz
+const BUILD_APK_COMMANDS = `# 1. Rozpakuj pobrane archiwum fullstack-academy-google-play-pack.zip
+unzip fullstack-academy-google-play-pack.zip -d fullstack-academy-play
 
 # 2. Opcja A — Zbuduj podpisany plik .aab i .apk przez Gradle (Android SDK 35)
-cd android && gradle bundleRelease assembleRelease
+cd fullstack-academy-play/android && gradle bundleRelease assembleRelease
 # Wynik AAB (do Google Play): android/app/build/outputs/bundle/release/app-release.aab
 # Wynik APK (na telefon):     android/app/build/outputs/apk/release/app-release.apk
 
@@ -129,6 +134,8 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
   const { isInstallable, isInstalled, install } = usePWAInstall();
   const [activeTab, setActiveTab] = useState<'release_pack' | 'store_listing' | 'install' | 'checklist'>('release_pack');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadedSuccessId, setDownloadedSuccessId] = useState<string | null>(null);
 
   const auditChecks = useMemo(() => {
     const twaRes = validateTwaManifest(TWA_MANIFEST_CONFIG);
@@ -173,6 +180,34 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
     navigator.clipboard.writeText(text);
     setCopiedCode(id);
     setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const handleDownloadZip = async () => {
+    setDownloadingId('zip');
+    try {
+      await downloadVerifiedPlayStoreZip();
+      setDownloadedSuccessId('zip');
+      setTimeout(() => setDownloadedSuccessId(null), 3000);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleDownloadSingle = async (
+    id: string,
+    url: string,
+    filename: string,
+    mimeType: string,
+    fallbackText?: string
+  ) => {
+    setDownloadingId(id);
+    try {
+      await downloadVerifiedAssetFile(url, filename, mimeType, fallbackText);
+      setDownloadedSuccessId(id);
+      setTimeout(() => setDownloadedSuccessId(null), 2500);
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   return createPortal(
@@ -224,7 +259,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
               }`}
             >
               <Download className="h-3.5 w-3.5" />
-              <span>Gotowa Paczka APK/AAB & Keystore</span>
+              <span>Gotowa Paczka (.ZIP) & Keystore</span>
             </button>
             <button
               type="button"
@@ -269,65 +304,143 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
         <div className="flex-1 min-h-0 p-4 sm:p-5 overflow-y-auto space-y-4">
           {activeTab === 'release_pack' && (
             <div className="space-y-4">
-              {/* Primary 1-Click Download Bundle Card */}
+              {/* Primary 1-Click Verified ZIP Download Bundle Card */}
               <div className="rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-950 p-4 sm:p-5 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-400">
-                      Wszystkie pliki wygenerowane automatycznie (v2.0.0)
+                      Zweryfikowane archiwum binarne PKZIP (Windows / macOS / Linux)
                     </span>
                     <h3 className="text-base sm:text-lg font-extrabold text-white">
-                      Kompletny Pakiet Publikacji Google Play (.tar.gz)
+                      Kompletny Pakiet Publikacji Google Play (.zip)
                     </h3>
                     <p className="text-xs text-slate-300 leading-relaxed">
-                      Zawiera skonfigurowany projekt Android Studio / Gradle (<code>com.fullstackacademy.app</code>, <code>targetSdk 35</code>, <code>proguard-rules.pro</code>), klucz podpisu <code>android.keystore</code>, <code>assetlinks.json</code> z odciskiem SHA-256, grafikę 1024x500, prawdziwe zrzuty ekranu 9:16 oraz potok CI/CD budujący podpisane pliki <strong>.apk</strong> i <strong>.aab</strong>.
+                      Standardowe archiwum <code>.zip</code> z weryfikacją sum kontrolnych CRC-32 (odporne na przechwytywanie przez Service Worker i podwójną kompresję gzip). Zawiera projekt Android Studio (<code>com.fullstackacademy.app</code>, <code>targetSdk 35</code>), klucz <code>android.keystore</code>, <code>assetlinks.json</code>, grafikę 1024x500, zrzuty ekranu 9:16 oraz instrukcję.
                     </p>
                   </div>
 
-                  <a
-                    href="/fullstack-academy-google-play-pack.tar.gz"
-                    download="fullstack-academy-google-play-pack.tar.gz"
-                    className="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-extrabold transition-all shadow-lg shadow-indigo-600/30 shrink-0 flex items-center justify-center gap-2"
+                  <button
+                    type="button"
+                    onClick={handleDownloadZip}
+                    disabled={downloadingId === 'zip'}
+                    className="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 disabled:opacity-60 text-white text-xs font-extrabold transition-all shadow-lg shadow-indigo-600/30 shrink-0 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Download className="h-4 w-4" />
-                    <span>Pobierz Pełny Pakiet (.tar.gz)</span>
-                  </a>
+                    {downloadedSuccessId === 'zip' ? (
+                      <>
+                        <Check className="h-4 w-4 text-emerald-200" />
+                        <span>Pobrano Pakiet (.zip)!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        <span>
+                          {downloadingId === 'zip'
+                            ? 'Weryfikacja i pobieranie...'
+                            : 'Pobierz Pełny Pakiet (.zip)'}
+                        </span>
+                      </>
+                    )}
+                  </button>
                 </div>
 
-                {/* Individual Quick Downloads */}
+                {/* Individual Verified Quick Downloads */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-800/80">
-                  <a
-                    href="/play-store/android.keystore"
-                    download="android.keystore"
-                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-amber-300 transition-colors"
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'keystore',
+                        '/play-store/android.keystore',
+                        'android.keystore',
+                        'application/octet-stream'
+                      )
+                    }
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-amber-300 transition-colors cursor-pointer"
                   >
-                    <KeyRound className="h-3.5 w-3.5 shrink-0" />
+                    {downloadedSuccessId === 'keystore' ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    ) : (
+                      <KeyRound className="h-3.5 w-3.5 shrink-0" />
+                    )}
                     <span className="truncate">android.keystore</span>
-                  </a>
-                  <a
-                    href="/twa-manifest.json"
-                    download="twa-manifest.json"
-                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-cyan-300 transition-colors"
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'twa',
+                        '/twa-manifest.json',
+                        'twa-manifest.json',
+                        'application/json',
+                        JSON.stringify(TWA_MANIFEST_CONFIG, null, 2)
+                      )
+                    }
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-cyan-300 transition-colors cursor-pointer"
                   >
-                    <FileCode2 className="h-3.5 w-3.5 shrink-0" />
+                    {downloadedSuccessId === 'twa' ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    ) : (
+                      <FileCode2 className="h-3.5 w-3.5 shrink-0" />
+                    )}
                     <span className="truncate">twa-manifest.json</span>
-                  </a>
-                  <a
-                    href="/.well-known/assetlinks.json"
-                    download="assetlinks.json"
-                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-emerald-300 transition-colors"
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'assetlinks',
+                        '/.well-known/assetlinks.json',
+                        'assetlinks.json',
+                        'application/json',
+                        JSON.stringify(ASSET_LINKS_CONFIG, null, 2)
+                      )
+                    }
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-emerald-300 transition-colors cursor-pointer"
                   >
-                    <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                    {downloadedSuccessId === 'assetlinks' ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    ) : (
+                      <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                    )}
                     <span className="truncate">assetlinks.json</span>
-                  </a>
-                  <a
-                    href="/play-store/karta-sklepu-play.json"
-                    download="karta-sklepu-play.json"
-                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-indigo-300 transition-colors"
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'listing',
+                        '/play-store/karta-sklepu-play.json',
+                        'karta-sklepu-play.json',
+                        'application/json',
+                        JSON.stringify(LISTING_META_CONFIG, null, 2)
+                      )
+                    }
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-indigo-300 transition-colors cursor-pointer"
                   >
-                    <FileText className="h-3.5 w-3.5 shrink-0" />
+                    {downloadedSuccessId === 'listing' ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    ) : (
+                      <FileText className="h-3.5 w-3.5 shrink-0" />
+                    )}
                     <span className="truncate">Metadane Sklepu</span>
-                  </a>
+                  </button>
+                </div>
+              </div>
+
+              {/* Important Notice Box explaining ZIP vs APK on Phone */}
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-3.5 flex items-start gap-3">
+                <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-slate-200 space-y-1">
+                  <p className="font-bold text-amber-300">
+                    Dlaczego wcześniejszy plik .tar.gz mógł zgłaszać błąd?
+                  </p>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    1) Poprzedni link był przechwytywany przez <code>Service Worker NavigationRoute</code> oraz nagłówek <code>Content-Encoding: gzip</code> — zostało to naprawione, a pakiet jest teraz pobierany jako zweryfikowane binarnie archiwum <strong>.ZIP</strong>.<br />
+                    2) Jeśli chcesz zainstalować aplikację bezpośrednio na telefonie, <strong>nie otwieraj pliku .zip jako instalatora APK</strong> — przejdź do zakładki <button type="button" onClick={() => setActiveTab('install')} className="text-cyan-400 underline font-semibold">Instalacja na Telefonie</button>, aby zainstalować natywny pakiet WebAPK jednym kliknięciem.
+                  </p>
                 </div>
               </div>
 
@@ -498,51 +611,95 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                   <span>Wygenerowane Grafiki i Prawdziwe Zrzuty Ekranu 9:16 do Google Play Console:</span>
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                  <a
-                    href="/pwa-512x512.png"
-                    download="ikona-512x512.png"
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center"
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle('icon512', '/pwa-512x512.png', 'ikona-512x512.png', 'image/png')
+                    }
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center cursor-pointer"
                   >
                     <img src="/pwa-512x512.png" alt="Ikona 512x512" className="h-12 w-12 rounded-xl object-cover border border-slate-700" />
                     <span className="block text-[11px] font-bold text-white">Ikona 512x512</span>
-                    <span className="block text-[10px] text-cyan-400">Pobierz PNG</span>
-                  </a>
-                  <a
-                    href="/play-store/feature-graphic-1024x500.png"
-                    download="feature-graphic-1024x500.png"
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center"
+                    <span className="block text-[10px] text-cyan-400">
+                      {downloadedSuccessId === 'icon512' ? 'Pobrano!' : 'Pobierz PNG'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'banner',
+                        '/play-store/feature-graphic-1024x500.png',
+                        'feature-graphic-1024x500.png',
+                        'image/png'
+                      )
+                    }
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center cursor-pointer"
                   >
                     <img src="/play-store/feature-graphic-1024x500.png" alt="Baner 1024x500" className="h-12 w-full rounded-lg object-cover border border-slate-700" />
                     <span className="block text-[11px] font-bold text-white">Baner 1024x500</span>
-                    <span className="block text-[10px] text-cyan-400">Pobierz PNG</span>
-                  </a>
-                  <a
-                    href="/play-store/screenshot-1-dashboard.png"
-                    download="screenshot-1-dashboard.png"
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center"
+                    <span className="block text-[10px] text-cyan-400">
+                      {downloadedSuccessId === 'banner' ? 'Pobrano!' : 'Pobierz PNG'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'shot1',
+                        '/play-store/screenshot-1-dashboard.png',
+                        'screenshot-1-dashboard.png',
+                        'image/png'
+                      )
+                    }
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center cursor-pointer"
                   >
                     <img src="/play-store/screenshot-1-dashboard.png" alt="Zrzut Pulpit" className="h-12 w-8 rounded object-cover border border-slate-700" />
                     <span className="block text-[11px] font-bold text-white">Zrzut #1 (Pulpit)</span>
-                    <span className="block text-[10px] text-cyan-400">Pobierz PNG</span>
-                  </a>
-                  <a
-                    href="/play-store/screenshot-2-editor.png"
-                    download="screenshot-2-editor.png"
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center"
+                    <span className="block text-[10px] text-cyan-400">
+                      {downloadedSuccessId === 'shot1' ? 'Pobrano!' : 'Pobierz PNG'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'shot2',
+                        '/play-store/screenshot-2-editor.png',
+                        'screenshot-2-editor.png',
+                        'image/png'
+                      )
+                    }
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center cursor-pointer"
                   >
                     <img src="/play-store/screenshot-2-editor.png" alt="Zrzut Edytor" className="h-12 w-8 rounded object-cover border border-slate-700" />
                     <span className="block text-[11px] font-bold text-white">Zrzut #2 (Edytor)</span>
-                    <span className="block text-[10px] text-cyan-400">Pobierz PNG</span>
-                  </a>
-                  <a
-                    href="/play-store/screenshot-3-certificate.png"
-                    download="screenshot-3-certificate.png"
-                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center"
+                    <span className="block text-[10px] text-cyan-400">
+                      {downloadedSuccessId === 'shot2' ? 'Pobrano!' : 'Pobierz PNG'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'shot3',
+                        '/play-store/screenshot-3-certificate.png',
+                        'screenshot-3-certificate.png',
+                        'image/png'
+                      )
+                    }
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center cursor-pointer"
                   >
                     <img src="/play-store/screenshot-3-certificate.png" alt="Zrzut Moduły" className="h-12 w-8 rounded object-cover border border-slate-700" />
                     <span className="block text-[11px] font-bold text-white">Zrzut #3 (Moduły)</span>
-                    <span className="block text-[10px] text-cyan-400">Pobierz PNG</span>
-                  </a>
+                    <span className="block text-[10px] text-cyan-400">
+                      {downloadedSuccessId === 'shot3' ? 'Pobrano!' : 'Pobierz PNG'}
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>

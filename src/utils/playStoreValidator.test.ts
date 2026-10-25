@@ -10,6 +10,7 @@ import {
   type PlayStoreListingMeta,
   type TwaManifestConfig,
 } from './playStoreValidator';
+import { buildZipArchive, isNotHtmlFallback, isValidZipBuffer } from './zipBuilder';
 
 test('twa-manifest.json and public/twa-manifest.json are identical and pass Google Play TWA validation', () => {
   const rootManifest = JSON.parse(
@@ -76,4 +77,23 @@ test('validateTwaManifest rejects invalid packageId and HTTP URLs', () => {
   const res = validateTwaManifest(badManifest);
   assert.equal(res.valid, false);
   assert.ok(res.errors.length >= 5);
+});
+
+test('buildZipArchive produces valid PKZIP and public/fullstack-academy-google-play-pack.zip is intact', () => {
+  const sampleZip = buildZipArchive([
+    { path: 'README.txt', data: 'Full Stack Academy Google Play Pack' },
+    { path: 'android/build.gradle', data: 'apply plugin: "com.android.application"' },
+  ]);
+  assert.equal(isValidZipBuffer(sampleZip), true);
+  assert.equal(isNotHtmlFallback(sampleZip), true);
+
+  const htmlFallback = new TextEncoder().encode('<!doctype html><html><body>SPA</body></html>');
+  assert.equal(isValidZipBuffer(htmlFallback), false);
+  assert.equal(isNotHtmlFallback(htmlFallback), false);
+
+  const diskZip = new Uint8Array(
+    fs.readFileSync(path.resolve('public/fullstack-academy-google-play-pack.zip'))
+  );
+  assert.equal(isValidZipBuffer(diskZip), true, 'public/fullstack-academy-google-play-pack.zip must be a valid PKZIP archive');
+  assert.ok(diskZip.length > 500_000, 'ZIP archive should include all Play Store graphics, keystore, and Android project');
 });

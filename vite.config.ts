@@ -59,6 +59,11 @@ export default defineConfig(() => {
           importScripts: ['/sw-notifications.js'],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json}'],
+          navigateFallbackDenylist: [
+            /^\/play-store\//,
+            /^\/\.well-known\//,
+            /\.(zip|tar|gz|keystore|aab|apk|json|png|ico|svg|html|webmanifest)$/i,
+          ],
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
