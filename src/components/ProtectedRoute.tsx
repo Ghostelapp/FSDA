@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { UserRole } from '../types';
 import { checkProtectedRouteAccess, isGuestUser } from '../utils/authValidation';
+import { activeFirebaseConfig } from '../firebase';
 import { ShieldAlert, Lock, LogIn, ArrowLeft, UserCheck } from 'lucide-react';
 
 export interface ProtectedRouteProps {
@@ -129,16 +130,27 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             {googleAuthError.includes('unauthorized-domain') && (
               <div className="rounded-xl bg-slate-950/90 border border-rose-500/30 p-3 space-y-2 text-[11px] text-slate-300">
                 <p>
+                  Aplikacja łączy się z projektem Firebase o ID:{' '}
+                  <strong className="text-amber-300 font-mono">{activeFirebaseConfig.projectId}</strong>.
                   Dodaj domenę <strong className="text-emerald-300 font-mono">{currentHostname}</strong> w{' '}
                   <a
-                    href="https://console.firebase.google.com/project/gen-lang-client-0198524417/authentication/settings"
+                    href={`https://console.firebase.google.com/project/${activeFirebaseConfig.projectId}/authentication/settings`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-indigo-400 hover:text-indigo-300 underline font-semibold"
                   >
-                    Firebase Console (Authentication → Settings → Authorized domains)
+                    Firebase Console ({activeFirebaseConfig.projectId} → Authentication → Settings → Authorized domains)
                   </a>{' '}
-                  lub zaloguj się od razu kontem e-mail przyciskiem obok.
+                  lub w{' '}
+                  <a
+                    href={`https://console.cloud.google.com/customer-identity/settings?project=${activeFirebaseConfig.projectId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-cyan-400 hover:text-cyan-300 underline font-semibold"
+                  >
+                    Google Cloud Identity Platform
+                  </a>
+                  .
                 </p>
                 <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 font-mono text-emerald-300">
                   <span className="truncate">{currentHostname}</span>

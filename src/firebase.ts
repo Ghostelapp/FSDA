@@ -18,18 +18,32 @@ import {
   onSnapshot,
   Unsubscribe,
 } from 'firebase/firestore';
-import firebaseConfig from '../firebase-applet-config.json';
+import firebaseAppletConfig from '../firebase-applet-config.json';
 import { User, Announcement } from './types';
 
+const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env || {};
+
+export const activeFirebaseConfig = {
+  apiKey: env.VITE_FIREBASE_API_KEY || firebaseAppletConfig.apiKey,
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || firebaseAppletConfig.authDomain,
+  projectId: env.VITE_FIREBASE_PROJECT_ID || firebaseAppletConfig.projectId,
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || firebaseAppletConfig.storageBucket,
+  messagingSenderId:
+    env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseAppletConfig.messagingSenderId,
+  appId: env.VITE_FIREBASE_APP_ID || firebaseAppletConfig.appId,
+  firestoreDatabaseId:
+    env.VITE_FIREBASE_DATABASE_ID || firebaseAppletConfig.firestoreDatabaseId,
+};
+
 // Initialize Firebase SDK with forced long-polling to prevent WebChannel RPC 'Listen' stream transport errors in iframes/proxies
-export const app = initializeApp(firebaseConfig);
+export const app = initializeApp(activeFirebaseConfig);
 export const db = initializeFirestore(
   app,
   {
     experimentalForceLongPolling: true,
     ignoreUndefinedProperties: true,
   },
-  firebaseConfig.firestoreDatabaseId
+  activeFirebaseConfig.firestoreDatabaseId
 );
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
