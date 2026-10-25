@@ -47,8 +47,8 @@ const MainContent: React.FC = () => {
     };
   }, []);
 
-  // Retrieve current active lesson
-  const currentLesson = allLessons.find((l) => l.id === selectedLessonId) || allLessons[1]; // defaults to HTML lesson 1
+  // Retrieve current active lesson (defaults to Module 1, Lesson 1)
+  const currentLesson = allLessons.find((l) => l.id === selectedLessonId) || allLessons[0];
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white print:bg-white print:text-slate-900">

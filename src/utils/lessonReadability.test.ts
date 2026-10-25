@@ -4,6 +4,7 @@ import {
   parseInlineTokens,
   parseTheoryBlocks,
   getBeginnerLessonAid,
+  detectPrimaryExerciseTab,
 } from './lessonReadability';
 import { MODULES_DATA } from '../data/modulesData';
 
@@ -83,3 +84,38 @@ test('All 91 lessons across 15 modules parse without leaking raw backticks and p
     assert.ok(aid.exerciseWalkthrough.length >= 1);
   }
 });
+
+test('MODULES_DATA orders lessons from easiest to advanced with sequential order and accurate prerequisites', () => {
+  // Check HTML starts with simple headings (html-7), CSS starts with colors & fonts (css-7), JS starts with variables -> if/else -> functions -> loops -> objects -> DOM -> map/filter
+  const mod2Ids = MODULES_DATA.find((m) => m.id === 2)?.lessons.map((l) => l.id);
+  assert.deepEqual(mod2Ids?.slice(0, 4), ['html-7', 'html-8', 'html-4', 'html-9']);
+
+  const mod3Ids = MODULES_DATA.find((m) => m.id === 3)?.lessons.map((l) => l.id);
+  assert.deepEqual(mod3Ids?.slice(0, 3), ['css-7', 'css-6', 'css-1']);
+
+  const mod4Ids = MODULES_DATA.find((m) => m.id === 4)?.lessons.map((l) => l.id);
+  assert.deepEqual(mod4Ids?.slice(0, 7), ['js-1', 'js-6', 'js-8', 'js-7', 'js-9', 'js-3', 'js-2']);
+
+  for (const mod of MODULES_DATA) {
+    mod.lessons.forEach((lesson, idx) => {
+      assert.equal(lesson.order, idx + 1, `Module ${mod.id} lesson ${lesson.id} should have order ${idx + 1}`);
+      const firstPrereq = lesson.prerequisites[0] || '';
+      if (idx === 0) {
+        if (mod.id === 1) {
+          assert.ok(firstPrereq.includes('Brak'));
+        } else {
+          assert.ok(firstPrereq.includes(`Modułu ${mod.id - 1}`));
+        }
+      } else {
+        assert.ok(
+          firstPrereq.startsWith(`Lekcja ${idx}:`),
+          `Lesson ${lesson.id} (order ${lesson.order}) should reference Lekcja ${idx} in prerequisites, got: ${firstPrereq}`
+        );
+      }
+
+      const tab = detectPrimaryExerciseTab(lesson.interactiveExercise);
+      assert.ok(['html', 'css', 'js'].includes(tab));
+    });
+  }
+});
+

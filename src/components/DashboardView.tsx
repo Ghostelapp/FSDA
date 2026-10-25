@@ -30,13 +30,16 @@ export const DashboardView: React.FC = () => {
   // Calculate overall progress across curriculum
   const totalLessons = allLessons.length;
   const completedCount = currentUser.completedLessons.length;
-  const overallPercent = Math.min(100, Math.round((completedCount / (totalLessons || 1)) * 100));
 
-  // Current focus: HTML module & next recommended lesson
-  const htmlModule = MODULES_DATA.find((m) => m.id === 2);
-  const htmlTotalCount = htmlModule?.lessons.length || 12;
-  const htmlCompletedCount = currentUser.completedLessons.filter((id) => id.startsWith('html-')).length;
+  // Next recommended lesson in strict pedagogical order
   const nextLesson = allLessons.find((l) => !currentUser.completedLessons.includes(l.id)) || allLessons[0];
+  const recommendedModuleId = nextLesson?.moduleId || 1;
+  const [selectedDashboardModuleId, setSelectedDashboardModuleId] = React.useState<number>(recommendedModuleId);
+
+  const activeModule = MODULES_DATA.find((m) => m.id === selectedDashboardModuleId) || MODULES_DATA[0];
+  const activeModuleCompletedCount = activeModule.lessons.filter((l) =>
+    currentUser.completedLessons.includes(l.id)
+  ).length;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
@@ -48,35 +51,37 @@ export const DashboardView: React.FC = () => {
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-indigo-500/20 border border-indigo-500/30 px-3 py-1 text-xs font-semibold text-indigo-300">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-300">
               <Zap className="h-3.5 w-3.5 text-indigo-400" />
-              <span>Droga do Junior Full Stack Developera</span>
+              <span>Ścieżka od Zera do Junior Full Stack Developera</span>
             </div>
             <h1 className="text-xl sm:text-4xl font-extrabold text-white tracking-tight">
               Witaj ponownie, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">{currentUser.name}</span>!
             </h1>
             <p className="text-xs sm:text-base text-slate-300">
               Twój aktualny stopień: <strong className="text-indigo-300 font-semibold">{levelInfo.title}</strong> (Poziom {levelInfo.level}).
-              Kontynuuj naukę, rozwiązuj interaktywne ćwiczenia w edytorze i buduj portfolio projektów.
+              Lekcje są ułożone krok po kroku od najprostszych podstaw do zaawansowanych projektów.
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full md:w-auto shrink-0">
             <button
               type="button"
-              onClick={() => setActiveTab('lesson', nextLesson?.id || 'html-1')}
+              onClick={() => setActiveTab('lesson', nextLesson?.id || 'fund-1')}
               className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white px-4 sm:px-5 py-2.5 sm:py-3 text-xs font-bold transition-all shadow-lg shadow-indigo-900/50"
             >
               <Code2 className="h-4 w-4" />
-              <span>Kontynuuj: {nextLesson ? nextLesson.title : 'Lekcje HTML'}</span>
+              <span>
+                Kontynuuj (Moduł {nextLesson?.moduleId || 1}, Lekcja {nextLesson?.order || 1}): {nextLesson ? nextLesson.title : 'Start od zera'}
+              </span>
               <ArrowRight className="h-4 w-4" />
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('editor')}
+              onClick={() => setActiveTab('lesson', 'fund-1')}
               className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 px-4 py-2.5 sm:py-3 text-xs font-semibold transition-colors"
             >
-              <span>Piaskownica Kodu</span>
+              <span>Lekcja 1 od zera</span>
             </button>
           </div>
         </div>
@@ -140,9 +145,9 @@ export const DashboardView: React.FC = () => {
               <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
           </div>
-          <p className="mt-2 sm:mt-3 text-xl sm:text-2xl font-black text-white">{currentUser.completedLessons.length} <span className="text-xs font-normal text-slate-400">/ {totalLessons}</span></p>
+          <p className="mt-2 sm:mt-3 text-xl sm:text-2xl font-black text-white">{completedCount} <span className="text-xs font-normal text-slate-400">/ {totalLessons}</span></p>
           <p className="mt-1 text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
-            W module HTML: {htmlCompletedCount} / {htmlTotalCount}
+            Moduł {activeModule.id}: {activeModuleCompletedCount} / {activeModule.lessons.length}
           </p>
         </div>
 
@@ -194,60 +199,118 @@ export const DashboardView: React.FC = () => {
         </div>
       )}
 
-      {/* Current HTML Module Showcase */}
-      {htmlModule && (
+      {/* Ordered Module & Lessons Showcase */}
+      {activeModule && (
         <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8 space-y-6">
+          {/* Quick Module Switcher (Modules 1-5 + All Modules Link) */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {MODULES_DATA.slice(0, 5).map((mod) => {
+                const isSelected = mod.id === activeModule.id;
+                return (
+                  <button
+                    key={mod.id}
+                    type="button"
+                    onClick={() => setSelectedDashboardModuleId(mod.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                    }`}
+                  >
+                    Moduł {mod.id}: {mod.id === 1 ? 'Start od zera' : mod.id === 2 ? 'HTML5' : mod.id === 3 ? 'CSS3' : mod.id === 4 ? 'JavaScript' : 'Git'}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab('modules')}
+              className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+            >
+              <span>Wszystkie 15 modułów</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
             <div>
               <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 uppercase tracking-wider">
-                <span>Moduł 2</span>
+                <span>Moduł {activeModule.id} z 15</span>
                 <span>•</span>
-                <span>Frontend Podstawy</span>
+                <span>{activeModule.category}</span>
+                <span>•</span>
+                <span className="text-emerald-400">Kolejność: od najprostszych podstaw</span>
               </div>
-              <h2 className="mt-1 text-xl sm:text-2xl font-bold text-white">{htmlModule.title}</h2>
-              <p className="mt-1 text-xs sm:text-sm text-slate-300">{htmlModule.description}</p>
+              <h2 className="mt-1 text-xl sm:text-2xl font-bold text-white">{activeModule.title}</h2>
+              <p className="mt-1 text-xs sm:text-sm text-slate-300">{activeModule.description}</p>
             </div>
             
             <div className="text-right shrink-0">
               <span className="text-xs text-slate-400">Postęp modułu</span>
               <p className="text-lg font-black text-indigo-300 font-mono">
-                {Math.round((htmlCompletedCount / (htmlModule.lessons.length || 1)) * 100)}%
+                {Math.round((activeModuleCompletedCount / (activeModule.lessons.length || 1)) * 100)}%
               </p>
             </div>
           </div>
 
-          {/* Lessons List in Module 2 */}
+          {/* Lessons List in Active Module */}
           <div className="space-y-3">
-            {htmlModule.lessons.map((lesson) => {
+            {activeModule.lessons.map((lesson) => {
               const isDone = currentUser.completedLessons.includes(lesson.id);
+              const isNext = nextLesson?.id === lesson.id;
               const quizScore = currentUser.quizScores?.[lesson.id];
 
               return (
                 <div
                   key={lesson.id}
                   onClick={() => setActiveTab('lesson', lesson.id)}
-                  className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-950/70 p-4 hover:border-indigo-500/50 hover:bg-slate-900 transition-all cursor-pointer"
+                  className={`group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border p-4 transition-all cursor-pointer ${
+                    isNext
+                      ? 'border-indigo-500/60 bg-indigo-950/20 hover:bg-indigo-950/30'
+                      : 'border-slate-800 bg-slate-950/70 hover:border-indigo-500/50 hover:bg-slate-900'
+                  }`}
                 >
-                  <div className="flex items-start sm:items-center gap-3">
-                    <div className={`mt-0.5 sm:mt-0 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl font-bold text-xs ${
+                  <div className="flex items-start sm:items-center gap-3.5">
+                    <div className={`mt-0.5 sm:mt-0 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-bold text-xs ${
                       isDone 
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                        : isNext
+                        ? 'bg-indigo-600 text-white'
                         : 'bg-slate-800 text-slate-300'
                     }`}>
-                      {isDone ? <CheckCircle2 className="h-4 w-4" /> : lesson.order}
+                      {lesson.order}
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors">
-                        {lesson.title}
-                      </h4>
-                      <div className="flex items-center gap-3 mt-1 text-[11px] text-slate-400">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="text-sm sm:text-base font-bold text-white group-hover:text-indigo-400 transition-colors">
+                          Lekcja {lesson.order}: {lesson.title}
+                        </h4>
+                        {isDone && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Ukończono
+                          </span>
+                        )}
+                        {isNext && !isDone && (
+                          <span className="text-[11px] font-bold text-indigo-300">
+                            · Teraz Twoja kolej
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">
+                        {lesson.summary}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3 mt-1.5 text-[11px] text-slate-400">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {lesson.durationMinutes} min
                         </span>
                         <span>•</span>
                         <span className="text-indigo-300 font-semibold">+{lesson.xpReward} XP</span>
+                        <span>•</span>
+                        <span>{lesson.prerequisites.join(', ')}</span>
                         {quizScore !== undefined && (
                           <>
                             <span>•</span>
@@ -260,7 +323,7 @@ export const DashboardView: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 self-end sm:self-center">
+                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                     <span className="text-xs font-semibold text-indigo-400 group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       {isDone ? 'Powtórz lekcję' : 'Rozpocznij naukę'}
                       <ChevronRight className="h-4 w-4" />

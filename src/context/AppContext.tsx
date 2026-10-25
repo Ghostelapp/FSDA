@@ -267,12 +267,11 @@ const DEFAULT_USERS: User[] = [
     lastActiveDate: new Date().toISOString().split('T')[0],
     weeklyGoalMinutes: 210,
     weeklySpentMinutes: 145,
-    completedLessons: ['fund-1', 'fund-2', 'html-1', 'html-2', 'css-1', 'js-1'],
+    completedLessons: ['fund-1', 'fund-2'],
     completedProjects: ['proj-1'],
     quizScores: {
       'fund-1': 100,
-      'html-1': 90,
-      'css-1': 85,
+      'fund-2': 95,
     },
     unlockedBadges: ['first-step', 'streak-3', 'streak-7', 'xp-500', 'xp-1500', 'project-first'],
     savedCode: {},
@@ -300,11 +299,10 @@ const DEFAULT_USERS: User[] = [
     lastActiveDate: new Date().toISOString().split('T')[0],
     weeklyGoalMinutes: 150,
     weeklySpentMinutes: 60,
-    completedLessons: ['fund-1', 'html-1'],
+    completedLessons: ['fund-1'],
     completedProjects: [],
     quizScores: {
       'fund-1': 80,
-      'html-1': 70,
     },
     unlockedBadges: ['first-step', 'streak-3'],
     savedCode: {},
@@ -361,6 +359,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const { password: _removed, ...rest } = u;
             return { ...rest, role: 'admin' as UserRole };
           }
+          // Migrate legacy demo completedLessons that looked non-sequential after reordering
+          if (
+            u.id === 'user-student-anna' &&
+            Array.isArray(u.completedLessons) &&
+            u.completedLessons.join(',') === 'fund-1,fund-2,html-1,html-2,css-1,js-1'
+          ) {
+            return { ...u, role: 'student' as UserRole, completedLessons: ['fund-1', 'fund-2'] };
+          }
           return { ...u, role: 'student' as UserRole };
         });
         const existingIds = new Set(parsed.map((u) => u.id));
@@ -394,6 +400,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const stored = localStorage.getItem(STORAGE_KEY_USER);
       if (stored) {
         const parsed: User = JSON.parse(stored);
+        // Migrate legacy demo completedLessons that looked non-sequential after reordering
+        if (
+          parsed.id === 'user-student-anna' &&
+          Array.isArray(parsed.completedLessons) &&
+          parsed.completedLessons.join(',') === 'fund-1,fund-2,html-1,html-2,css-1,js-1'
+        ) {
+          parsed.completedLessons = ['fund-1', 'fund-2'];
+        }
         // Never restore an admin session from localStorage without active verified Firebase OAuth
         const hasVerifiedFirebaseAdmin =
           Boolean(auth.currentUser?.emailVerified) &&

@@ -203,14 +203,22 @@ export const ModulesView: React.FC = () => {
                             >
                               <div className="flex items-start gap-3.5">
                                 <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-                                  isDone ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-300'
+                                  isDone ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-300'
                                 }`}>
-                                  {isDone ? <CheckCircle2 className="h-4 w-4" /> : lesson.order}
+                                  {lesson.order}
                                 </div>
                                 <div className="space-y-1">
-                                  <h5 className="text-sm sm:text-base font-bold text-white group-hover:text-indigo-400 transition-colors">
-                                    {lesson.title}
-                                  </h5>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h5 className="text-sm sm:text-base font-bold text-white group-hover:text-indigo-400 transition-colors">
+                                      Lekcja {lesson.order}: {lesson.title}
+                                    </h5>
+                                    {isDone && (
+                                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400">
+                                        <CheckCircle2 className="h-3.5 w-3.5" />
+                                        Zaliczone
+                                      </span>
+                                    )}
+                                  </div>
                                   <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
                                     {lesson.summary}
                                   </p>
@@ -218,6 +226,8 @@ export const ModulesView: React.FC = () => {
                                     <span>{lesson.durationMinutes} min</span>
                                     <span aria-hidden="true">·</span>
                                     <span className="text-indigo-300 font-semibold">+{lesson.xpReward} XP</span>
+                                    <span aria-hidden="true">·</span>
+                                    <span className="text-slate-300">{lesson.prerequisites.join(', ')}</span>
                                     <span aria-hidden="true">·</span>
                                     <span className="text-emerald-400">
                                       {lesson.order <= 2 && module.id <= 3 ? 'Start od zera (z analogią)' : 'Zawiera wyjaśnienie krok po kroku'}

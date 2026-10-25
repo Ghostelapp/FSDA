@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { InteractiveExercise } from '../types';
 import { validateExerciseCode, generateSandboxDocument, ValidationSummary } from '../utils/codeRunner';
 import { highlightCode, getLanguageDisplayName } from '../utils/syntaxHighlighter';
+import { detectPrimaryExerciseTab } from '../utils/lessonReadability';
 import { CodeBlock } from './CodeBlock';
 import { 
   Play, 
@@ -37,7 +38,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   savedCode,
   onSave,
 }) => {
-  const [activeFileTab, setActiveFileTab] = useState<'html' | 'css' | 'js'>('html');
+  const primaryTab = detectPrimaryExerciseTab(exercise);
+  const [activeFileTab, setActiveFileTab] = useState<'html' | 'css' | 'js'>(() =>
+    detectPrimaryExerciseTab(exercise)
+  );
   const [activeOutputTab, setActiveOutputTab] = useState<'preview' | 'tests' | 'console'>('preview');
   const [syntaxHighlightingEnabled, setSyntaxHighlightingEnabled] = useState(true);
 
@@ -69,7 +73,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     });
     setConsoleLogs([]);
     setValidationResult(null);
-    setActiveFileTab('html');
+    setActiveFileTab(detectPrimaryExerciseTab(exercise));
     setActiveOutputTab('preview');
     setShowHints(false);
     setHintIndex(0);
@@ -155,6 +159,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       css: exercise.solutionCode.css,
       js: exercise.solutionCode.js,
     });
+    setActiveFileTab(primaryTab);
     setShowSolutionModal(false);
   };
 
@@ -210,16 +215,19 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       {/* Exercise Brief Header */}
       <div className="border-b border-slate-800 bg-slate-950 px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-semibold text-indigo-400 border border-indigo-500/20">
               Ćwiczenie Praktyczne
             </span>
             <h4 className="text-sm font-bold text-white">{exercise.title}</h4>
+            <span className="text-xs text-emerald-400 font-medium">
+              · Wpisz kod w zakładce: {primaryTab === 'html' ? 'index.html' : primaryTab === 'css' ? 'styles.css' : 'app.js'}
+            </span>
           </div>
-          <p className="text-xs text-slate-300 mt-1 max-w-2xl">{exercise.task}</p>
+          <p className="text-xs sm:text-sm text-slate-200 mt-1.5 max-w-2xl leading-relaxed">{exercise.task}</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Hints Button */}
           {exercise.hints && exercise.hints.length > 0 && (
             <button
@@ -232,6 +240,25 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             </button>
           )}
 
+          {/* Direct 1-click Insert Solution for Beginners */}
+          <button
+            type="button"
+            onClick={handleApplySolution}
+            title="Wstaw gotowy, poprawny kod wzorcowy bezpośrednio do edytora"
+            className="px-2.5 py-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 text-xs font-semibold text-indigo-300 hover:bg-indigo-500/20 hover:text-white transition-colors"
+          >
+            Wstaw wzór rozwiązania
+          </button>
+
+          {/* Solution Modal Preview Button */}
+          <button
+            type="button"
+            onClick={() => setShowSolutionModal(true)}
+            className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-xs text-slate-300 hover:text-white transition-colors"
+          >
+            Podgląd wzorca
+          </button>
+
           {/* Reset Button */}
           <button
             type="button"
@@ -240,15 +267,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             className="p-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <RotateCcw className="h-4 w-4" />
-          </button>
-
-          {/* Solution Button */}
-          <button
-            type="button"
-            onClick={() => setShowSolutionModal(true)}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-xs text-slate-300 hover:text-white transition-colors"
-          >
-            Wzorzec
           </button>
 
           {/* Run & Validate Action Button */}
@@ -290,7 +308,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               </button>
             </div>
           </div>
-          <p className="text-xs text-amber-100/90 leading-relaxed">
+          <p className="text-xs sm:text-sm text-amber-100/90 leading-relaxed">
             {exercise.hints[hintIndex]}
           </p>
         </div>
@@ -304,11 +322,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           
           {/* File Tabs & Highlight Toggle */}
           <div className="flex items-center justify-between border-b border-slate-800/80 bg-slate-900/70 px-3">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 overflow-x-auto">
               <button
                 type="button"
                 onClick={() => setActiveFileTab('html')}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-colors shrink-0 ${
                   activeFileTab === 'html'
                     ? 'border-orange-500 text-orange-400 bg-slate-950'
                     : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -316,11 +334,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               >
                 <Code className="h-3.5 w-3.5 text-orange-400" />
                 <span>index.html</span>
+                {primaryTab === 'html' && (
+                  <span className="text-[10px] font-bold text-emerald-400">(Edytuj tutaj)</span>
+                )}
               </button>
               <button
                 type="button"
                 onClick={() => setActiveFileTab('css')}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-colors shrink-0 ${
                   activeFileTab === 'css'
                     ? 'border-cyan-500 text-cyan-400 bg-slate-950'
                     : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -328,11 +349,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               >
                 <Layers className="h-3.5 w-3.5 text-cyan-400" />
                 <span>styles.css</span>
+                {primaryTab === 'css' && (
+                  <span className="text-[10px] font-bold text-emerald-400">(Edytuj tutaj)</span>
+                )}
               </button>
               <button
                 type="button"
                 onClick={() => setActiveFileTab('js')}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-colors shrink-0 ${
                   activeFileTab === 'js'
                     ? 'border-yellow-500 text-yellow-400 bg-slate-950'
                     : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -340,6 +364,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               >
                 <TerminalIcon className="h-3.5 w-3.5 text-yellow-400" />
                 <span>app.js</span>
+                {primaryTab === 'js' && (
+                  <span className="text-[10px] font-bold text-emerald-400">(Edytuj tutaj)</span>
+                )}
               </button>
             </div>
 

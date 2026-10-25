@@ -105,10 +105,10 @@ console.log(greeting);`,
         ],
       },
       independentTask: {
-        title: 'Operator trójargumentowy (Ternary Operator)',
-        instructions: 'Zapisz warunek sprawdzający czy score >= 80 i przypisz "Zaliczony" lub "Poprawka" za pomocą const status = score >= 80 ? "Zaliczony" : "Poprawka";.',
-        expectedOutcome: 'Zwięzły zapis warunkowy w jednej linijce.',
-        starterHint: 'Składnia: warunek ? prawda : fałsz.',
+        title: 'Łączenie zmiennych w powitanie',
+        instructions: 'Utwórz zmienną const city = "Warszawa"; oraz wypisz w konsoli zdanie łączące imię i miasto.',
+        expectedOutcome: 'Czytelny komunikat w konsoli zbudowany ze zmiennych.',
+        starterHint: 'Użyj console.log(userName, city);',
       },
       quiz: [
         {
@@ -135,12 +135,12 @@ console.log(greeting);`,
       ],
       practicalTask: {
         title: 'Testy w konsoli przeglądarki',
-        brief: 'Otwórz konsolę DevTools i sprawdź typy danych operatorem typeof: typeof 42, typeof "tekst", typeof null.',
-        steps: ['Wpisz w konsoli typeof "hej"', 'Wpisz typeof null (zwróci historyczny błąd: object)'],
+        brief: 'Otwórz konsolę DevTools i sprawdź typy danych operatorem typeof: typeof 42, typeof "tekst".',
+        steps: ['Wpisz w konsoli typeof "hej"', 'Wpisz typeof 100'],
         deliverable: 'Praktyczne oswojenie się z typami w JS.',
       },
       completionCriteria: [
-        'Zrozumienie const, let i typów prymitywnych',
+        'Zrozumienie const, let i prostych typów danych',
         'Prawidłowe rozwiązanie ćwiczenia interaktywnego',
         'Zaliczenie quizu z wynikiem minimum 80%',
       ],
@@ -149,68 +149,54 @@ console.log(greeting);`,
       id: 'js-6',
       moduleId: 4,
       moduleTitle: 'JavaScript — Logika i Interaktywność',
-      title: 'Instrukcje warunkowe (if/else, switch), Truthy/Falsy i operator ??',
+      title: 'Podejmowanie decyzji w kodzie: Instrukcje warunkowe (if / else)',
       slug: 'instrukcje-warunkowe-if-else-truthy-falsy',
       durationMinutes: 30,
       xpReward: 65,
       order: 2,
-      summary: 'Naucz się sterować przepływem programu: podejmuj decyzje za pomocą if/else, poznaj 6 wartości Falsy w JavaScript oraz stosuj nowoczesny operator Nullish Coalescing (??) i Guard Clauses.',
+      summary: 'Naucz się sterować programem krok po kroku: podejmuj decyzje za pomocą instrukcji if oraz else, sprawdzaj warunki liczbowe i tekstowe oraz ustawiaj wartości domyślne.',
       objectives: [
-        'Budować czytelne rozgałęzienia decyzyjne if / else if / else oraz switch',
-        'Znać na pamięć 6 wartości Falsy (false, 0, "", null, undefined, NaN)',
-        'Rozróżniać operator logiczny || od operatora Nullish Coalescing ??',
+        'Budować proste i czytelne warunki if (...) { ... } else { ... }',
+        'Porównywać liczby i teksty za pomocą >=, <=, === oraz !==',
+        'Rozumieć wartości prawdziwe (Truthy) i fałszywe (Falsy) oraz operator domyślnej wartości ??',
       ],
-      prerequisites: ['Lekcja 1: Zmienne i typy danych'],
-      theoryMarkdown: `Program komputerowy nieustannie podejmuje decyzje: czy użytkownik jest zalogowany? Czy koszyk jest pusty? Czy subskrypcja wygasła?
+      prerequisites: ['Lekcja 1: Zmienne (const, let), tekst i liczby'],
+      theoryMarkdown: `Program komputerowy nieustannie podejmuje proste decyzje: czy użytkownik wpisał poprawne hasło? Czy gracz zdobył wystarczającą liczbę punktów?
 
-**1. 6 wartości Falsy w JavaScript:**
-W kontekście warunku \`if (wartość)\` tylko te 6 wartości jest traktowanych jako **fałsz (Falsy)**:
-- \`false\`
-- \`0\` (oraz \`-0\`, \`0n\`)
-- \`""\` (pusty ciąg znaków)
-- \`null\`
-- \`undefined\`
-- \`NaN\` (Not a Number)
-**Wszystko inne jest Truthy (prawdziwe)** — w tym pusta tablica \`[]\` oraz pusty obiekt \`{}\`!
+**1. Jak działa instrukcja \`if / else\`?**
+Zapisujemy pytanie w zwykłych nawiasach \`( )\`, a czynność do wykonania w nawiasach klamrowych \`{ }\`:
+1. **\`if (punkty >= 70)\`**: Jeżeli warunek jest prawdziwy, komputer wykonuje kod z pierwszego bloku \`{ ... }\`.
+2. **\`else\`**: W przeciwnym razie (gdy punktów jest mniej niż 70), komputer wykonuje kod z bloku zapasowego \`else { ... }\`.
 
-**2. Operator \`??\` (Nullish Coalescing) vs \`||\`:**
-Gdy ustawiasz wartość domyślną:
-\`\`\`javascript
-const discount = 0;
-console.log(discount || 10); // 10 (BŁĄD! 0 jest Falsy, więc || je odrzucił!)
-console.log(discount ?? 10); // 0  (PRAWIDŁOWO! ?? reaguje tylko na null i undefined)
-\`\`\`
+**2. Wartości traktowane jako Fałsz (Falsy):**
+W JavaScript wartość \`false\`, liczba \`0\`, pusty tekst \`""\`, \`null\` oraz \`undefined\` są traktowane w warunku \`if\` jako fałsz.
 
-**3. Wzorzec Guard Clause (Wczesny powrót):**
-Zamiast zagnieżdżać 4 poziomy \`if { if { if } }\`, sprawdzaj warunki brzegowe na samym początku funkcji i wychodź przez \`return\`.`,
+**3. Bezpieczna wartość domyślna (\`??\`):**
+Gdy chcesz podstawić wartość zapasową tylko wtedy, gdy zmienna jest pusta (\`null\` lub \`undefined\`), użyj operatora \`??\`, np. \`const rola = wybranaRola ?? "kursant";\`.`,
       codeExamples: [
         {
-          title: 'Weryfikacja uprawnień z wzorcem Guard Clause i operatorem ??',
+          title: 'Proste sprawdzenie wyniku i wieku kursanta za pomocą if / else',
           language: 'javascript',
-          code: `function checkAccess(userRole, userAge) {
-  const role = userRole ?? 'guest';
+          code: `const punkty = 85;
+const progZaliczenia = 70;
 
-  if (userAge < 18) {
-    return 'Brak dostępu: wymagana pełnoletność';
-  }
-
-  if (role === 'admin') {
-    return 'Pełny dostęp administratora';
-  } else if (role === 'student') {
-    return 'Dostęp do modułów kursowych';
-  }
-
-  return 'Dostęp demonstracyjny (Gość)';
+if (punkty >= progZaliczenia) {
+  console.log("Gratulacje! Egzamin zdany!");
+} else {
+  console.log("Zabrakło kilku punktów — spróbuj jeszcze raz.");
 }
 
-console.log(checkAccess('student', 22));`,
-          explanation: 'Sprawdzenie wieku na początku funkcji eliminuje głębokie zagnieżdżenia else.',
+// Ustawienie wartości domyślnej operatorem ??:
+const nickUzytkownika = null;
+const wyswietlanaNazwa = nickUzytkownika ?? "Gość Akademii";
+console.log("Witaj,", wyswietlanaNazwa);`,
+          explanation: 'Ponieważ 85 jest większe od 70, program wykonuje pierwszą klamrę i wypisuje „Gratulacje! Egzamin zdany!”.',
         },
       ],
       stepByStepGuide: [
-        { step: 1, title: 'Zapisz warunek główny w if (...)', description: 'Używaj operatorów ===, !==, >=, <=.' },
-        { step: 2, title: 'Obsłuż pozostałe przypadki w else if / else', description: 'Zadbaj o domyślną ścieżkę zapasową.' },
-        { step: 3, title: 'Stosuj ?? dla wartości domyślnych', description: 'Chronisz w ten sposób poprawne wartości 0 oraz "".' },
+        { step: 1, title: 'Zapisz warunek główny w if (...)', description: 'Używaj prostych porównań: >= (większe lub równe), === (równe).' },
+        { step: 2, title: 'Dodaj blok else { ... }', description: 'Określ co program ma zrobić, gdy warunek nie jest spełniony.' },
+        { step: 3, title: 'Sprawdź wynik w konsoli', description: 'Uruchom kod i zobacz, która ścieżka została wybrana.' },
       ],
       interactiveExercise: {
         id: 'ex-js-conditionals',

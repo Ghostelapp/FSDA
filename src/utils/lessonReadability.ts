@@ -315,14 +315,81 @@ const CURATED_BEGINNER_AIDS: Record<
       { term: '<code> i <blockquote>', simpleDefinition: '<code> wyróżnia fragment kodu programistycznego, a <blockquote> tworzy elegancki cytat.' },
     ],
   },
+  'css-7': {
+    analogyTitle: 'CSS to pędzel z farbą i wybór czcionki',
+    analogyText:
+      'Gdy masz już gotowy tekst w HTML, CSS pozwala nadać mu kolor i odpowiedni rozmiar. Zasada jest zawsze taka sama: najpierw piszesz nazwę elementu (np. h1 lub body), otwierasz nawias klamrowy { }, a w środku podajesz cechę i wartość po dwukropku, np. color: white; (kolor tekstu) lub background: blue; (kolor tła).',
+    glossary: [
+      { term: 'color', simpleDefinition: 'Zmienia kolor liter (tekstu), np. color: #2563eb;' },
+      { term: 'background', simpleDefinition: 'Zmienia kolor tła pod elementem (lub ustawia płynne przejście kolorów — gradient).' },
+      { term: 'font-size i line-height', simpleDefinition: 'font-size określa wielkość liter, a line-height odstęp między linijkami tekstu.' },
+    ],
+  },
+  'css-6': {
+    analogyTitle: 'Selektory CSS to adresowanie listu do konkretnego elementu',
+    analogyText:
+      'Na stronie masz dziesiątki przycisków i akapitów. Jak powiedzieć przeglądarce, że chcesz pokolorować tylko jeden wybrany przycisk? Nadajesz mu w HTML klasę (np. class="ważny-przycisk"), a w CSS zaczynasz nazwę od kropki (.ważny-przycisk { ... }). Dopisek :hover oznacza: „zmień kolor, gdy użytkownik najedzie na ten element myszką”.',
+    glossary: [
+      { term: '.klasa (z kropką)', simpleDefinition: 'Wybiera wszystkie elementy posiadające w HTML atrybut class="klasa".' },
+      { term: ':hover', simpleDefinition: 'Styl, który włącza się w momencie najechania kursorem myszy na element.' },
+      { term: 'px vs rem', simpleDefinition: 'px to sztywne piksele ekranu, a rem to elastyczna jednostka (1rem = standardowo 16 pikseli).' },
+    ],
+  },
+  'css-1': {
+    analogyTitle: 'Każdy element na stronie to pudełko na prezent (Box Model)',
+    analogyText:
+      'Wyobraź sobie zegarek zapakowany w pudełko. Sam zegarek to treść (Content). Gąbka ochronna wewnątrz pudełka wokół zegarka to odstęp wewnętrzny (Padding). Kartonowe ścianki pudełka to obramowanie (Border). A wolne miejsce na półce między tym pudełkiem a sąsiednim pudełkiem to margines zewnętrzny (Margin).',
+    glossary: [
+      { term: 'padding (do środka)', simpleDefinition: 'Odstęp wewnątrz pudełka — odsuwa tekst od krawędzi ramki.' },
+      { term: 'border (ramka)', simpleDefinition: 'Widoczna linia obramowania wokół elementu, np. border: 1px solid gray;' },
+      { term: 'margin (na zewnątrz)', simpleDefinition: 'Zewnętrzny odstęp odpychający od siebie sąsiednie elementy.' },
+      { term: 'border-radius', simpleDefinition: 'Zaokrąglenie rogów pudełka (np. 12px daje ładnie zaokrągloną kartę).' },
+    ],
+  },
+  'js-1': {
+    analogyTitle: 'Zmienne w JavaScript to podpisane szufladki na dane',
+    analogyText:
+      'Gdy tworzysz grę lub sklep internetowy, program musi pamiętać imię gracza i liczbę jego punktów. Służą do tego zmienne: słowo const tworzy szufladkę ze stałą zawartością (np. imię użytkownika), a słowo let tworzy szufladkę, w której liczba może się zmieniać (np. licznik punktów XP).',
+    glossary: [
+      { term: 'const (stała)', simpleDefinition: 'Tworzy zmienną, której wartości nie zamierzamy później nadpisywać.' },
+      { term: 'let (zmienna)', simpleDefinition: 'Tworzy zmienną, której wartość będzie się zmieniać (np. punkty = punkty + 10).' },
+      { term: '=== (potrójne równa się)', simpleDefinition: 'Sprawdza, czy dwie wartości są sobie dokładnie równe.' },
+      { term: 'console.log(...)', simpleDefinition: 'Wypisuje wartość zmiennej w okienku konsoli po prawej stronie edytora.' },
+    ],
+  },
+  'js-6': {
+    analogyTitle: 'Instrukcja if / else to rozwidlenie dróg z drogowskazem',
+    analogyText:
+      'Program komputerowy podejmuje decyzje dokładnie tak jak bramkarz przed wejściem: „JEŚLI (if) masz bilet — zapraszamy do środka, W PRZECIWNYM RAZIE (else) — musisz najpierw kupić bilet”. Warunek zawsze zapisujemy w zwykłych nawiasach ( ), a czynność do wykonania w nawiasach klamrowych { }.',
+    glossary: [
+      { term: 'if (warunek) { ... }', simpleDefinition: 'Wykonuje kod w klamrach tylko wtedy, gdy warunek w nawiasie jest prawdziwy.' },
+      { term: 'else { ... }', simpleDefinition: 'Wykonuje się automatycznie, gdy warunek w if okazał się nieprawdziwy.' },
+      { term: '>= oraz <=', simpleDefinition: 'Oznacza „większe lub równe” (>=) oraz „mniejsze lub równe” (<=).' },
+    ],
+  },
 };
+
+export function detectPrimaryExerciseTab(
+  exercise: Lesson['interactiveExercise']
+): 'html' | 'css' | 'js' {
+  if (!exercise || !exercise.rules || exercise.rules.length === 0) {
+    return 'html';
+  }
+  const hasJsRule = exercise.rules.some((r) => r.ruleType.startsWith('js_'));
+  const hasCssRule = exercise.rules.some((r) => r.ruleType.startsWith('css_'));
+  const hasHtmlRule = exercise.rules.some((r) => r.ruleType.startsWith('html_'));
+
+  if (hasJsRule && !hasHtmlRule && !hasCssRule) return 'js';
+  if (hasCssRule && !hasHtmlRule && !hasJsRule) return 'css';
+  return 'html';
+}
 
 export function getBeginnerLessonAid(lesson: Lesson): BeginnerLessonAid {
   const isVeryFirstSteps =
-    (lesson.moduleId === 1 && lesson.order <= 3) ||
-    (lesson.moduleId === 2 && lesson.order <= 3) ||
-    (lesson.moduleId === 3 && lesson.order <= 2) ||
-    (lesson.moduleId === 4 && lesson.order <= 2);
+    (lesson.moduleId === 1 && lesson.order <= 4) ||
+    (lesson.moduleId === 2 && lesson.order <= 4) ||
+    (lesson.moduleId === 3 && lesson.order <= 3) ||
+    (lesson.moduleId === 4 && lesson.order <= 3);
 
   const isBasicModule = lesson.moduleId <= 5;
   const isIntermediateModule = lesson.moduleId >= 6 && lesson.moduleId <= 10;
@@ -371,8 +438,16 @@ export function getBeginnerLessonAid(lesson: Lesson): BeginnerLessonAid {
     simpleDefinition: obj,
   }));
 
+  const targetTab = detectPrimaryExerciseTab(lesson.interactiveExercise);
+  const tabLabel =
+    targetTab === 'js'
+      ? 'zakładce script.js (JavaScript)'
+      : targetTab === 'css'
+      ? 'zakładce style.css (Arkusz stylów)'
+      : 'zakładce index.html (Kod HTML)';
+
   const exerciseWalkthrough = [
-    `Krok 1 (Zadanie): ${lesson.interactiveExercise.task}`,
+    `Krok 1 (Gdzie pisać?): Edytor otworzył się automatycznie na ${tabLabel}. Zadanie: ${lesson.interactiveExercise.task}`,
     ...(lesson.interactiveExercise.hints.length > 0
       ? lesson.interactiveExercise.hints.map((h, i) => `Krok ${i + 2} (Wskazówka): ${h}`)
       : []),
@@ -388,3 +463,4 @@ export function getBeginnerLessonAid(lesson: Lesson): BeginnerLessonAid {
     exerciseWalkthrough,
   };
 }
+
