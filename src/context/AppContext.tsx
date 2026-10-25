@@ -586,10 +586,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [announcements]);
 
-  // Verify Firestore connection and subscribe to Firebase Auth state
+  // Subscribe to Firebase Auth state and connect to Firestore when authenticated
   useEffect(() => {
-    void testFirebaseConnection();
-
     let unsubProfile: (() => void) | null = null;
     let unsubAnnouncements: (() => void) | null = null;
 
@@ -604,6 +602,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       if (fbUser) {
+        void testFirebaseConnection();
         setFirebaseUid(fbUser.uid);
         setIsCloudConnected(true);
         setIsSyncingCloud(true);

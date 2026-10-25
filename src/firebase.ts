@@ -8,7 +8,7 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import {
-  getFirestore,
+  initializeFirestore,
   doc,
   setDoc,
   getDoc,
@@ -21,9 +21,16 @@ import {
 import firebaseConfig from '../firebase-applet-config.json';
 import { User, Announcement } from './types';
 
-// Initialize Firebase SDK
+// Initialize Firebase SDK with forced long-polling to prevent WebChannel RPC 'Listen' stream transport errors in iframes/proxies
 export const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = initializeFirestore(
+  app,
+  {
+    experimentalForceLongPolling: true,
+    ignoreUndefinedProperties: true,
+  },
+  firebaseConfig.firestoreDatabaseId
+);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
@@ -48,11 +55,22 @@ export interface FirestoreErrorInfo {
     tenantId: string | null | undefined;
     providerInfo: {
       providerId: string;
-      displayName: string | null;
+      displayName: string;
       email: string | null;
       photoUrl: string | null;
     }[];
   };
+}
+
+function isTransientOfflineError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const code = (error as { code?: string })?.code || '';
+  return (
+    code === 'unavailable' ||
+    msg.includes('unavailable') ||
+    msg.includes('client is offline') ||
+    msg.includes('could not reach cloud firestore backend')
+  );
 }
 
 export function handleFirestoreError(
@@ -71,7 +89,7 @@ export function handleFirestoreError(
       providerInfo:
         auth.currentUser?.providerData.map((provider) => ({
           providerId: provider.providerId,
-          displayName: provider.displayName,
+          displayName: provider.displayName || '',
           email: provider.email,
           photoUrl: provider.photoURL,
         })) || [],
@@ -79,21 +97,21 @@ export function handleFirestoreError(
     operationType,
     path,
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  if (isTransientOfflineError(error)) {
+    console.warn('Firestore działa tymczasowo w trybie offline (dane zostaną zsynchronizowane automatycznie po przywróceniu połączenia):', errInfo.path);
+  } else {
+    console.error('Firestore Error: ', JSON.stringify(errInfo));
+  }
   return errInfo;
 }
 
-// Validate connection to Firestore on startup
+// Validate connection to Firestore when authenticated
 export async function testFirebaseConnection(): Promise<boolean> {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
     return true;
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.includes('the client is offline')
-    ) {
-      console.error('Please check your Firebase configuration. Client appears offline.');
+    if (isTransientOfflineError(error)) {
       return false;
     }
     // Missing permissions on /test/connection means Firestore server is reachable and responding
@@ -174,6 +192,47 @@ export async function fetchOrCreateCloudUserProfile(
     Boolean(fbUser.emailVerified) &&
     (fbUser.email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com';
 
+  const isGuestFallback = !fallbackLocalUser || fallbackLocalUser.id === 'user-guest';
+
+  const initialUser: User = {
+    id: uid,
+    name:
+      fbUser.displayName ||
+      (!isGuestFallback ? fallbackLocalUser?.name : undefined) ||
+      'Kursant Akademii',
+    email: fbUser.email || 'kursant@gmail.com',
+    role: isAdminEmail ? 'admin' : 'student',
+    status: 'active',
+    antiBotVerified: true,
+    antiBotScore: 100,
+    avatar:
+      fbUser.photoURL ||
+      `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(uid)}`,
+    xp: isAdminEmail ? Math.max(9999, fallbackLocalUser?.xp || 0) : fallbackLocalUser?.xp || 50,
+    level: isAdminEmail ? 10 : fallbackLocalUser?.level || 1,
+    streakDays: Math.max(1, fallbackLocalUser?.streakDays || 1),
+    lastActiveDate: new Date().toISOString().split('T')[0],
+    weeklyGoalMinutes: fallbackLocalUser?.weeklyGoalMinutes || 180,
+    weeklySpentMinutes: fallbackLocalUser?.weeklySpentMinutes || 0,
+    completedLessons: fallbackLocalUser?.completedLessons || [],
+    completedProjects: fallbackLocalUser?.completedProjects || [],
+    unlockedBadges: fallbackLocalUser?.unlockedBadges?.length
+      ? fallbackLocalUser.unlockedBadges
+      : ['first-step'],
+    claimedRewards: fallbackLocalUser?.claimedRewards || [],
+    quizScores: fallbackLocalUser?.quizScores || {},
+    savedCode: fallbackLocalUser?.savedCode || {},
+    lives: 5,
+    maxLives: 5,
+    isPro: isAdminEmail ? true : Boolean(fallbackLocalUser?.isPro),
+    proPlan: isAdminEmail ? 'lifetime' : fallbackLocalUser?.proPlan,
+    streakFreezes: isAdminEmail ? 5 : 1,
+    bio: isAdminEmail
+      ? 'Główny Administrator i Architekt Akademii Full Stack Developer (Chmura Firebase).'
+      : 'Kursant Full Stack Developer Academy (Synchronizacja z chmurą Firestore).',
+    createdAt: new Date().toISOString().split('T')[0],
+  };
+
   try {
     const snap = await getDoc(doc(db, 'users', uid));
     if (snap.exists()) {
@@ -212,46 +271,13 @@ export async function fetchOrCreateCloudUserProfile(
       };
     }
 
-    // Create a brand new cloud profile (carrying over local guest progress if any)
-    const initialUser: User = {
-      id: uid,
-      name: fbUser.displayName || fallbackLocalUser?.name || 'Kursant Akademii',
-      email: fbUser.email || 'kursant@gmail.com',
-      role: isAdminEmail ? 'admin' : 'student',
-      status: 'active',
-      antiBotVerified: true,
-      antiBotScore: 100,
-      avatar:
-        fbUser.photoURL ||
-        `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(uid)}`,
-      xp: isAdminEmail ? Math.max(9999, fallbackLocalUser?.xp || 0) : fallbackLocalUser?.xp || 50,
-      level: isAdminEmail ? 10 : fallbackLocalUser?.level || 1,
-      streakDays: Math.max(1, fallbackLocalUser?.streakDays || 1),
-      lastActiveDate: new Date().toISOString().split('T')[0],
-      weeklyGoalMinutes: fallbackLocalUser?.weeklyGoalMinutes || 180,
-      weeklySpentMinutes: fallbackLocalUser?.weeklySpentMinutes || 15,
-      completedLessons: fallbackLocalUser?.completedLessons || ['fund-1'],
-      completedProjects: fallbackLocalUser?.completedProjects || [],
-      unlockedBadges: fallbackLocalUser?.unlockedBadges || ['first-step'],
-      claimedRewards: fallbackLocalUser?.claimedRewards || [],
-      quizScores: fallbackLocalUser?.quizScores || {},
-      savedCode: fallbackLocalUser?.savedCode || {},
-      lives: 5,
-      maxLives: 5,
-      isPro: isAdminEmail ? true : Boolean(fallbackLocalUser?.isPro),
-      proPlan: isAdminEmail ? 'lifetime' : fallbackLocalUser?.proPlan,
-      streakFreezes: isAdminEmail ? 5 : 1,
-      bio: isAdminEmail
-        ? 'Główny Administrator i Architekt Akademii Full Stack Developer (Chmura Firebase).'
-        : 'Kursant Full Stack Developer Academy (Synchronizacja z chmurą Firestore).',
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-
-    await saveUserProfileToCloud(uid, initialUser);
+    void saveUserProfileToCloud(uid, initialUser);
     return initialUser;
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, path);
-    throw error;
+    // Do not block Google login if Firestore is temporarily in offline mode — return the authenticated user and sync in background
+    void saveUserProfileToCloud(uid, initialUser);
+    return initialUser;
   }
 }
 
