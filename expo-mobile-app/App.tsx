@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { registerRootComponent } from 'expo';
 import { WebView } from 'react-native-webview';
 
 const ACADEMY_URL = 'https://fsda-phi.vercel.app';
@@ -157,3 +158,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
+registerRootComponent(App);
+

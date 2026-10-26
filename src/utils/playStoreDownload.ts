@@ -17,19 +17,24 @@ const EXPO_PACKAGE_JSON = JSON.stringify(
       web: 'expo start --web',
       'build:apk': 'eas build -p android --profile preview',
       'build:aab': 'eas build -p android --profile production',
+      'build:ios-preview': 'eas build -p ios --profile preview',
+      'build:ios': 'eas build -p ios --profile production',
+      'submit:ios': 'eas submit -p ios --profile production',
     },
     dependencies: {
-      expo: '~52.0.0',
-      'expo-status-bar': '~2.0.0',
-      react: '18.3.1',
-      'react-native': '0.76.3',
-      'react-native-safe-area-context': '4.12.0',
-      'react-native-webview': '13.12.2',
+      expo: '~54.0.0',
+      'expo-asset': '~12.0.14',
+      'expo-constants': '~18.0.14',
+      'expo-status-bar': '~3.0.9',
+      react: '19.1.0',
+      'react-native': '0.81.5',
+      'react-native-safe-area-context': '~5.6.0',
+      'react-native-webview': '13.15.0',
     },
     devDependencies: {
       '@babel/core': '^7.25.2',
-      '@types/react': '~18.3.12',
-      typescript: '~5.3.3',
+      '@types/react': '~19.1.10',
+      typescript: '~5.9.2',
     },
   },
   null,
@@ -45,7 +50,7 @@ const EXPO_APP_JSON = JSON.stringify(
       orientation: 'portrait',
       icon: './assets/icon.png',
       userInterfaceStyle: 'dark',
-      newArchEnabled: true,
+      newArchEnabled: false,
       splash: {
         image: './assets/splash.png',
         resizeMode: 'contain',
@@ -54,6 +59,10 @@ const EXPO_APP_JSON = JSON.stringify(
       ios: {
         supportsTablet: true,
         bundleIdentifier: 'com.fullstackacademy.app',
+        buildNumber: '2',
+        infoPlist: {
+          ITSAppUsesNonExemptEncryption: false,
+        },
       },
       android: {
         package: 'com.fullstackacademy.app',
@@ -88,9 +97,11 @@ const EXPO_EAS_JSON = JSON.stringify(
       preview: {
         distribution: 'internal',
         android: { buildType: 'apk' },
+        ios: { image: 'latest' },
       },
       production: {
         android: { buildType: 'app-bundle' },
+        ios: { image: 'latest' },
       },
     },
     submit: {
@@ -113,6 +124,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { registerRootComponent } from 'expo';
 import { WebView } from 'react-native-webview';
 
 const ACADEMY_URL = 'https://${PRODUCTION_HOST}';
@@ -198,6 +210,8 @@ const styles = StyleSheet.create({
   retryButton: { backgroundColor: '#4f46e5', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
   retryButtonText: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
 });
+
+registerRootComponent(App);
 `;
 
 const QUICK_START_TXT = `========================================================================
