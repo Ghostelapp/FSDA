@@ -125,3 +125,41 @@ test('MODULES_DATA starts with HTML basics (Module 1), then CSS (Module 2), JS (
   }
 });
 
+test('All 9 HTML lessons in Module 1 have curated beginner glossaries, pre-filled starter code, and bite-sized tasks', () => {
+  const htmlModule = MODULES_DATA.find((m) => m.id === 1);
+  assert.ok(htmlModule, 'HTML module (Module 1) must exist');
+  assert.equal(htmlModule.lessons.length, 9);
+
+  for (const lesson of htmlModule.lessons) {
+    const aid = getBeginnerLessonAid(lesson);
+    assert.equal(
+      aid.difficultyLabel,
+      'Start od Zera',
+      `HTML lesson ${lesson.id} should be labeled Start od Zera`
+    );
+
+    // Every HTML lesson must have a curated glossary, never generic "Kluczowy koncept #1"
+    for (const item of aid.glossary) {
+      assert.equal(
+        item.term.startsWith('Kluczowy koncept'),
+        false,
+        `HTML lesson ${lesson.id} should have curated glossary terms, got: ${item.term}`
+      );
+    }
+
+    // Starter code must be pre-filled with real HTML tags (not just a comment) and include a helpful Wzór comment
+    const starterHtml = lesson.interactiveExercise.starterCode.html;
+    assert.ok(
+      starterHtml.includes('<') && starterHtml.includes('Wzór:'),
+      `HTML lesson ${lesson.id} starterCode should include pre-filled tags and an inline Wzór comment`
+    );
+
+    // Bite-sized rules: max 3 rules per HTML lesson
+    assert.ok(
+      lesson.interactiveExercise.rules.length <= 3,
+      `HTML lesson ${lesson.id} should have at most 3 rules for beginner friendliness`
+    );
+  }
+});
+
+

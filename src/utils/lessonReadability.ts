@@ -294,25 +294,102 @@ const CURATED_BEGINNER_AIDS: Record<
     ],
   },
   'html-1': {
-    analogyTitle: 'HTML to fundamenty i ściany domu',
+    analogyTitle: 'Szkielet HTML to koperta z adresem (<head>) i list w środku (<body>)',
     analogyText:
-      'Tworzenie strony internetowej przypomina budowę domu. HTML to mury, piętra i drzwi (określa gdzie jest tytuł, a gdzie akapit tekstu). CSS to farba na ścianach, zasłony i meble (wygląd i kolory). JavaScript to instalacja elektryczna i dzwonek do drzwi (interakcja po kliknięciu). W tej lekcji stawiamy pierwsze mury: niewidoczną metryczkę budynku (<head>) oraz widoczne wnętrze domu (<body>).',
+      'Wyobraź sobie wysyłanie tradycyjnego listu. Niewidoczna dla czytelnika metryczka na kopercie (znaczek, kod pocztowy i tytuł listu) to sekcja <head>. Natomiast kartka papieru włożona do środka koperty — czyli wszystko, co odbiorca wyjmuje i czyta oczami — to sekcja <body>.',
     glossary: [
-      { term: 'Znacznik (Tag)', simpleDefinition: 'Słowo w nawiasach ostrokątnych, np. <h1> (otwarcie) i </h1> (zamknięcie z ukośnikiem).' },
-      { term: '<!DOCTYPE html>', simpleDefinition: 'Pierwsza linijka pliku mówiąca przeglądarce: „To jest nowoczesna strona HTML5”.' },
-      { term: '<head> (Głowa)', simpleDefinition: 'Niewidoczna zaplecze strony — zawiera tytuł na karcie przeglądarki (<title>) i polskie znaki (UTF-8).' },
-      { term: '<body> (Ciało)', simpleDefinition: 'Wszystko, co użytkownik widzi na ekranie: nagłówki <h1>, teksty <p>, przyciski i zdjęcia.' },
+      { term: '<!DOCTYPE html>', simpleDefinition: 'Pierwsza linijka mówiąca przeglądarce: „To jest nowoczesna strona HTML5”.' },
+      { term: '<head> (Głowa)', simpleDefinition: 'Niewidoczne ustawienia strony — np. tytuł karty u góry przeglądarki (<title>).' },
+      { term: '<body> (Ciało)', simpleDefinition: 'Widoczna część strony! Wszystko, co tu wpiszesz (<h1>, <p>, zdjęcia), pojawi się na ekranie.' },
+      { term: '<title>', simpleDefinition: 'Nazwa wyświetlana na pasku karty w przeglądarce oraz w wynikach Google.' },
     ],
   },
   'html-7': {
-    analogyTitle: 'Strona internetowa jak dobrze złożona gazeta',
+    analogyTitle: 'Strona internetowa jak pierwsza strona w gazecie',
     analogyText:
-      'Wyobraź sobie gazetę, w której cały tekst ma identyczną czcionkę — nikt by jej nie przeczytał! Dlatego w HTML używamy jednego głównego tytułu na pierwszej stronie (<h1>), tytułów działów (<h2>), zwykłych akapitów (<p>) oraz pogrubień najważniejszych słów (<strong>). Dzięki temu i ludzie, i wyszukiwarka Google od razu rozumieją, co jest najważniejsze.',
+      'Wyobraź sobie gazetę, w której cały tekst ma identyczną czcionkę — nikt by jej nie przeczytał! Dlatego w HTML używamy jednego dużego tytułu na górze (<h1>), mniejszego podtytułu (<h2>), zwykłych akapitów tekstu (<p>) oraz pogrubień najważniejszych słów (<strong>). Każdy znacznik otwieramy <p> i na końcu zamykamy ukośnikiem </p>.',
     glossary: [
-      { term: '<h1> do <h6>', simpleDefinition: 'Nagłówki od najważniejszego (h1 — tytuł całej strony) do najmniejszych podtytułów (h6).' },
-      { term: '<p> (Paragraph)', simpleDefinition: 'Zwykły akapit tekstu z automatycznym odstępem nad i pod tekstem.' },
-      { term: '<strong>', simpleDefinition: 'Pogrubienie bardzo ważnego fragmentu zdania.' },
-      { term: '<code> i <blockquote>', simpleDefinition: '<code> wyróżnia fragment kodu programistycznego, a <blockquote> tworzy elegancki cytat.' },
+      { term: '<h1> oraz <h2>', simpleDefinition: 'Nagłówki: <h1> to największy główny tytuł strony, a <h2> to mniejszy podtytuł.' },
+      { term: '<p> (Akapit)', simpleDefinition: 'Zwykły akapit tekstu (od ang. paragraph) z automatycznym odstępem.' },
+      { term: '<strong>', simpleDefinition: 'Pogrubia ważne słowo wewnątrz zdania, np. <strong>HTML</strong>.' },
+      { term: 'Domknięcie </...>', simpleDefinition: 'Każdy otwarty znacznik (np. <p>) zamykamy na końcu ukośnikiem (</p>).' },
+    ],
+  },
+  'html-8': {
+    analogyTitle: 'Lista zakupów (<ul>), przepis kulinarny (<ol>) i drogowskaz (<a href>)',
+    analogyText:
+      'Kiedy idziesz do sklepu, kolejność produktów na kartce nie ma znaczenia — to lista z kropkami (<ul>). Kiedy jednak pieczesz ciasto, musisz wykonać krok 1, potem krok 2 i krok 3 — to lista ponumerowana (<ol>). W obu listach każdy pojedynczy wiersz wkładamy w znacznik <li>. A znacznik <a href="..."> działa jak drogowskaz: po kliknięciu przenosi Cię pod wskazany adres!',
+    glossary: [
+      { term: '<ul> (Kropki)', simpleDefinition: 'Lista wypunktowana (kropki) — gdy kolejność nie ma znaczenia.' },
+      { term: '<ol> (Numery 1, 2, 3)', simpleDefinition: 'Lista ponumerowana — przeglądarka sama nada numery 1, 2, 3.' },
+      { term: '<li> (Podpunkt)', simpleDefinition: 'Pojedyncza pozycja na liście (wiersz wewnątrz <ul> lub <ol>).' },
+      { term: '<a href="adres">', simpleDefinition: 'Klikalny link — w cudzysłowie po href= wpisujemy dokąd ma prowadzić.' },
+    ],
+  },
+  'html-4': {
+    analogyTitle: 'Ramka na zdjęcie (<img>) oraz arkusz z kratkami (<table>)',
+    analogyText:
+      'Znacznik <img> działa jak ramka na zdjęcie powieszona na ścianie: w dopisku src="..." podajesz skąd wziąć fotografię, a w alt="..." piszesz jedno zdanie opisu (na wypadek, gdyby zdjęcie się nie wczytało). Z kolei <table> to prosta tabelka jak w zeszycie: <tr> tworzy nowy poziomy rząd, a <td> pojedynczą kratkę w tym rzędzie.',
+    glossary: [
+      { term: '<img src="..." alt="...">', simpleDefinition: 'Wstawia obrazek na stronę (nie wymaga osobnego znacznika zamykającego).' },
+      { term: 'src oraz alt', simpleDefinition: 'src to adres pliku ze zdjęciem, a alt to krótki opis słowny obrazka.' },
+      { term: '<table> i <tr>', simpleDefinition: '<table> to cała tabela, a każde <tr> (table row) to jeden poziomy wiersz.' },
+      { term: '<th> oraz <td>', simpleDefinition: '<th> to pogrubiona komórka tytułowa u góry tabeli, a <td> to zwykła komórka z danymi.' },
+    ],
+  },
+  'html-9': {
+    analogyTitle: 'Kartonowe pudełko przeprowadzkowe (<div>) i żółty zakreślacz (<span>)',
+    analogyText:
+      'Wyobraź sobie przeprowadzkę: <div> to duże kartonowe pudełko, do którego wkładasz kilka rzeczy naraz (np. tytuł produktu, opis i przycisk), a na pudełku przyklejasz naklejkę z nazwą class="karta". Natomiast <span> to żółty flamaster-zakreślacz, którym zaznaczasz jedno słowo lub cenę w środku zdania, bez rozbijania tekstu na osobne pudełka.',
+    glossary: [
+      { term: '<div> (Pudełko blokowe)', simpleDefinition: 'Grupuje kilka elementów w jeden blok i zawsze zaczyna się od nowej linii.' },
+      { term: '<span> (W linii tekstu)', simpleDefinition: 'Otacza pojedyncze słowo lub kwotę wewnątrz zdania, by nadać mu np. inny kolor.' },
+      { term: 'class="nazwa"', simpleDefinition: 'Etykieta wielokrotnego użytku — pozwala nadać ten sam wygląd wielu pudełkom.' },
+      { term: 'id="unikalna-nazwa"', simpleDefinition: 'Unikalny identyfikator (jak PESEL) dla jednego konkretnego elementu na stronie.' },
+    ],
+  },
+  'html-2': {
+    analogyTitle: 'Mieszkanie z podpisanymi pokojami (Kuchnia, Salon, Przedpokój)',
+    analogyText:
+      'Zamiast nazywać każde pomieszczenie w domu „Pokój nr 1, Pokój nr 2” (czyli same <div>), znacznie wygodniej nazwać je po imieniu: Przedpokój na górze (<header> i menu <nav>), duży Salon w środku (<main>) oraz Piwnica/Stopka na samym dole (<footer>). Wyglądają jak zwykłe pudełka, ale każdy od razu wie, co jest w środku!',
+    glossary: [
+      { term: '<header>', simpleDefinition: 'Górny pasek strony (zazwyczaj zawiera logo i główne menu).' },
+      { term: '<nav>', simpleDefinition: 'Menu nawigacji z linkami do podstron.' },
+      { term: '<main>', simpleDefinition: 'Główna, najważniejsza treść danej podstrony (występuje raz na stronie).' },
+      { term: '<footer>', simpleDefinition: 'Stopka na samym dole strony (np. podpis autora i rok utworzenia).' },
+    ],
+  },
+  'html-3': {
+    analogyTitle: 'Formularz jak papierowy druk zamówienia na poczcie',
+    analogyText:
+      'Cała kartka papieru to znacznik <form>. Wydrukowany napis nad kratkami („Twoje imię:”) to <label>. Puste okienko, w które wpisujesz długopisem tekst, to <input>. A pieczątka i wrzucenie druku do skrzynki na końcu to przycisk <button type="submit">Wyślij</button>.',
+    glossary: [
+      { term: '<form>', simpleDefinition: 'Ramka otaczająca cały formularz (wszystkie pola i przycisk wysyłania).' },
+      { term: '<label>', simpleDefinition: 'Podpis tekstowy nad polem mówiący użytkownikowi, co ma wpisać.' },
+      { term: '<input type="email" required>', simpleDefinition: 'Okienko do wpisywania tekstu; słówko required pilnuje, by nie zostało puste.' },
+      { term: '<button type="submit">', simpleDefinition: 'Przycisk zatwierdzający i wysyłający formularz.' },
+    ],
+  },
+  'html-6': {
+    analogyTitle: 'Telewizor z pilotem (<video controls>) i odtwarzacz muzyki (<audio controls>)',
+    analogyText:
+      'Sam znacznik <video> to ekran telewizora, ale dopiero dopisanie słówka controls daje użytkownikowi do ręki „pilota” z przyciskami Play, Pauza i Głośność. A dopisek poster="okladka.jpg" to ładna miniaturka wyświetlana na ekranie zanim widz naciśnie Play.',
+    glossary: [
+      { term: '<video controls>', simpleDefinition: 'Wbudowany odtwarzacz filmów z widocznym paskiem przycisków Play/Pauza.' },
+      { term: '<audio controls>', simpleDefinition: 'Wbudowany odtwarzacz plików dźwiękowych (np. piosenek lub podcastów MP3).' },
+      { term: 'controls', simpleDefinition: 'Włącza pasek sterowania (Play, czas trwania, głośność, pełny ekran).' },
+      { term: 'poster="obrazek.jpg"', simpleDefinition: 'Miniaturka (okładka) wyświetlana na wideo przed kliknięciem Play.' },
+    ],
+  },
+  'html-5': {
+    analogyTitle: 'Wizytówka w katalogu Google (SEO) i lektor dla osób niewidomych (aria-label)',
+    analogyText:
+      'Znacznik <meta name="description"> to krótkie jednozdaniowe zaproszenie na szyldzie Twojego sklepu — Google wyświetla je w wynikach wyszukiwania pod tytułem strony. Natomiast aria-label="Zamknij" to głosowa podpowiedź dla osoby niewidomej, dzięki której wie ona, że przycisk ze znaczkiem „X” służy do zamknięcia okienka.',
+    glossary: [
+      { term: 'SEO', simpleDefinition: 'Dbanie o to, aby strona była dobrze opisana i wysoko wyświetlała się w wyszukiwarce Google.' },
+      { term: '<meta name="description">', simpleDefinition: 'Krótki opis strony (1–2 zdania) wyświetlany w wynikach wyszukiwania Google.' },
+      { term: 'Dostępność (WCAG / a11y)', simpleDefinition: 'Tworzenie stron tak, aby mogły z nich korzystać również osoby niewidome lub używające samej klawiatury.' },
+      { term: 'aria-label="Opis"', simpleDefinition: 'Niewidoczny podpis głosowy dla czytników ekranu (np. na przycisku z samą ikonką).' },
     ],
   },
   'css-7': {
@@ -386,7 +463,8 @@ export function detectPrimaryExerciseTab(
 
 export function getBeginnerLessonAid(lesson: Lesson): BeginnerLessonAid {
   const isVeryFirstSteps =
-    (lesson.moduleId === 1 && lesson.order <= 4) ||
+    lesson.moduleId === 1 ||
+    lesson.id.startsWith('html-') ||
     (lesson.moduleId === 2 && lesson.order <= 4) ||
     (lesson.moduleId === 3 && lesson.order <= 3) ||
     (lesson.moduleId === 4 && lesson.order <= 3);

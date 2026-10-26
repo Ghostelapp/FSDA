@@ -109,8 +109,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     runCodeInSandbox();
   }, [code.html, code.css, code.js]);
 
-  const { currentUser, loseLife, livesInfo, setIsLivesModalOpen } = useApp();
+  const { currentUser, livesInfo, setIsLivesModalOpen } = useApp();
   const currentLives = currentUser.isPro ? 5 : (livesInfo.currentLives ?? currentUser.lives ?? 5);
+
+  // Live non-punitive checklist so students see progress as they type (like Mimo/Codecademy/freeCodeCamp)
+  const liveChecklist = validateExerciseCode(exercise, code);
 
   const handleRunAndValidate = () => {
     if (!currentUser.isPro && currentLives <= 0) {
@@ -133,8 +136,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
     if (result.allPassed) {
       if (onSuccess) onSuccess();
-    } else {
-      loseLife('Nie wszystkie testy kodu przeszły pomyślnie! Tracisz 1 serce. Przeanalizuj wyniki poniżej.');
     }
   };
 
@@ -213,72 +214,102 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     <div className="w-full rounded-2xl border border-slate-800 bg-slate-900/90 shadow-2xl overflow-hidden flex flex-col my-4">
       
       {/* Exercise Brief Header */}
-      <div className="border-b border-slate-800 bg-slate-950 px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-semibold text-indigo-400 border border-indigo-500/20">
-              Ćwiczenie Praktyczne
-            </span>
-            <h4 className="text-sm font-bold text-white">{exercise.title}</h4>
-            <span className="text-xs text-emerald-400 font-medium">
-              · Wpisz kod w zakładce: {primaryTab === 'html' ? 'index.html' : primaryTab === 'css' ? 'styles.css' : 'app.js'}
-            </span>
+      <div className="border-b border-slate-800 bg-slate-950 px-5 py-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-semibold text-indigo-400 border border-indigo-500/20">
+                Ćwiczenie Praktyczne
+              </span>
+              <h4 className="text-sm font-bold text-white">{exercise.title}</h4>
+              <span className="text-xs text-emerald-400 font-medium">
+                · Wpisz kod w zakładce: {primaryTab === 'html' ? 'index.html' : primaryTab === 'css' ? 'styles.css' : 'app.js'}
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-200 mt-1.5 max-w-2xl leading-relaxed">{exercise.task}</p>
           </div>
-          <p className="text-xs sm:text-sm text-slate-200 mt-1.5 max-w-2xl leading-relaxed">{exercise.task}</p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Hints Button */}
-          {exercise.hints && exercise.hints.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Hints Button */}
+            {exercise.hints && exercise.hints.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowHints(!showHints)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-xs font-medium text-amber-300 hover:bg-slate-800 transition-colors"
+              >
+                <Lightbulb className="h-3.5 w-3.5 text-amber-400" />
+                <span>Podpowiedzi ({exercise.hints.length})</span>
+              </button>
+            )}
+
+            {/* Direct 1-click Insert Solution for Beginners */}
             <button
               type="button"
-              onClick={() => setShowHints(!showHints)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-xs font-medium text-amber-300 hover:bg-slate-800 transition-colors"
+              onClick={handleApplySolution}
+              title="Wstaw gotowy, poprawny kod wzorcowy bezpośrednio do edytora"
+              className="px-2.5 py-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 text-xs font-semibold text-indigo-300 hover:bg-indigo-500/20 hover:text-white transition-colors"
             >
-              <Lightbulb className="h-3.5 w-3.5 text-amber-400" />
-              <span>Podpowiedzi ({exercise.hints.length})</span>
+              Wstaw wzór rozwiązania
             </button>
-          )}
 
-          {/* Direct 1-click Insert Solution for Beginners */}
-          <button
-            type="button"
-            onClick={handleApplySolution}
-            title="Wstaw gotowy, poprawny kod wzorcowy bezpośrednio do edytora"
-            className="px-2.5 py-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 text-xs font-semibold text-indigo-300 hover:bg-indigo-500/20 hover:text-white transition-colors"
-          >
-            Wstaw wzór rozwiązania
-          </button>
+            {/* Solution Modal Preview Button */}
+            <button
+              type="button"
+              onClick={() => setShowSolutionModal(true)}
+              className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-xs text-slate-300 hover:text-white transition-colors"
+            >
+              Podgląd wzorca
+            </button>
 
-          {/* Solution Modal Preview Button */}
-          <button
-            type="button"
-            onClick={() => setShowSolutionModal(true)}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-xs text-slate-300 hover:text-white transition-colors"
-          >
-            Podgląd wzorca
-          </button>
+            {/* Reset Button */}
+            <button
+              type="button"
+              onClick={handleReset}
+              title="Resetuj do kodu początkowego"
+              className="p-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
 
-          {/* Reset Button */}
-          <button
-            type="button"
-            onClick={handleReset}
-            title="Resetuj do kodu początkowego"
-            className="p-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </button>
-
-          {/* Run & Validate Action Button */}
-          <button
-            type="button"
-            onClick={handleRunAndValidate}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-900/40"
-          >
-            <Play className="h-3.5 w-3.5 fill-white" />
-            <span>Sprawdź kod</span>
-          </button>
+            {/* Run & Validate Action Button */}
+            <button
+              type="button"
+              onClick={handleRunAndValidate}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-900/40"
+            >
+              <Play className="h-3.5 w-3.5 fill-white" />
+              <span>Sprawdź kod ({liveChecklist.passedCount}/{liveChecklist.totalCount})</span>
+            </button>
+          </div>
         </div>
+
+        {/* Live Step-by-Step Checklist Bar */}
+        {liveChecklist.results.length > 0 && (
+          <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-semibold text-slate-400 mr-1">
+              Kroki na żywo:
+            </span>
+            {liveChecklist.results.map((item, idx) => (
+              <div
+                key={item.id}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs transition-colors ${
+                  item.passed
+                    ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 font-medium'
+                    : 'bg-slate-900/90 border-slate-800 text-slate-300'
+                }`}
+              >
+                {item.passed ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                ) : (
+                  <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-slate-600 text-[10px] font-mono text-slate-400 shrink-0">
+                    {idx + 1}
+                  </span>
+                )}
+                <span>{item.description}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Hints Banner */}
@@ -662,82 +693,46 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       {showSolutionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           <div className="w-full max-w-2xl rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            {validationResult?.allPassed ? (
-              <>
-                <div className="flex items-center gap-3 text-emerald-400">
-                  <CheckCircle2 className="h-6 w-6" />
-                  <h3 className="text-base font-bold text-white">Zadanie zaliczone — Porównaj z wzorcem architekta</h3>
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Gratulacje! Samodzielnie przeszedłeś wszystkie testy automatyczne. Poniżej możesz porównać swoje rozwiązanie z wzorcowym kodem dla bieżącej zakładki:
-                </p>
-                <CodeBlock 
-                  code={exercise.solutionCode[activeFileTab] || exercise.solutionCode.html}
-                  language={langForTab}
-                  title={`Wzorzec dla: ${activeFileTab.toUpperCase()}`}
-                  badge="Rozwiązanie autorskie"
-                  badgeColor="emerald"
-                />
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowSolutionModal(false)}
-                    className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
-                  >
-                    Zamknij
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleApplySolution}
-                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-900/40"
-                  >
-                    Załaduj wzorzec do porównania
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-3 text-amber-400">
-                  <AlertTriangle className="h-6 w-6" />
-                  <h3 className="text-base font-bold text-white">Wzorzec odblokowuje się po zaliczeniu testów</h3>
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Aby wyeliminować zaliczanie zadań bez ich samodzielnego wykonania, pełny kod wzorcowy jest dostępny dopiero po przejściu testów automatycznych. Skorzystaj z poniższej listy wymagań weryfikatora oraz wskazówek:
-                </p>
-                <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 space-y-2">
-                  <p className="text-xs font-bold text-indigo-300">Wymagane kryteria testów automatycznych:</p>
-                  <ul className="space-y-1.5 text-xs text-slate-300">
-                    {exercise.rules.map((r) => (
-                      <li key={r.id} className="flex items-start gap-2">
-                        <span className="text-indigo-400 font-mono">•</span>
-                        <span>
-                          {r.description} <code className="text-cyan-300 bg-slate-900 px-1.5 py-0.5 rounded font-mono text-[11px]">{r.target}</code>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                {exercise.hints && exercise.hints.length > 0 && (
-                  <div className="rounded-xl border border-amber-500/20 bg-amber-950/20 p-4 space-y-1.5">
-                    <p className="text-xs font-bold text-amber-300">Wskazówki krok po kroku:</p>
-                    <ol className="list-decimal list-inside space-y-1 text-xs text-amber-100/90">
-                      {exercise.hints.map((h, i) => (
-                        <li key={i}>{h}</li>
-                      ))}
-                    </ol>
-                  </div>
-                )}
-                <div className="flex justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowSolutionModal(false)}
-                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold"
-                  >
-                    Wracam do pisania kodu
-                  </button>
-                </div>
-              </>
+            <div className="flex items-center gap-3 text-emerald-400">
+              <CheckCircle2 className="h-6 w-6" />
+              <h3 className="text-base font-bold text-white">Podgląd wzorcowego rozwiązania i wskazówek</h3>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Poniżej znajdziesz gotowy kod wzorcowy oraz listę kroków. Możesz przepisać brakującą linijkę samodzielnie albo kliknąć „Wstaw wzorzec do edytora”:
+            </p>
+            <CodeBlock 
+              code={exercise.solutionCode[activeFileTab] || exercise.solutionCode.html}
+              language={langForTab}
+              title={`Wzór kodu dla zakładki: ${activeFileTab.toUpperCase()}`}
+              badge="Wzór rozwiązania"
+              badgeColor="emerald"
+            />
+            {exercise.hints && exercise.hints.length > 0 && (
+              <div className="rounded-xl border border-amber-500/20 bg-amber-950/20 p-4 space-y-1.5">
+                <p className="text-xs font-bold text-amber-300">Wskazówki krok po kroku:</p>
+                <ol className="list-decimal list-inside space-y-1 text-xs text-amber-100/90">
+                  {exercise.hints.map((h, i) => (
+                    <li key={i}>{h}</li>
+                  ))}
+                </ol>
+              </div>
             )}
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowSolutionModal(false)}
+                className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+              >
+                Wróć do pisania
+              </button>
+              <button
+                type="button"
+                onClick={handleApplySolution}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-900/40"
+              >
+                Wstaw wzorzec do edytora
+              </button>
+            </div>
           </div>
         </div>
       )}
