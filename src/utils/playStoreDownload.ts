@@ -2,7 +2,7 @@ import { buildZipArchive, isNotHtmlFallback, isValidZipBuffer, type ZipEntryInpu
 
 const SHA256_FINGERPRINT =
   'A6:5D:54:DB:3F:7C:C1:DF:CF:E4:45:1D:26:21:41:15:B8:49:58:D4:D2:D8:93:9D:AF:81:34:4F:81:23:86:23';
-const PRODUCTION_HOST = 'ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app';
+const PRODUCTION_HOST = 'fsda-phi.vercel.app';
 
 const EXPO_PACKAGE_JSON = JSON.stringify(
   {
@@ -362,7 +362,12 @@ export async function downloadVerifiedExpoZip(): Promise<void> {
     return;
   }
 
+  const gitignoreContent = `node_modules/\n.expo/\ndist/\nweb-build/\n*.jks\n*.p8\n*.p12\n*.key\n*.mobileprovision\n.DS_Store\n`;
+  const easignoreContent = `node_modules/\n.expo/\ndist/\nweb-build/\n.git/\n`;
+
   const entries: ZipEntryInput[] = [
+    { path: 'expo-mobile-app/.gitignore', data: gitignoreContent },
+    { path: 'expo-mobile-app/.easignore', data: easignoreContent },
     { path: 'expo-mobile-app/INSTRUKCJA_EXPO_APK.md', data: QUICK_START_TXT },
     { path: 'expo-mobile-app/package.json', data: EXPO_PACKAGE_JSON },
     { path: 'expo-mobile-app/app.json', data: EXPO_APP_JSON },
@@ -404,8 +409,13 @@ export async function downloadVerifiedPlayStoreZip(): Promise<void> {
     return;
   }
 
+  const gitignoreContent = `node_modules/\n.expo/\ndist/\nweb-build/\n*.jks\n*.p8\n*.p12\n*.key\n*.mobileprovision\n.DS_Store\n`;
+  const easignoreContent = `node_modules/\n.expo/\ndist/\nweb-build/\n.git/\n`;
+
   const entries: ZipEntryInput[] = [
     { path: 'INSTRUKCJA_SZYBKI_START.txt', data: QUICK_START_TXT },
+    { path: 'expo-mobile-app/.gitignore', data: gitignoreContent },
+    { path: 'expo-mobile-app/.easignore', data: easignoreContent },
     { path: 'expo-mobile-app/package.json', data: EXPO_PACKAGE_JSON },
     { path: 'expo-mobile-app/app.json', data: EXPO_APP_JSON },
     { path: 'expo-mobile-app/eas.json', data: EXPO_EAS_JSON },

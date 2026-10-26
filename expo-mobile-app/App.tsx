@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-const ACADEMY_URL = 'https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app';
+const ACADEMY_URL = 'https://fsda-phi.vercel.app';
 
 export default function App() {
   const webViewRef = useRef<WebView>(null);
