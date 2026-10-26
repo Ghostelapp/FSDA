@@ -3,6 +3,8 @@ node_modules/
 dist/
 web-build/
 .git/
+/ios
+/android
 npm-debug.*
 yarn-debug.*
 yarn-error.*

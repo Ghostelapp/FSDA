@@ -59,20 +59,21 @@ const EXPO_APP_JSON = JSON.stringify(
       ios: {
         supportsTablet: true,
         bundleIdentifier: 'com.fullstackacademy.app',
-        buildNumber: '2',
+        buildNumber: '3',
         infoPlist: {
           ITSAppUsesNonExemptEncryption: false,
         },
       },
       android: {
         package: 'com.fullstackacademy.app',
-        versionCode: 2,
+        versionCode: 3,
         adaptiveIcon: {
           foregroundImage: './assets/adaptive-icon.png',
           backgroundColor: '#020617',
         },
         permissions: ['INTERNET', 'ACCESS_NETWORK_STATE'],
       },
+      plugins: ['./plugins/withFmtConstevalFix.js'],
       extra: {
         appUrl: `https://${PRODUCTION_HOST}`,
       },
@@ -81,6 +82,62 @@ const EXPO_APP_JSON = JSON.stringify(
   null,
   2
 );
+
+const EXPO_FMT_PLUGIN_JS = `const fs = require('fs');
+const path = require('path');
+
+let withDangerousMod;
+try {
+  ({ withDangerousMod } = require('expo/config-plugins'));
+} catch {
+  ({ withDangerousMod } = require('@expo/config-plugins'));
+}
+
+module.exports = function withFmtConstevalFix(config) {
+  return withDangerousMod(config, [
+    'ios',
+    async (cfg) => {
+      const podfilePath = path.join(cfg.modRequest.platformProjectRoot, 'Podfile');
+      if (!fs.existsSync(podfilePath)) return cfg;
+      let podfile = fs.readFileSync(podfilePath, 'utf8');
+      if (podfile.includes('FMT_USE_CONSTEVAL')) return cfg;
+      const rubyPatch = \`
+    # [Xcode 26 Fix] Disable consteval in fmt C++ library for Apple Clang 17+
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |build_config|
+        defs = build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+        defs = [defs] if defs.is_a?(String)
+        defs << 'FMT_USE_CONSTEVAL=0' unless defs.include?('FMT_USE_CONSTEVAL=0')
+        build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
+
+        cpp_flags = build_config.build_settings['OTHER_CPLUSPLUSFLAGS'] || ['$(inherited)']
+        cpp_flags = [cpp_flags] if cpp_flags.is_a?(String)
+        cpp_flags << '-DFMT_USE_CONSTEVAL=0' unless cpp_flags.include?('-DFMT_USE_CONSTEVAL=0')
+        build_config.build_settings['OTHER_CPLUSPLUSFLAGS'] = cpp_flags
+      end
+    end
+
+    ['Pods/fmt/include/fmt/core.h', 'Pods/fmt/include/fmt/base.h'].each do |rel_header|
+      header_path = File.join(__dir__, rel_header)
+      if File.exist?(header_path)
+        File.chmod(0644, header_path)
+        src = File.read(header_path)
+        patched = src.gsub(/#define\\\\s+FMT_USE_CONSTEVAL\\\\s+1/, '#define FMT_USE_CONSTEVAL 0')
+        File.write(header_path, patched) if src != patched
+      end
+    end
+\`;
+      if (podfile.includes('post_install do |installer|')) {
+        podfile = podfile.replace('post_install do |installer|', \`post_install do |installer|\${rubyPatch}\`);
+      } else {
+        podfile += \`\\npost_install do |installer|\${rubyPatch}\\nend\\n\`;
+      }
+      fs.writeFileSync(podfilePath, podfile, 'utf8');
+      return cfg;
+    },
+  ]);
+};
+`;
 
 const EXPO_EAS_JSON = JSON.stringify(
   {
@@ -377,7 +434,7 @@ export async function downloadVerifiedExpoZip(): Promise<void> {
   }
 
   const gitignoreContent = `node_modules/\n.expo/\ndist/\nweb-build/\n*.jks\n*.p8\n*.p12\n*.key\n*.mobileprovision\n.DS_Store\n`;
-  const easignoreContent = `node_modules/\n.expo/\ndist/\nweb-build/\n.git/\n`;
+  const easignoreContent = `node_modules/\n.expo/\ndist/\nweb-build/\n.git/\n/ios\n/android\n`;
 
   const entries: ZipEntryInput[] = [
     { path: 'expo-mobile-app/.gitignore', data: gitignoreContent },
@@ -387,10 +444,7 @@ export async function downloadVerifiedExpoZip(): Promise<void> {
     { path: 'expo-mobile-app/app.json', data: EXPO_APP_JSON },
     { path: 'expo-mobile-app/eas.json', data: EXPO_EAS_JSON },
     { path: 'expo-mobile-app/App.tsx', data: EXPO_APP_TSX },
-    {
-      path: 'expo-mobile-app/babel.config.js',
-      data: `module.exports = function (api) {\n  api.cache(true);\n  return { presets: ['babel-preset-expo'] };\n};\n`,
-    },
+    { path: 'expo-mobile-app/plugins/withFmtConstevalFix.js', data: EXPO_FMT_PLUGIN_JS },
     {
       path: 'expo-mobile-app/tsconfig.json',
       data: `{\n  "extends": "expo/tsconfig.base",\n  "compilerOptions": { "strict": true }\n}\n`,
@@ -424,7 +478,7 @@ export async function downloadVerifiedPlayStoreZip(): Promise<void> {
   }
 
   const gitignoreContent = `node_modules/\n.expo/\ndist/\nweb-build/\n*.jks\n*.p8\n*.p12\n*.key\n*.mobileprovision\n.DS_Store\n`;
-  const easignoreContent = `node_modules/\n.expo/\ndist/\nweb-build/\n.git/\n`;
+  const easignoreContent = `node_modules/\n.expo/\ndist/\nweb-build/\n.git/\n/ios\n/android\n`;
 
   const entries: ZipEntryInput[] = [
     { path: 'INSTRUKCJA_SZYBKI_START.txt', data: QUICK_START_TXT },
@@ -434,6 +488,7 @@ export async function downloadVerifiedPlayStoreZip(): Promise<void> {
     { path: 'expo-mobile-app/app.json', data: EXPO_APP_JSON },
     { path: 'expo-mobile-app/eas.json', data: EXPO_EAS_JSON },
     { path: 'expo-mobile-app/App.tsx', data: EXPO_APP_TSX },
+    { path: 'expo-mobile-app/plugins/withFmtConstevalFix.js', data: EXPO_FMT_PLUGIN_JS },
     { path: 'android/build.gradle', data: ANDROID_BUILD_GRADLE },
     { path: 'android/settings.gradle', data: `rootProject.name = "FullStackAcademy"\ninclude ':app'\n` },
     {
