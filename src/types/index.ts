@@ -39,6 +39,8 @@ export interface User {
   lastAdRewardTimestamp?: number; // epoch ms of last rewarded AdSense video/ad watched
   dailyAdRewardsCount?: number; // number of rewarded ads watched today
   lastAdRewardDate?: string; // "YYYY-MM-DD"
+  lastPracticeRewardDate?: string;
+  lastFlashcardRewardDate?: string;
   isPro: boolean; // whether user has active PRO subscription (unlimited lives, etc.)
   proPlan?: 'monthly' | 'yearly' | 'lifetime' | null;
   proExpiresAt?: string;

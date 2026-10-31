@@ -152,7 +152,7 @@ export const SqlStudioView: React.FC = () => {
       SQL_MISSIONS.forEach((m) => {
         const rewardKey = `sql-mission-${m.id}`;
         if (!claimed.includes(rewardKey) && m.checkQuery(clean, output.length)) {
-          awardCustomXp(m.xpReward, `Misja SQL: ${m.title}`, rewardKey);
+          awardCustomXp(m.xpReward, `Misja SQL: ${m.title}`, rewardKey, { query: clean });
         }
       });
     } catch (err: any) {

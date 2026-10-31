@@ -2,29 +2,30 @@ import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
-import { DashboardView } from './components/DashboardView';
-import { ModulesView } from './components/ModulesView';
-import { LessonDetailView } from './components/LessonDetailView';
-import { SandboxView } from './components/SandboxView';
-import { ProjectsView } from './components/ProjectsView';
-import { CertificateView } from './components/CertificateView';
-import { ReviewCenterView } from './components/ReviewCenterView';
-import { AdminPanelView } from './components/AdminPanelView';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { DeploymentGuideView } from './components/DeploymentGuideView';
-import { TerminalSimulator } from './components/TerminalSimulator';
-import { SqlStudioView } from './components/SqlStudioView';
-import { MockInterviewView } from './components/MockInterviewView';
-import { ApiStudioView } from './components/ApiStudioView';
-import { EventLoopView } from './components/EventLoopView';
-import { LeaderboardChallengeView } from './components/LeaderboardChallengeView';
-import { FlashcardsCheatSheetView } from './components/FlashcardsCheatSheetView';
-import { CareerBackupView } from './components/CareerBackupView';
 import { CommandPaletteModal } from './components/CommandPaletteModal';
 import { AuthModal } from './components/AuthModal';
 import { LivesModal } from './components/LivesModal';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { Sparkles, Trophy, X, Code2, AlertTriangle } from 'lucide-react';
+
+const DashboardView = React.lazy(() => import('./components/DashboardView').then(({ DashboardView }) => ({ default: DashboardView })));
+const ModulesView = React.lazy(() => import('./components/ModulesView').then(({ ModulesView }) => ({ default: ModulesView })));
+const LessonDetailView = React.lazy(() => import('./components/LessonDetailView').then(({ LessonDetailView }) => ({ default: LessonDetailView })));
+const SandboxView = React.lazy(() => import('./components/SandboxView').then(({ SandboxView }) => ({ default: SandboxView })));
+const ProjectsView = React.lazy(() => import('./components/ProjectsView').then(({ ProjectsView }) => ({ default: ProjectsView })));
+const CertificateView = React.lazy(() => import('./components/CertificateView').then(({ CertificateView }) => ({ default: CertificateView })));
+const ReviewCenterView = React.lazy(() => import('./components/ReviewCenterView').then(({ ReviewCenterView }) => ({ default: ReviewCenterView })));
+const AdminPanelView = React.lazy(() => import('./components/AdminPanelView').then(({ AdminPanelView }) => ({ default: AdminPanelView })));
+const DeploymentGuideView = React.lazy(() => import('./components/DeploymentGuideView').then(({ DeploymentGuideView }) => ({ default: DeploymentGuideView })));
+const TerminalSimulator = React.lazy(() => import('./components/TerminalSimulator').then(({ TerminalSimulator }) => ({ default: TerminalSimulator })));
+const SqlStudioView = React.lazy(() => import('./components/SqlStudioView').then(({ SqlStudioView }) => ({ default: SqlStudioView })));
+const MockInterviewView = React.lazy(() => import('./components/MockInterviewView').then(({ MockInterviewView }) => ({ default: MockInterviewView })));
+const ApiStudioView = React.lazy(() => import('./components/ApiStudioView').then(({ ApiStudioView }) => ({ default: ApiStudioView })));
+const EventLoopView = React.lazy(() => import('./components/EventLoopView').then(({ EventLoopView }) => ({ default: EventLoopView })));
+const LeaderboardChallengeView = React.lazy(() => import('./components/LeaderboardChallengeView').then(({ LeaderboardChallengeView }) => ({ default: LeaderboardChallengeView })));
+const FlashcardsCheatSheetView = React.lazy(() => import('./components/FlashcardsCheatSheetView').then(({ FlashcardsCheatSheetView }) => ({ default: FlashcardsCheatSheetView })));
+const CareerBackupView = React.lazy(() => import('./components/CareerBackupView').then(({ CareerBackupView }) => ({ default: CareerBackupView })));
 
 const MainContent: React.FC = () => {
   const { activeTab, selectedLessonId, allLessons, toast, dismissToast, setActiveTab, isAuthenticated, logout } = useApp();
@@ -95,38 +96,46 @@ const MainContent: React.FC = () => {
         <Sidebar />
 
         <main className="flex-1 min-w-0 overflow-x-hidden pb-16 print:pb-0">
-          {activeTab === 'admin' ? (
-            <ProtectedRoute
-              requiredRole="admin"
-              allowGuests={false}
-              onOpenAuthModal={() => setIsAuthModalOpen(true)}
-            >
-              <AdminPanelView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
-            </ProtectedRoute>
-          ) : (
-            <ProtectedRoute
-              requiredRole="student"
-              allowGuests={false}
-              onOpenAuthModal={() => setIsAuthModalOpen(true)}
-            >
-              {activeTab === 'dashboard' && <DashboardView />}
-              {activeTab === 'modules' && <ModulesView />}
-              {activeTab === 'lesson' && <LessonDetailView lesson={currentLesson} />}
-              {activeTab === 'editor' && <SandboxView />}
-              {activeTab === 'projects' && <ProjectsView />}
-              {activeTab === 'reviews' && <ReviewCenterView />}
-              {activeTab === 'certificate' && <CertificateView />}
-              {activeTab === 'terminal' && <TerminalSimulator />}
-              {activeTab === 'sql_studio' && <SqlStudioView />}
-              {activeTab === 'interview' && <MockInterviewView />}
-              {activeTab === 'api_studio' && <ApiStudioView />}
-              {activeTab === 'event_loop' && <EventLoopView />}
-              {activeTab === 'leaderboard' && <LeaderboardChallengeView />}
-              {activeTab === 'flashcards' && <FlashcardsCheatSheetView />}
-              {activeTab === 'career' && <CareerBackupView />}
-              {activeTab === 'deployment' && <DeploymentGuideView />}
-            </ProtectedRoute>
-          )}
+          <React.Suspense
+            fallback={(
+              <div className="flex min-h-[50vh] items-center justify-center text-sm text-slate-400" role="status">
+                Ładowanie widoku...
+              </div>
+            )}
+          >
+            {activeTab === 'admin' ? (
+              <ProtectedRoute
+                requiredRole="admin"
+                allowGuests={false}
+                onOpenAuthModal={() => setIsAuthModalOpen(true)}
+              >
+                <AdminPanelView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
+              </ProtectedRoute>
+            ) : (
+              <ProtectedRoute
+                requiredRole="student"
+                allowGuests={false}
+                onOpenAuthModal={() => setIsAuthModalOpen(true)}
+              >
+                {activeTab === 'dashboard' && <DashboardView />}
+                {activeTab === 'modules' && <ModulesView />}
+                {activeTab === 'lesson' && <LessonDetailView lesson={currentLesson} />}
+                {activeTab === 'editor' && <SandboxView />}
+                {activeTab === 'projects' && <ProjectsView />}
+                {activeTab === 'reviews' && <ReviewCenterView />}
+                {activeTab === 'certificate' && <CertificateView />}
+                {activeTab === 'terminal' && <TerminalSimulator />}
+                {activeTab === 'sql_studio' && <SqlStudioView />}
+                {activeTab === 'interview' && <MockInterviewView />}
+                {activeTab === 'api_studio' && <ApiStudioView />}
+                {activeTab === 'event_loop' && <EventLoopView />}
+                {activeTab === 'leaderboard' && <LeaderboardChallengeView />}
+                {activeTab === 'flashcards' && <FlashcardsCheatSheetView />}
+                {activeTab === 'career' && <CareerBackupView />}
+                {activeTab === 'deployment' && <DeploymentGuideView />}
+              </ProtectedRoute>
+            )}
+          </React.Suspense>
         </main>
       </div>
 

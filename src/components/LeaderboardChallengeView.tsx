@@ -62,7 +62,8 @@ export const LeaderboardChallengeView: React.FC = () => {
       awardCustomXp(
         activeChallenge.xpReward,
         `Rozwiązano Wyzwanie Dnia: ${activeChallenge.title}`,
-        `daily-${activeChallenge.id}`
+        `daily-${activeChallenge.id}`,
+        { code: userCode }
       );
     }
   };

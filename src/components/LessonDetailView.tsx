@@ -79,6 +79,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
     currentUser,
     completeLesson,
     saveQuizScore,
+    verifyLessonExercise,
     saveCodeSnippet,
     setActiveTab,
     allLessons,
@@ -149,12 +150,12 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
       }
     });
     const scorePercent = Math.round((correctCount / lesson.quiz.length) * 100);
-    saveQuizScore(lesson.id, scorePercent);
+    saveQuizScore(lesson.id, scorePercent, selectedAnswers);
 
     if (scorePercent < 80) {
       loseLife(`Wynik testu: ${scorePercent}%. Tracisz 1 serce! Przeanalizuj poniższe wyjaśnienia.`);
     } else if (isExercisePassed && !isCompleted) {
-      completeLesson(lesson.id, lesson.xpReward);
+      completeLesson(lesson.id, lesson.xpReward, selectedAnswers);
     }
   };
 
@@ -695,16 +696,19 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
 
             <CodeEditor
               exercise={lesson.interactiveExercise}
-              onSuccess={() => {
-                setExercisePassedInSession(true);
-                awardCustomXp(
-                  25,
-                  `Zaliczono ćwiczenie w edytorze: ${lesson.interactiveExercise.title}`,
-                  `exercise-${lesson.interactiveExercise.id}`
-                );
-                if (eligibility.isQuizPassed && !isCompleted) {
-                  completeLesson(lesson.id, lesson.xpReward);
-                }
+              onSuccess={(code) => {
+                void verifyLessonExercise(lesson.interactiveExercise.id, code).then((verified) => {
+                  if (!verified) return;
+                  setExercisePassedInSession(true);
+                  awardCustomXp(
+                    25,
+                    `Zaliczono ćwiczenie w edytorze: ${lesson.interactiveExercise.title}`,
+                    `exercise-${lesson.interactiveExercise.id}`
+                  );
+                  if (eligibility.isQuizPassed && !isCompleted) {
+                    completeLesson(lesson.id, lesson.xpReward);
+                  }
+                });
               }}
               savedCode={currentUser.savedCode?.[lesson.interactiveExercise.id]}
               onSave={(code) => saveCodeSnippet(lesson.interactiveExercise.id, code)}

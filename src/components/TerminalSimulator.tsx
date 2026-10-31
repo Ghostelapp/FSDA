@@ -153,7 +153,12 @@ export const TerminalSimulator: React.FC = () => {
       if (!m.completed && prerequisitesMet && m.expectedCommandRegex.test(cmd)) {
         matchedMissionIds.push(m.id);
         soundManager.playSuccess();
-        const granted = awardCustomXp(m.xpReward, `Misja terminalowa: ${m.title}`, `terminal-mission-${m.id}`);
+        const granted = awardCustomXp(
+          m.xpReward,
+          `Misja terminalowa: ${m.title}`,
+          `terminal-mission-${m.id}`,
+          { command: cmd }
+        );
         if (granted) {
           newOutputs.push({
             id: `succ-${Date.now()}-${m.id}`,

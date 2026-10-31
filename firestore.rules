@@ -82,6 +82,9 @@ service cloud.firestore {
         (!('lives' in data) || (data.lives is number && data.lives >= 0 && data.lives <= 10)) &&
         (!('maxLives' in data) || (data.maxLives is number && data.maxLives >= 1 && data.maxLives <= 10)) &&
         (!('isPro' in data) || data.isPro is bool) &&
+        (!('weeklyGoalMinutes' in data) || (data.weeklyGoalMinutes is number && data.weeklyGoalMinutes >= 30 && data.weeklyGoalMinutes <= 1440)) &&
+        (!('avatar' in data) || (data.avatar is string && data.avatar.size() <= 2048)) &&
+        (!('savedCode' in data) || (data.savedCode is map && data.savedCode.size() <= 100)) &&
         (!('bio' in data) || (data.bio is string && data.bio.size() <= 600));
     }
 
@@ -96,10 +99,32 @@ service cloud.firestore {
         data.author is string && data.author.size() >= 1 && data.author.size() <= 120;
     }
 
+    function isInitialUserProfile(data) {
+      return data.keys().hasOnly([
+          'uid', 'id', 'name', 'email', 'role', 'status', 'xp', 'level',
+          'streakDays', 'completedLessons', 'completedProjects', 'unlockedBadges',
+          'claimedRewards', 'quizScores', 'savedCode', 'lives', 'maxLives',
+          'isPro', 'streakFreezes', 'bio', 'avatar', 'weeklyGoalMinutes',
+          'weeklySpentMinutes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.xp == 0 && data.level == 1 && data.streakDays == 0 &&
+        data.completedLessons.size() == 0 && data.completedProjects.size() == 0 &&
+        data.unlockedBadges.size() == 0 && data.claimedRewards.size() == 0 &&
+        data.quizScores.keys().size() == 0 && data.lives == 5 && data.maxLives == 5 &&
+        data.isPro == false && data.streakFreezes == 0 && data.weeklySpentMinutes == 0;
+    }
+
+    function hasOnlyOwnerEditableChanges() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'name', 'bio', 'avatar', 'weeklyGoalMinutes', 'savedCode', 'updatedAt'
+      ]);
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isAuthenticated() &&
         isValidUserProfile(request.resource.data, userId) &&
+        isInitialUserProfile(request.resource.data) &&
         (
           (isOwner(userId) && request.resource.data.role == 'student' && request.resource.data.status == 'active') ||
           isAdmin()
@@ -110,7 +135,9 @@ service cloud.firestore {
         (
           (isOwner(userId) &&
            request.resource.data.role == resource.data.role &&
-           request.resource.data.status == resource.data.status) ||
+           request.resource.data.status == resource.data.status &&
+           request.resource.data.email == resource.data.email &&
+           hasOnlyOwnerEditableChanges()) ||
           isAdmin()
         );
       allow delete: if isAdmin();

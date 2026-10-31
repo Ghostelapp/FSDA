@@ -24,5 +24,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "exclude": ["dist", "expo-mobile-app"]
+  "exclude": ["dist", "expo-mobile-app", "functions/lib"]
 }

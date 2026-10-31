@@ -37,6 +37,7 @@ export const FlashcardsCheatSheetView: React.FC = () => {
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
   const [scheduleMap, setScheduleMap] = useState<Record<string, FlashcardScheduleState>>({});
   const [reviewedCount, setReviewedCount] = useState<number>(0);
+  const [recentlyReviewedCardIds, setRecentlyReviewedCardIds] = useState<string[]>([]);
 
   // Cheat sheets state
   const [selectedCategory, setSelectedCategory] = useState<string>('Wszystkie');
@@ -52,9 +53,16 @@ export const FlashcardsCheatSheetView: React.FC = () => {
     setIsFlipped(false);
     setReviewedCount((c) => c + 1);
     setCardIndex((prev) => (prev + 1) % FLASHCARDS_DECK.length);
+    const reviewedCardIds = [...recentlyReviewedCardIds, currentCard.id];
+    setRecentlyReviewedCardIds(reviewedCardIds.length >= 3 ? [] : reviewedCardIds);
 
-    if ((reviewedCount + 1) % 3 === 0) {
-      awardCustomXp(25, 'Seria powtórek fiszek SM-2 ukończona!');
+    if (reviewedCardIds.length >= 3) {
+      awardCustomXp(
+        25,
+        'Seria powtórek fiszek SM-2 ukończona!',
+        `flashcards-${new Date().toISOString().slice(0, 10)}`,
+        { cardIds: reviewedCardIds }
+      );
     }
   };
 

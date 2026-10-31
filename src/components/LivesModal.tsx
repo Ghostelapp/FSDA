@@ -54,6 +54,7 @@ const PRACTICE_QUESTIONS = [
 export const LivesModal: React.FC = () => {
   const { 
     currentUser, 
+    isCloudConnected,
     livesInfo, 
     isLivesModalOpen, 
     setIsLivesModalOpen, 
@@ -71,6 +72,7 @@ export const LivesModal: React.FC = () => {
   // Practice quiz state
   const [currentPracticeIndex, setCurrentPracticeIndex] = useState(0);
   const [selectedPracticeOption, setSelectedPracticeOption] = useState<number | null>(null);
+  const [practiceAnswers, setPracticeAnswers] = useState<number[]>([]);
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
   const [practiceCompleted, setPracticeCompleted] = useState(false);
 
@@ -106,13 +108,21 @@ export const LivesModal: React.FC = () => {
   const isFull = currentUser.isPro || currentLives >= maxLives;
 
   const todayKey = formatLocalDateKey(new Date());
-  const adEligibility = checkRewardedAdEligibility({
+  const eligibility = checkRewardedAdEligibility({
     user: currentUser,
     config: adSenseConfig,
     todayDateKey: todayKey,
   });
+  const adEligibility = isCloudConnected
+    ? {
+        ...eligibility,
+        allowed: false,
+        reason: 'Weryfikacja obejrzenia reklamy po stronie serwera nie jest skonfigurowana.',
+      }
+    : eligibility;
 
   const startRewardedAd = () => {
+    if (!adEligibility.allowed) return;
     setAdRewardClaimed(false);
     setAdSecondsLeft(8);
     setIsAdPlaying(true);
@@ -133,14 +143,16 @@ export const LivesModal: React.FC = () => {
 
     const question = PRACTICE_QUESTIONS[currentPracticeIndex];
     if (selectedPracticeOption === question.correct) {
+      const nextAnswers = [...practiceAnswers, selectedPracticeOption];
       setTimeout(() => {
         if (currentPracticeIndex + 1 < 3) {
+          setPracticeAnswers(nextAnswers);
           setCurrentPracticeIndex((prev) => prev + 1);
           setSelectedPracticeOption(null);
           setIsAnswerRevealed(false);
         } else {
           setPracticeCompleted(true);
-          earnPracticeLife();
+          earnPracticeLife(nextAnswers);
         }
       }, 1200);
     }
@@ -149,6 +161,7 @@ export const LivesModal: React.FC = () => {
   const resetPractice = () => {
     setCurrentPracticeIndex(0);
     setSelectedPracticeOption(null);
+    setPracticeAnswers([]);
     setIsAnswerRevealed(false);
     setPracticeCompleted(false);
   };

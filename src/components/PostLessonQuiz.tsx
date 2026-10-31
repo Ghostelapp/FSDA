@@ -143,14 +143,14 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
       });
 
       const scorePercent = Math.round((correctCount / questions.length) * 100);
-      saveQuizScore(lesson.id, scorePercent);
+      saveQuizScore(lesson.id, scorePercent, answersHistory);
 
       if (scorePercent < 80) {
         loseLife(
           `Wynik quizu końcowego: ${scorePercent}%. Wymagane minimum to 80% — tracisz 1 serce.`
         );
       } else if (isExercisePassed && !currentUser.completedLessons.includes(lesson.id)) {
-        completeLesson(lesson.id, lesson.xpReward);
+        completeLesson(lesson.id, lesson.xpReward, answersHistory);
       }
 
       setIsFinished(true);

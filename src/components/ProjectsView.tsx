@@ -53,7 +53,11 @@ export const ProjectsView: React.FC = () => {
     if (!isProjectVerified && !isCompleted) {
       return;
     }
-    completeProject(activeProject.id, activeProject.xpReward);
+    completeProject(
+      activeProject.id,
+      activeProject.xpReward,
+      currentUser.savedCode?.[projectExercise.id]
+    );
   };
 
   const difficultyColors = {
@@ -330,15 +334,13 @@ export const ProjectsView: React.FC = () => {
                 key={projectExercise.id}
                 exercise={projectExercise}
                 onValidationChange={(res) => setProjectValidation(res)}
-                onSuccess={() => {
+                onSuccess={(code) => {
                   awardCustomXp(
                     50,
                     `Zweryfikowano kod projektu: ${activeProject.title}`,
                     `project-verify-${activeProject.id}`
                   );
-                  if (!isCompleted) {
-                    completeProject(activeProject.id, activeProject.xpReward);
-                  }
+                  completeProject(activeProject.id, activeProject.xpReward, code);
                 }}
                 savedCode={currentUser.savedCode?.[projectExercise.id]}
                 onSave={(code) => saveCodeSnippet(projectExercise.id, code)}

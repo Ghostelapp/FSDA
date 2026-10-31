@@ -101,9 +101,30 @@ export default defineConfig(() => {
         },
       }),
     ],
+    build: {
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              {
+                name: 'curriculum',
+                test: /src[\\/]data[\\/]modules[\\/]/,
+                maxSize: 400 * 1024,
+                priority: 2,
+              },
+              {
+                name: 'vendor',
+                test: /node_modules[\\/]/,
+                maxSize: 400 * 1024,
+              },
+            ],
+          },
+        },
+      },
+    },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(import.meta.dirname, '.'),
       },
     },
     server: {

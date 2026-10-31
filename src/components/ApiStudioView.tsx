@@ -83,7 +83,12 @@ export const ApiStudioView: React.FC = () => {
     API_MISSIONS.forEach((mission) => {
       if (!completedMissions.includes(mission.id) && checkApiMissionCompleted(mission, req, res)) {
         setLocalCompletedMissions((prev) => [...prev, mission.id]);
-        awardCustomXp(mission.xpReward, `Ukończono misję API: ${mission.title}`, `api-${mission.id}`);
+        awardCustomXp(mission.xpReward, `Ukończono misję API: ${mission.title}`, `api-${mission.id}`, {
+          method: req.method,
+          endpoint: req.endpoint,
+          headers: req.headers,
+          bodyRaw: req.bodyRaw,
+        });
       }
     });
   };

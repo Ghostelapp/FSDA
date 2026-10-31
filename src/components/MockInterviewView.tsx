@@ -296,7 +296,8 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
         awardCustomXp(
           currentTask.xpReward,
           `Zadanie Live Coding: ${currentTask.title}`,
-          `interview-${currentTask.id}`
+          `interview-${currentTask.id}`,
+          { code: userCode }
         );
         setIsCompleted(true);
         setIsTimerRunning(false);

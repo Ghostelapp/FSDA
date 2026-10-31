@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "lib",
+    "rootDir": "..",
+    "sourceMap": true,
+    "noEmit": true
+  },
+  "include": [
+    "index.ts",
+    "rewardValidation.ts",
+    "../src/types/index.ts",
+    "../src/data/**/*.ts",
+    "../src/utils/codeRunner.ts",
+    "../src/utils/developerSimulators.ts",
+    "../src/utils/gamification.ts"
+  ],
+  "exclude": ["lib", "node_modules"]
+}

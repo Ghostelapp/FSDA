@@ -18,6 +18,7 @@ import {
   onSnapshot,
   Unsubscribe,
 } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import firebaseAppletConfig from '../firebase-applet-config.json';
 import { User, Announcement } from './types';
 
@@ -47,6 +48,72 @@ export const db = initializeFirestore(
 );
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+const cloudFunctions = getFunctions(app, 'us-central1');
+
+type CodeBundle = { html: string; css: string; js: string };
+
+export async function verifyLessonExerciseInCloud(exerciseId: string, code: CodeBundle): Promise<void> {
+  await httpsCallable(cloudFunctions, 'verifyLessonExercise')({ exerciseId, code });
+}
+
+export async function submitQuizAnswersToCloud(
+  lessonId: string,
+  answers: Record<string, number>
+): Promise<number> {
+  const result = await httpsCallable<
+    { lessonId: string; answers: Record<string, number> },
+    { scorePercent: number }
+  >(cloudFunctions, 'submitQuizAnswers')({ lessonId, answers });
+  return result.data.scorePercent;
+}
+
+export async function completeLessonInCloud(
+  lessonId: string,
+  answers?: Record<string, number>
+): Promise<void> {
+  await httpsCallable(cloudFunctions, 'completeLesson')({ lessonId, answers });
+}
+
+export async function completeProjectInCloud(projectId: string, code: CodeBundle): Promise<void> {
+  await httpsCallable(cloudFunctions, 'completeProject')({ projectId, code });
+}
+
+export async function claimActivityRewardInCloud(
+  rewardId?: string,
+  proof?: Record<string, unknown>
+): Promise<void> {
+  await httpsCallable(cloudFunctions, 'claimActivityReward')({ rewardId, proof });
+}
+
+export type CloudLifeAction =
+  | 'lose'
+  | 'practice'
+  | 'ad-reward'
+  | 'buy-heart'
+  | 'buy-refill'
+  | 'buy-freeze'
+  | 'regenerate'
+  | 'admin-refill';
+
+export async function updateLivesInCloud(
+  action: CloudLifeAction,
+  targetUid?: string,
+  proof?: Record<string, unknown>
+): Promise<void> {
+  await httpsCallable(cloudFunctions, 'updateLives')({ action, targetUid, proof });
+}
+
+export async function setUserStatusInCloud(targetUid: string, status: string): Promise<void> {
+  await httpsCallable(cloudFunctions, 'setUserStatus')({ targetUid, status });
+}
+
+export async function setUserProStatusInCloud(
+  targetUid: string,
+  enabled: boolean,
+  plan: 'monthly' | 'yearly'
+): Promise<void> {
+  await httpsCallable(cloudFunctions, 'setUserProStatus')({ targetUid, enabled, plan });
+}
 
 export enum OperationType {
   CREATE = 'create',
@@ -137,58 +204,53 @@ export async function testFirebaseConnection(): Promise<boolean> {
  * Sanitizes a User object before writing to Firestore (removes undefined fields and passwords)
  */
 export function serializeUserForFirestore(uid: string, user: User): Record<string, unknown> {
-  const isAdminEmail =
-    (user.email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com';
-  const payload: Record<string, unknown> = {
-    uid,
-    id: user.id || uid,
+  return {
     name: (user.name || 'Kursant Akademii').slice(0, 120),
-    email: (user.email || 'kursant@akademia.pl').slice(0, 254),
-    role: isAdminEmail ? 'admin' : 'student',
-    status: user.status || 'active',
-    xp: Math.max(0, Math.min(10000000, Number(user.xp) || 0)),
-    level: Math.max(1, Math.min(1000, Number(user.level) || 1)),
-    streakDays: Math.max(0, Math.min(10000, Number(user.streakDays) || 0)),
-    lastActiveDate: user.lastActiveDate || new Date().toISOString().split('T')[0],
-    weeklyGoalMinutes: Number(user.weeklyGoalMinutes) || 180,
-    weeklySpentMinutes: Number(user.weeklySpentMinutes) || 0,
-    completedLessons: Array.isArray(user.completedLessons)
-      ? user.completedLessons.slice(0, 500)
-      : [],
-    completedProjects: Array.isArray(user.completedProjects)
-      ? user.completedProjects.slice(0, 100)
-      : [],
-    unlockedBadges: Array.isArray(user.unlockedBadges)
-      ? user.unlockedBadges.slice(0, 100)
-      : [],
-    claimedRewards: Array.isArray(user.claimedRewards)
-      ? user.claimedRewards.slice(0, 1000)
-      : [],
-    quizScores: user.quizScores && typeof user.quizScores === 'object' ? user.quizScores : {},
-    savedCode: user.savedCode && typeof user.savedCode === 'object' ? user.savedCode : {},
-    lives: Math.max(0, Math.min(10, typeof user.lives === 'number' ? user.lives : 5)),
-    maxLives: Math.max(1, Math.min(10, typeof user.maxLives === 'number' ? user.maxLives : 5)),
-    isPro: Boolean(user.isPro),
-    proPlan: user.proPlan || 'monthly',
-    streakFreezes: Number(user.streakFreezes) || 0,
     bio: (user.bio || 'Kursant Full Stack Developer Academy').slice(0, 600),
     avatar:
       user.avatar ||
       `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user.name || uid)}`,
-    antiBotVerified: true,
-    antiBotScore: 100,
-    createdAt: user.createdAt || new Date().toISOString().split('T')[0],
+    weeklyGoalMinutes: Math.max(30, Math.min(1440, Number(user.weeklyGoalMinutes) || 180)),
+    savedCode: user.savedCode && typeof user.savedCode === 'object' ? user.savedCode : {},
     updatedAt: new Date().toISOString(),
   };
-
-  return payload;
 }
 
 export async function saveUserProfileToCloud(uid: string, user: User): Promise<boolean> {
   const path = `users/${uid}`;
   try {
+    const profileRef = doc(db, 'users', uid);
     const payload = serializeUserForFirestore(uid, user);
-    await setDoc(doc(db, 'users', uid), payload, { merge: true });
+    const existing = await getDoc(profileRef);
+    if (existing.exists()) {
+      await setDoc(profileRef, payload, { merge: true });
+    } else {
+      const email = (user.email || 'kursant@akademia.pl').slice(0, 254);
+      const isAdminEmail = email.trim().toLowerCase() === 'zordonzordon1@gmail.com';
+      await setDoc(profileRef, {
+        uid,
+        id: uid,
+        name: (user.name || 'Kursant Akademii').slice(0, 120),
+        email,
+        role: isAdminEmail ? 'admin' : 'student',
+        status: 'active',
+        xp: 0,
+        level: 1,
+        streakDays: 0,
+        completedLessons: [],
+        completedProjects: [],
+        unlockedBadges: [],
+        claimedRewards: [],
+        quizScores: {},
+        lives: 5,
+        maxLives: 5,
+        isPro: false,
+        streakFreezes: 0,
+        weeklySpentMinutes: 0,
+        createdAt: new Date().toISOString().split('T')[0],
+        ...payload,
+      });
+    }
     return true;
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
@@ -222,25 +284,23 @@ export async function fetchOrCreateCloudUserProfile(
     avatar:
       fbUser.photoURL ||
       `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(uid)}`,
-    xp: isAdminEmail ? Math.max(9999, fallbackLocalUser?.xp || 0) : fallbackLocalUser?.xp || 50,
-    level: isAdminEmail ? 10 : fallbackLocalUser?.level || 1,
-    streakDays: Math.max(1, fallbackLocalUser?.streakDays || 1),
+    xp: 0,
+    level: 1,
+    streakDays: 0,
     lastActiveDate: new Date().toISOString().split('T')[0],
     weeklyGoalMinutes: fallbackLocalUser?.weeklyGoalMinutes || 180,
-    weeklySpentMinutes: fallbackLocalUser?.weeklySpentMinutes || 0,
-    completedLessons: fallbackLocalUser?.completedLessons || [],
-    completedProjects: fallbackLocalUser?.completedProjects || [],
-    unlockedBadges: fallbackLocalUser?.unlockedBadges?.length
-      ? fallbackLocalUser.unlockedBadges
-      : ['first-step'],
-    claimedRewards: fallbackLocalUser?.claimedRewards || [],
-    quizScores: fallbackLocalUser?.quizScores || {},
+    weeklySpentMinutes: 0,
+    completedLessons: [],
+    completedProjects: [],
+    unlockedBadges: [],
+    claimedRewards: [],
+    quizScores: {},
     savedCode: fallbackLocalUser?.savedCode || {},
     lives: 5,
     maxLives: 5,
-    isPro: isAdminEmail ? true : Boolean(fallbackLocalUser?.isPro),
-    proPlan: isAdminEmail ? 'lifetime' : fallbackLocalUser?.proPlan,
-    streakFreezes: isAdminEmail ? 5 : 1,
+    isPro: false,
+    proPlan: null,
+    streakFreezes: 0,
     bio: isAdminEmail
       ? 'Główny Administrator i Architekt Akademii Full Stack Developer (Chmura Firebase).'
       : 'Kursant Full Stack Developer Academy (Synchronizacja z chmurą Firestore).',
@@ -277,6 +337,8 @@ export async function fetchOrCreateCloudUserProfile(
         savedCode: data.savedCode || {},
         lives: typeof data.lives === 'number' ? data.lives : 5,
         maxLives: typeof data.maxLives === 'number' ? data.maxLives : 5,
+        lastPracticeRewardDate: data.lastPracticeRewardDate,
+        lastFlashcardRewardDate: data.lastFlashcardRewardDate,
         isPro: isAdminEmail ? true : Boolean(data.isPro),
         proPlan: isAdminEmail ? 'lifetime' : data.proPlan,
         streakFreezes: typeof data.streakFreezes === 'number' ? data.streakFreezes : 1,

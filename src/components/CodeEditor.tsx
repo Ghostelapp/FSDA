@@ -25,7 +25,7 @@ import {
 
 interface CodeEditorProps {
   exercise: InteractiveExercise;
-  onSuccess?: () => void;
+  onSuccess?: (code: { html: string; css: string; js: string }) => void;
   onValidationChange?: (result: ValidationSummary) => void;
   savedCode?: { html: string; css: string; js: string };
   onSave?: (code: { html: string; css: string; js: string }) => void;
@@ -135,7 +135,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     }
 
     if (result.allPassed) {
-      if (onSuccess) onSuccess();
+      if (onSuccess) onSuccess(code);
     }
   };
 

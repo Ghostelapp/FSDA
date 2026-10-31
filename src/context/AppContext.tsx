@@ -56,6 +56,15 @@ import {
   signOutFromFirebase,
   fetchOrCreateCloudUserProfile,
   saveUserProfileToCloud,
+  verifyLessonExerciseInCloud,
+  submitQuizAnswersToCloud,
+  completeLessonInCloud,
+  completeProjectInCloud,
+  claimActivityRewardInCloud,
+  updateLivesInCloud,
+  setUserStatusInCloud,
+  setUserProStatusInCloud,
+  CloudLifeAction,
   subscribeToUserProfile,
   subscribeToCloudAnnouncements,
   saveAnnouncementToCloud,
@@ -101,7 +110,7 @@ interface AppContextType {
   setIsSubModalOpen: (open: boolean) => void;
   loseLife: (reason?: string) => boolean;
   refillLives: () => void;
-  earnPracticeLife: () => void;
+  earnPracticeLife: (answers: number[]) => void;
   earnAdRewardLife: () => { success: boolean; message: string };
   adSenseConfig: AdSenseConfig;
   updateAdSenseConfig: (partial: Partial<AdSenseConfig>) => void;
@@ -137,10 +146,11 @@ interface AppContextType {
   verifyUserAntiBot: (userId: string) => void;
   giveProByAdmin: (userId: string, isPro: boolean, plan?: 'monthly' | 'yearly') => void;
   refillUserLivesByAdmin: (userId: string) => void;
-  completeLesson: (lessonId: string, xpReward: number) => void;
-  saveQuizScore: (lessonId: string, scorePercent: number) => void;
+  completeLesson: (lessonId: string, xpReward: number, answers?: Record<string, number>) => void;
+  saveQuizScore: (lessonId: string, scorePercent: number, answers: Record<string, number>) => void;
+  verifyLessonExercise: (exerciseId: string, code: { html: string; css: string; js: string }) => Promise<boolean>;
   saveCodeSnippet: (exerciseId: string, code: { html: string; css: string; js: string }) => void;
-  completeProject: (projectId: string, xpReward: number) => void;
+  completeProject: (projectId: string, xpReward: number, code?: { html: string; css: string; js: string }) => void;
   addAnnouncement: (title: string, content: string, category: Announcement['category']) => void;
   deleteAnnouncement: (id: string) => void;
   updateUserByAdmin: (userId: string, partial: Partial<User>) => void;
@@ -158,7 +168,7 @@ interface AppContextType {
   requestNotificationPermission: () => Promise<NotificationPermission | 'unsupported'>;
   updateReminderSettings: (partial: Partial<DailyReminderSettings>) => void;
   triggerGoalReminderNow: (isTest?: boolean) => Promise<boolean>;
-  awardCustomXp: (xpAmount: number, reason: string, rewardId?: string) => boolean;
+  awardCustomXp: (xpAmount: number, reason: string, rewardId?: string, proof?: Record<string, unknown>) => boolean;
   importUserBackup: (restoredUser: User) => void;
   securityLogs: SecurityAuditEvent[];
   clearSecurityLogs: () => void;
@@ -549,6 +559,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (changed) {
         setCurrentUser(userWithRegen);
         setAllUsers((users) => users.map((u) => (u.id === userWithRegen.id ? userWithRegen : u)));
+        syncLifeAction('regenerate');
       }
     }, 1000);
 
@@ -620,6 +631,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             isPro: cloudProfile.isPro,
             name: cloudProfile.name,
             bio: cloudProfile.bio,
+            avatar: cloudProfile.avatar,
+            weeklyGoalMinutes: cloudProfile.weeklyGoalMinutes,
+            savedCode: cloudProfile.savedCode,
             completedLessons: cloudProfile.completedLessons,
             completedProjects: cloudProfile.completedProjects,
             unlockedBadges: cloudProfile.unlockedBadges,
@@ -645,6 +659,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               isPro: remoteUser.isPro,
               name: remoteUser.name,
               bio: remoteUser.bio,
+              avatar: remoteUser.avatar,
+              weeklyGoalMinutes: remoteUser.weeklyGoalMinutes,
+              savedCode: remoteUser.savedCode,
               completedLessons: remoteUser.completedLessons,
               completedProjects: remoteUser.completedProjects,
               unlockedBadges: remoteUser.unlockedBadges,
@@ -694,6 +711,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       isPro: currentUser.isPro,
       name: currentUser.name,
       bio: currentUser.bio,
+      avatar: currentUser.avatar,
+      weeklyGoalMinutes: currentUser.weeklyGoalMinutes,
+      savedCode: currentUser.savedCode,
       completedLessons: currentUser.completedLessons,
       completedProjects: currentUser.completedProjects,
       unlockedBadges: currentUser.unlockedBadges,
@@ -741,6 +761,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const dismissToast = () => setToast(null);
 
+  const syncLifeAction = (action: CloudLifeAction, targetUid?: string, proof?: Record<string, unknown>) => {
+    if (!firebaseUid || !isCloudConnected) return;
+    void updateLivesInCloud(action, targetUid, proof).catch(() => {
+      showToast('Nie udało się potwierdzić zmiany serc w chmurze.', 'danger');
+    });
+  };
+
   // Lives management actions
   const loseLife = (reason?: string): boolean => {
     if (currentUser.isPro) {
@@ -759,6 +786,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(result.updatedUser);
     setAllUsers((users) => users.map((u) => (u.id === result.updatedUser.id ? result.updatedUser : u)));
     setLivesInfo(calculateRegeneratedLives(result.updatedUser));
+    syncLifeAction('lose');
 
     const remaining = result.updatedUser.lives;
     soundManager.playHeartLost();
@@ -775,14 +803,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const refillLives = () => {
-    const updated = refillAllLives(currentUser);
-    setCurrentUser(updated);
-    setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
-    setLivesInfo(calculateRegeneratedLives(updated));
+    const result = buyFullRefillWithXP(currentUser);
+    if (!result.success) {
+      showToast(result.error || 'Nie można odnowić serc.', 'danger');
+      return;
+    }
+    setCurrentUser(result.user);
+    setAllUsers((users) => users.map((u) => (u.id === result.user.id ? result.user : u)));
+    setLivesInfo(calculateRegeneratedLives(result.user));
+    syncLifeAction('buy-refill');
     showToast('Wszystkie serca zostały odnowione (5/5)!', 'success');
   };
 
-  const earnPracticeLife = () => {
+  const earnPracticeLife = (answers: number[]) => {
+    const todayKey = new Date().toISOString().slice(0, 10);
+    if (currentUser.lastPracticeRewardDate === todayKey) {
+      showToast('Nagroda za szybką powtórkę została już odebrana dzisiaj.', 'info');
+      return;
+    }
     const maxLives = currentUser.maxLives ?? 5;
     const currentLives = typeof currentUser.lives === 'number' ? currentUser.lives : maxLives;
     if (currentUser.isPro || currentLives >= maxLives) {
@@ -792,9 +830,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         ...currentUser,
         xp: newXp,
         level: levelInfo.level,
+        lastPracticeRewardDate: todayKey,
       };
       setCurrentUser(updated);
       setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
+      syncLifeAction('practice', undefined, { answers });
       soundManager.playSuccess();
       showToast('Masz już 5/5 serc — przyznano bonus +15 XP za szybką powtórkę!', 'success');
       return;
@@ -803,12 +843,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const updated = addLife(currentUser, 1);
     setCurrentUser(updated);
     setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
+    syncLifeAction('practice', undefined, { answers });
     setLivesInfo(calculateRegeneratedLives(updated));
     soundManager.playSuccess();
     showToast('+1 Serce zdobyte za aktywność w powtórkach!', 'success');
   };
 
   const earnAdRewardLife = (): { success: boolean; message: string } => {
+    if (firebaseUid && isCloudConnected) {
+      const message = 'Nagrody za reklamy są wyłączone do czasu wdrożenia weryfikacji potwierdzenia po stronie serwera.';
+      showToast(message, 'info');
+      return { success: false, message };
+    }
+
     const todayKey = formatLocalDateKey(new Date());
     const nowMs = Date.now();
     const eligibility = checkRewardedAdEligibility({
@@ -841,6 +888,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
       setCurrentUser(updated);
       setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
+      syncLifeAction('ad-reward');
       soundManager.playSuccess();
       const msg = 'Masz już 5/5 serc — przyznano bonus +20 XP za obejrzenie reklamy Google AdSense!';
       showToast(msg, 'success');
@@ -850,12 +898,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const withHeart = addLife(currentUser, 1);
     const updated: User = {
       ...withHeart,
+      lastPracticeRewardDate: todayKey,
       lastAdRewardTimestamp: nowMs,
       lastAdRewardDate: todayKey,
       dailyAdRewardsCount: nextDailyCount,
     };
     setCurrentUser(updated);
     setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
+    syncLifeAction('ad-reward');
     setLivesInfo(calculateRegeneratedLives(updated));
     soundManager.playSuccess();
     const msg = `+1 Serce zdobyte dzięki reklamie Google AdSense! (${updated.lives}/${maxLives} ❤️)`;
@@ -872,6 +922,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(res.user);
     setAllUsers((users) => users.map((u) => (u.id === res.user.id ? res.user : u)));
     setLivesInfo(calculateRegeneratedLives(res.user));
+    syncLifeAction('buy-heart');
     showToast(`Zakupiono 1 serce za ${XP_COST_ONE_HEART} XP!`, 'success');
     return true;
   };
@@ -885,6 +936,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(res.user);
     setAllUsers((users) => users.map((u) => (u.id === res.user.id ? res.user : u)));
     setLivesInfo(calculateRegeneratedLives(res.user));
+    syncLifeAction('buy-refill');
     showToast(`Odnawianie pełnego pakietu serc (5/5) za ${XP_COST_FULL_REFILL} XP!`, 'success');
     return true;
   };
@@ -897,6 +949,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     setCurrentUser(res.user);
     setAllUsers((users) => users.map((u) => (u.id === res.user.id ? res.user : u)));
+    syncLifeAction('buy-freeze');
     showToast(`Kupiono Tarczę Serii za ${XP_COST_STREAK_FREEZE} XP! Twoja passa jest chroniona.`, 'badge');
     return true;
   };
@@ -905,6 +958,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!isAuthenticated || currentUser.id === 'user-guest') {
       showToast('Zaloguj się lub utwórz konto, aby aktywować subskrypcję Full Stack PRO.', 'danger');
       window.dispatchEvent(new CustomEvent('akademia:open-auth-modal'));
+      return;
+    }
+    if (currentUser.role !== 'admin') {
+      showToast(
+        enable
+          ? 'Subskrypcja PRO wymaga potwierdzenia płatności; płatności online nie są skonfigurowane.'
+          : 'Status PRO zmienia się po potwierdzeniu anulowania płatności.',
+        'danger'
+      );
       return;
     }
     const updated = setProStatus(currentUser, enable, plan);
@@ -1048,7 +1110,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsSyncingCloud(false);
     if (ok) {
       soundManager.playSuccess();
-      showToast('Profil i postępy zostały pomyślnie zapisane w bazie Cloud Firestore!', 'success');
+      showToast('Profil, ustawienia i zapisany kod zostały zapisane w Cloud Firestore.', 'success');
     } else {
       showToast('Nie udało się zsynchronizować profilu z bazą Firestore.', 'danger');
     }
@@ -1163,6 +1225,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return u;
       })
     );
+    if (firebaseUid && isCloudConnected) {
+      void setUserStatusInCloud(userId, status).catch(() => {
+        showToast('Nie udało się zmienić statusu konta w chmurze.', 'danger');
+      });
+    }
 
     if (currentUser.id === userId && status !== 'active') {
       setIsAuthenticated(false);
@@ -1231,6 +1298,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return u;
       })
     );
+    if (firebaseUid && isCloudConnected) {
+      void setUserProStatusInCloud(userId, isPro, plan).catch(() => {
+        showToast('Nie udało się zmienić uprawnień PRO w chmurze.', 'danger');
+      });
+    }
     showToast(`Zaktualizowano uprawnienia PRO dla użytkownika.`, 'badge');
   };
 
@@ -1251,6 +1323,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return u;
       })
     );
+    if (firebaseUid && isCloudConnected) {
+      void updateLivesInCloud('admin-refill', userId).catch(() => {
+        showToast('Nie udało się uzupełnić serc w chmurze.', 'danger');
+      });
+    }
     showToast('Serca użytkownika zostały uzupełnione do maksimum (5/5).', 'success');
   };
 
@@ -1291,7 +1368,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast(`Wylogowano z konta (${prevName}). Jesteś teraz w trybie gościa.`, 'info');
   };
 
-  const completeLesson = (lessonId: string, xpReward: number) => {
+  const completeLesson = (lessonId: string, xpReward: number, answers?: Record<string, number>) => {
     const lessonObj = allLessons.find((l) => l.id === lessonId);
     const lessonMinutes = lessonObj?.durationMinutes || 25;
 
@@ -1336,9 +1413,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setAllUsers((users) => users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
       return updatedUser;
     });
+    if (firebaseUid && isCloudConnected) {
+      void completeLessonInCloud(lessonId, answers).catch(() => {
+        showToast('Nie udało się potwierdzić zaliczenia lekcji w chmurze.', 'danger');
+      });
+    }
   };
 
-  const saveQuizScore = (lessonId: string, scorePercent: number) => {
+  const saveQuizScore = (lessonId: string, scorePercent: number, answers: Record<string, number>) => {
     setCurrentUser((prev) => {
       const updatedScores = {
         ...prev.quizScores,
@@ -1362,6 +1444,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setAllUsers((users) => users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
       return updatedUser;
     });
+    if (firebaseUid && isCloudConnected) {
+      void submitQuizAnswersToCloud(lessonId, answers).catch(() => {
+        showToast('Nie udało się zweryfikować odpowiedzi quizu w chmurze.', 'danger');
+      });
+    }
+  };
+
+  const verifyLessonExercise = async (exerciseId: string, code: { html: string; css: string; js: string }) => {
+    if (!firebaseUid || !isCloudConnected) return true;
+    try {
+      await verifyLessonExerciseInCloud(exerciseId, code);
+      return true;
+    } catch {
+      showToast('Serwer nie potwierdził poprawności ćwiczenia.', 'danger');
+      return false;
+    }
   };
 
   const saveCodeSnippet = (exerciseId: string, code: { html: string; css: string; js: string }) => {
@@ -1378,7 +1476,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
-  const completeProject = (projectId: string, xpReward: number) => {
+  const completeProject = (projectId: string, xpReward: number, code?: { html: string; css: string; js: string }) => {
     setCurrentUser((prev) => {
       const alreadyCompleted = prev.completedProjects.includes(projectId);
       const newCompleted = alreadyCompleted ? prev.completedProjects : [...prev.completedProjects, projectId];
@@ -1405,6 +1503,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setAllUsers((users) => users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
       return updatedUser;
     });
+    if (firebaseUid && isCloudConnected) {
+      if (!code) {
+        showToast('Brakuje kodu projektu do weryfikacji serwerowej.', 'danger');
+        return;
+      }
+      void completeProjectInCloud(projectId, code).catch(() => {
+        showToast('Serwer nie potwierdził zaliczenia projektu.', 'danger');
+      });
+    }
   };
 
   const addAnnouncement = (title: string, content: string, category: Announcement['category']) => {
@@ -1459,7 +1566,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast('Zaktualizowano profil użytkownika w bazie danych.', 'success');
   };
 
-  const awardCustomXp = useCallback((xpAmount: number, reason: string, rewardId?: string): boolean => {
+  const awardCustomXp = useCallback((
+    xpAmount: number,
+    reason: string,
+    rewardId?: string,
+    proof?: Record<string, unknown>
+  ): boolean => {
     let wasGranted = true;
     setCurrentUser((prev) => {
       if (rewardId) {
@@ -1490,8 +1602,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     soundManager.playSuccess();
     showToast(`${reason} (+${xpAmount} XP)`, 'success');
+    if (firebaseUid && isCloudConnected && !rewardId?.startsWith('exercise-') && !rewardId?.startsWith('project-verify-')) {
+      void claimActivityRewardInCloud(rewardId, proof).catch(() => {
+        showToast('Serwer nie potwierdził tej nagrody.', 'danger');
+      });
+    }
     return true;
-  }, []);
+  }, [firebaseUid, isCloudConnected, showToast]);
 
   const importUserBackup = useCallback(
     (restoredUser: User) => {
@@ -1730,6 +1847,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         refillUserLivesByAdmin,
         completeLesson,
         saveQuizScore,
+        verifyLessonExercise,
         saveCodeSnippet,
         completeProject,
         addAnnouncement,
