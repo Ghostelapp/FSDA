@@ -287,7 +287,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               data-testid="landing-top-cta"
               className="px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
             >
-              {isAuthenticated ? 'Przejdź do Pulpitu' : 'Rozpocznij za darmo'}
+              {isAuthenticated ? 'Aplikacja do nauki (Pulpit)' : 'Otwórz Aplikację do nauki →'}
             </button>
           </div>
         </div>
@@ -304,9 +304,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               <div className="space-y-6">
                 {/* Quiet Unboxed Metadata Kicker (Zero-Pill Discipline) */}
                 <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-400">
-                  <span className="text-indigo-400 font-semibold">Edycja 2026</span>
+                  <span className="text-indigo-400 font-semibold">fsda-phi.vercel.app</span>
                   <span aria-hidden="true">·</span>
-                  <span>Ścieżka Junior → Mid Full Stack Engineer</span>
+                  <span>Aplikacja: app.fsda-phi.vercel.app</span>
                   <span aria-hidden="true">·</span>
                   <span>Polska Akademia Kodowania</span>
                 </div>
@@ -337,8 +337,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   >
                     <span>
                       {isAuthenticated
-                        ? `Kontynuuj naukę (${currentUser.name.split(' ')[0]})`
-                        : 'Utwórz darmowe konto i zacznij'}
+                        ? `Przejdź do Aplikacji (${currentUser.name.split(' ')[0]})`
+                        : 'Uruchom Aplikację do nauki'}
                     </span>
                     <ArrowRight className="h-4 w-4 shrink-0" />
                   </button>
@@ -354,9 +354,20 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
 
                 {/* Unboxed Trust Metadata */}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 pt-2 border-t border-slate-900">
-                  <span>Brak karty kredytowej na start</span>
+                  <span>Landing Page: fsda-phi.vercel.app</span>
                   <span aria-hidden="true">·</span>
-                  <span>Natychmiastowy dostęp w przeglądarce i na iOS / Android</span>
+                  <a
+                    href="https://app.fsda-phi.vercel.app"
+                    onClick={(e) => {
+                      if (window.location.hostname !== 'app.fsda-phi.vercel.app') {
+                        e.preventDefault();
+                        handlePrimaryAction();
+                      }
+                    }}
+                    className="text-indigo-400 hover:text-indigo-300 underline underline-offset-4"
+                  >
+                    Aplikacja: app.fsda-phi.vercel.app
+                  </a>
                   <span aria-hidden="true">·</span>
                   <span>Weryfikowany certyfikat SHA-256</span>
                 </div>

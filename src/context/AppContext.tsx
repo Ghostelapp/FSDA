@@ -384,8 +384,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [activeTab, setActiveTabState] = useState<AppTab>(() => {
     try {
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get('tab') as AppTab | null;
       const validTabs: AppTab[] = [
         'landing',
         'dashboard',
@@ -406,9 +404,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         'admin',
         'deployment',
       ];
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') as AppTab | null;
       if (tabParam && validTabs.includes(tabParam)) {
         return tabParam;
       }
+
+      const host = (window.location.hostname || '').toLowerCase();
+      const path = (window.location.pathname || '/').toLowerCase();
+      const isAppSubdomainOrPath =
+        host.startsWith('app.') ||
+        host.startsWith('app-') ||
+        path === '/app' ||
+        path.startsWith('/app/');
+
+      if (isAppSubdomainOrPath) {
+        return 'dashboard';
+      }
+
       return 'landing';
     } catch {
       return 'landing';
@@ -984,6 +997,53 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
 
+  useEffect(() => {
+    const handlePopState = () => {
+      try {
+        const validTabs: AppTab[] = [
+          'landing',
+          'dashboard',
+          'modules',
+          'lesson',
+          'editor',
+          'projects',
+          'reviews',
+          'certificate',
+          'terminal',
+          'sql_studio',
+          'interview',
+          'api_studio',
+          'event_loop',
+          'leaderboard',
+          'flashcards',
+          'career',
+          'admin',
+          'deployment',
+        ];
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab') as AppTab | null;
+        if (tabParam && validTabs.includes(tabParam)) {
+          setActiveTabState(tabParam);
+          return;
+        }
+        const host = (window.location.hostname || '').toLowerCase();
+        const path = (window.location.pathname || '/').toLowerCase();
+        const isAppSubdomainOrPath =
+          host.startsWith('app.') ||
+          host.startsWith('app-') ||
+          path === '/app' ||
+          path.startsWith('/app/');
+
+        setActiveTabState(isAppSubdomainOrPath ? 'dashboard' : 'landing');
+      } catch {
+        // ignore history error
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const setActiveTab = (tab: AppTab, lessonId?: string, projectId?: string) => {
     if (tab === 'admin' && (!isAuthenticated || currentUser.role !== 'admin')) {
       const isGuest = !isAuthenticated || currentUser.id === 'user-guest';
@@ -1007,6 +1067,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveTabState(tab);
     if (lessonId) setSelectedLessonId(lessonId);
     if (projectId) setSelectedProjectId(projectId);
+
+    try {
+      const host = (window.location.hostname || '').toLowerCase();
+      const isAppSubdomain = host.startsWith('app.') || host.startsWith('app-');
+      let nextUrl = '/';
+      if (isAppSubdomain) {
+        nextUrl = tab === 'dashboard' ? '/' : `/?tab=${tab}`;
+      } else {
+        if (tab === 'landing') {
+          nextUrl = '/';
+        } else if (tab === 'dashboard') {
+          nextUrl = '/app';
+        } else {
+          nextUrl = `/app?tab=${tab}`;
+        }
+      }
+      if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
+        window.history.pushState({ tab }, '', nextUrl);
+      }
+    } catch {
+      // ignore history API errors in sandboxed iframes
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
