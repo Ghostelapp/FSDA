@@ -39,6 +39,7 @@ export const Sidebar: React.FC = () => {
   const { activeTab, setActiveTab, currentUser, isAuthenticated, weakAreas, allLessons } = useApp();
 
   const primaryItems: SidebarNavItem[] = [
+    { id: 'landing', label: 'Strona Główna (Landing)', icon: Sparkles },
     { id: 'dashboard', label: 'Pulpit Kursanta', icon: LayoutDashboard },
     { id: 'modules', label: 'Ścieżka Kursu (15)', icon: Layers },
     { id: 'projects', label: 'Projekty Praktyczne (12)', icon: FolderGit2 },

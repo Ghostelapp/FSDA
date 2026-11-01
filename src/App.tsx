@@ -26,6 +26,7 @@ const EventLoopView = React.lazy(() => import('./components/EventLoopView').then
 const LeaderboardChallengeView = React.lazy(() => import('./components/LeaderboardChallengeView').then(({ LeaderboardChallengeView }) => ({ default: LeaderboardChallengeView })));
 const FlashcardsCheatSheetView = React.lazy(() => import('./components/FlashcardsCheatSheetView').then(({ FlashcardsCheatSheetView }) => ({ default: FlashcardsCheatSheetView })));
 const CareerBackupView = React.lazy(() => import('./components/CareerBackupView').then(({ CareerBackupView }) => ({ default: CareerBackupView })));
+const LandingPageView = React.lazy(() => import('./components/LandingPageView').then(({ LandingPageView }) => ({ default: LandingPageView })));
 
 const MainContent: React.FC = () => {
   const { activeTab, selectedLessonId, allLessons, toast, dismissToast, setActiveTab, isAuthenticated, logout } = useApp();
@@ -54,13 +55,15 @@ const MainContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white print:bg-white print:text-slate-900">
       
-      {/* Top Navbar */}
-      <div className="print:hidden">
-        <Navbar
-          onOpenAuthModal={() => setIsAuthModalOpen(true)}
-          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        />
-      </div>
+      {/* Top Navbar (hidden on Landing Page, which renders its own 3-zone header) */}
+      {activeTab !== 'landing' && (
+        <div className="print:hidden">
+          <Navbar
+            onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          />
+        </div>
+      )}
 
       {/* Toast Notification Banner */}
       {toast && (
@@ -91,53 +94,67 @@ const MainContent: React.FC = () => {
         </div>
       )}
 
-      {/* App Body with Sidebar (scrolls together as one page) */}
-      <div className="flex flex-1 items-stretch min-w-0">
-        <Sidebar />
-
-        <main className="flex-1 min-w-0 overflow-x-hidden pb-16 print:pb-0">
+      {/* App Body */}
+      {activeTab === 'landing' ? (
+        <main className="flex-1 min-w-0 overflow-x-hidden print:pb-0">
           <React.Suspense
             fallback={(
               <div className="flex min-h-[50vh] items-center justify-center text-sm text-slate-400" role="status">
-                Ładowanie widoku...
+                Ładowanie strony głównej...
               </div>
             )}
           >
-            {activeTab === 'admin' ? (
-              <ProtectedRoute
-                requiredRole="admin"
-                allowGuests={false}
-                onOpenAuthModal={() => setIsAuthModalOpen(true)}
-              >
-                <AdminPanelView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
-              </ProtectedRoute>
-            ) : (
-              <ProtectedRoute
-                requiredRole="student"
-                allowGuests={false}
-                onOpenAuthModal={() => setIsAuthModalOpen(true)}
-              >
-                {activeTab === 'dashboard' && <DashboardView />}
-                {activeTab === 'modules' && <ModulesView />}
-                {activeTab === 'lesson' && <LessonDetailView lesson={currentLesson} />}
-                {activeTab === 'editor' && <SandboxView />}
-                {activeTab === 'projects' && <ProjectsView />}
-                {activeTab === 'reviews' && <ReviewCenterView />}
-                {activeTab === 'certificate' && <CertificateView />}
-                {activeTab === 'terminal' && <TerminalSimulator />}
-                {activeTab === 'sql_studio' && <SqlStudioView />}
-                {activeTab === 'interview' && <MockInterviewView />}
-                {activeTab === 'api_studio' && <ApiStudioView />}
-                {activeTab === 'event_loop' && <EventLoopView />}
-                {activeTab === 'leaderboard' && <LeaderboardChallengeView />}
-                {activeTab === 'flashcards' && <FlashcardsCheatSheetView />}
-                {activeTab === 'career' && <CareerBackupView />}
-                {activeTab === 'deployment' && <DeploymentGuideView />}
-              </ProtectedRoute>
-            )}
+            <LandingPageView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
           </React.Suspense>
         </main>
-      </div>
+      ) : (
+        <div className="flex flex-1 items-stretch min-w-0">
+          <Sidebar />
+
+          <main className="flex-1 min-w-0 overflow-x-hidden pb-16 print:pb-0">
+            <React.Suspense
+              fallback={(
+                <div className="flex min-h-[50vh] items-center justify-center text-sm text-slate-400" role="status">
+                  Ładowanie widoku...
+                </div>
+              )}
+            >
+              {activeTab === 'admin' ? (
+                <ProtectedRoute
+                  requiredRole="admin"
+                  allowGuests={false}
+                  onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                >
+                  <AdminPanelView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
+                </ProtectedRoute>
+              ) : (
+                <ProtectedRoute
+                  requiredRole="student"
+                  allowGuests={false}
+                  onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                >
+                  {activeTab === 'dashboard' && <DashboardView />}
+                  {activeTab === 'modules' && <ModulesView />}
+                  {activeTab === 'lesson' && <LessonDetailView lesson={currentLesson} />}
+                  {activeTab === 'editor' && <SandboxView />}
+                  {activeTab === 'projects' && <ProjectsView />}
+                  {activeTab === 'reviews' && <ReviewCenterView />}
+                  {activeTab === 'certificate' && <CertificateView />}
+                  {activeTab === 'terminal' && <TerminalSimulator />}
+                  {activeTab === 'sql_studio' && <SqlStudioView />}
+                  {activeTab === 'interview' && <MockInterviewView />}
+                  {activeTab === 'api_studio' && <ApiStudioView />}
+                  {activeTab === 'event_loop' && <EventLoopView />}
+                  {activeTab === 'leaderboard' && <LeaderboardChallengeView />}
+                  {activeTab === 'flashcards' && <FlashcardsCheatSheetView />}
+                  {activeTab === 'career' && <CareerBackupView />}
+                  {activeTab === 'deployment' && <DeploymentGuideView />}
+                </ProtectedRoute>
+              )}
+            </React.Suspense>
+          </main>
+        </div>
+      )}
 
       {/* Global Footer */}
       <footer className="border-t border-slate-900 bg-slate-950 px-4 py-8 text-xs text-slate-400 print:hidden">
@@ -150,7 +167,21 @@ const MainContent: React.FC = () => {
             <span className="text-slate-500">© 2026. Wszystkie prawa zastrzeżone.</span>
           </div>
 
-          <div className="flex items-center gap-4 text-[11px]">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[11px]">
+            <button
+              type="button"
+              onClick={() => setActiveTab('landing')}
+              className="hover:text-white transition-colors"
+            >
+              Strona Główna
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('dashboard')}
+              className="hover:text-white transition-colors"
+            >
+              Pulpit Kursanta
+            </button>
             <button
               type="button"
               onClick={() => setActiveTab('deployment')}

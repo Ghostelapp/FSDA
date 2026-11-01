@@ -72,6 +72,7 @@ import {
 } from '../firebase';
 
 export type AppTab = 
+  | 'landing'
   | 'dashboard' 
   | 'modules' 
   | 'lesson' 
@@ -386,6 +387,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AppTab | null;
       const validTabs: AppTab[] = [
+        'landing',
         'dashboard',
         'modules',
         'lesson',
@@ -407,9 +409,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (tabParam && validTabs.includes(tabParam)) {
         return tabParam;
       }
-      return 'dashboard';
+      return 'landing';
     } catch {
-      return 'dashboard';
+      return 'landing';
     }
   });
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>('html-7');
@@ -1035,7 +1037,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsAuthenticated(true);
     setAllUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
     setLivesInfo(calculateRegeneratedLives(updatedUser));
-    if (updatedUser.role !== 'admin' && activeTab === 'admin') {
+    if ((updatedUser.role !== 'admin' && activeTab === 'admin') || activeTab === 'landing') {
       setActiveTabState('dashboard');
     }
     soundManager.playSuccess();
@@ -1060,6 +1062,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
         return [cloudProfile, ...prev];
       });
+      if (activeTab === 'landing') {
+        setActiveTabState('dashboard');
+      }
       soundManager.playLevelUp();
       showToast(
         `Połączono z chmurą Firebase! Witaj, ${cloudProfile.name}. Postępy synchronizują się z Firestore.`,
@@ -1136,7 +1141,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(newUser);
     setIsAuthenticated(true);
     setLivesInfo(calculateRegeneratedLives(newUser));
-    if (newUser.role !== 'admin' && activeTab === 'admin') {
+    if ((newUser.role !== 'admin' && activeTab === 'admin') || activeTab === 'landing') {
       setActiveTabState('dashboard');
     }
 
