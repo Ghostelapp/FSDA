@@ -2,6 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { MODULES_DATA } from '../data/modulesData';
 import {
+  CAREER_TRACKS,
+  CareerTrackId,
+  calculateStudyPlanEstimate,
+} from '../utils/landingCalculator';
+import {
   ArrowRight,
   Check,
   Play,
@@ -12,16 +17,19 @@ import {
   Cpu,
   Award,
   ChevronRight,
+  ChevronDown,
   CheckCircle2,
   Smartphone,
+  HelpCircle,
 } from 'lucide-react';
 
 interface PlaygroundSample {
-  id: 'html' | 'css' | 'js';
+  id: 'html' | 'css' | 'js' | 'sql';
   label: string;
   lessonRef: string;
   taskTitle: string;
   analogy: string;
+  beginnerHint: string;
   starterCode: string;
   solutionCode: string;
   checkRule: (code: string) => boolean;
@@ -35,6 +43,7 @@ const PLAYGROUND_SAMPLES: PlaygroundSample[] = [
     lessonRef: 'html-1',
     taskTitle: 'Dopisz główny nagłówek <h1> oraz przycisk <button> w karcie profilu',
     analogy: 'HTML to szkielet budynku — każdy znacznik mówi przeglądarce, czym jest dany element.',
+    beginnerHint: 'Wpisz wewnątrz <h1>Maja Kowalska</h1>, a pod akapitem <p> dodaj <button>Zobacz Portfolio</button>.',
     starterCode: `<div class="card">
   <p class="kicker">Karta Inżyniera</p>
   <!-- Dopisz poniżej nagłówek <h1> z imieniem i <button> -->
@@ -53,10 +62,11 @@ const PLAYGROUND_SAMPLES: PlaygroundSample[] = [
   },
   {
     id: 'css',
-    label: '02. CSS3: Układ Flexbox',
+    label: '02. CSS3: Flexbox',
     lessonRef: 'css-1',
     taskTitle: 'Włącz układ Flexbox (display: flex) i wyrównaj elementy w wierszu',
     analogy: 'Flexbox działa jak inteligentna półka, która sama układa elementy obok siebie z równym odstępem.',
+    beginnerHint: 'Zamień właściwość display: block na display: flex; oraz dopisz w nowej linii gap: 16px;',
     starterCode: `.pricing-row {
   /* Dopisz display: flex oraz gap: 16px */
   display: block;
@@ -84,6 +94,7 @@ const PLAYGROUND_SAMPLES: PlaygroundSample[] = [
     lessonRef: 'js-1',
     taskTitle: 'Oblicz sumę punktów XP po ukończeniu lekcji i zwróć wynik',
     analogy: 'Funkcja w JavaScript to ekspres do kawy: wsypujesz składniki (argumenty), a na wyjściu otrzymujesz gotowy wynik (return).',
+    beginnerHint: 'Zamiast return 0; wpisz return aktualneXP + bonusZaLekcje;',
     starterCode: `function obliczNoweXP(aktualneXP, bonusZaLekcje) {
   // Zwróć sumę aktualneXP + bonusZaLekcje
   return 0;
@@ -99,6 +110,169 @@ const wynik = obliczNoweXP(1250, 150);`,
       /return\s+aktualneXP\s*\+\s*bonusZaLekcje/i.test(code),
     ruleLabel: 'Funkcja zwraca wyrażenie aktualneXP + bonusZaLekcje',
   },
+  {
+    id: 'sql',
+    label: '04. SQL: Baza Danych',
+    lessonRef: 'db-1',
+    taskTitle: 'Pobierz z bazy kursantów z poziomem powyżej 5 posortowanych malejąco po XP',
+    analogy: 'Zapytanie SELECT w SQL działa jak precyzyjny filtr w arkuszu danych — wskazujesz kolumny, warunek WHERE i kolejność ORDER BY.',
+    beginnerHint: 'Dodaj warunek WHERE level > 5 oraz sortowanie ORDER BY xp DESC;',
+    starterCode: `SELECT imie, rola, xp, level
+FROM kursanci
+-- Dopisz poniżej warunek WHERE level > 5 oraz ORDER BY xp DESC;
+`,
+    solutionCode: `SELECT imie, rola, xp, level
+FROM kursanci
+WHERE level > 5
+ORDER BY xp DESC;`,
+    checkRule: (code: string) =>
+      /WHERE\s+level\s*>\s*5/i.test(code) && /ORDER\s+BY\s+xp\s+DESC/i.test(code),
+    ruleLabel: 'Zastosowano filtr WHERE level > 5 oraz sortowanie ORDER BY xp DESC',
+  },
+];
+
+interface PortfolioShowcaseProject {
+  id: string;
+  projectRef: string;
+  index: string;
+  title: string;
+  category: string;
+  difficulty: string;
+  estimatedHours: number;
+  summary: string;
+  stack: string;
+  architectureLayers: { layer: string; detail: string }[];
+  acceptanceCriteria: string[];
+}
+
+const PORTFOLIO_SHOWCASE_PROJECTS: PortfolioShowcaseProject[] = [
+  {
+    id: 'fintech',
+    projectRef: 'proj-1',
+    index: '01',
+    title: 'System Bankowości i Budżetu FinTech (SPA)',
+    category: 'Frontend & TypeScript',
+    difficulty: 'Poziom Junior',
+    estimatedHours: 14,
+    summary:
+      'Interaktywny panel finansowy z kategoryzacją transakcji, wielowalutowym przelicznikiem kursów w czasie rzeczywistym, wykresami przepływów oraz trwałym zapisem stanu.',
+    stack: 'React 19 · TypeScript · Tailwind CSS · LocalStorage & REST API',
+    architectureLayers: [
+      { layer: 'Warstwa Prezentacji', detail: 'Komponenty funkcyjne React z tabelarycznym formatowaniem kwot (tabular-nums) i responsywnym układem Grid.' },
+      { layer: 'Logika Stanu', detail: 'Silnie typowane interfejsy TypeScript, niestandardowe hooki obliczające bilans przychodów i wydatków.' },
+      { layer: 'Walidacja Danych', detail: 'Ochrona przed ujemnymi kwotami, pustymi tytułami i błędami zaokrągleń zmiennoprzecinkowych.' },
+    ],
+    acceptanceCriteria: [
+      'Dodawanie i filtrowanie transakcji bez przeładowania strony',
+      'Automatyczne przeliczanie salda w PLN / EUR / USD',
+      '100% pokrycia typami TypeScript bez użycia any',
+    ],
+  },
+  {
+    id: 'ecommerce',
+    projectRef: 'proj-2',
+    index: '02',
+    title: 'Silnik E-Commerce REST API z Autoryzacją JWT',
+    category: 'Backend & Bazy Danych',
+    difficulty: 'Poziom Junior / Regular',
+    estimatedHours: 22,
+    summary:
+      'Kompletny serwer sklepu internetowego obsługujący koszyk, stany magazynowe, transakcje ACID w PostgreSQL oraz bezpieczne logowanie z tokenami JWT i Refresh Token.',
+    stack: 'Node.js · Express · PostgreSQL · Prisma ORM · Zod · JWT',
+    architectureLayers: [
+      { layer: 'Warstwa API & Middleware', detail: 'Endpointy RESTful zabezpieczone walidacją schematów Zod oraz kontrolą uprawnień RBAC.' },
+      { layer: 'Baza Relacyjna SQL', detail: 'Relacje 1:N oraz N:M pomiędzy użytkownikami, zamówieniami i produktami z transakcjami bazodanowymi.' },
+      { layer: 'Bezpieczeństwo OWASP', detail: 'Haszowanie haseł algorytmem bcrypt, ciasteczka HttpOnly i ochrona przed SQL Injection.' },
+    ],
+    acceptanceCriteria: [
+      'Atomowa rezerwacja towaru w magazynie podczas składania zamówienia',
+      'Obsługa błędów HTTP 400 / 401 / 403 / 404 w ujednoliconym formacie JSON',
+      'Zestaw testów integracyjnych dla ścieżki zakupowej',
+    ],
+  },
+  {
+    id: 'kanban',
+    projectRef: 'proj-3',
+    index: '03',
+    title: 'Zespołowa Tablica Inżynierska Real-Time',
+    category: 'Full Stack & WebSockets',
+    difficulty: 'Poziom Regular',
+    estimatedHours: 26,
+    summary:
+      'Aplikacja do zarządzania zadaniami zespołowymi z natychmiastową synchronizacją zmian pomiędzy wieloma otwartymi oknami przeglądarki przez WebSockets.',
+    stack: 'Next.js · TypeScript · Node.js · WebSockets · Redis Cache',
+    architectureLayers: [
+      { layer: 'Synchronizacja na Żywo', detail: 'Dwukierunkowy kanał zdarzeń przesyłający przesunięcia kart i komentarze poniżej 50 ms.' },
+      { layer: 'Optymistyczny UI', detail: 'Natychmiastowa reakcja interfejsu z automatycznym wycofaniem zmiany w razie utraty połączenia.' },
+      { layer: 'Warstwa Cache', detail: 'Buforowanie aktywnych tablic i sesji użytkowników dla minimalnego obciążenia bazy SQL.' },
+    ],
+    acceptanceCriteria: [
+      'Przeciąganie zadań pomiędzy kolumnami To Do / In Progress / Done',
+      'Współbieżna edycja tablicy przez kilku członków zespołu',
+      'Pełna dostępność klawiaturowa (WCAG AA) i obsługa urządzeń mobilnych',
+    ],
+  },
+  {
+    id: 'devops',
+    projectRef: 'proj-4',
+    index: '04',
+    title: 'Wdrożenie Produkcyjne z Docker, Nginx i CI/CD',
+    category: 'DevOps & Cloud',
+    difficulty: 'Poziom Produkcyjny',
+    estimatedHours: 18,
+    summary:
+      'Zautomatyzowany potok wydawniczy budujący wielostopniowy obraz Docker, uruchamiający testy jednostkowe i E2E w GitHub Actions oraz wystawiający aplikację za Nginx z SSL.',
+    stack: 'Docker · GitHub Actions · Linux VPS · Nginx · Playwright E2E',
+    architectureLayers: [
+      { layer: 'Konteneryzacja', detail: 'Wielostopniowy Dockerfile (Multi-stage build) redukujący rozmiar obrazu produkcyjnego o ponad 75%.' },
+      { layer: 'Potok Quality Gate', detail: 'Automatyczna blokada wdrożenia w przypadku błędu kompilacji TypeScript lub nieudanego testu.' },
+      { layer: 'Reverse Proxy & Bezpieczeństwo', detail: 'Konfiguracja Nginx z certyfikatem TLS Let’s Encrypt i nagłówkami bezpieczeństwa HSTS / CSP.' },
+    ],
+    acceptanceCriteria: [
+      'Bezprzestojowe przebudowanie i uruchomienie kontenerów aplikacyjnych',
+      'Automatyczne testy akceptacyjne Playwright przed publikacją',
+      'Publiczny adres HTTPS gotowy do wpisania w CV i pokazania rekruterowi',
+    ],
+  },
+];
+
+interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+const FAQ_ITEMS: FaqItem[] = [
+  {
+    id: 'faq-1',
+    question: 'Nigdy wcześniej nie programowałem. Czy poradzę sobie z materiałem od pierwszego modułu?',
+    answer:
+      'Tak. Moduł 01 (Podstawy HTML5) został zaprojektowany specjalnie dla osób startujących całkowicie od zera. Każde pojęcie najpierw wyjaśniamy prostą analogią z codziennego życia i słowniczkiem bez żargonu, a w edytorze otrzymujesz gotowy w 80% szablon kodu, w którym dopisujesz 2–3 brakujące linijki.',
+  },
+  {
+    id: 'faq-2',
+    question: 'Czym różni się nauka na tej platformie od tradycyjnych kursów wideo?',
+    answer:
+      'W kursach wideo spędzasz dziesiątki godzin na biernym oglądaniu nagrań, po czym zostajesz sam przed pustym edytorem. W Full Stack Academy od pierwszej minuty piszesz prawdziwy kod w przeglądarce, korzystasz z 6 wbudowanych symulatorów (Terminal Bash/Git, Studio SQL, Klient REST API, Wizualizator Event Loop) i natychmiast widzisz, które kroki zadania zostały zaliczone.',
+  },
+  {
+    id: 'faq-3',
+    question: 'Czy muszę instalować zaawansowane programy na komputerze, żeby zacząć?',
+    answer:
+      'Nie. Całe środowisko kodowania, podgląd stron na żywo, baza danych SQL oraz symulator terminala działają bezpośrednio w przeglądarce (na komputerze, tablecie i telefonie). Kiedy przejdziesz do modułów zaawansowanych, przeprowadzimy Cię również krok po kroku przez konfigurację lokalnego VS Code, Gita i Dockera.',
+  },
+  {
+    id: 'faq-4',
+    question: 'Jak działa darmowy dostęp i kiedy warto przejść na pakiet Full Stack PRO?',
+    answer:
+      'Plan Darmowy (0 zł bezterminowo) daje dostęp do wszystkich 15 modułów i 91 lekcji z systemem 5 odnawiających się serc energii. Co ważne: pisanie kodu w ćwiczeniach praktycznych nie odejmuje serc za eksperymentowanie. Pakiet Full Stack PRO znosi limity serc w quizach, wyłącza reklamy oraz odblokowuje symulator rozmowy rekrutacyjnej Live Coding, kreator CV ATS i dwujęzyczny certyfikat.',
+  },
+  {
+    id: 'faq-5',
+    question: 'Czy postępy z komputera synchronizują się z aplikacją na telefonie?',
+    answer:
+      'Tak. Po zalogowaniu (np. jednym kliknięciem przez Google) wszystkie ukończone lekcje, napisany w edytorze kod, seria dni nauki (Streak), punkty XP oraz powtórki fiszek SM-2 zapisują się w chmurze Firebase Firestore i są natychmiast dostępne na każdym urządzeniu.',
+  },
 ];
 
 interface LandingPageViewProps {
@@ -109,7 +283,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
   const { isAuthenticated, currentUser, setActiveTab, setIsSubModalOpen, allLessons } = useApp();
 
   // Interactive Hero Code Playground state
-  const [selectedSampleId, setSelectedSampleId] = useState<'html' | 'css' | 'js'>('html');
+  const [selectedSampleId, setSelectedSampleId] = useState<'html' | 'css' | 'js' | 'sql'>('html');
+  const [showBeginnerHint, setShowBeginnerHint] = useState<boolean>(false);
   const activeSample = useMemo(
     () => PLAYGROUND_SAMPLES.find((s) => s.id === selectedSampleId) || PLAYGROUND_SAMPLES[0],
     [selectedSampleId]
@@ -118,6 +293,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
     html: PLAYGROUND_SAMPLES[0].solutionCode,
     css: PLAYGROUND_SAMPLES[1].solutionCode,
     js: PLAYGROUND_SAMPLES[2].solutionCode,
+    sql: PLAYGROUND_SAMPLES[3].solutionCode,
   });
 
   const currentCode = codeBySample[selectedSampleId] ?? activeSample.starterCode;
@@ -127,16 +303,31 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
   const [selectedCategory, setSelectedCategory] = useState<string>('Wszystkie');
   const [expandedModuleId, setExpandedModuleId] = useState<number>(1);
 
+  // Interactive Portfolio Showcase state
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(
+    PORTFOLIO_SHOWCASE_PROJECTS[0].id
+  );
+  const activePortfolioProject = useMemo(
+    () =>
+      PORTFOLIO_SHOWCASE_PROJECTS.find((p) => p.id === selectedProjectId) ||
+      PORTFOLIO_SHOWCASE_PROJECTS[0],
+    [selectedProjectId]
+  );
+
   // Pricing billing toggle
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
 
   // Interactive Study Path Calculator & Lead Capture Form state
-  const [weeklyHours, setWeeklyHours] = useState<number>(8);
+  const [selectedTrackId, setSelectedTrackId] = useState<CareerTrackId>('fullstack');
+  const [weeklyHours, setWeeklyHours] = useState<number>(10);
   const [leadName, setLeadName] = useState<string>('');
   const [leadEmail, setLeadEmail] = useState<string>('');
   const [leadGoal, setLeadGoal] = useState<'job' | 'projects' | 'upskill'>('job');
   const [formError, setFormError] = useState<string>('');
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
+
+  // Interactive FAQ Accordion state
+  const [openFaqId, setOpenFaqId] = useState<string>('faq-1');
 
   const categories = [
     'Wszystkie',
@@ -158,36 +349,37 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
     []
   );
 
-  const estimatedWeeks = useMemo(
-    () => Math.max(4, Math.ceil(totalCurriculumHours / Math.max(2, weeklyHours))),
-    [totalCurriculumHours, weeklyHours]
+  const studyPlanEstimate = useMemo(
+    () => calculateStudyPlanEstimate(totalCurriculumHours, weeklyHours, selectedTrackId),
+    [totalCurriculumHours, weeklyHours, selectedTrackId]
   );
 
-  const estimatedMonths = useMemo(
-    () => (estimatedWeeks / 4.3).toFixed(1),
-    [estimatedWeeks]
-  );
+  const activeTrackSpec = CAREER_TRACKS[selectedTrackId];
 
   const handlePrimaryAction = () => {
-    if (isAuthenticated) {
-      setActiveTab('dashboard');
-    } else {
+    setActiveTab('dashboard');
+    if (!isAuthenticated) {
       onOpenAuthModal();
     }
   };
 
   const handleOpenLesson = (lessonId: string) => {
-    if (isAuthenticated) {
-      setActiveTab('lesson', lessonId);
-    } else {
+    setActiveTab('lesson', lessonId);
+    if (!isAuthenticated) {
+      onOpenAuthModal();
+    }
+  };
+
+  const handleOpenProject = (projectRef: string) => {
+    setActiveTab('projects', undefined, projectRef);
+    if (!isAuthenticated) {
       onOpenAuthModal();
     }
   };
 
   const handleOpenSimulator = (tab: 'terminal' | 'sql_studio' | 'api_studio' | 'event_loop') => {
-    if (isAuthenticated) {
-      setActiveTab(tab);
-    } else {
+    setActiveTab(tab);
+    if (!isAuthenticated) {
       onOpenAuthModal();
     }
   };
@@ -258,10 +450,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
             </button>
             <button
               type="button"
-              onClick={() => scrollToSection('wyniki-kursantow')}
+              onClick={() => scrollToSection('projekty-portfolio')}
               className="hover:text-white hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
             >
-              Wyniki Kursantów
+              Projekty Portfolio
             </button>
             <button
               type="button"
@@ -294,7 +486,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
       </header>
 
       {/* =====================================================================
-          1. HERO SECTION (2-Column Asymmetric Split + Interactive Live IDE)
+          1. HERO SECTION (2-Column Asymmetric Split + Interactive 4-Stack Live IDE)
       ===================================================================== */}
       <section id="top" className="relative border-b border-slate-900 pt-12 pb-16 lg:pt-20 lg:pb-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-8">
@@ -322,8 +514,24 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 <p className="text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl">
                   Praktyczna platforma szkoleniowa z wbudowanym edytorem kodu, 6 symulatorami
                   inżynierskimi i metodą nauki bez żargonu. Zamiast pustego ekranu otrzymujesz
-                  gotowy szkielet projektu i uzupełniasz kluczową logikę krok po kroku.
+                  gotowy w 80% szkielet projektu i uzupełniasz kluczową logikę krok po kroku.
                 </p>
+
+                {/* Concrete 3-Point Value Summary (Unboxed Clean Text) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-900/90 text-xs text-slate-300">
+                  <div>
+                    <p className="font-bold text-white">Start od podstaw</p>
+                    <p className="text-slate-400 mt-0.5">Analogie z życia i słowniczek w każdej lekcji.</p>
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">Kodowanie w przeglądarce</p>
+                    <p className="text-slate-400 mt-0.5">HTML, CSS, React, Node.js, SQL i Terminal na żywo.</p>
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">Gotowe portfolio IT</p>
+                    <p className="text-slate-400 mt-0.5">12 projektów biznesowych i certyfikat SHA-256.</p>
+                  </div>
+                </div>
               </div>
 
               {/* Single Dominant Primary CTA + Quiet Secondary Link */}
@@ -369,23 +577,26 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     Aplikacja: app.fsda-phi.vercel.app
                   </a>
                   <span aria-hidden="true">·</span>
-                  <span>Weryfikowany certyfikat SHA-256</span>
+                  <span>0 zł na start bez karty</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Column: Live Interactive Mini-IDE Showcase */}
+            {/* Right Column: Live Interactive 4-Stack Mini-IDE Showcase */}
             <div className="lg:col-span-6 flex flex-col">
               <div className="flex-1 flex flex-col rounded-2xl border border-slate-800 bg-slate-900/70 overflow-hidden">
                 {/* Segmented Interactive Controls for Playground */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-slate-950/80 px-4 py-3">
-                  <div className="flex items-center gap-1 p-1 bg-slate-900 rounded-lg border border-slate-800/80">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 bg-slate-950/80 px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-1 p-1 bg-slate-900 rounded-lg border border-slate-800/80">
                     {PLAYGROUND_SAMPLES.map((sample) => (
                       <button
                         key={sample.id}
                         type="button"
-                        onClick={() => setSelectedSampleId(sample.id)}
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                        onClick={() => {
+                          setSelectedSampleId(sample.id);
+                          setShowBeginnerHint(false);
+                        }}
+                        className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 ${
                           selectedSampleId === sample.id
                             ? 'bg-indigo-600 text-white'
                             : 'text-slate-400 hover:text-slate-200'
@@ -396,7 +607,19 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     ))}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowBeginnerHint((prev) => !prev)}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors whitespace-nowrap shrink-0 ${
+                        showBeginnerHint
+                          ? 'border-amber-500/50 bg-amber-950/40 text-amber-300'
+                          : 'border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <HelpCircle className="h-3 w-3" />
+                      <span>Podpowiedź</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() =>
@@ -406,7 +629,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                         }))
                       }
                       className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-400 hover:text-white border border-slate-800 rounded-md transition-colors whitespace-nowrap shrink-0"
-                      title="Przywróć szablon początkowy"
+                      title="Przywróć szablon początkowy 80%"
                     >
                       <RotateCcw className="h-3 w-3" />
                       <span>Szablon 80%</span>
@@ -427,14 +650,19 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   </div>
                 </div>
 
-                {/* Task & Analogy Bar */}
-                <div className="border-b border-slate-800/80 bg-slate-900/40 px-4 py-3 space-y-1">
+                {/* Task, Analogy & Optional Beginner Hint Bar */}
+                <div className="border-b border-slate-800/80 bg-slate-900/40 px-4 py-3 space-y-1.5">
                   <p className="text-xs font-semibold text-slate-200">
                     Zadanie próbne: {activeSample.taskTitle}
                   </p>
                   <p className="text-xs text-slate-400">
                     Analogia z życia: {activeSample.analogy}
                   </p>
+                  {showBeginnerHint && (
+                    <p className="text-xs text-amber-300 pt-1 border-t border-slate-800/80">
+                      Wskazówka krok po kroku: {activeSample.beginnerHint}
+                    </p>
+                  )}
                 </div>
 
                 {/* Editable Code + Live Visual Result Split */}
@@ -465,13 +693,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-[11px] text-slate-400">
                         <span>Podgląd wyniku w czasie rzeczywistym</span>
-                        <span className="text-slate-300 font-medium">
+                        <span className="text-slate-300 font-medium font-mono tabular-nums">
                           {isRulePassed ? 'Zaliczono (+150 XP)' : 'W trakcie edycji'}
                         </span>
                       </div>
 
                       {/* Visual Rendered Representation */}
-                      <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 min-h-[148px] flex flex-col justify-center">
+                      <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 min-h-[156px] flex flex-col justify-center">
                         {selectedSampleId === 'html' && (
                           <div className="space-y-2">
                             <p className="text-[11px] text-indigo-400 font-medium">Karta Inżyniera</p>
@@ -500,7 +728,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                           >
                             <div>
                               <p className="text-xs font-bold text-white">Pakiet Full Stack</p>
-                              <p className="text-[11px] text-slate-400">Układ {isRulePassed ? 'Flexbox (Wiersz)' : 'Block (Kolumna)'}</p>
+                              <p className="text-[11px] text-slate-400">
+                                Układ {isRulePassed ? 'Flexbox (Wiersz)' : 'Block (Kolumna)'}
+                              </p>
                             </div>
                             <span className="inline-block px-2.5 py-1 text-xs font-mono tabular-nums font-semibold bg-indigo-600 text-white rounded">
                               100% Gotowy
@@ -519,6 +749,34 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                                 {isRulePassed ? '1400 XP (Poprawnie)' : '0 XP (Uzupełnij return)'}
                               </span>
                             </div>
+                          </div>
+                        )}
+
+                        {selectedSampleId === 'sql' && (
+                          <div className="space-y-1.5 font-mono text-[11px]">
+                            <div className="grid grid-cols-3 text-slate-400 border-b border-slate-800 pb-1">
+                              <span>imie</span>
+                              <span>rola</span>
+                              <span className="text-right">xp (level)</span>
+                            </div>
+                            {isRulePassed ? (
+                              <>
+                                <div className="grid grid-cols-3 text-emerald-300 tabular-nums">
+                                  <span>Maja K.</span>
+                                  <span>Full Stack</span>
+                                  <span className="text-right">8450 (Lv.9)</span>
+                                </div>
+                                <div className="grid grid-cols-3 text-slate-200 tabular-nums">
+                                  <span>Piotr W.</span>
+                                  <span>Backend</span>
+                                  <span className="text-right">6200 (Lv.7)</span>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-amber-400 py-2">
+                                Dodaj WHERE level &gt; 5 oraz ORDER BY xp DESC, aby przefiltrować tabelę.
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -778,9 +1036,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 <button
                   type="button"
                   onClick={() => {
-                    if (isAuthenticated) {
-                      setActiveTab('certificate');
-                    } else {
+                    setActiveTab('certificate');
+                    if (!isAuthenticated) {
                       onOpenAuthModal();
                     }
                   }}
@@ -804,7 +1061,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
                 <span className="text-indigo-400 font-semibold">Kompletny Sylabus</span>
                 <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums">{MODULES_DATA.length} modułów · {allLessons.length} lekcji · {totalCurriculumHours}h nauki</span>
+                <span className="font-mono tabular-nums">
+                  {MODULES_DATA.length} modułów · {allLessons.length} lekcji · {totalCurriculumHours}h nauki
+                </span>
               </div>
               <h2
                 style={{ textWrap: 'balance' }}
@@ -949,7 +1208,136 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
       </section>
 
       {/* =====================================================================
-          4. PROOF OF IMPACT & STUDENT OUTCOMES (Claim-to-Proof Adjacency)
+          4. INTERACTIVE PORTFOLIO PROJECTS SHOWCASE (12 GitHub Projects)
+      ===================================================================== */}
+      <section id="projekty-portfolio" className="py-20 lg:py-24 border-b border-slate-900">
+        <div className="mx-auto max-w-7xl px-4 sm:px-8 space-y-12">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+            <div className="max-w-3xl space-y-3">
+              <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
+                <span className="text-indigo-400 font-semibold">Portfolio Inżynierskie GitHub</span>
+                <span aria-hidden="true">·</span>
+                <span>12 kompletnych aplikacji z testami akceptacyjnymi</span>
+              </div>
+              <h2
+                style={{ textWrap: 'balance' }}
+                className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white"
+              >
+                Budujesz realne systemy biznesowe, które możesz pokazać na rozmowie technicznej.
+              </h2>
+              <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+                Rekruterzy nie szukają kalkulatorów ani list To-Do z prostego tutoriala. W trakcie kursu
+                implementujesz wielowarstwowe aplikacje z autoryzacją, bazą danych i wdrożeniem.
+              </p>
+            </div>
+
+            {/* Project Selector Tabs */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-900 border border-slate-800 rounded-xl self-start">
+              {PORTFOLIO_SHOWCASE_PROJECTS.map((proj) => (
+                <button
+                  key={proj.id}
+                  type="button"
+                  onClick={() => setSelectedProjectId(proj.id)}
+                  className={`px-3 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
+                    selectedProjectId === proj.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {proj.index}. {proj.category}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Active Portfolio Project Architectural Breakdown */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+            {/* Left Column: Overview & Acceptance Criteria */}
+            <div className="lg:col-span-6 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 font-mono tabular-nums">
+                  <span className="text-indigo-400 font-semibold">
+                    Projekt {activePortfolioProject.index} z 12
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span>{activePortfolioProject.difficulty}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>~{activePortfolioProject.estimatedHours}h pracy praktycznej</span>
+                </div>
+
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
+                  {activePortfolioProject.title}
+                </h3>
+
+                <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+                  {activePortfolioProject.summary}
+                </p>
+
+                <div className="pt-2">
+                  <p className="text-xs font-semibold text-slate-400">Wykorzystywany stos technologiczny:</p>
+                  <p className="mt-1 text-xs sm:text-sm font-mono text-indigo-300">
+                    {activePortfolioProject.stack}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-slate-800/80">
+                <p className="text-xs font-semibold text-slate-300">
+                  Kryteria akceptacyjne weryfikowane w Studio Projektów:
+                </p>
+                <ul className="space-y-2 text-xs sm:text-sm text-slate-300">
+                  {activePortfolioProject.acceptanceCriteria.map((criterion) => (
+                    <li key={criterion} className="flex items-start gap-2.5">
+                      <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>{criterion}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenProject(activePortfolioProject.projectRef)}
+                    className="inline-flex items-center gap-2 px-5 py-3 text-xs sm:text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors whitespace-nowrap"
+                  >
+                    <span>Otwórz projekt w Studio Projektów</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: 3-Layer Engineering Specification */}
+            <div className="lg:col-span-6 flex flex-col justify-between rounded-xl border border-slate-800 bg-slate-950 p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <span className="text-xs font-semibold text-slate-300">
+                  Specyfikacja Architektury Projektu
+                </span>
+                <span className="text-xs font-mono tabular-nums text-slate-400">
+                  3 warstwy inżynierskie
+                </span>
+              </div>
+
+              <div className="space-y-4 flex-1 flex flex-col justify-center">
+                {activePortfolioProject.architectureLayers.map((item, idx) => (
+                  <div
+                    key={item.layer}
+                    className="rounded-xl border border-slate-800/90 bg-slate-900/50 p-4 space-y-1"
+                  >
+                    <p className="text-xs font-bold text-white">
+                      0{idx + 1}. {item.layer}
+                    </p>
+                    <p className="text-xs text-slate-400 leading-relaxed">{item.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          5. PROOF OF IMPACT & STUDENT OUTCOMES (Claim-to-Proof Adjacency)
       ===================================================================== */}
       <section id="wyniki-kursantow" className="py-20 lg:py-24 border-b border-slate-900">
         <div className="mx-auto max-w-7xl px-4 sm:px-8 space-y-12">
@@ -1041,7 +1429,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
       </section>
 
       {/* =====================================================================
-          5. TRANSPARENT PLANS & ACCESS
+          6. TRANSPARENT PLANS & ACCESS
       ===================================================================== */}
       <section id="plany-dostepu" className="py-20 lg:py-24 border-b border-slate-900">
         <div className="mx-auto max-w-7xl px-4 sm:px-8 space-y-12">
@@ -1201,33 +1589,59 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
       </section>
 
       {/* =====================================================================
-          6. INTERACTIVE CAREER CALCULATOR & LEAD ONBOARDING FORM
+          7. INTERACTIVE CAREER CALCULATOR, MILESTONE ROADMAP & LEAD ONBOARDING
       ===================================================================== */}
-      <section id="kalkulator-sciezki" className="py-20 lg:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-8">
-          <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 sm:p-12 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            {/* Left: Interactive Study Tempo Estimator */}
-            <div className="lg:col-span-6 space-y-6">
+      <section id="kalkulator-sciezki" className="py-20 lg:py-24 border-b border-slate-900">
+        <div className="mx-auto max-w-7xl px-4 sm:px-8 space-y-10">
+          <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 sm:p-12 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+            {/* Left: Interactive Study Tempo & Specialization Estimator */}
+            <div className="lg:col-span-7 space-y-6">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <span className="text-indigo-400 font-semibold">Kalkulator Ścieżki Nauki</span>
+                  <span className="text-indigo-400 font-semibold">Kalkulator Ścieżki Nauki i Kariery</span>
                   <span aria-hidden="true">·</span>
-                  <span>Zaplanuj swój start</span>
+                  <span>Dane rynkowe Polska 2026</span>
                 </div>
                 <h2
                   style={{ textWrap: 'balance' }}
                   className="text-2xl sm:text-3xl font-extrabold text-white"
                 >
-                  Sprawdź, kiedy odbierzesz swój certyfikat Full Stack Developera.
+                  Sprawdź, kiedy odbierzesz swój certyfikat i jakie stanowisko wybierzesz.
                 </h2>
                 <p className="text-sm text-slate-300 leading-relaxed">
-                  Dostosuj liczbę godzin tygodniowo i wygeneruj spersonalizowany plan nauki
-                  obejmujący wszystkie 15 modułów i 12 projektów praktycznych.
+                  Wybierz specjalizację docelową oraz liczbę godzin w tygodniu, aby obliczyć
+                  kamienie milowe nauki i rynkowe widełki wynagrodzeń.
                 </p>
               </div>
 
+              {/* Specialization Selector */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {(Object.keys(CAREER_TRACKS) as CareerTrackId[]).map((trackKey) => {
+                  const spec = CAREER_TRACKS[trackKey];
+                  const isSelected = selectedTrackId === trackKey;
+                  return (
+                    <button
+                      key={trackKey}
+                      type="button"
+                      aria-pressed={isSelected}
+                      onClick={() => setSelectedTrackId(trackKey)}
+                      className={`text-left rounded-xl border p-3.5 transition-colors ${
+                        isSelected
+                          ? 'border-indigo-500 bg-indigo-950/40 text-white'
+                          : 'border-slate-800 bg-slate-950/60 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span className="block text-xs font-bold text-white truncate">{spec.roleLabel}</span>
+                      <span className="block mt-1 text-[11px] font-mono tabular-nums text-emerald-400">
+                        Junior: {spec.juniorSalaryRangePln}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
               {/* Tempo Selector */}
-              <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-950 p-5">
+              <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-950 p-5">
                 <div className="flex items-center justify-between text-xs">
                   <label htmlFor="weekly-hours-range" className="font-semibold text-slate-300">
                     Twój czas na naukę w tygodniu:
@@ -1252,25 +1666,53 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   <span>25h (Bootcamp)</span>
                 </div>
 
-                <div className="pt-4 mt-4 border-t border-slate-800 grid grid-cols-2 gap-4">
+                <div className="pt-4 mt-2 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-[11px] text-slate-400">Szacowany czas ukończenia</p>
-                    <p className="text-lg font-extrabold text-white font-mono tabular-nums">
-                      ~{estimatedWeeks} tygodni ({estimatedMonths} mies.)
+                    <p className="text-[11px] text-slate-400">Czas do dyplomu</p>
+                    <p className="text-base sm:text-lg font-extrabold text-white font-mono tabular-nums">
+                      ~{studyPlanEstimate.estimatedWeeks} tyg. ({studyPlanEstimate.estimatedMonths} mies.)
                     </p>
                   </div>
                   <div>
                     <p className="text-[11px] text-slate-400">Dzienna dawka nauki</p>
-                    <p className="text-lg font-extrabold text-emerald-400 font-mono tabular-nums">
-                      ~{Math.round((weeklyHours * 60) / 7)} min / dzień
+                    <p className="text-base sm:text-lg font-extrabold text-emerald-400 font-mono tabular-nums">
+                      ~{studyPlanEstimate.dailyMinutes} min / dzień
                     </p>
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <p className="text-[11px] text-slate-400">Widełki Mid / Regular</p>
+                    <p className="text-base sm:text-lg font-extrabold text-indigo-300 font-mono tabular-nums">
+                      {activeTrackSpec.midSalaryRangePln}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 4-Stage Milestone Timeline */}
+                <div className="pt-4 border-t border-slate-800 space-y-2.5">
+                  <p className="text-xs font-semibold text-slate-300">
+                    Harmonogram kamieni milowych ({activeTrackSpec.title}):
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {studyPlanEstimate.milestones.map((ms) => (
+                      <div
+                        key={ms.phase}
+                        className="rounded-xl border border-slate-800/80 bg-slate-900/50 p-3 space-y-1"
+                      >
+                        <div className="flex items-center justify-between text-[11px] font-mono tabular-nums">
+                          <span className="text-indigo-400 font-semibold">{ms.phase}</span>
+                          <span className="text-slate-400">Tydzień {ms.weekTarget}</span>
+                        </div>
+                        <p className="text-xs font-bold text-white">{ms.title}</p>
+                        <p className="text-[11px] text-slate-400 leading-snug">{ms.deliverable}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Right: Validated Lead / Onboarding Form */}
-            <div className="lg:col-span-6">
+            <div className="lg:col-span-5">
               {formSubmitted ? (
                 <div
                   data-testid="study-plan-success"
@@ -1283,14 +1725,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                         Plan nauki dla {leadName} został przygotowany!
                       </h3>
                       <p className="text-xs text-slate-400">
-                        Wysłaliśmy podsumowanie na adres {leadEmail} · Tempo: {weeklyHours}h / tydz.
+                        Podsumowanie dla {leadEmail} · Ścieżka: {activeTrackSpec.roleLabel} ({weeklyHours}h / tydz.)
                       </p>
                     </div>
                   </div>
 
                   <p className="text-sm text-slate-300 leading-relaxed">
                     Twój rekomendowany pierwszy krok to <strong>Moduł 01: Podstawy HTML5</strong> (Lekcja 1:
-                    Jak działa strona internetowa). Możesz rozpocząć naukę natychmiast.
+                    Pierwsze znaczniki HTML). Możesz rozpocząć naukę natychmiast w aplikacji.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -1316,9 +1758,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   noValidate
                   className="rounded-2xl border border-slate-800 bg-slate-950 p-6 sm:p-8 space-y-4"
                 >
-                  <h3 className="text-lg font-bold text-white">
-                    Odbierz harmonogram nauki i darmowy dostęp
-                  </h3>
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-bold text-white">
+                      Odbierz harmonogram nauki i darmowy dostęp
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Wygenerujemy indywidualny plan pod ścieżkę: {activeTrackSpec.roleLabel}.
+                    </p>
+                  </div>
 
                   <div className="space-y-1.5">
                     <label htmlFor="lead-name" className="block text-xs font-medium text-slate-300">
@@ -1389,6 +1836,60 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 </form>
               )}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          8. INTERACTIVE FAQ ACCORDION
+      ===================================================================== */}
+      <section id="faq" className="py-20 lg:py-24">
+        <div className="mx-auto max-w-4xl px-4 sm:px-8 space-y-10">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
+              <span className="text-indigo-400 font-semibold">Najczęściej Zadawane Pytania</span>
+              <span aria-hidden="true">·</span>
+              <span>Wszystko, co warto wiedzieć przed startem</span>
+            </div>
+            <h2
+              style={{ textWrap: 'balance' }}
+              className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white"
+            >
+              Odpowiedzi na pytania początkujących kursantów.
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {FAQ_ITEMS.map((item, idx) => {
+              const isOpen = openFaqId === item.id;
+              return (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border border-slate-800 bg-slate-900/40 overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    onClick={() => setOpenFaqId(isOpen ? '' : item.id)}
+                    className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left hover:bg-slate-900/70 transition-colors"
+                  >
+                    <span className="text-sm sm:text-base font-bold text-white">
+                      0{idx + 1}. {item.question}
+                    </span>
+                    <ChevronDown
+                      className={`h-5 w-5 text-slate-400 shrink-0 transition-transform ${
+                        isOpen ? 'rotate-180 text-indigo-400' : ''
+                      }`}
+                    />
+                  </button>
+                  {isOpen && (
+                    <div className="px-6 pb-5 pt-1 text-sm text-slate-300 leading-relaxed border-t border-slate-800/60">
+                      {item.answer}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
