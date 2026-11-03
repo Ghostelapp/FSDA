@@ -7,6 +7,7 @@ import { CommandPaletteModal } from './components/CommandPaletteModal';
 import { AuthModal } from './components/AuthModal';
 import { LivesModal } from './components/LivesModal';
 import { SubscriptionModal } from './components/SubscriptionModal';
+import { LandingPageView } from './components/LandingPageView';
 import { Sparkles, Trophy, X, Code2, AlertTriangle } from 'lucide-react';
 
 const DashboardView = React.lazy(() => import('./components/DashboardView').then(({ DashboardView }) => ({ default: DashboardView })));
@@ -26,7 +27,6 @@ const EventLoopView = React.lazy(() => import('./components/EventLoopView').then
 const LeaderboardChallengeView = React.lazy(() => import('./components/LeaderboardChallengeView').then(({ LeaderboardChallengeView }) => ({ default: LeaderboardChallengeView })));
 const FlashcardsCheatSheetView = React.lazy(() => import('./components/FlashcardsCheatSheetView').then(({ FlashcardsCheatSheetView }) => ({ default: FlashcardsCheatSheetView })));
 const CareerBackupView = React.lazy(() => import('./components/CareerBackupView').then(({ CareerBackupView }) => ({ default: CareerBackupView })));
-const LandingPageView = React.lazy(() => import('./components/LandingPageView').then(({ LandingPageView }) => ({ default: LandingPageView })));
 
 const MainContent: React.FC = () => {
   const { activeTab, selectedLessonId, allLessons, toast, dismissToast, setActiveTab, isAuthenticated, logout } = useApp();
@@ -97,15 +97,7 @@ const MainContent: React.FC = () => {
       {/* App Body */}
       {activeTab === 'landing' ? (
         <main className="flex-1 min-w-0 overflow-x-hidden print:pb-0">
-          <React.Suspense
-            fallback={(
-              <div className="flex min-h-[50vh] items-center justify-center text-sm text-slate-400" role="status">
-                Ładowanie strony głównej...
-              </div>
-            )}
-          >
-            <LandingPageView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
-          </React.Suspense>
+          <LandingPageView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
         </main>
       ) : (
         <div className="flex flex-1 items-stretch min-w-0">

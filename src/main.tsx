@@ -4,10 +4,10 @@ import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 
 // Register Service Worker for PWA and Android TWA offline support
-registerSW({
+const updateSW = registerSW({
   immediate: true,
   onNeedRefresh() {
-    console.log('Nowa wersja aplikacji jest gotowa.');
+    void updateSW(true);
   },
   onOfflineReady() {
     console.log('Aplikacja Full Stack Academy jest gotowa do pracy w trybie offline.');
@@ -15,3 +15,4 @@ registerSW({
 });
 
 createRoot(document.getElementById('root')!).render(<App />);
+
