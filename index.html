@@ -71,7 +71,34 @@
      crossorigin="anonymous"></script>
   </head>
   <body class="bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
-    <div id="root"></div>
+    <div id="root">
+      <div style="max-width:960px;margin:0 auto;padding:32px 16px;font-family:sans-serif;line-height:1.65">
+        <header>
+          <h1>Full Stack Developer Academy — Interaktywna Akademia Programowania i Otwarta Baza Wiedzy</h1>
+          <p>Darmowa polska platforma edukacyjna: 15 modułów i 91 lekcji od podstaw HTML5 i CSS przez JavaScript, TypeScript, React 19, Node.js i PostgreSQL aż po Docker i CI/CD.</p>
+          <nav>
+            <a href="/baza-wiedzy">Otwarta Baza Wiedzy (91 lekcji bez logowania)</a> ·
+            <a href="/o-nas">O Akademii</a> ·
+            <a href="/kontakt">Kontakt</a> ·
+            <a href="/regulamin">Regulamin</a> ·
+            <a href="/polityka-prywatnosci">Polityka Prywatności</a>
+          </nav>
+        </header>
+        <main>
+          <section>
+            <h2>Wybrane otwarte lekcje programowania</h2>
+            <ul>
+              <li><a href="/baza-wiedzy/html-7">Pierwsze znaczniki HTML: Nagłówki (&lt;h1&gt;–&lt;h6&gt;), akapity (&lt;p&gt;) i pogrubienie (&lt;strong&gt;)</a></li>
+              <li><a href="/baza-wiedzy/css-2">Flexbox od podstaw: łatwe układanie elementów obok siebie i wyśrodkowanie</a></li>
+              <li><a href="/baza-wiedzy/js-1">Pierwsze kroki w JavaScript: Zmienne (const, let), tekst i liczby</a></li>
+              <li><a href="/baza-wiedzy/react-1">Wprowadzenie do React i komponentów funkcyjnych JSX</a></li>
+              <li><a href="/baza-wiedzy/node-1">Wprowadzenie do Node.js i serwera HTTP Express</a></li>
+              <li><a href="/baza-wiedzy/db-1">Relacyjne bazy danych SQL i PostgreSQL od podstaw</a></li>
+            </ul>
+          </section>
+        </main>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

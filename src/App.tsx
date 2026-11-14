@@ -8,6 +8,10 @@ import { AuthModal } from './components/AuthModal';
 import { LivesModal } from './components/LivesModal';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { LandingPageView } from './components/LandingPageView';
+import { KnowledgeBaseView } from './components/KnowledgeBaseView';
+import { PublicLessonView } from './components/PublicLessonView';
+import { PublicInfoPageView } from './components/PublicInfoPageView';
+import { isPublicTab } from './utils/publicRoutes';
 import { Sparkles, Trophy, X, Code2, AlertTriangle } from 'lucide-react';
 
 const DashboardView = React.lazy(() => import('./components/DashboardView').then(({ DashboardView }) => ({ default: DashboardView })));
@@ -55,8 +59,8 @@ const MainContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white print:bg-white print:text-slate-900">
       
-      {/* Top Navbar (hidden on Landing Page, which renders its own 3-zone header) */}
-      {activeTab !== 'landing' && (
+      {/* Top Navbar (hidden on public portal pages, which render their own header) */}
+      {!isPublicTab(activeTab) && (
         <div className="print:hidden">
           <Navbar
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
@@ -95,9 +99,29 @@ const MainContent: React.FC = () => {
       )}
 
       {/* App Body */}
-      {activeTab === 'landing' ? (
+      {isPublicTab(activeTab) ? (
         <main className="flex-1 min-w-0 overflow-x-clip print:pb-0">
-          <LandingPageView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
+          {activeTab === 'landing' && (
+            <LandingPageView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
+          )}
+          {activeTab === 'knowledge_base' && (
+            <KnowledgeBaseView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
+          )}
+          {activeTab === 'public_lesson' && (
+            <PublicLessonView
+              lessonId={selectedLessonId}
+              onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            />
+          )}
+          {(activeTab === 'about' ||
+            activeTab === 'contact' ||
+            activeTab === 'terms' ||
+            activeTab === 'privacy') && (
+            <PublicInfoPageView
+              page={activeTab}
+              onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            />
+          )}
         </main>
       ) : (
         <div className="flex flex-1 items-stretch min-w-0">
@@ -151,7 +175,7 @@ const MainContent: React.FC = () => {
       {/* Global Footer */}
       <footer
         className={`border-t px-4 py-10 text-xs print:hidden ${
-          activeTab === 'landing'
+          isPublicTab(activeTab)
             ? 'border-slate-800/80 bg-[#05070D] text-slate-400'
             : 'border-slate-900 bg-slate-950 text-slate-400'
         }`}
@@ -168,9 +192,11 @@ const MainContent: React.FC = () => {
           </div>
 
           <div className={`flex flex-wrap items-center justify-center gap-5 text-xs font-medium ${activeTab === 'landing' ? 'md:pr-28' : ''}`}>
-            <button
-              type="button"
-              onClick={() => {
+            <a
+              href="/"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
                 setActiveTab('landing');
                 const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
                 window.scrollTo({ top: 0, behavior: prefersReduced ? 'auto' : 'smooth' });
@@ -178,7 +204,62 @@ const MainContent: React.FC = () => {
               className="hover:text-slate-100 transition-colors"
             >
               Strona Główna
-            </button>
+            </a>
+            <a
+              href="/baza-wiedzy"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                setActiveTab('knowledge_base');
+              }}
+              className="hover:text-slate-100 transition-colors"
+            >
+              Baza Wiedzy (91 lekcji)
+            </a>
+            <a
+              href="/o-nas"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                setActiveTab('about');
+              }}
+              className="hover:text-slate-100 transition-colors"
+            >
+              O Akademii
+            </a>
+            <a
+              href="/kontakt"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                setActiveTab('contact');
+              }}
+              className="hover:text-slate-100 transition-colors"
+            >
+              Kontakt
+            </a>
+            <a
+              href="/regulamin"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                setActiveTab('terms');
+              }}
+              className="hover:text-slate-100 transition-colors"
+            >
+              Regulamin
+            </a>
+            <a
+              href="/polityka-prywatnosci"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                setActiveTab('privacy');
+              }}
+              className="hover:text-slate-100 transition-colors"
+            >
+              Polityka Prywatności
+            </a>
             <button
               type="button"
               onClick={() => setActiveTab('dashboard')}
@@ -188,31 +269,10 @@ const MainContent: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('deployment')}
-              className="hover:text-slate-100 transition-colors"
-            >
-              Przewodnik Wdrożenia
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('certificate')}
-              className="hover:text-slate-100 transition-colors"
-            >
-              Weryfikacja Certyfikatów
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('admin')}
-              className="hover:text-rose-400 transition-colors"
-            >
-              Panel Administratora
-            </button>
-            <button
-              type="button"
               onClick={() => setIsAuthModalOpen(true)}
-              className="hover:text-indigo-500 transition-colors"
+              className="hover:text-indigo-400 transition-colors"
             >
-              {isAuthenticated ? 'Konto / Zmień Profil' : 'Zaloguj się / Rejestracja'}
+              {isAuthenticated ? 'Konto / Zmień Profil' : 'Zaloguj się'}
             </button>
             {isAuthenticated && (
               <button

@@ -773,6 +773,17 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
             >
               Cennik
             </button>
+            <a
+              href="/baza-wiedzy"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                setActiveTab('knowledge_base');
+              }}
+              className="text-indigo-300 hover:text-white hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
+            >
+              Baza wiedzy
+            </a>
           </nav>
 
           <div className="flex items-center shrink-0">
@@ -1669,11 +1680,17 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 </p>
                 <div className="divide-y divide-white/[0.06] max-h-72 overflow-y-auto pr-1">
                   {activeModule.lessons.map((lesson, idx) => (
-                    <div
+                    <a
                       key={lesson.id}
-                      className="flex items-start justify-between gap-3 py-2 text-xs"
+                      href={`/baza-wiedzy/${encodeURIComponent(lesson.id)}`}
+                      onClick={(e) => {
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                        e.preventDefault();
+                        setActiveTab('public_lesson', lesson.id);
+                      }}
+                      className="flex items-start justify-between gap-3 py-2 text-xs hover:text-indigo-300 transition-colors group"
                     >
-                      <span className="text-[#CBD5E1] leading-snug">
+                      <span className="text-[#CBD5E1] group-hover:text-indigo-300 leading-snug">
                         <span className="font-mono tabular-nums text-[#64748B] mr-2">
                           {String(idx + 1).padStart(2, '0')}.
                         </span>
@@ -1682,26 +1699,109 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                       <span className="font-mono tabular-nums text-[#94A3B8] shrink-0">
                         {lesson.durationMinutes} min
                       </span>
-                    </div>
+                    </a>
                   ))}
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between gap-3">
-                <div className="text-xs text-[#94A3B8]">
-                  Odznaka:{' '}
-                  <strong className="text-[#F8FAFC] font-semibold">{activeModule.badgeName}</strong>
-                </div>
+              <div className="pt-4 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-3">
+                <a
+                  href={`/baza-wiedzy/${encodeURIComponent(activeModule.lessons[0]?.id || 'html-7')}`}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                    e.preventDefault();
+                    setActiveTab('public_lesson', activeModule.lessons[0]?.id || 'html-7');
+                  }}
+                  className="text-xs font-semibold text-indigo-300 hover:text-indigo-200 underline underline-offset-4 whitespace-nowrap"
+                >
+                  Czytaj za darmo bez logowania →
+                </a>
                 <button
                   type="button"
-                  onClick={() => handleOpenLesson(activeModule.lessons[0]?.id || 'html-1')}
+                  onClick={() => handleOpenLesson(activeModule.lessons[0]?.id || 'html-7')}
                   className="px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors whitespace-nowrap shrink-0"
                 >
-                  Rozpocznij moduł →
+                  Ćwicz w edytorze →
                 </button>
               </div>
             </div>
           </div>
+
+          {/* Public Open Knowledge Base Featured Articles (Un-gated SEO & Reader Access) */}
+          <RevealBlock delayMs={80} className="pt-12 border-t border-white/[0.08] space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-indigo-400">
+                  Otwarta Baza Wiedzy · Dostęp bez logowania
+                </p>
+                <h3 className="font-display text-xl sm:text-2xl font-extrabold text-[#F8FAFC]">
+                  Przeczytaj wybrane lekcje i poradniki od razu tutaj
+                </h3>
+              </div>
+              <a
+                href="/baza-wiedzy"
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                  e.preventDefault();
+                  setActiveTab('knowledge_base');
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-indigo-300 hover:text-white border border-indigo-500/40 bg-indigo-950/40 rounded-xl transition-colors whitespace-nowrap shrink-0 self-start"
+              >
+                <span>Wszystkie {allLessons.length} darmowych lekcji</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </a>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {['html-7', 'css-2', 'js-1', 'react-1', 'node-1', 'db-1']
+                .map((id) => allLessons.find((l) => l.id === id))
+                .filter((l): l is NonNullable<typeof l> => Boolean(l))
+                .map((lesson) => (
+                  <article
+                    key={lesson.id}
+                    className="group rounded-2xl border border-white/[0.08] bg-[#0B101B] hover:border-indigo-500/50 p-5 flex flex-col justify-between gap-4 transition-all"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
+                        <span className="text-indigo-400 font-semibold font-sans">
+                          Moduł {String(lesson.moduleId).padStart(2, '0')}
+                        </span>
+                        <span>~{lesson.durationMinutes} min</span>
+                      </div>
+                      <h4 className="text-sm sm:text-base font-bold text-[#F8FAFC] leading-snug group-hover:text-indigo-300 transition-colors">
+                        <a
+                          href={`/baza-wiedzy/${encodeURIComponent(lesson.id)}`}
+                          onClick={(e) => {
+                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)
+                              return;
+                            e.preventDefault();
+                            setActiveTab('public_lesson', lesson.id);
+                          }}
+                        >
+                          {lesson.title}
+                        </a>
+                      </h4>
+                      <p className="text-xs text-[#94A3B8] leading-relaxed line-clamp-3">
+                        {lesson.summary}
+                      </p>
+                    </div>
+                    <a
+                      href={`/baza-wiedzy/${encodeURIComponent(lesson.id)}`}
+                      onClick={(e) => {
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)
+                          return;
+                        e.preventDefault();
+                        setActiveTab('public_lesson', lesson.id);
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 group-hover:text-indigo-300"
+                    >
+                      <span>Czytaj artykuł i przykłady kodu</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </a>
+                  </article>
+                ))}
+            </div>
+          </RevealBlock>
         </div>
       </section>
 

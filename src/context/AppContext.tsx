@@ -10,6 +10,13 @@ import {
   ensureAdSenseScriptLoaded,
 } from '../utils/adsense';
 import {
+  buildPublicPath,
+  getPublicRouteSeoMetadata,
+  isPublicTab,
+  parsePublicLocation,
+  SITE_BASE_URL,
+} from '../utils/publicRoutes';
+import {
   authenticateUserCredentials,
   validateAndCreateUser,
   canSwitchToUser,
@@ -73,6 +80,12 @@ import {
 
 export type AppTab = 
   | 'landing'
+  | 'knowledge_base'
+  | 'public_lesson'
+  | 'about'
+  | 'contact'
+  | 'terms'
+  | 'privacy'
   | 'dashboard' 
   | 'modules' 
   | 'lesson' 
@@ -386,6 +399,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const validTabs: AppTab[] = [
         'landing',
+        'knowledge_base',
+        'public_lesson',
+        'about',
+        'contact',
+        'terms',
+        'privacy',
         'dashboard',
         'modules',
         'lesson',
@@ -411,23 +430,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       const host = (window.location.hostname || '').toLowerCase();
-      const path = (window.location.pathname || '/').toLowerCase();
+      const path = window.location.pathname || '/';
       const isAppSubdomainOrPath =
         host.startsWith('app.') ||
         host.startsWith('app-') ||
-        path === '/app' ||
-        path.startsWith('/app/');
+        path.toLowerCase() === '/app' ||
+        path.toLowerCase().startsWith('/app/');
 
       if (isAppSubdomainOrPath) {
         return 'dashboard';
       }
 
-      return 'landing';
+      const parsedPublic = parsePublicLocation(path);
+      return parsedPublic ? parsedPublic.tab : 'landing';
     } catch {
       return 'landing';
     }
   });
-  const [selectedLessonId, setSelectedLessonId] = useState<string | null>('html-7');
+  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(() => {
+    try {
+      const parsedPublic = parsePublicLocation(window.location.pathname || '/');
+      if (parsedPublic?.lessonId) return parsedPublic.lessonId;
+    } catch {
+      // ignore window errors
+    }
+    return 'html-7';
+  });
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>('proj-1');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'badge' | 'danger' } | null>(null);
   const [securityLogs, setSecurityLogs] = useState<SecurityAuditEvent[]>(() => {
@@ -1002,6 +1030,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       try {
         const validTabs: AppTab[] = [
           'landing',
+          'knowledge_base',
+          'public_lesson',
+          'about',
+          'contact',
+          'terms',
+          'privacy',
           'dashboard',
           'modules',
           'lesson',
@@ -1027,14 +1061,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           return;
         }
         const host = (window.location.hostname || '').toLowerCase();
-        const path = (window.location.pathname || '/').toLowerCase();
+        const path = window.location.pathname || '/';
         const isAppSubdomainOrPath =
           host.startsWith('app.') ||
           host.startsWith('app-') ||
-          path === '/app' ||
-          path.startsWith('/app/');
+          path.toLowerCase() === '/app' ||
+          path.toLowerCase().startsWith('/app/');
 
-        setActiveTabState(isAppSubdomainOrPath ? 'dashboard' : 'landing');
+        if (isAppSubdomainOrPath) {
+          setActiveTabState('dashboard');
+          return;
+        }
+
+        const parsedPublic = parsePublicLocation(path);
+        if (parsedPublic) {
+          setActiveTabState(parsedPublic.tab);
+          if (parsedPublic.lessonId) setSelectedLessonId(parsedPublic.lessonId);
+        } else {
+          setActiveTabState('landing');
+        }
       } catch {
         // ignore history error
       }
@@ -1043,6 +1088,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Update <title>, <meta name="description">, og:title and canonical URL on public routes
+  useEffect(() => {
+    if (typeof document === 'undefined' || !isPublicTab(activeTab)) return;
+    const flatLessons = MODULES_DATA.flatMap((m) => m.lessons);
+    const activeLesson =
+      activeTab === 'public_lesson'
+        ? flatLessons.find((l) => l.id === selectedLessonId) || flatLessons[0]
+        : null;
+    const seo = getPublicRouteSeoMetadata(activeTab, activeLesson);
+    document.title = seo.title;
+
+    const descMeta = document.querySelector('meta[name="description"]');
+    if (descMeta) descMeta.setAttribute('content', seo.description);
+
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', seo.title);
+
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', seo.description);
+
+    const canonicalUrl = `${SITE_BASE_URL}${seo.canonicalPath}`;
+    const canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (canonicalLink) canonicalLink.setAttribute('href', canonicalUrl);
+  }, [activeTab, selectedLessonId]);
 
   const setActiveTab = (tab: AppTab, lessonId?: string, projectId?: string) => {
     if (tab === 'admin' && (!isAuthenticated || currentUser.role !== 'admin')) {
@@ -1071,20 +1141,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const host = (window.location.hostname || '').toLowerCase();
       const isAppSubdomain = host.startsWith('app.') || host.startsWith('app-');
+      const resolvedLessonId = lessonId || selectedLessonId;
+      const publicPath = buildPublicPath(tab, resolvedLessonId);
       let nextUrl = '/';
       if (isAppSubdomain) {
         nextUrl = tab === 'dashboard' ? '/' : `/?tab=${tab}`;
+      } else if (publicPath) {
+        nextUrl = publicPath;
+      } else if (tab === 'dashboard') {
+        nextUrl = '/app';
       } else {
-        if (tab === 'landing') {
-          nextUrl = '/';
-        } else if (tab === 'dashboard') {
-          nextUrl = '/app';
-        } else {
-          nextUrl = `/app?tab=${tab}`;
-        }
+        nextUrl = `/app?tab=${tab}`;
       }
       if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
-        window.history.pushState({ tab }, '', nextUrl);
+        window.history.pushState({ tab, lessonId: resolvedLessonId }, '', nextUrl);
       }
     } catch {
       // ignore history API errors in sandboxed iframes
