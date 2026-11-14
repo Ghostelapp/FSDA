@@ -24,10 +24,13 @@ import {
   ShieldCheck,
   ArrowUp,
 } from 'lucide-react';
+import heroDarkStudioImage from '../assets/images/dark_studio_coding_1794680584416.jpg';
+import pairEngineeringImage from '../assets/images/dark_pair_engineering_1794680583212.jpg';
+import portfolioDeskImage from '../assets/images/dark_portfolio_desk_1794680585081.jpg';
 
-const HERO_DARK_STUDIO_IMAGE = '/src/assets/images/dark_studio_coding_1794680584416.jpg';
-const PAIR_ENGINEERING_IMAGE = '/src/assets/images/dark_pair_engineering_1794680583212.jpg';
-const PORTFOLIO_DESK_IMAGE = '/src/assets/images/dark_portfolio_desk_1794680585081.jpg';
+const HERO_DARK_STUDIO_IMAGE = heroDarkStudioImage;
+const PAIR_ENGINEERING_IMAGE = pairEngineeringImage;
+const PORTFOLIO_DESK_IMAGE = portfolioDeskImage;
 
 const TECH_RIBBON_ITEMS = [
   'HTML5 Semantyka',
