@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { CopyButton } from './CopyButton';
 import { 
   Smartphone, 
   Download, 
@@ -428,9 +429,12 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                   </button>
                 </div>
 
-                <pre className="rounded-xl bg-slate-900 p-3.5 font-mono text-[11px] text-emerald-300 border border-slate-800 overflow-x-auto leading-relaxed">
-                  {EXPO_BUILD_COMMANDS}
-                </pre>
+                <div className="relative">
+                  <CopyButton text={EXPO_BUILD_COMMANDS} className="absolute top-2.5 right-2.5 z-10" />
+                  <pre className="rounded-xl bg-slate-900 p-3.5 pr-24 font-mono text-[11px] text-emerald-300 border border-slate-800 overflow-x-auto leading-relaxed">
+                    {EXPO_BUILD_COMMANDS}
+                  </pre>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs pt-1">
                   <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
@@ -639,9 +643,12 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                     <span>Kopiuj polecenia</span>
                   </button>
                 </div>
-                <pre className="rounded-xl bg-slate-900 p-3 font-mono text-[11px] text-emerald-300 border border-slate-800 overflow-x-auto leading-relaxed">
-                  {BUILD_APK_COMMANDS}
-                </pre>
+                <div className="relative">
+                  <CopyButton text={BUILD_APK_COMMANDS} className="absolute top-2 right-2 z-10" />
+                  <pre className="rounded-xl bg-slate-900 p-3 pr-24 font-mono text-[11px] text-emerald-300 border border-slate-800 overflow-x-auto leading-relaxed">
+                    {BUILD_APK_COMMANDS}
+                  </pre>
+                </div>
               </div>
             </div>
           )}
@@ -721,9 +728,12 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                       <span>Kopiuj pełny opis</span>
                     </button>
                   </div>
-                  <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans max-h-36 overflow-y-auto leading-relaxed">
-                    {STORE_FULL_DESC}
-                  </pre>
+                  <div className="relative">
+                    <CopyButton text={STORE_FULL_DESC} className="absolute top-1.5 right-1.5 z-10" />
+                    <pre className="text-[11px] text-slate-300 whitespace-pre-wrap font-sans max-h-36 overflow-y-auto leading-relaxed pr-24">
+                      {STORE_FULL_DESC}
+                    </pre>
+                  </div>
                 </div>
               </div>
 

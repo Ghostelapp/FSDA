@@ -46,14 +46,14 @@ const FRIENDLY_LESSON_TITLES: Record<string, string> = {
   'fund-5': 'Bezpieczeństwo projektu: pliki konfiguracyjne .env i ukrywanie haseł (.gitignore)',
 
   // Module 2: HTML od najprostszych znaczników do pełnej strony
-  'html-7': 'Pierwsze znaczniki HTML: Nagłówki (h1–h6), akapity (p) i pogrubienie (strong)',
-  'html-8': 'Listy punktowane i numerowane (ul, ol) oraz linki (a href)',
-  'html-4': 'Obrazki (img), odnośniki i proste tabele danych (table)',
-  'html-9': 'Pudełka div i span oraz nazywanie elementów za pomocą id i class',
-  'html-1': 'Pełny szkielet pliku HTML5: DOCTYPE, sekcja head oraz ciało strony body',
-  'html-2': 'Semantyczny układ strony: nagłówek (header), menu (nav), treść (main) i stopka (footer)',
-  'html-3': 'Formularze od podstaw: pola tekstowe (input), etykiety (label) i przyciski',
-  'html-6': 'Multimedia na stronie: odtwarzacz wideo (video), dźwięk (audio) i ikony SVG',
+  'html-7': 'Pierwsze znaczniki HTML: Nagłówki (<h1>–<h6>), akapity (<p>) i pogrubienie (<strong>)',
+  'html-8': 'Listy punktowane i numerowane (<ul>, <ol>) oraz linki (<a href>)',
+  'html-4': 'Obrazki (<img>), odnośniki i proste tabele danych (<table>)',
+  'html-9': 'Pudełka <div> i <span> oraz nazywanie elementów za pomocą id i class',
+  'html-1': 'Pełny szkielet pliku HTML5: <!DOCTYPE>, sekcja <head> oraz ciało strony <body>',
+  'html-2': 'Semantyczny układ strony: nagłówek (<header>), menu (<nav>), treść (<main>) i stopka (<footer>)',
+  'html-3': 'Formularze od podstaw: pola tekstowe (<input>), etykiety (<label>) i przyciski (<button>)',
+  'html-6': 'Multimedia na stronie: odtwarzacz wideo (<video>), dźwięk (<audio>) i ikony <svg>',
   'html-5': 'Dostępność stron (WCAG) i widoczność w wyszukiwarce Google (Podstawy SEO)',
 
   // Module 3: CSS od kolorów i czcionek do układów Flexbox i Grid

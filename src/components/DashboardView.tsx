@@ -6,6 +6,7 @@ import { BADGES_DATA } from '../data/badgesData';
 import { LearningProgressChart } from './LearningProgressChart';
 import { DailyGoalReminderCard } from './DailyGoalReminderCard';
 import { GoogleAdSenseBanner } from './GoogleAdSenseBanner';
+import { RichInlineText } from './RichInlineText';
 import { 
   Sparkles, 
   Flame, 
@@ -90,7 +91,13 @@ export const DashboardView: React.FC = () => {
                 </span>
               </div>
               <p className="text-sm sm:text-base font-bold text-white line-clamp-2 leading-snug">
-                {nextLesson ? nextLesson.title : 'Pierwsze znaczniki HTML: Nagłówki (h1–h6), akapity (p) i pogrubienie (strong)'}
+                <RichInlineText
+                  text={
+                    nextLesson
+                      ? nextLesson.title
+                      : 'Pierwsze znaczniki HTML: Nagłówki (<h1>–<h6>), akapity (<p>) i pogrubienie (<strong>)'
+                  }
+                />
               </p>
             </div>
 
@@ -275,7 +282,9 @@ export const DashboardView: React.FC = () => {
                 <span className="text-emerald-400">Kolejność: od najprostszych podstaw</span>
               </div>
               <h2 className="mt-1 text-xl sm:text-2xl font-bold text-white">{activeModule.title}</h2>
-              <p className="mt-1 text-xs sm:text-sm text-slate-300">{activeModule.description}</p>
+              <p className="mt-1 text-xs sm:text-sm text-slate-300">
+                <RichInlineText text={activeModule.description} />
+              </p>
             </div>
             
             <div className="text-right shrink-0">
@@ -317,7 +326,7 @@ export const DashboardView: React.FC = () => {
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <h4 className="text-sm sm:text-base font-bold text-white group-hover:text-indigo-400 transition-colors">
-                          Lekcja {lesson.order}: {lesson.title}
+                          Lekcja {lesson.order}: <RichInlineText text={lesson.title} />
                         </h4>
                         {isDone && (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
@@ -332,7 +341,7 @@ export const DashboardView: React.FC = () => {
                         )}
                       </div>
                       <p className="text-xs text-slate-300 mt-0.5 line-clamp-1">
-                        {lesson.summary}
+                        <RichInlineText text={lesson.summary} />
                       </p>
                       <div className="flex flex-wrap items-center gap-3 mt-1.5 text-[11px] text-slate-400">
                         <span className="flex items-center gap-1">
@@ -342,7 +351,7 @@ export const DashboardView: React.FC = () => {
                         <span>•</span>
                         <span className="text-indigo-300 font-semibold">+{lesson.xpReward} XP</span>
                         <span>•</span>
-                        <span>{lesson.prerequisites.join(', ')}</span>
+                        <span><RichInlineText text={lesson.prerequisites.join(', ')} /></span>
                         {quizScore !== undefined && (
                           <>
                             <span>•</span>

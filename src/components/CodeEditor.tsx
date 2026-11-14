@@ -5,6 +5,7 @@ import { validateExerciseCode, generateSandboxDocument, ValidationSummary } from
 import { highlightCode, getLanguageDisplayName } from '../utils/syntaxHighlighter';
 import { detectPrimaryExerciseTab } from '../utils/lessonReadability';
 import { CodeBlock } from './CodeBlock';
+import { RichInlineText } from './RichInlineText';
 import { 
   Play, 
   RotateCcw, 
@@ -201,8 +202,27 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const langForTab = activeFileTab === 'html' ? 'html' : activeFileTab === 'css' ? 'css' : 'javascript';
   const highlightedCode = highlightCode(currentCodeContent, langForTab);
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(currentCodeContent);
+  const handleCopyCode = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(currentCodeContent);
+      } else {
+        throw new Error('Clipboard API unavailable');
+      }
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = currentCodeContent;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        document.execCommand('copy');
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -211,103 +231,131 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const charCount = currentCodeContent.length;
 
   return (
-    <div className="w-full rounded-2xl border border-slate-800 bg-slate-900/90 shadow-2xl overflow-hidden flex flex-col my-4">
+    <div className="w-full rounded-2xl border border-slate-800 bg-slate-900/95 shadow-2xl overflow-hidden flex flex-col my-4">
       
-      {/* Exercise Brief Header */}
-      <div className="border-b border-slate-800 bg-slate-950 px-5 py-4 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-md bg-indigo-500/10 px-2 py-0.5 text-xs font-semibold text-indigo-400 border border-indigo-500/20">
-                Ćwiczenie Praktyczne
-              </span>
-              <h4 className="text-sm font-bold text-white">{exercise.title}</h4>
-              <span className="text-xs text-emerald-400 font-medium">
-                · Wpisz kod w zakładce: {primaryTab === 'html' ? 'index.html' : primaryTab === 'css' ? 'styles.css' : 'app.js'}
-              </span>
-            </div>
-            <p className="text-xs sm:text-sm text-slate-200 mt-1.5 max-w-2xl leading-relaxed">{exercise.task}</p>
-          </div>
+      {/* Row 1: Clean Exercise Title & Action Toolbar */}
+      <div className="border-b border-slate-800/90 bg-slate-950 px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+          <span className="inline-flex items-center rounded-md bg-indigo-500/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/25 shrink-0">
+            Warsztat Kodu
+          </span>
+          <h4 className="text-sm sm:text-base font-bold text-white">
+            <RichInlineText text={exercise.title} />
+          </h4>
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-2.5 py-1 text-xs font-mono text-emerald-300 border border-slate-800 shrink-0">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            Plik: {primaryTab === 'html' ? 'index.html' : primaryTab === 'css' ? 'styles.css' : 'app.js'}
+          </span>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Hints Button */}
-            {exercise.hints && exercise.hints.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowHints(!showHints)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-xs font-medium text-amber-300 hover:bg-slate-800 transition-colors"
-              >
-                <Lightbulb className="h-3.5 w-3.5 text-amber-400" />
-                <span>Podpowiedzi ({exercise.hints.length})</span>
-              </button>
-            )}
-
-            {/* Direct 1-click Insert Solution for Beginners */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Hints Button */}
+          {exercise.hints && exercise.hints.length > 0 && (
             <button
               type="button"
-              onClick={handleApplySolution}
-              title="Wstaw gotowy, poprawny kod wzorcowy bezpośrednio do edytora"
-              className="px-2.5 py-1.5 rounded-lg border border-indigo-500/40 bg-indigo-500/10 text-xs font-semibold text-indigo-300 hover:bg-indigo-500/20 hover:text-white transition-colors"
+              onClick={() => setShowHints(!showHints)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+                showHints
+                  ? 'border-amber-500/50 bg-amber-500/15 text-amber-200'
+                  : 'border-slate-700/80 bg-slate-900 text-amber-300 hover:bg-slate-800'
+              }`}
             >
-              Wstaw wzór rozwiązania
+              <Lightbulb className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span className="tabular-nums">Podpowiedzi ({exercise.hints.length})</span>
             </button>
+          )}
 
-            {/* Solution Modal Preview Button */}
-            <button
-              type="button"
-              onClick={() => setShowSolutionModal(true)}
-              className="px-2.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-xs text-slate-300 hover:text-white transition-colors"
-            >
-              Podgląd wzorca
-            </button>
+          {/* Solution Modal Preview Button */}
+          <button
+            type="button"
+            onClick={() => setShowSolutionModal(true)}
+            className="px-3 py-1.5 rounded-lg border border-slate-700/80 bg-slate-900 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors whitespace-nowrap shrink-0"
+          >
+            Podgląd wzorca
+          </button>
 
-            {/* Reset Button */}
-            <button
-              type="button"
-              onClick={handleReset}
-              title="Resetuj do kodu początkowego"
-              className="p-1.5 rounded-lg border border-slate-700 bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </button>
+          {/* Direct 1-click Insert Solution for Beginners */}
+          <button
+            type="button"
+            onClick={handleApplySolution}
+            title="Wstaw gotowy, poprawny kod wzorcowy bezpośrednio do edytora"
+            className="px-3 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-xs font-semibold text-indigo-300 hover:bg-indigo-500/20 hover:text-white transition-colors whitespace-nowrap shrink-0"
+          >
+            Wstaw wzór rozwiązania
+          </button>
 
-            {/* Run & Validate Action Button */}
-            <button
-              type="button"
-              onClick={handleRunAndValidate}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-900/40"
-            >
-              <Play className="h-3.5 w-3.5 fill-white" />
-              <span>Sprawdź kod ({liveChecklist.passedCount}/{liveChecklist.totalCount})</span>
-            </button>
+          {/* Reset Button */}
+          <button
+            type="button"
+            onClick={handleReset}
+            title="Resetuj do kodu początkowego"
+            className="p-1.5 rounded-lg border border-slate-700/80 bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors shrink-0"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+
+          {/* Run & Validate Action Button */}
+          <button
+            type="button"
+            onClick={handleRunAndValidate}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-950/60 whitespace-nowrap shrink-0 tabular-nums"
+          >
+            <Play className="h-3.5 w-3.5 fill-white shrink-0" />
+            <span>Sprawdź kod ({liveChecklist.passedCount}/{liveChecklist.totalCount})</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Row 2: Dedicated Task Brief & Live Step-by-Step Checklist */}
+      <div className="border-b border-slate-800/90 bg-slate-900/60 px-5 py-4 space-y-3.5">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-indigo-500/20 text-[11px] font-bold text-indigo-300 border border-indigo-500/30">
+            !
+          </span>
+          <div className="space-y-1">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Polecenie zadania
+            </p>
+            <p className="text-sm sm:text-[15px] text-slate-100 leading-relaxed max-w-[78ch]">
+              <RichInlineText text={exercise.task} />
+            </p>
           </div>
         </div>
 
         {/* Live Step-by-Step Checklist Bar */}
         {liveChecklist.results.length > 0 && (
-          <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-semibold text-slate-400 mr-1">
-              Kroki na żywo:
-            </span>
-            {liveChecklist.results.map((item, idx) => (
-              <div
-                key={item.id}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs transition-colors ${
-                  item.passed
-                    ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 font-medium'
-                    : 'bg-slate-900/90 border-slate-800 text-slate-300'
-                }`}
-              >
-                {item.passed ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                ) : (
-                  <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-slate-600 text-[10px] font-mono text-slate-400 shrink-0">
-                    {idx + 1}
+          <div className="pt-3 border-t border-slate-800/80">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Lista kontrolna na żywo (zalicza się automatycznie podczas pisania)
+              </span>
+              <span className="text-xs font-mono font-semibold text-emerald-400 tabular-nums">
+                Ukończono: {liveChecklist.passedCount} z {liveChecklist.totalCount}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {liveChecklist.results.map((item, idx) => (
+                <div
+                  key={item.id}
+                  className={`flex items-start gap-2.5 px-3 py-2 rounded-lg border text-xs transition-colors ${
+                    item.passed
+                      ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200 font-medium'
+                      : 'bg-slate-950/70 border-slate-800/90 text-slate-300'
+                  }`}
+                >
+                  {item.passed ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                  ) : (
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full border border-slate-600 bg-slate-900 text-[10px] font-mono font-bold text-slate-400 shrink-0 mt-0.5 tabular-nums">
+                      {idx + 1}
+                    </span>
+                  )}
+                  <span className="leading-snug">
+                    <RichInlineText text={item.description} />
                   </span>
-                )}
-                <span>{item.description}</span>
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -340,7 +388,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             </div>
           </div>
           <p className="text-xs sm:text-sm text-amber-100/90 leading-relaxed">
-            {exercise.hints[hintIndex]}
+            <RichInlineText text={exercise.hints[hintIndex]} />
           </p>
         </div>
       )}
@@ -614,7 +662,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                               <XCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
                             )}
                             <div>
-                              <p className="font-semibold text-slate-200">{res.description}</p>
+                              <p className="font-semibold text-slate-200">
+                                <RichInlineText text={res.description} />
+                              </p>
                               {res.message && !res.passed && (
                                 <p className="text-[11px] text-rose-400 mt-1 font-mono bg-rose-950/40 px-2 py-1 rounded border border-rose-900/40">
                                   {res.message}
@@ -712,7 +762,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 <p className="text-xs font-bold text-amber-300">Wskazówki krok po kroku:</p>
                 <ol className="list-decimal list-inside space-y-1 text-xs text-amber-100/90">
                   {exercise.hints.map((h, i) => (
-                    <li key={i}>{h}</li>
+                    <li key={i}>
+                      <RichInlineText text={h} />
+                    </li>
                   ))}
                 </ol>
               </div>

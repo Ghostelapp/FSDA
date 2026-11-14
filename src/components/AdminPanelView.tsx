@@ -9,6 +9,7 @@ import {
   generateAdSenseHeadSnippet,
 } from '../utils/adsense';
 import { ProtectedRoute } from './ProtectedRoute';
+import { CopyButton } from './CopyButton';
 import { 
   ShieldCheck, 
   Users, 
@@ -1004,9 +1005,15 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
                     {copiedAdSnippet === 'adstxt' ? 'Skopiowano!' : 'Kopiuj ads.txt'}
                   </button>
                 </div>
-                <pre className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto">
-                  {generateAdsTxtContent(adSenseConfig.clientId)}
-                </pre>
+                <div className="relative">
+                  <CopyButton
+                    text={generateAdsTxtContent(adSenseConfig.clientId)}
+                    className="absolute top-2 right-2 z-10"
+                  />
+                  <pre className="p-2.5 pr-24 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto">
+                    {generateAdsTxtContent(adSenseConfig.clientId)}
+                  </pre>
+                </div>
               </div>
 
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
@@ -1024,9 +1031,15 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
                     {copiedAdSnippet === 'head' ? 'Skopiowano!' : 'Kopiuj kod HTML'}
                   </button>
                 </div>
-                <pre className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto">
-                  {generateAdSenseHeadSnippet(adSenseConfig.clientId)}
-                </pre>
+                <div className="relative">
+                  <CopyButton
+                    text={generateAdSenseHeadSnippet(adSenseConfig.clientId)}
+                    className="absolute top-2 right-2 z-10"
+                  />
+                  <pre className="p-2.5 pr-24 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto">
+                    {generateAdSenseHeadSnippet(adSenseConfig.clientId)}
+                  </pre>
+                </div>
               </div>
             </div>
           </div>

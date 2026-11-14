@@ -17,6 +17,13 @@ export interface GlossaryItem {
   simpleDefinition: string;
 }
 
+export interface TheoryTopicSection {
+  index: number;
+  id: string;
+  title: string;
+  blocks: TheoryBlock[];
+}
+
 export interface BeginnerLessonAid {
   difficultyLabel: 'Start od Zera' | 'Podstawy' | 'Średniozaawansowany' | 'Zaawansowany';
   difficultySummary: string;
@@ -29,11 +36,12 @@ export interface BeginnerLessonAid {
 
 export function classifyCodeCategory(snippet: string): 'html' | 'css' | 'cli' | 'js' | 'general' {
   const trimmed = snippet.trim();
-  if ((trimmed.startsWith('<') && trimmed.endsWith('>')) || trimmed.startsWith('&lt;') || trimmed.startsWith('<!')) {
+  if (
+    (trimmed.startsWith('<') && trimmed.endsWith('>')) ||
+    trimmed.startsWith('&lt;') ||
+    trimmed.startsWith('<!')
+  ) {
     return 'html';
-  }
-  if (trimmed.includes(':') && !trimmed.startsWith('http') && !trimmed.includes('://')) {
-    return 'css';
   }
   if (
     trimmed.startsWith('git ') ||
@@ -47,20 +55,114 @@ export function classifyCodeCategory(snippet: string): 'html' | 'css' | 'cli' | 
     return 'cli';
   }
   if (
+    trimmed.startsWith(':') ||
+    trimmed.startsWith('@media') ||
+    trimmed.startsWith('@keyframes') ||
+    trimmed.startsWith('@import') ||
+    trimmed.startsWith('@tailwind') ||
+    trimmed.startsWith('.') && /^.[a-zA-Z_-]+$/.test(trimmed) && !trimmed.startsWith('.env') && !trimmed.startsWith('.git') ||
+    /^(?:display|flex-direction|justify-content|align-items|grid-template|margin|padding|border|border-radius|box-sizing|background|color|font-size|line-height|position)\b/.test(trimmed) ||
+    (trimmed.includes(':') && !trimmed.startsWith('http') && !trimmed.includes('://'))
+  ) {
+    return 'css';
+  }
+  if (
     trimmed.startsWith('const ') ||
     trimmed.startsWith('let ') ||
+    trimmed.startsWith('var ') ||
     trimmed.startsWith('function ') ||
     trimmed.includes('=>') ||
-    trimmed.includes('()')
+    trimmed.includes('()') ||
+    /^(?:console|document|window|localStorage|app|res|req|bcrypt|jwt|Promise|Object|Array|JSON|useState|useEffect|useContext|useMemo|useRef|useCallback|addEventListener|querySelector|fetch|requireRole)\b/.test(trimmed)
   ) {
     return 'js';
   }
   return 'general';
 }
 
+const PLAIN_CODE_PATTERN = new RegExp(
+  [
+    // 1. Paired short HTML/JSX tag with inner text (no nested < or >), e.g. <button type="submit">Wyślij</button>
+    '<([a-zA-Z][a-zA-Z0-9-]*)(?:\\s+[^<>\\n]{1,70})?>[^<>\\n]{0,45}<\\/\\1>',
+    // 2. DOCTYPE, closing tag, self-closing tag, or opening tag with optional attributes
+    '<!DOCTYPE[^>\\n]{1,40}>|<\\/?[a-zA-Z][a-zA-Z0-9-]*(?:\\s+[^<>\\n]{1,80})?\\s*\\/?>',
+    // 3. CSS at-rules & pseudo-classes/elements
+    '@(?:media|keyframes|import|tailwind|layer)\\b|:(?:hover|focus|active|root|before|after|nth-child\\([^)]*\\))\\b',
+    // 4. CSS declaration snippets like display: flex; or color: #2563eb;
+    '\\b(?:display|flex-direction|justify-content|align-items|color|background|padding|margin|border|border-radius|font-size|line-height|position)\\s*:\\s*[a-zA-Z0-9#.%(),\\s-]{1,28};?',
+    // 5. CLI commands (without swallowing single-letter Polish conjunctions like "i", "w", "z")
+    '\\b(?:npm|npx|git|docker)\\s+[a-zA-Z0-9_.:/@-]+(?:\\s+(?:--?[a-zA-Z0-9_.-]+(?:=[^\\s,;)]+)?|@[a-zA-Z0-9_.-]+\\/[a-zA-Z0-9_.-]+|[a-zA-Z0-9_./-]{2,}))?',
+    // 6. JS/TS dotted calls & React hooks (with optional (...) invocation)
+    '\\b(?:console\\.(?:log|error|warn|table)|document\\.(?:querySelector|querySelectorAll|getElementById|createElement)|window\\.(?:localStorage|addEventListener)|localStorage\\.(?:getItem|setItem|removeItem)|res\\.(?:cookie|json|status|send)|req\\.(?:body|params|query|user)|app\\.(?:get|post|put|delete|use|listen)|bcrypt\\.(?:hash|compare)|jwt\\.(?:sign|verify)|Promise\\.(?:all|race)|JSON\\.(?:parse|stringify)|useState|useEffect|useContext|useMemo|useRef|useCallback|addEventListener|querySelector|requireRole)(?:\\([^()\\n]{0,45}\\))?',
+    // 7. HTML attributes written as key="value" in prose
+    '\\b(?:type|href|src|alt|id|class|for|name|value|placeholder|poster|width|height|action|method|rel|target|aria-[a-z-]+)="[^"\\n]{1,40}"',
+    // 8. Config dotfiles & API paths
+    '(?:\\.env(?:\\.local|\\.example)?|\\.gitignore|\\/api\\/[a-zA-Z0-9_/*-]+)',
+  ].join('|'),
+  'g'
+);
+
+const POLISH_WORD_CHAR = /[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ0-9_]/;
+
+function tokenizePlainTextWithAutoCode(text: string, isBold: boolean): InlineToken[] {
+  if (!text) return [];
+  const result: InlineToken[] = [];
+  let lastIndex = 0;
+
+  PLAIN_CODE_PATTERN.lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = PLAIN_CODE_PATTERN.exec(text)) !== null) {
+    const matched = match[0];
+    const start = match.index;
+    const end = start + matched.length;
+
+    // Guard word-like matches (non-<, non-@, non-:, non-.) against Polish diacritic boundaries
+    const startsLikeWord = /^[a-zA-Z]/.test(matched);
+    const endsLikeWord = /[a-zA-Z0-9]$/.test(matched);
+    const prevChar = start > 0 ? text[start - 1] : '';
+    const nextChar = end < text.length ? text[end] : '';
+
+    if ((startsLikeWord && prevChar && POLISH_WORD_CHAR.test(prevChar)) ||
+        (endsLikeWord && nextChar && POLISH_WORD_CHAR.test(nextChar))) {
+      continue;
+    }
+
+    // For dotfiles/API routes starting with . or /, require boundary before them (not inside e.g. file.env or https://foo.pl/api)
+    if ((matched.startsWith('.') || matched.startsWith('/')) && prevChar && /[a-zA-Z0-9:/]/.test(prevChar)) {
+      continue;
+    }
+
+    if (start > lastIndex) {
+      const prefix = text.slice(lastIndex, start).replace(/\*([^*]+)\*/g, '$1').replace(/`/g, '');
+      if (prefix) {
+        result.push({ type: isBold ? 'bold' : 'text', content: prefix });
+      }
+    }
+
+    result.push({
+      type: 'code',
+      content: matched,
+      category: classifyCodeCategory(matched),
+    });
+
+    lastIndex = end;
+  }
+
+  if (lastIndex < text.length) {
+    const tail = text.slice(lastIndex).replace(/\*([^*]+)\*/g, '$1').replace(/`/g, '');
+    if (tail) {
+      result.push({ type: isBold ? 'bold' : 'text', content: tail });
+    }
+  }
+
+  return result;
+}
+
 /**
- * Parses inline markdown tokens (**bold**, `code`, and nested **`code`**)
- * so raw backticks or asterisks never leak into the rendered lesson text.
+ * Parses inline markdown tokens (**bold**, `code`, nested **`code`**) AND
+ * automatically detects HTML tags, CSS rules, CLI commands, and JS calls in plain text
+ * so tags stand out clearly everywhere across lessons.
  */
 export function parseInlineTokens(rawText: string): InlineToken[] {
   if (!rawText) return [];
@@ -94,21 +196,14 @@ export function parseInlineTokens(rawText: string): InlineToken[] {
               category: classifyCodeCategory(codeContent),
             });
           } else {
-            tokens.push({ type: 'bold', content: sp.replace(/`/g, '') });
+            tokens.push(...tokenizePlainTextWithAutoCode(sp, true));
           }
         }
       } else {
-        tokens.push({
-          type: 'bold',
-          content: inner.replace(/`/g, ''),
-        });
+        tokens.push(...tokenizePlainTextWithAutoCode(inner, true));
       }
     } else {
-      const cleaned = part.replace(/\*([^*]+)\*/g, '$1').replace(/`/g, '');
-      tokens.push({
-        type: 'text',
-        content: cleaned,
-      });
+      tokens.push(...tokenizePlainTextWithAutoCode(part, false));
     }
   }
 
@@ -541,4 +636,57 @@ export function getBeginnerLessonAid(lesson: Lesson): BeginnerLessonAid {
     exerciseWalkthrough,
   };
 }
+
+/**
+ * Splits a flat list of TheoryBlocks into numbered, self-contained Topic Sections
+ * (Karty Zagadnień) at each heading block so long lessons are broken into digestible cards.
+ */
+export function groupTheoryBlocksIntoSections(
+  blocks: TheoryBlock[],
+  fallbackTitle = 'Kluczowe zagadnienia'
+): TheoryTopicSection[] {
+  if (!blocks || blocks.length === 0) {
+    return [];
+  }
+
+  const rawSections: { title: string; blocks: TheoryBlock[] }[] = [];
+  let currentTitle = fallbackTitle;
+  let currentBlocks: TheoryBlock[] = [];
+
+  for (const block of blocks) {
+    if (block.type === 'heading') {
+      if (currentBlocks.length > 0) {
+        rawSections.push({ title: currentTitle, blocks: currentBlocks });
+        currentBlocks = [];
+      }
+      currentTitle = block.title.trim() || fallbackTitle;
+    } else {
+      currentBlocks.push(block);
+    }
+  }
+
+  if (currentBlocks.length > 0) {
+    rawSections.push({ title: currentTitle, blocks: currentBlocks });
+  }
+
+  return rawSections.map((sec, idx) => ({
+    index: idx + 1,
+    id: `temat-${idx + 1}`,
+    title: sec.title,
+    blocks: sec.blocks,
+  }));
+}
+
+/**
+ * Estimates total lesson completion time (reading theory + examples + interactive exercise).
+ */
+export function estimateLessonReadingMinutes(lesson: Pick<Lesson, 'theoryMarkdown' | 'codeExamples' | 'commonMistakes'>): number {
+  const words = (lesson.theoryMarkdown || '').trim().split(/\s+/).filter(Boolean).length;
+  const readingMinutes = Math.max(2, Math.ceil(words / 140));
+  const examplesMinutes = (lesson.codeExamples?.length || 0) * 2;
+  const mistakesMinutes = Math.ceil((lesson.commonMistakes?.length || 0) * 1.5);
+  const exerciseMinutes = 5;
+  return readingMinutes + examplesMinutes + mistakesMinutes + exerciseMinutes;
+}
+
 

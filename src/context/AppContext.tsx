@@ -1830,7 +1830,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return ms;
       });
 
-      if (shouldTriggerDailyReminderNow(reminderSettings, todaySpentMinutes, now)) {
+      if (
+        isAuthenticated &&
+        activeTab !== 'landing' &&
+        shouldTriggerDailyReminderNow(reminderSettings, todaySpentMinutes, now)
+      ) {
         const todayKey = formatLocalDateKey(now);
         setReminderSettings((prev) => {
           if (prev.lastNotifiedDate === todayKey) return prev;

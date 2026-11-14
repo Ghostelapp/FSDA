@@ -8,11 +8,10 @@ import {
   calculateNextFlashcardReview,
   filterCheatSheets,
 } from '../utils/developerSimulators';
+import { CodeBlock } from './CodeBlock';
 import {
   BookOpen,
   RotateCw,
-  Copy,
-  Check,
   Search,
   Sparkles,
   Brain,
@@ -42,7 +41,6 @@ export const FlashcardsCheatSheetView: React.FC = () => {
   // Cheat sheets state
   const [selectedCategory, setSelectedCategory] = useState<string>('Wszystkie');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const currentCard = FLASHCARDS_DECK[cardIndex] || FLASHCARDS_DECK[0];
   const currentCardSchedule = scheduleMap[currentCard.id];
@@ -67,14 +65,6 @@ export const FlashcardsCheatSheetView: React.FC = () => {
   };
 
   const filteredSnippets = filterCheatSheets(CHEAT_SHEETS_DATA, selectedCategory, searchQuery);
-
-  const handleCopyCode = (id: string, code: string) => {
-    if (navigator.clipboard) {
-      void navigator.clipboard.writeText(code);
-    }
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
@@ -142,9 +132,12 @@ export const FlashcardsCheatSheetView: React.FC = () => {
                   <div className="pt-3 border-t border-slate-800 space-y-3">
                     <p className="text-sm text-slate-200 leading-relaxed">{currentCard.answer}</p>
                     {currentCard.codeSnippet && (
-                      <pre className="rounded-xl bg-slate-900 border border-slate-800 p-3 text-xs font-mono text-emerald-300 overflow-x-auto">
-                        {currentCard.codeSnippet}
-                      </pre>
+                      <CodeBlock
+                        code={currentCard.codeSnippet}
+                        language="javascript"
+                        title="Przykład kodu"
+                        showLineNumbers={true}
+                      />
                     )}
                   </div>
                 )}
@@ -286,36 +279,30 @@ export const FlashcardsCheatSheetView: React.FC = () => {
             {filteredSnippets.map((item) => (
               <div
                 key={item.id}
-                className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 flex flex-col justify-between space-y-4"
+                className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 flex flex-col space-y-4"
               >
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-indigo-400">{item.category}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyCode(item.id, item.code)}
-                      className="flex items-center gap-1 text-xs font-medium text-slate-300 hover:text-white"
-                    >
-                      {copiedId === item.id ? (
-                        <>
-                          <Check className="h-3.5 w-3.5 text-emerald-400" />
-                          <span className="text-emerald-400">Skopiowano</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3.5 w-3.5" />
-                          <span>Kopiuj kod</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <span className="text-xs font-semibold text-indigo-400">{item.category}</span>
                   <h3 className="text-sm font-bold text-white">{item.title}</h3>
                   <p className="text-xs text-slate-300">{item.summary}</p>
                 </div>
 
-                <pre className="rounded-xl border border-slate-800 bg-slate-950 p-3.5 text-xs font-mono text-cyan-200 overflow-x-auto">
-                  {item.code}
-                </pre>
+                <CodeBlock
+                  code={item.code}
+                  language={
+                    item.category?.toLowerCase().includes('css')
+                      ? 'css'
+                      : item.category?.toLowerCase().includes('sql')
+                      ? 'sql'
+                      : item.category?.toLowerCase().includes('html')
+                      ? 'html'
+                      : item.category?.toLowerCase().includes('git') || item.category?.toLowerCase().includes('bash')
+                      ? 'bash'
+                      : 'javascript'
+                  }
+                  title={item.title}
+                  showLineNumbers={true}
+                />
               </div>
             ))}
           </div>

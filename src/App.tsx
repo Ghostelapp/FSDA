@@ -96,14 +96,14 @@ const MainContent: React.FC = () => {
 
       {/* App Body */}
       {activeTab === 'landing' ? (
-        <main className="flex-1 min-w-0 overflow-x-hidden print:pb-0">
+        <main className="flex-1 min-w-0 overflow-x-clip print:pb-0">
           <LandingPageView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
         </main>
       ) : (
         <div className="flex flex-1 items-stretch min-w-0">
           <Sidebar />
 
-          <main className="flex-1 min-w-0 overflow-x-hidden pb-16 print:pb-0">
+          <main className="flex-1 min-w-0 overflow-x-clip pb-16 print:pb-0">
             <React.Suspense
               fallback={(
                 <div className="flex min-h-[50vh] items-center justify-center text-sm text-slate-400" role="status">
@@ -149,42 +149,54 @@ const MainContent: React.FC = () => {
       )}
 
       {/* Global Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 px-4 py-8 text-xs text-slate-400 print:hidden">
+      <footer
+        className={`border-t px-4 py-10 text-xs print:hidden ${
+          activeTab === 'landing'
+            ? 'border-slate-800/80 bg-[#05070D] text-slate-400'
+            : 'border-slate-900 bg-slate-950 text-slate-400'
+        }`}
+      >
         <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-600 text-white">
               <Code2 className="h-3.5 w-3.5" />
             </div>
-            <span className="font-bold text-white">Full Stack Developer Academy</span>
+            <span className="font-bold text-slate-100">
+              Full Stack Developer Academy
+            </span>
             <span className="text-slate-500">© 2026. Wszystkie prawa zastrzeżone.</span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 text-[11px]">
+          <div className={`flex flex-wrap items-center justify-center gap-5 text-xs font-medium ${activeTab === 'landing' ? 'md:pr-28' : ''}`}>
             <button
               type="button"
-              onClick={() => setActiveTab('landing')}
-              className="hover:text-white transition-colors"
+              onClick={() => {
+                setActiveTab('landing');
+                const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+                window.scrollTo({ top: 0, behavior: prefersReduced ? 'auto' : 'smooth' });
+              }}
+              className="hover:text-slate-100 transition-colors"
             >
               Strona Główna
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('dashboard')}
-              className="hover:text-white transition-colors"
+              className="hover:text-slate-100 transition-colors"
             >
               Pulpit Kursanta
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('deployment')}
-              className="hover:text-white transition-colors"
+              className="hover:text-slate-100 transition-colors"
             >
               Przewodnik Wdrożenia
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('certificate')}
-              className="hover:text-white transition-colors"
+              className="hover:text-slate-100 transition-colors"
             >
               Weryfikacja Certyfikatów
             </button>
@@ -198,7 +210,7 @@ const MainContent: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAuthModalOpen(true)}
-              className="hover:text-indigo-400 transition-colors"
+              className="hover:text-indigo-500 transition-colors"
             >
               {isAuthenticated ? 'Konto / Zmień Profil' : 'Zaloguj się / Rejestracja'}
             </button>
@@ -206,7 +218,7 @@ const MainContent: React.FC = () => {
               <button
                 type="button"
                 onClick={logout}
-                className="text-rose-400 hover:text-rose-300 transition-colors font-medium"
+                className="text-rose-500 hover:text-rose-400 transition-colors font-medium"
               >
                 Wyloguj się
               </button>

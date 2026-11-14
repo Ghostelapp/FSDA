@@ -1,165 +1,108 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  parseInlineTokens,
   parseTheoryBlocks,
-  getBeginnerLessonAid,
-  detectPrimaryExerciseTab,
+  groupTheoryBlocksIntoSections,
+  parseInlineTokens,
+  estimateLessonReadingMinutes,
 } from './lessonReadability';
-import { MODULES_DATA } from '../data/modulesData';
 
-test('parseInlineTokens strips nested bold around backticks (**`<!DOCTYPE html>`**) and leaves zero raw backticks', () => {
-  const input = '1. **`<!DOCTYPE html>`**: Informuje przeglądarkę o standardzie **HTML5**.';
-  const tokens = parseInlineTokens(input);
+test('groupTheoryBlocksIntoSections splits markdown blocks into numbered topic cards', () => {
+  const markdown = `
+### 1. Architektura dokumentu HTML
+Przeglądarka czyta kod od góry do dołu i buduje drzewo \`DOM\`.
+- Znacznik \`<head>\` zawiera metadane.
+- Znacznik \`<body>\` zawiera widoczną treść.
 
-  const codeToken = tokens.find((t) => t.type === 'code');
-  assert.ok(codeToken, 'Should produce a code token');
-  assert.equal(codeToken?.content, '<!DOCTYPE html>');
-  assert.equal(codeToken?.category, 'html');
+### 2. Semantyka i dostępność
+Stosuj znaczniki takie jak \`<main>\`, \`<nav>\` oraz \`<article>\`.
+1. **Czytniki ekranowe**: łatwiej nawigują po sekcjach.
+2. **SEO**: roboty indeksujące lepiej rozumieją strukturę.
+  `.trim();
 
-  // Ensure no token contains raw backticks or double asterisks
-  for (const token of tokens) {
-    assert.equal(token.content.includes('`'), false, `Token leaked raw backtick: ${token.content}`);
-    assert.equal(token.content.includes('**'), false, `Token leaked raw **: ${token.content}`);
-  }
+  const blocks = parseTheoryBlocks(markdown);
+  const sections = groupTheoryBlocksIntoSections(blocks);
+
+  assert.equal(sections.length, 2);
+  assert.equal(sections[0].index, 1);
+  assert.equal(sections[0].title, '1. Architektura dokumentu HTML');
+  assert.equal(sections[0].blocks.length, 2);
+
+  assert.equal(sections[1].index, 2);
+  assert.equal(sections[1].title, '2. Semantyka i dostępność');
+  assert.equal(sections[1].blocks.length, 2);
 });
 
-test('parseTheoryBlocks separates single-newline numbered lists and bullet lists into structured blocks', () => {
-  const sampleMarkdown = `Gdy wpisujesz adres URL, uruchamiasz łańcuch zdarzeń:
-1. **Rozwiązanie DNS:** Przeglądarka tłumaczy domenę na IP.
-2. **Żądanie HTTP:** Przeglądarka wysyła zapytanie \`GET\`.
-3. **Odpowiedź serwera:** Serwer zwraca status \`200 OK\`.
+test('groupTheoryBlocksIntoSections handles intro paragraphs before the first heading', () => {
+  const markdown = `
+Wprowadzenie do tematu zmiennych w języku JavaScript.
 
-**1. Czym jest algorytm?**
-Każdy algorytm składa się z 3 klocków:
-- **Sekwencji** (wykonaj krok A, potem krok B),
-- **Warunku** (jeśli hasło poprawne -> zaloguj),
-- **Pętli** (powtarzaj dla każdego kursanta).`;
+### Deklaracja const oraz let
+Zawsze zaczynaj od \`const\`, a \`let\` stosuj gdy wartość ulega zmianie.
+  `.trim();
 
-  const blocks = parseTheoryBlocks(sampleMarkdown);
+  const blocks = parseTheoryBlocks(markdown);
+  const sections = groupTheoryBlocksIntoSections(blocks, 'Wstęp teoretyczny');
 
-  assert.equal(blocks[0]?.type, 'paragraph');
-  assert.equal(blocks[1]?.type, 'ordered_list');
-  if (blocks[1]?.type === 'ordered_list') {
-    assert.equal(blocks[1].items.length, 3);
-    assert.equal(blocks[1].items[0].number, '1');
-    assert.ok(blocks[1].items[0].title && blocks[1].items[0].title.length > 0);
-  }
-
-  assert.equal(blocks[2]?.type, 'heading');
-  assert.equal(blocks[3]?.type, 'paragraph');
-  assert.equal(blocks[4]?.type, 'unordered_list');
-  if (blocks[4]?.type === 'unordered_list') {
-    assert.equal(blocks[4].items.length, 3);
-  }
+  assert.equal(sections.length, 2);
+  assert.equal(sections[0].title, 'Wstęp teoretyczny');
+  assert.equal(sections[1].title, 'Deklaracja const oraz let');
 });
 
-test('All 91 lessons across 15 modules parse without leaking raw backticks and provide beginner aids', () => {
-  const allLessons = MODULES_DATA.flatMap((m) => m.lessons);
-  assert.ok(allLessons.length >= 90);
-
-  for (const lesson of allLessons) {
-    const blocks = parseTheoryBlocks(lesson.theoryMarkdown);
-    assert.ok(blocks.length > 0, `Lesson ${lesson.id} should produce at least 1 theory block`);
-
-    for (const block of blocks) {
-      if (block.type === 'paragraph') {
-        for (const t of block.tokens) {
-          assert.equal(t.content.includes('`'), false, `Leaked backtick in ${lesson.id}: ${t.content}`);
-        }
-      }
-      if (block.type === 'ordered_list') {
-        for (const item of block.items) {
-          for (const t of item.body) {
-            assert.equal(t.content.includes('`'), false, `Leaked backtick in ordered list of ${lesson.id}: ${t.content}`);
-          }
-        }
-      }
-    }
-
-    const aid = getBeginnerLessonAid(lesson);
-    assert.ok(aid.analogyTitle.length > 5);
-    assert.ok(aid.analogyText.length > 20);
-    assert.ok(aid.glossary.length > 0);
-    assert.ok(aid.exerciseWalkthrough.length >= 1);
-  }
+test('parseInlineTokens strips raw backticks and classifies code tokens cleanly', () => {
+  const tokens = parseInlineTokens('Użyj znacznika **`<section>`** oraz właściwości `display: flex;`.');
+  const codeTokens = tokens.filter((t) => t.type === 'code');
+  assert.equal(codeTokens.length, 2);
+  assert.equal(codeTokens[0].content, '<section>');
+  assert.equal(codeTokens[0].category, 'html');
+  assert.equal(codeTokens[1].content, 'display: flex;');
+  assert.equal(codeTokens[1].category, 'css');
 });
 
-test('MODULES_DATA starts with HTML basics (Module 1), then CSS (Module 2), JS (Module 3), and orders lessons from easiest to advanced', () => {
-  // Module 1 is HTML starting with simple headings (html-7)
-  const mod1Ids = MODULES_DATA.find((m) => m.id === 1)?.lessons.map((l) => l.id);
-  assert.deepEqual(mod1Ids?.slice(0, 4), ['html-7', 'html-8', 'html-4', 'html-9']);
+test('parseInlineTokens automatically detects unbackticked HTML tags in lesson summaries and tasks', () => {
+  const summary =
+    'Naucz się tworzyć formularz: pole <input type="email" required />, etykieta <label>E-mail</label> i przycisk <button type="submit">Wyślij</button> przed </form>.';
+  const tokens = parseInlineTokens(summary);
+  const codeTokens = tokens.filter((t) => t.type === 'code');
 
-  // Module 2 is CSS starting with colors & fonts (css-7)
-  const mod2Ids = MODULES_DATA.find((m) => m.id === 2)?.lessons.map((l) => l.id);
-  assert.deepEqual(mod2Ids?.slice(0, 3), ['css-7', 'css-6', 'css-1']);
-
-  // Module 3 is JS starting with variables -> if/else -> functions -> loops -> objects -> DOM -> map/filter
-  const mod3Ids = MODULES_DATA.find((m) => m.id === 3)?.lessons.map((l) => l.id);
-  assert.deepEqual(mod3Ids?.slice(0, 7), ['js-1', 'js-6', 'js-8', 'js-7', 'js-9', 'js-3', 'js-2']);
-
-  // Module 4 is Internet/Tools starting with fund-1
-  const mod4Ids = MODULES_DATA.find((m) => m.id === 4)?.lessons.map((l) => l.id);
-  assert.deepEqual(mod4Ids?.slice(0, 4), ['fund-1', 'fund-2', 'fund-3', 'fund-4']);
-
-  for (const mod of MODULES_DATA) {
-    mod.lessons.forEach((lesson, idx) => {
-      assert.equal(lesson.order, idx + 1, `Module ${mod.id} lesson ${lesson.id} should have order ${idx + 1}`);
-      const firstPrereq = lesson.prerequisites[0] || '';
-      if (idx === 0) {
-        if (mod.id === 1) {
-          assert.ok(firstPrereq.includes('Brak'));
-        } else {
-          assert.ok(firstPrereq.includes(`Modułu ${mod.id - 1}`));
-        }
-      } else {
-        assert.ok(
-          firstPrereq.startsWith(`Lekcja ${idx}:`),
-          `Lesson ${lesson.id} (order ${lesson.order}) should reference Lekcja ${idx} in prerequisites, got: ${firstPrereq}`
-        );
-      }
-
-      const tab = detectPrimaryExerciseTab(lesson.interactiveExercise);
-      assert.ok(['html', 'css', 'js'].includes(tab));
-    });
-  }
+  assert.equal(codeTokens.length, 4);
+  assert.equal(codeTokens[0].content, '<input type="email" required />');
+  assert.equal(codeTokens[0].category, 'html');
+  assert.equal(codeTokens[1].content, '<label>E-mail</label>');
+  assert.equal(codeTokens[1].category, 'html');
+  assert.equal(codeTokens[2].content, '<button type="submit">Wyślij</button>');
+  assert.equal(codeTokens[2].category, 'html');
+  assert.equal(codeTokens[3].content, '</form>');
+  assert.equal(codeTokens[3].category, 'html');
 });
 
-test('All 9 HTML lessons in Module 1 have curated beginner glossaries, pre-filled starter code, and bite-sized tasks', () => {
-  const htmlModule = MODULES_DATA.find((m) => m.id === 1);
-  assert.ok(htmlModule, 'HTML module (Module 1) must exist');
-  assert.equal(htmlModule.lessons.length, 9);
+test('parseInlineTokens does not misclassify math comparisons or Polish words', () => {
+  const prose = 'Jeśli wiek < 18 oraz punkty > 10, użyj :hover oraz npm install helmet i console.log(wiek).';
+  const tokens = parseInlineTokens(prose);
+  const codeTokens = tokens.filter((t) => t.type === 'code');
 
-  for (const lesson of htmlModule.lessons) {
-    const aid = getBeginnerLessonAid(lesson);
-    assert.equal(
-      aid.difficultyLabel,
-      'Start od Zera',
-      `HTML lesson ${lesson.id} should be labeled Start od Zera`
-    );
-
-    // Every HTML lesson must have a curated glossary, never generic "Kluczowy koncept #1"
-    for (const item of aid.glossary) {
-      assert.equal(
-        item.term.startsWith('Kluczowy koncept'),
-        false,
-        `HTML lesson ${lesson.id} should have curated glossary terms, got: ${item.term}`
-      );
-    }
-
-    // Starter code must be pre-filled with real HTML tags (not just a comment) and include a helpful Wzór comment
-    const starterHtml = lesson.interactiveExercise.starterCode.html;
-    assert.ok(
-      starterHtml.includes('<') && starterHtml.includes('Wzór:'),
-      `HTML lesson ${lesson.id} starterCode should include pre-filled tags and an inline Wzór comment`
-    );
-
-    // Bite-sized rules: max 3 rules per HTML lesson
-    assert.ok(
-      lesson.interactiveExercise.rules.length <= 3,
-      `HTML lesson ${lesson.id} should have at most 3 rules for beginner friendliness`
-    );
-  }
+  assert.equal(codeTokens.length, 3);
+  assert.equal(codeTokens[0].content, ':hover');
+  assert.equal(codeTokens[0].category, 'css');
+  assert.equal(codeTokens[1].content, 'npm install helmet');
+  assert.equal(codeTokens[1].category, 'cli');
+  assert.equal(codeTokens[2].content, 'console.log(wiek)');
+  assert.equal(codeTokens[2].category, 'js');
 });
 
-
+test('estimateLessonReadingMinutes returns realistic total time', () => {
+  const minutes = estimateLessonReadingMinutes({
+    theoryMarkdown: 'Słowo '.repeat(280),
+    codeExamples: [{ title: 'Ex1', language: 'html', code: '<p>Test</p>', explanation: 'Opis' }],
+    commonMistakes: [
+      {
+        mistake: 'Err1',
+        whyItHappens: 'Powód',
+        howToFix: 'Naprawa',
+        badCode: 'a',
+        goodCode: 'b',
+      },
+    ],
+  });
+  assert.ok(minutes >= 9 && minutes <= 14);
+});

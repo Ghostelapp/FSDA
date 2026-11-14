@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { MODULES_DATA } from '../data/modulesData';
 import { GoogleAdSenseBanner } from './GoogleAdSenseBanner';
+import { RichInlineText } from './RichInlineText';
 import { 
   Layers, 
   Clock, 
@@ -130,7 +131,9 @@ export const ModulesView: React.FC = () => {
                       </span>
                     </div>
                     <h3 className="text-lg sm:text-xl font-bold text-white">{module.title}</h3>
-                    <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">{module.description}</p>
+                    <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+                      <RichInlineText text={module.description} />
+                    </p>
                   </div>
                 </div>
 
@@ -175,7 +178,7 @@ export const ModulesView: React.FC = () => {
                       {module.topics.map((t, idx) => (
                         <div key={idx} className="flex items-start gap-2.5">
                           <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0 mt-1" />
-                          <span>{t}</span>
+                          <span><RichInlineText text={t} /></span>
                         </div>
                       ))}
                     </div>
@@ -185,7 +188,7 @@ export const ModulesView: React.FC = () => {
                   {module.projectBrief && (
                     <div className="p-4 rounded-xl bg-indigo-950/20 border border-indigo-500/30 text-sm">
                       <span className="font-bold text-indigo-300 block mb-1">Projekt praktyczny modułu:</span>
-                      <p className="text-slate-200">{module.projectBrief}</p>
+                      <p className="text-slate-200"><RichInlineText text={module.projectBrief} /></p>
                     </div>
                   )}
 
@@ -214,7 +217,7 @@ export const ModulesView: React.FC = () => {
                                 <div className="space-y-1">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <h5 className="text-sm sm:text-base font-bold text-white group-hover:text-indigo-400 transition-colors">
-                                      Lekcja {lesson.order}: {lesson.title}
+                                      Lekcja {lesson.order}: <RichInlineText text={lesson.title} />
                                     </h5>
                                     {isDone && (
                                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400">
@@ -224,14 +227,16 @@ export const ModulesView: React.FC = () => {
                                     )}
                                   </div>
                                   <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
-                                    {lesson.summary}
+                                    <RichInlineText text={lesson.summary} />
                                   </p>
                                   <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs text-slate-400">
                                     <span>{lesson.durationMinutes} min</span>
                                     <span aria-hidden="true">·</span>
                                     <span className="text-indigo-300 font-semibold">+{lesson.xpReward} XP</span>
                                     <span aria-hidden="true">·</span>
-                                    <span className="text-slate-300">{lesson.prerequisites.join(', ')}</span>
+                                    <span className="text-slate-300">
+                                      <RichInlineText text={lesson.prerequisites.join(', ')} />
+                                    </span>
                                     <span aria-hidden="true">·</span>
                                     <span className="text-emerald-400">
                                       {lesson.order <= 2 && module.id <= 3 ? 'Start od zera (z analogią)' : 'Zawiera wyjaśnienie krok po kroku'}

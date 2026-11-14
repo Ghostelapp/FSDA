@@ -8,6 +8,7 @@ import {
   sanitizeUserForExport,
 } from '../utils/developerSimulators';
 import { ProtectedRoute } from './ProtectedRoute';
+import { CopyButton } from './CopyButton';
 import {
   FileText,
   Download,
@@ -298,9 +299,15 @@ export const CareerBackupView: React.FC = () => {
               </button>
             </div>
 
-            <pre className="rounded-xl border border-slate-800 bg-slate-950 p-3.5 text-[11px] font-mono text-slate-300 overflow-x-auto max-h-64">
-              {portfolioMarkdown}
-            </pre>
+            <div className="relative">
+              <CopyButton
+                text={portfolioMarkdown}
+                className="absolute top-2.5 right-2.5 z-10"
+              />
+              <pre className="rounded-xl border border-slate-800 bg-slate-950 p-3.5 pr-24 text-[11px] font-mono text-slate-300 overflow-x-auto max-h-64">
+                {portfolioMarkdown}
+              </pre>
+            </div>
           </div>
 
           {/* Import Backup JSON */}

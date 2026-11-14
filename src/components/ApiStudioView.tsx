@@ -7,6 +7,7 @@ import {
   checkApiMissionCompleted,
   ApiResponseOutput,
 } from '../utils/developerSimulators';
+import { CodeBlock } from './CodeBlock';
 import {
   Send,
   CheckCircle2,
@@ -288,9 +289,13 @@ export const ApiStudioView: React.FC = () => {
                 </div>
               </div>
 
-              <pre className="rounded-xl bg-slate-950 border border-slate-800/90 p-4 text-xs font-mono text-emerald-300 overflow-x-auto max-h-96">
-                {JSON.stringify(response.data, null, 2)}
-              </pre>
+              <CodeBlock
+                code={JSON.stringify(response.data, null, 2)}
+                language="json"
+                title="Odpowiedź serwera (JSON)"
+                maxHeightClass="max-h-96"
+                showLineNumbers={true}
+              />
             </div>
           )}
         </div>

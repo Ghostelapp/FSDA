@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Copy, Check, Terminal, Code as CodeIcon } from 'lucide-react';
+import React from 'react';
+import { Terminal, Code as CodeIcon } from 'lucide-react';
 import { highlightCode, getLanguageDisplayName } from '../utils/syntaxHighlighter';
+import { CopyButton } from './CopyButton';
 
 interface CodeBlockProps {
   code: string;
@@ -9,6 +10,7 @@ interface CodeBlockProps {
   showLineNumbers?: boolean;
   highlightLines?: number[];
   className?: string;
+  maxHeightClass?: string;
   badge?: string;
   badgeColor?: 'emerald' | 'rose' | 'indigo' | 'amber';
 }
@@ -20,17 +22,10 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   showLineNumbers = true,
   highlightLines = [],
   className = '',
+  maxHeightClass = '',
   badge,
   badgeColor = 'indigo',
 }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const highlightedHtml = highlightCode(code, language);
   const lines = code.split('\n');
 
@@ -43,59 +38,45 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 
   return (
     <div className={`rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl ${className}`}>
-      {/* Code Header Bar */}
-      <div className="flex items-center justify-between border-b border-slate-800/80 bg-slate-900/90 px-4 py-2.5">
-        <div className="flex items-center gap-2">
+      {/* Code Header Bar with Top-Right Copy Button */}
+      <div className="flex items-center justify-between gap-3 border-b border-slate-800/80 bg-slate-900/90 px-4 py-2.5">
+        <div className="flex items-center gap-2 min-w-0">
           {language === 'bash' || language === 'sh' ? (
-            <Terminal className="h-4 w-4 text-emerald-400" />
+            <Terminal className="h-4 w-4 text-emerald-400 shrink-0" />
           ) : (
-            <CodeIcon className="h-4 w-4 text-indigo-400" />
+            <CodeIcon className="h-4 w-4 text-indigo-400 shrink-0" />
           )}
-          <span className="text-xs font-semibold text-slate-200">
+          <span className="text-xs font-semibold text-slate-200 truncate">
             {title || getLanguageDisplayName(language)}
           </span>
           {badge && (
-            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${badgeColorClasses}`}>
+            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0 ${badgeColorClasses}`}>
               {badge}
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono text-slate-500 hidden sm:inline">
+        <div className="flex items-center gap-2.5 shrink-0">
+          <span className="text-[11px] font-mono text-slate-500 hidden sm:inline tabular-nums">
             {lines.length} {lines.length === 1 ? 'linia' : lines.length < 5 ? 'linie' : 'linii'}
           </span>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded-md bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 transition-colors"
-            title="Kopiuj zawartość kodu do schowka"
-          >
-            {copied ? (
-              <>
-                <Check className="h-3.5 w-3.5 text-emerald-400" />
-                <span className="text-emerald-300 font-medium">Skopiowano</span>
-              </>
-            ) : (
-              <>
-                <Copy className="h-3.5 w-3.5" />
-                <span>Kopiuj</span>
-              </>
-            )}
-          </button>
+          <CopyButton text={code} />
         </div>
       </div>
 
-      {/* Code Body with Syntax Highlighting */}
-      <div className="relative flex font-mono text-xs leading-relaxed overflow-x-auto bg-slate-950/95 min-w-0 max-w-full">
+      {/* Code Body with Synchronized Line Numbers & Syntax Highlighting */}
+      <div className={`relative flex font-mono text-xs leading-relaxed overflow-auto bg-slate-950/95 min-w-0 max-w-full ${maxHeightClass}`}>
         {showLineNumbers && (
-          <div className="select-none py-3 px-3 text-right text-slate-600 bg-slate-950/80 border-r border-slate-800/60 shrink-0 font-mono text-[11px] leading-relaxed">
+          <div
+            aria-hidden="true"
+            className="select-none py-3 px-3 text-right text-slate-600 bg-slate-950/90 border-r border-slate-800/70 shrink-0 font-mono text-xs leading-relaxed tabular-nums"
+          >
             {lines.map((_, i) => {
               const lineNum = i + 1;
               const isHighlighted = highlightLines.includes(lineNum);
               return (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   className={isHighlighted ? 'text-amber-400 font-bold bg-amber-500/10 -mx-3 px-3' : ''}
                 >
                   {lineNum}
@@ -105,8 +86,8 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
           </div>
         )}
 
-        <pre className="p-3 text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed flex-1 min-w-0 max-w-full m-0">
-          <code 
+        <pre className="p-3 text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed whitespace-pre flex-1 min-w-0 m-0">
+          <code
             className={`language-${language}`}
             dangerouslySetInnerHTML={{ __html: highlightedHtml }}
           />
