@@ -25,11 +25,9 @@ import {
   ArrowUp,
 } from 'lucide-react';
 import heroDarkStudioImage from '../assets/images/dark_studio_coding_1794680584416.jpg';
-import pairEngineeringImage from '../assets/images/dark_pair_engineering_1794680583212.jpg';
 import portfolioDeskImage from '../assets/images/dark_portfolio_desk_1794680585081.jpg';
 
 const HERO_DARK_STUDIO_IMAGE = heroDarkStudioImage;
-const PAIR_ENGINEERING_IMAGE = pairEngineeringImage;
 const PORTFOLIO_DESK_IMAGE = portfolioDeskImage;
 
 const TECH_RIBBON_ITEMS = [
@@ -1711,7 +1709,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
           4. ARCHITECTURE BLUEPRINT STAGE & ASYMMETRIC GRADUATE SPOTLIGHT
       ===================================================================== */}
       <section id="projekty-portfolio" className="bg-[#090D16] py-20 lg:py-24 border-b border-white/[0.08]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-8 space-y-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-8">
           {/* Interactive Architecture Stage */}
           <RevealBlock className="space-y-8">
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -1817,103 +1815,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     ))}
                   </ul>
                 </div>
-              </div>
-            </div>
-          </RevealBlock>
-
-          {/* Asymmetric Graduate Outcomes: 7-col Cinematic Feature + 5-col Editorial Column */}
-          <RevealBlock delayMs={100} className="space-y-8 pt-6 border-t border-white/[0.08]">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs font-medium text-[#94A3B8]">
-                <span className="font-semibold text-indigo-400">Historie Kursantów</span>
-                <span aria-hidden="true">·</span>
-                <span>Od zera do pierwszej pracy i awansu w IT</span>
-              </div>
-              <h2
-                style={{ textWrap: 'balance' }}
-                className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-[#F8FAFC]"
-              >
-                Efekty osób, które wybrały naukę przez praktykę.
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-              {/* Featured 7-col Documentary Pair Programming Card */}
-              <div className="lg:col-span-7 relative rounded-2xl border border-white/10 bg-[#0B101B] overflow-hidden flex flex-col justify-between">
-                <div className="relative">
-                  <EditorialImage
-                    src={PAIR_ENGINEERING_IMAGE}
-                    alt="Dwójka programistów analizujących wspólnie architekturę kodu w wieczornym studiu"
-                    aspectClass="aspect-[16/10]"
-                    fallbackTitle="Praca projektowa w zespole IT"
-                  />
-                  <div
-                    aria-hidden="true"
-                    className="absolute inset-0 bg-gradient-to-t from-[#0B101B] via-[#0B101B]/45 to-transparent"
-                  />
-                </div>
-
-                <div className="p-6 sm:p-7 space-y-4">
-                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono tabular-nums text-[#94A3B8]">
-                    <span className="font-semibold text-emerald-400 whitespace-nowrap">Wynik egzaminu: 94/100</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="whitespace-nowrap">Seria 68 dni</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="whitespace-nowrap">Warszawa</span>
-                  </div>
-                  <p className="text-sm sm:text-base text-[#CBD5E1] leading-relaxed">
-                    „Wbudowany symulator terminala Git oraz Studio REST API oszczędziły mi godzin
-                    walki z konfiguracją środowiska. Codzienne fiszki SM-2 na telefonie sprawiły, że
-                    pytania rekrutacyjne na rozmowie technicznej zdałam bez żadnego stresu.”
-                  </p>
-                  <div className="pt-3 border-t border-white/[0.08]">
-                    <p className="text-sm font-bold text-[#F8FAFC]">Karolina Wiśniewska</p>
-                    <p className="text-xs text-[#94A3B8]">
-                      Przed: QA Manual Tester · Obecnie: Associate Full Stack Engineer
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stacked 5-col Editorial Stories (Clean Hairline Divided Column) */}
-              <div className="lg:col-span-5 rounded-2xl border border-white/10 bg-[#0B101B] p-6 sm:p-7 flex flex-col justify-between divide-y divide-white/[0.08]">
-                <article className="pb-6 space-y-3">
-                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono tabular-nums text-[#94A3B8]">
-                    <span className="font-semibold text-emerald-400 whitespace-nowrap">Awans: +65%</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="whitespace-nowrap">Certyfikat FSDA-2026</span>
-                  </div>
-                  <p className="text-sm text-[#CBD5E1] leading-relaxed">
-                    „Znałem podstawy CSS, ale brakowało mi backendu: Node.js, autoryzacji JWT
-                    i baz SQL. Moduły serwerowe oraz symulator Event Loopa uporządkowały moją wiedzę
-                    tak dobrze, że przejąłem pełne projekty TypeScript w zespole.”
-                  </p>
-                  <div>
-                    <p className="text-sm font-bold text-[#F8FAFC]">Tomasz Zieliński</p>
-                    <p className="text-xs text-[#94A3B8]">
-                      Przed: Freelance Webmaster · Obecnie: Regular Full Stack Developer (Kraków)
-                    </p>
-                  </div>
-                </article>
-
-                <article className="pt-6 space-y-3">
-                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono tabular-nums text-[#94A3B8]">
-                    <span className="font-semibold text-emerald-400 whitespace-nowrap">Czas nauki: 5.5 mies.</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="whitespace-nowrap">12 ukończonych projektów</span>
-                  </div>
-                  <p className="text-sm text-[#CBD5E1] leading-relaxed">
-                    „Wcześniej porzuciłem dwa kursy wideo, bo gubiłem się przed pustym edytorem. Tutaj
-                    szablony 80% pozwoliły mi od pierwszego dnia widzieć działające efekty. Na rozmowie
-                    pokazałem własną aplikację SQL i dostałem pierwszą ofertę.”
-                  </p>
-                  <div>
-                    <p className="text-sm font-bold text-[#F8FAFC]">Michał Krawczyk</p>
-                    <p className="text-xs text-[#94A3B8]">
-                      Przed: Specjalista ds. Logistyki · Obecnie: Junior Frontend Developer (Wrocław)
-                    </p>
-                  </div>
-                </article>
               </div>
             </div>
           </RevealBlock>
