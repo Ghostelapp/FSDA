@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import heroDarkStudioImage from '../assets/images/dark_studio_coding_1794680584416.jpg';
 import portfolioDeskImage from '../assets/images/dark_portfolio_desk_1794680585081.jpg';
+import { BrandLogo } from './BrandLogo';
 
 const HERO_DARK_STUDIO_IMAGE = heroDarkStudioImage;
 const PORTFOLIO_DESK_IMAGE = portfolioDeskImage;
@@ -722,21 +723,22 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
           TOP BAR CONTRACT (Strict 3-Zone Dark Obsidian Glass Header + Scroll Progress)
       ===================================================================== */}
       <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#06080E]/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-8 px-4 sm:px-8 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 sm:gap-6 lg:gap-8 px-4 sm:px-8 py-3 sm:py-3.5">
           <a
             href="#top"
             onClick={(e) => {
               e.preventDefault();
               smoothScrollToTop();
             }}
-            className="font-display text-lg font-extrabold tracking-tight text-[#F8FAFC] whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+            aria-label="Full Stack Academy — Powrót na górę strony"
+            className="whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-0.5 sm:p-1"
           >
-            Full Stack Academy
+            <BrandLogo />
           </a>
 
           <nav
             aria-label="Nawigacja strony głównej"
-            className="hidden md:flex items-center gap-7 text-sm font-medium text-[#94A3B8]"
+            className="hidden md:flex items-center gap-5 lg:gap-7 text-sm font-medium text-[#94A3B8]"
           >
             <button
               type="button"
@@ -791,7 +793,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               type="button"
               onClick={handlePrimaryAction}
               data-testid="landing-top-cta"
-              className="px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 active:scale-[0.98] transition-all whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+              className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 active:scale-[0.98] transition-all whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
             >
               {isAuthenticated ? 'Pulpit Kursanta →' : 'Rozpocznij za darmo →'}
             </button>

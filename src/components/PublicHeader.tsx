@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { buildPublicPath } from '../utils/publicRoutes';
 import type { PublicTab } from '../utils/publicRoutes';
+import { BrandLogo } from './BrandLogo';
 
 interface PublicHeaderProps {
   onOpenAuthModal: () => void;
@@ -38,13 +39,14 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({ onOpenAuthModal, act
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#06080E]/90 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-6 px-3 sm:px-8 py-3.5 sm:py-4">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-6 px-3 sm:px-8 py-3 sm:py-3.5">
         <a
           href="/"
           onClick={(e) => handleLinkClick(e, 'landing')}
-          className="font-display text-base sm:text-lg font-extrabold tracking-tight text-[#F8FAFC] whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+          aria-label="Full Stack Academy — Strona główna"
+          className="whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-0.5 sm:p-1"
         >
-          Full Stack Academy
+          <BrandLogo />
         </a>
 
         <nav

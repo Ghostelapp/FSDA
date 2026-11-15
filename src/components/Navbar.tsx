@@ -27,6 +27,7 @@ import {
   LogIn
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
+import { BrandLogo } from './BrandLogo';
 
 interface NavbarProps {
   onOpenAuthModal: () => void;
@@ -67,19 +68,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
           <button 
             type="button"
             onClick={() => setActiveTab('dashboard')}
-            className="flex items-center gap-2 sm:gap-2.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-0.5 sm:p-1"
+            className="flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-0.5 sm:p-1"
           >
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 text-white shadow-lg shadow-indigo-500/20 shrink-0">
-              <Code2 className="h-4 w-4 sm:h-5 sm:w-5" />
-            </div>
-            <div>
-              <span className="block text-sm sm:text-base font-bold tracking-tight text-white leading-none">
-                Full Stack <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Academy</span>
-              </span>
-              <span className="hidden sm:block text-[10px] font-medium uppercase tracking-wider text-slate-400 mt-1">
-                Akademia Programowania
-              </span>
-            </div>
+            <BrandLogo />
           </button>
         </div>
 
