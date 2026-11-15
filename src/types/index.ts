@@ -10,6 +10,50 @@ export interface DailyReminderSettings {
   lastNotifiedDate?: string; // "YYYY-MM-DD"
 }
 
+export type GitHubSyncStatus = 'disconnected' | 'syncing' | 'synced' | 'error';
+
+export interface GitHubRepoSummary {
+  id: number;
+  name: string;
+  fullName: string;
+  htmlUrl: string;
+  description?: string;
+  language?: string;
+  defaultBranch: string;
+  isPrivate: boolean;
+  stargazersCount: number;
+  updatedAt: string;
+}
+
+export interface GitHubProjectSubmission {
+  projectId: string;
+  repoFullName: string;
+  repoUrl: string;
+  branch: string;
+  commitSha: string;
+  commitMessage: string;
+  commitDate: string;
+  submittedAt: string;
+  status: 'verified' | 'submitted';
+  matchedFiles: string[];
+  checksPassed: number;
+  checksTotal: number;
+  summary: string;
+}
+
+export interface GitHubIntegrationState {
+  status: GitHubSyncStatus;
+  username?: string;
+  profileUrl?: string;
+  avatarUrl?: string;
+  lastSyncedAt?: string;
+  lastSyncError?: string;
+  reposCount?: number;
+  repos?: GitHubRepoSummary[];
+  projectSubmissions?: Record<string, GitHubProjectSubmission>;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -32,6 +76,7 @@ export interface User {
   unlockedBadges: string[]; // badge IDs
   claimedRewards?: string[]; // unique reward IDs to prevent duplicate XP farming
   savedCode: Record<string, { html: string; css: string; js: string }>; // exerciseId -> code
+  githubIntegration?: GitHubIntegrationState;
   // Gamification & Subscription
   lives: number; // current hearts (0 to maxLives)
   maxLives: number; // default 5
@@ -191,6 +236,25 @@ export interface ProjectStage {
   tasks: string[];
 }
 
+export interface ProjectSourceFile {
+  path: string;
+  language:
+    | 'html'
+    | 'css'
+    | 'javascript'
+    | 'typescript'
+    | 'tsx'
+    | 'sql'
+    | 'json'
+    | 'prisma'
+    | 'bash'
+    | 'yaml'
+    | 'docker'
+    | 'markdown';
+  description: string;
+  code: string;
+}
+
 export interface Project {
   id: string;
   number: number;
@@ -211,6 +275,7 @@ export interface Project {
     css: string;
     js: string;
   };
+  sourceFiles?: ProjectSourceFile[];
 }
 
 export interface Badge {

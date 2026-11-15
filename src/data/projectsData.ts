@@ -1,6 +1,13 @@
 import { Project } from '../types';
+import { PROJECT_SOURCES_PART_1 } from './projectSourcesPart1';
+import { PROJECT_SOURCES_PART_2 } from './projectSourcesPart2';
 
-export const PROJECTS_DATA: Project[] = [
+const ALL_PROJECT_SOURCES = {
+  ...PROJECT_SOURCES_PART_1,
+  ...PROJECT_SOURCES_PART_2,
+};
+
+const RAW_PROJECTS_DATA: Project[] = [
   {
     id: 'proj-1',
     number: 1,
@@ -434,3 +441,8 @@ h1 { margin: 0 0 10px 0; font-size: 2.2rem; }`,
     ],
   },
 ];
+
+export const PROJECTS_DATA: Project[] = RAW_PROJECTS_DATA.map((project) => ({
+  ...project,
+  sourceFiles: ALL_PROJECT_SOURCES[project.id] || project.sourceFiles || [],
+}));

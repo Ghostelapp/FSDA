@@ -64,6 +64,26 @@ service cloud.firestore {
         email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     }
 
+    function isValidGithubIntegration(gh) {
+      return gh is map &&
+        gh.keys().hasAll(['status', 'updatedAt']) &&
+        gh.keys().hasOnly([
+          'status', 'username', 'profileUrl', 'avatarUrl',
+          'lastSyncedAt', 'lastSyncError', 'reposCount', 'repos',
+          'projectSubmissions', 'updatedAt'
+        ]) &&
+        gh.status in ['disconnected', 'syncing', 'synced', 'error'] &&
+        gh.updatedAt is string && gh.updatedAt.size() <= 64 &&
+        (!('username' in gh) || (gh.username is string && gh.username.size() <= 100)) &&
+        (!('profileUrl' in gh) || (gh.profileUrl is string && gh.profileUrl.size() <= 512)) &&
+        (!('avatarUrl' in gh) || (gh.avatarUrl is string && gh.avatarUrl.size() <= 1024)) &&
+        (!('lastSyncedAt' in gh) || (gh.lastSyncedAt is string && gh.lastSyncedAt.size() <= 64)) &&
+        (!('lastSyncError' in gh) || (gh.lastSyncError is string && gh.lastSyncError.size() <= 500)) &&
+        (!('reposCount' in gh) || (gh.reposCount is number && gh.reposCount >= 0 && gh.reposCount <= 100000)) &&
+        (!('repos' in gh) || (gh.repos is list && gh.repos.size() <= 50 && (gh.repos.size() == 0 || (gh.repos[0] is map && gh.repos[0].fullName is string && gh.repos[0].fullName.size() <= 200)))) &&
+        (!('projectSubmissions' in gh) || (gh.projectSubmissions is map && gh.projectSubmissions.size() <= 50));
+    }
+
     function isValidUserProfile(data, userId) {
       return data.keys().hasAll(['uid', 'id', 'name', 'email', 'role', 'status', 'xp', 'level', 'streakDays', 'completedLessons']) &&
         data.uid is string && data.uid == userId &&
@@ -85,6 +105,7 @@ service cloud.firestore {
         (!('weeklyGoalMinutes' in data) || (data.weeklyGoalMinutes is number && data.weeklyGoalMinutes >= 30 && data.weeklyGoalMinutes <= 1440)) &&
         (!('avatar' in data) || (data.avatar is string && data.avatar.size() <= 2048)) &&
         (!('savedCode' in data) || (data.savedCode is map && data.savedCode.size() <= 100)) &&
+        (!('githubIntegration' in data) || isValidGithubIntegration(data.githubIntegration)) &&
         (!('bio' in data) || (data.bio is string && data.bio.size() <= 600));
     }
 
@@ -103,7 +124,7 @@ service cloud.firestore {
       return data.keys().hasOnly([
           'uid', 'id', 'name', 'email', 'role', 'status', 'xp', 'level',
           'streakDays', 'completedLessons', 'completedProjects', 'unlockedBadges',
-          'claimedRewards', 'quizScores', 'savedCode', 'lives', 'maxLives',
+          'claimedRewards', 'quizScores', 'savedCode', 'githubIntegration', 'lives', 'maxLives',
           'isPro', 'streakFreezes', 'bio', 'avatar', 'weeklyGoalMinutes',
           'weeklySpentMinutes', 'createdAt', 'updatedAt'
         ]) &&
@@ -116,7 +137,7 @@ service cloud.firestore {
 
     function hasOnlyOwnerEditableChanges() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-        'name', 'bio', 'avatar', 'weeklyGoalMinutes', 'savedCode', 'updatedAt'
+        'name', 'bio', 'avatar', 'weeklyGoalMinutes', 'savedCode', 'githubIntegration', 'updatedAt'
       ]);
     }
 

@@ -17,7 +17,22 @@ import { MISSING_CURRICULUM_LESSONS } from './modules/missingCurriculumLessons';
  */
 export const PEDAGOGICAL_LESSON_ORDER: Record<number, string[]> = {
   1: ['fund-1', 'fund-2', 'fund-3', 'fund-4', 'fund-6', 'fund-5'],
-  2: ['html-7', 'html-8', 'html-4', 'html-9', 'html-1', 'html-2', 'html-3', 'html-6', 'html-5'],
+  2: [
+    'html-7',
+    'html-10',
+    'html-8',
+    'html-11',
+    'html-4',
+    'html-12',
+    'html-9',
+    'html-1',
+    'html-2',
+    'html-3',
+    'html-13',
+    'html-6',
+    'html-14',
+    'html-5',
+  ],
   3: ['css-7', 'css-6', 'css-1', 'css-2', 'css-8', 'css-3', 'css-4', 'css-5', 'css-9'],
   4: ['js-1', 'js-6', 'js-8', 'js-7', 'js-9', 'js-3', 'js-2', 'js-4', 'js-5', 'js-10'],
   5: ['git-1', 'git-2', 'git-3', 'git-4', 'git-5', 'git-6'],
@@ -45,15 +60,20 @@ const FRIENDLY_LESSON_TITLES: Record<string, string> = {
   'fund-6': 'Jak czytać komunikaty o błędach i korzystać z narzędzi przeglądarki (F12)',
   'fund-5': 'Bezpieczeństwo projektu: pliki konfiguracyjne .env i ukrywanie haseł (.gitignore)',
 
-  // Module 2: HTML od najprostszych znaczników do pełnej strony
+  // Module 2: HTML od najprostszych znaczników do pełnej strony (14 lekcji)
   'html-7': 'Pierwsze znaczniki HTML: Nagłówki (<h1>–<h6>), akapity (<p>) i pogrubienie (<strong>)',
-  'html-8': 'Listy punktowane i numerowane (<ul>, <ol>) oraz linki (<a href>)',
-  'html-4': 'Obrazki (<img>), odnośniki i proste tabele danych (<table>)',
+  'html-10': 'Formatowanie tekstu, cytaty i kod: Kursywa (<em>), zakreślacz (<mark>), cytaty (<blockquote>) i podziały (<br>, <hr>)',
+  'html-8': 'Listy punktowane i numerowane (<ul>, <ol>) oraz podstawy linków (<a href>)',
+  'html-11': 'Odnośniki w praktyce: Nowa karta (target="_blank"), kotwice (#sekcja), mailto:, tel: i ścieżki plików',
+  'html-4': 'Obrazki na stronie (<img>), podpisy zdjęć (<figure>, <figcaption>) i leniwe ładowanie (loading="lazy")',
+  'html-12': 'Tabele danych od A do Z (<table>): Nagłówki (<thead>, <th>), ciało (<tbody>), podsumowanie (<tfoot>) i colspan',
   'html-9': 'Pudełka <div> i <span> oraz nazywanie elementów za pomocą id i class',
   'html-1': 'Pełny szkielet pliku HTML5: <!DOCTYPE>, sekcja <head> oraz ciało strony <body>',
-  'html-2': 'Semantyczny układ strony: nagłówek (<header>), menu (<nav>), treść (<main>) i stopka (<footer>)',
-  'html-3': 'Formularze od podstaw: pola tekstowe (<input>), etykiety (<label>) i przyciski (<button>)',
+  'html-2': 'Semantyczny układ strony: <header>, <nav>, <main>, <section>, <article>, <aside> i <footer>',
+  'html-3': 'Formularze cz. 1 — Podstawy: pola tekstowe (<input>), etykiety (<label>) i przyciski (<button>)',
+  'html-13': 'Formularze cz. 2 — Listy wyboru (<select>), <textarea>, checkbox, radio i walidacja HTML5',
   'html-6': 'Multimedia na stronie: odtwarzacz wideo (<video>), dźwięk (<audio>) i ikony <svg>',
+  'html-14': 'Natywne komponenty interaktywne HTML5: Akordeony FAQ (<details>, <summary>), <dialog> i <iframe>',
   'html-5': 'Dostępność stron (WCAG) i widoczność w wyszukiwarce Google (Podstawy SEO)',
 
   // Module 3: CSS od kolorów i czcionek do układów Flexbox i Grid

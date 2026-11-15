@@ -21,6 +21,7 @@ import {
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import firebaseAppletConfig from '../firebase-applet-config.json';
 import { User, Announcement } from './types';
+import { sanitizeGithubIntegrationForPersistence } from './utils/githubService';
 
 const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env || {};
 
@@ -204,6 +205,9 @@ export async function testFirebaseConnection(): Promise<boolean> {
  * Sanitizes a User object before writing to Firestore (removes undefined fields and passwords)
  */
 export function serializeUserForFirestore(uid: string, user: User): Record<string, unknown> {
+  const sanitizedGithub = user.githubIntegration
+    ? sanitizeGithubIntegrationForPersistence(user.githubIntegration)
+    : undefined;
   return {
     name: (user.name || 'Kursant Akademii').slice(0, 120),
     bio: (user.bio || 'Kursant Full Stack Developer Academy').slice(0, 600),
@@ -212,6 +216,7 @@ export function serializeUserForFirestore(uid: string, user: User): Record<strin
       `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user.name || uid)}`,
     weeklyGoalMinutes: Math.max(30, Math.min(1440, Number(user.weeklyGoalMinutes) || 180)),
     savedCode: user.savedCode && typeof user.savedCode === 'object' ? user.savedCode : {},
+    ...(sanitizedGithub ? { githubIntegration: sanitizedGithub } : {}),
     updatedAt: new Date().toISOString(),
   };
 }
@@ -296,6 +301,7 @@ export async function fetchOrCreateCloudUserProfile(
     claimedRewards: [],
     quizScores: {},
     savedCode: fallbackLocalUser?.savedCode || {},
+    githubIntegration: fallbackLocalUser?.githubIntegration,
     lives: 5,
     maxLives: 5,
     isPro: false,
@@ -335,6 +341,7 @@ export async function fetchOrCreateCloudUserProfile(
         claimedRewards: Array.isArray(data.claimedRewards) ? data.claimedRewards : [],
         quizScores: data.quizScores || {},
         savedCode: data.savedCode || {},
+        githubIntegration: data.githubIntegration || fallbackLocalUser?.githubIntegration,
         lives: typeof data.lives === 'number' ? data.lives : 5,
         maxLives: typeof data.maxLives === 'number' ? data.maxLives : 5,
         lastPracticeRewardDate: data.lastPracticeRewardDate,
@@ -376,6 +383,7 @@ export function subscribeToUserProfile(
           claimedRewards: Array.isArray(data.claimedRewards) ? data.claimedRewards : [],
           quizScores: data.quizScores || {},
           savedCode: data.savedCode || {},
+          githubIntegration: data.githubIntegration,
         });
       }
     },

@@ -34,6 +34,9 @@ const LANGUAGE_MAP: Record<string, string> = {
   yml: 'yaml',
   docker: 'docker',
   dockerfile: 'docker',
+  prisma: 'typescript',
+  markdown: 'markup',
+  md: 'markup',
 };
 
 /**
@@ -70,6 +73,10 @@ export function getLanguageDisplayName(rawLang = 'javascript'): string {
     case 'ts':
     case 'typescript':
       return 'TypeScript';
+    case 'tsx':
+      return 'React TSX';
+    case 'jsx':
+      return 'React JSX';
     case 'html':
     case 'markup':
       return 'HTML5';
@@ -89,6 +96,11 @@ export function getLanguageDisplayName(rawLang = 'javascript'): string {
     case 'docker':
     case 'dockerfile':
       return 'Dockerfile';
+    case 'prisma':
+      return 'Prisma Schema';
+    case 'markdown':
+    case 'md':
+      return 'Markdown';
     default:
       return rawLang.toUpperCase();
   }

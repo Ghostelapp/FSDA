@@ -113,7 +113,7 @@ export const PublicInfoPageView: React.FC<PublicInfoPageViewProps> = ({
                   onClick={(e) => handleLink(e, 'knowledge_base')}
                   className="inline-flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors"
                 >
-                  <span>Przeglądaj wszystkie 91 lekcji</span>
+                  <span>Przeglądaj wszystkie {allLessons.length} lekcji</span>
                   <ArrowRight className="h-4 w-4" />
                 </a>
                 <a

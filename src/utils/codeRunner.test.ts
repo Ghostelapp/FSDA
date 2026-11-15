@@ -105,10 +105,19 @@ test('All lessons in MODULES_DATA fail validation on starterCode and pass 100% o
   }
 });
 
-test('All portfolio projects in PROJECTS_DATA fail validation on starterCode and pass 100% on solutionCode', () => {
+test('All portfolio projects in PROJECTS_DATA fail validation on starterCode and pass 100% on solutionCode and have full sourceFiles', () => {
   assert.ok(PROJECTS_DATA.length >= 12);
 
   for (const project of PROJECTS_DATA) {
+    assert.ok(
+      Array.isArray(project.sourceFiles) && project.sourceFiles.length >= 3,
+      `Project ${project.id} must have at least 3 full sourceFiles`
+    );
+    for (const file of project.sourceFiles) {
+      assert.ok(file.path.length > 0, `Project ${project.id} file path cannot be empty`);
+      assert.ok(file.code.trim().length > 150, `Project ${project.id} file ${file.path} must contain full code`);
+    }
+
     const ex = getProjectInteractiveExercise(project);
     const starterValidation = validateExerciseCode(ex, ex.starterCode);
     assert.equal(
@@ -168,8 +177,8 @@ test('MODULES_DATA enforces sequential 1..N lesson order, pedagogical progressio
   assert.ok(dbIds.indexOf('db-4') < dbIds.indexOf('db-2'));
   assert.ok(dbIds.indexOf('db-5') < dbIds.indexOf('db-2'));
 
-  assert.equal(seenLessonIds.size, 91, 'Full Stack curriculum should have 91 lessons across 15 modules');
-  for (const id of ['css-9', 'js-10', 'git-6', 'sec-5', 'fullstack-4', 'fullstack-5', 'test-4', 'devops-4', 'next-4', 'career-4']) {
+  assert.equal(seenLessonIds.size, 96, 'Full Stack curriculum should have 96 lessons across 15 modules');
+  for (const id of ['html-10', 'html-11', 'html-12', 'html-13', 'html-14', 'css-9', 'js-10', 'git-6', 'sec-5', 'fullstack-4', 'fullstack-5', 'test-4', 'devops-4', 'next-4', 'career-4']) {
     assert.ok(seenLessonIds.has(id), `Expected lesson ${id} to be included in MODULES_DATA`);
   }
 });

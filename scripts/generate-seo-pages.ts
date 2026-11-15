@@ -162,6 +162,18 @@ function main() {
           `<section><h3>${escapeHtml(ex.title)}</h3><pre><code>${escapeHtml(ex.code)}</code></pre><p>${escapeHtml(ex.explanation)}</p></section>`
       )
       .join('\n');
+    const stepsHtml = (lesson.stepByStepGuide || [])
+      .map(
+        (s) =>
+          `<li><strong>Krok ${s.step}: ${escapeHtml(s.title)}</strong> — ${escapeHtml(s.description)}</li>`
+      )
+      .join('\n');
+    const mistakesHtml = (lesson.commonMistakes || [])
+      .map(
+        (m) =>
+          `<section><h3>Błąd: ${escapeHtml(m.mistake)}</h3><p><strong>Dlaczego powstaje:</strong> ${escapeHtml(m.whyItHappens)}</p><p><strong>Jak naprawić:</strong> ${escapeHtml(m.howToFix)}</p><pre><code>${escapeHtml(m.goodCode)}</code></pre></section>`
+      )
+      .join('\n');
 
     const bodyHtml = `<main style="max-width:860px;margin:0 auto;padding:32px 16px;font-family:sans-serif;line-height:1.7">
       <nav><a href="/">Strona Główna</a> / <a href="/baza-wiedzy">Baza Wiedzy</a> / ${escapeHtml(lesson.moduleTitle)}</nav>
@@ -173,6 +185,8 @@ function main() {
         ${glossaryHtml ? `<section><h2>Słowniczek pojęć</h2><dl>${glossaryHtml}</dl></section>` : ''}
         <section><h2>Materiał lekcji</h2>${markdownToSimpleHtml(lesson.theoryMarkdown)}</section>
         ${codeExamplesHtml ? `<section><h2>Przykłady kodu</h2>${codeExamplesHtml}</section>` : ''}
+        ${stepsHtml ? `<section><h2>Instrukcja krok po kroku</h2><ol>${stepsHtml}</ol></section>` : ''}
+        ${mistakesHtml ? `<section><h2>Najczęstsze błędy i dobre praktyki</h2>${mistakesHtml}</section>` : ''}
         ${takeawaysHtml ? `<section><h2>Najważniejsze wnioski</h2><ul>${takeawaysHtml}</ul></section>` : ''}
       </article>
       <nav style="margin-top:32px">

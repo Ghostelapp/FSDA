@@ -3,32 +3,59 @@ import { useApp } from '../context/AppContext';
 import { PROJECTS_DATA } from '../data/projectsData';
 import { Project } from '../types';
 import { CodeEditor } from './CodeEditor';
+import { CodeBlock } from './CodeBlock';
+import { RichInlineText } from './RichInlineText';
 import { getProjectInteractiveExercise, ValidationSummary } from '../utils/codeRunner';
-import { 
-  FolderGit2, 
-  Sparkles, 
-  Clock, 
-  CheckCircle2, 
-  ArrowRight, 
-  Layers, 
-  FileCode, 
-  CheckSquare, 
+import {
+  formatGithubSyncTimestamp,
+  getGithubSyncStatusPresentation,
+} from '../utils/githubService';
+import {
+  FolderGit2,
+  Sparkles,
+  Clock,
+  CheckCircle2,
+  ArrowRight,
+  Layers,
+  FileCode,
+  CheckSquare,
   ExternalLink,
   Terminal,
   Cloud,
   ChevronRight,
   ShieldCheck,
   Check,
-  Lock
+  Lock,
+  Code2,
+  FolderOpen,
+  Github,
+  GitCommitHorizontal,
+  RefreshCw,
+  AlertTriangle,
+  UploadCloud,
 } from 'lucide-react';
 
 export const ProjectsView: React.FC = () => {
-  const { currentUser, completeProject, selectedProjectId, saveCodeSnippet, awardCustomXp } = useApp();
-  
+  const {
+    currentUser,
+    completeProject,
+    selectedProjectId,
+    saveCodeSnippet,
+    awardCustomXp,
+    isSyncingGithub,
+    submitProjectFromGithub,
+  } = useApp();
+
   // Active selected project
   const initialProject = PROJECTS_DATA.find((p) => p.id === selectedProjectId) || PROJECTS_DATA[0];
   const [activeProject, setActiveProject] = useState<Project>(initialProject);
+  const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
   const [projectValidation, setProjectValidation] = useState<ValidationSummary | null>(null);
+  const [repoInput, setRepoInput] = useState<string>('');
+  const [githubSubmitFeedback, setGithubSubmitFeedback] = useState<{
+    ok: boolean;
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     const found = PROJECTS_DATA.find((p) => p.id === selectedProjectId);
@@ -37,9 +64,31 @@ export const ProjectsView: React.FC = () => {
     }
   }, [selectedProjectId]);
 
+  const ghIntegration = currentUser.githubIntegration;
+  const ghPresentation = getGithubSyncStatusPresentation(ghIntegration);
+  const syncedRepos = ghIntegration?.repos || [];
+  const activeSubmission = ghIntegration?.projectSubmissions?.[activeProject.id];
+
   useEffect(() => {
     setProjectValidation(null);
+    setActiveFileIndex(0);
+    setGithubSubmitFeedback(null);
+    if (activeSubmission?.repoFullName) {
+      setRepoInput(activeSubmission.repoFullName);
+    } else if (syncedRepos.length > 0) {
+      setRepoInput(syncedRepos[0].fullName);
+    }
   }, [activeProject.id]);
+
+  useEffect(() => {
+    if (!repoInput && syncedRepos.length > 0) {
+      setRepoInput(activeSubmission?.repoFullName || syncedRepos[0].fullName);
+    }
+  }, [syncedRepos, activeSubmission?.repoFullName, repoInput]);
+
+  const sourceFiles = activeProject.sourceFiles || [];
+  const activeSourceFile = sourceFiles[activeFileIndex] || sourceFiles[0];
+  const totalSourceLines = sourceFiles.reduce((sum, f) => sum + f.code.split('\n').length, 0);
 
   const isCompleted = currentUser.completedProjects.includes(activeProject.id);
   const projectExercise = getProjectInteractiveExercise(activeProject);
@@ -48,6 +97,32 @@ export const ProjectsView: React.FC = () => {
   );
   const isProjectVerified =
     isCompleted || Boolean(projectValidation?.allPassed) || hasClaimedProjectVerify;
+
+  const handleSubmitFromGithub = async () => {
+    setGithubSubmitFeedback(null);
+    if (!repoInput.trim()) {
+      setGithubSubmitFeedback({
+        ok: false,
+        message: 'Wybierz repozytorium z listy lub wklej adres repozytorium (np. nazwa/projekt).',
+      });
+      return;
+    }
+    const res = await submitProjectFromGithub(activeProject.id, repoInput.trim());
+    if (res.ok && res.submission) {
+      if (res.validationSummary) {
+        setProjectValidation(res.validationSummary);
+      }
+      setGithubSubmitFeedback({
+        ok: true,
+        message: res.submission.summary,
+      });
+    } else {
+      setGithubSubmitFeedback({
+        ok: false,
+        message: res.error || 'Nie udało się zweryfikować repozytorium GitHub.',
+      });
+    }
+  };
 
   const handleCompleteProject = () => {
     if (!isProjectVerified && !isCompleted) {
@@ -129,12 +204,23 @@ export const ProjectsView: React.FC = () => {
                     <span className="text-indigo-300 font-semibold">
                       +{proj.xpReward} XP
                     </span>
-                    {isDone && (
-                      <span className="flex items-center gap-1 text-emerald-400 font-semibold font-sans">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        Zaliczony
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {ghIntegration?.projectSubmissions?.[proj.id] && (
+                        <span
+                          title={`Przesłano z GitHub: ${ghIntegration.projectSubmissions[proj.id].repoFullName}`}
+                          className="inline-flex items-center gap-1 text-cyan-300 font-semibold font-sans"
+                        >
+                          <Github className="h-3 w-3" />
+                          <span>GH</span>
+                        </span>
+                      )}
+                      {isDone && (
+                        <span className="flex items-center gap-1 text-emerald-400 font-semibold font-sans">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Zaliczony
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -194,7 +280,7 @@ export const ProjectsView: React.FC = () => {
                 {activeProject.requirements.map((req, i) => (
                   <li key={i} className="flex items-start gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>{req}</span>
+                    <span><RichInlineText text={req} /></span>
                   </li>
                 ))}
               </ul>
@@ -231,6 +317,73 @@ export const ProjectsView: React.FC = () => {
                 })}
               </div>
             </div>
+
+            {/* Full Source Code Explorer (Complete multi-file implementation) */}
+            {sourceFiles.length > 0 && activeSourceFile && (
+              <div id="project-full-source" className="space-y-3 pt-2 border-t border-slate-800">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Code2 className="h-4 w-4 text-cyan-400" />
+                      <span>Pełny kod źródłowy projektu ({sourceFiles.length} plików · {totalSourceLines} linii kodu)</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Kompletna, działająca implementacja wszystkich modułów projektu — przeglądaj pliki, analizuj architekturę i kopiuj gotowy kod.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                    <FolderOpen className="h-3.5 w-3.5" />
+                    <span>Eksplorator Plików</span>
+                  </span>
+                </div>
+
+                {/* File Switcher Tabs */}
+                <div className="flex flex-wrap gap-1.5 rounded-xl bg-slate-950/90 p-2 border border-slate-800">
+                  {sourceFiles.map((file, idx) => {
+                    const isFileActive = idx === activeFileIndex;
+                    const linesCount = file.code.split('\n').length;
+                    return (
+                      <button
+                        key={file.path}
+                        type="button"
+                        onClick={() => setActiveFileIndex(idx)}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+                          isFileActive
+                            ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                            : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800'
+                        }`}
+                      >
+                        <FileCode className="h-3.5 w-3.5 shrink-0 opacity-80" />
+                        <span>{file.path}</span>
+                        <span className={`text-[10px] tabular-nums ${isFileActive ? 'text-indigo-200' : 'text-slate-500'}`}>
+                          ({linesCount}L)
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Active File Description */}
+                <div className="rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-2.5 text-xs text-slate-300 flex items-start gap-2">
+                  <ChevronRight className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <span>
+                    <strong className="text-white font-mono">{activeSourceFile.path}:</strong>{' '}
+                    <RichInlineText text={activeSourceFile.description} />
+                  </span>
+                </div>
+
+                {/* Active File Code Block with Line Numbers & Copy Button */}
+                <CodeBlock
+                  key={`${activeProject.id}-${activeSourceFile.path}`}
+                  code={activeSourceFile.code}
+                  language={activeSourceFile.language}
+                  title={activeSourceFile.path}
+                  badge="Pełny kod"
+                  badgeColor="indigo"
+                  maxHeightClass="max-h-[520px]"
+                />
+              </div>
+            )}
 
             {/* Stages & Milestones (Automatically Verified by Project Code Runner) */}
             <div className="space-y-3">
@@ -301,6 +454,189 @@ export const ProjectsView: React.FC = () => {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Submit Project Progress Directly from Linked GitHub Codebase */}
+            <div
+              id="project-github-submit"
+              data-testid="project-github-submit"
+              className="rounded-2xl border border-cyan-500/30 bg-cyan-950/15 p-5 space-y-4"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Github className="h-4 w-4 text-cyan-400" />
+                    <h3 className="text-sm font-bold text-white">
+                      Prześlij postęp projektu bezpośrednio z repozytorium GitHub
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Wskaż własne repozytorium GitHub zawierające kod projektu #{activeProject.number}. Akademia pobierze ostatni commit, sprawdzi strukturę plików i zapisze postęp w Twoim profilu.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold ${
+                      ghPresentation.tone === 'emerald'
+                        ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                        : ghPresentation.tone === 'rose'
+                        ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                        : 'bg-slate-800 border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        ghPresentation.tone === 'emerald'
+                          ? 'bg-emerald-400'
+                          : ghPresentation.tone === 'rose'
+                          ? 'bg-rose-400'
+                          : 'bg-slate-400'
+                      }`}
+                    />
+                    <span>
+                      {ghIntegration?.username ? `GitHub: @${ghIntegration.username}` : ghPresentation.shortLabel}
+                    </span>
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent('akademia:open-auth-modal'))}
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-indigo-300 transition-colors cursor-pointer"
+                  >
+                    {ghIntegration?.username ? 'Ustawienia Sync' : 'Połącz konto GitHub'}
+                  </button>
+                </div>
+              </div>
+
+              {syncedRepos.length > 0 && (
+                <div className="space-y-1">
+                  <label htmlFor="github-repo-select" className="text-[11px] font-semibold text-slate-300 block">
+                    Wybierz z zsynchronizowanych repozytoriów (@{ghIntegration?.username}):
+                  </label>
+                  <select
+                    id="github-repo-select"
+                    value={syncedRepos.some((r) => r.fullName === repoInput) ? repoInput : ''}
+                    onChange={(e) => {
+                      if (e.target.value) setRepoInput(e.target.value);
+                    }}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  >
+                    <option value="">-- Wybierz repozytorium z konta lub wpisz własny adres poniżej --</option>
+                    {syncedRepos.map((repo) => (
+                      <option key={repo.id} value={repo.fullName}>
+                        {repo.fullName} ({repo.language || repo.defaultBranch})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <div className="flex-1 space-y-1">
+                  <label htmlFor="github-repo-url-input" className="text-[11px] font-semibold text-slate-300 block">
+                    Repozytorium GitHub (właściciel/nazwa lub pełny URL):
+                  </label>
+                  <input
+                    id="github-repo-url-input"
+                    type="text"
+                    value={repoInput}
+                    onChange={(e) => setRepoInput(e.target.value)}
+                    placeholder="np. jan-kowalski/moje-portfolio lub https://github.com/jan-kowalski/moje-portfolio"
+                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono"
+                  />
+                </div>
+                <div className="sm:self-end">
+                  <button
+                    type="button"
+                    onClick={() => void handleSubmitFromGithub()}
+                    disabled={isSyncingGithub}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-60 px-4 py-2 text-xs font-bold text-white shadow-md transition-colors cursor-pointer"
+                  >
+                    {isSyncingGithub ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <UploadCloud className="h-4 w-4" />
+                    )}
+                    <span>
+                      {isSyncingGithub ? 'Weryfikacja codebase...' : 'Wyślij postęp z GitHub'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {githubSubmitFeedback && (
+                <div
+                  className={`rounded-xl border p-3 text-xs flex items-start gap-2 ${
+                    githubSubmitFeedback.ok
+                      ? 'border-emerald-500/40 bg-emerald-950/35 text-emerald-200'
+                      : 'border-rose-500/40 bg-rose-950/35 text-rose-200'
+                  }`}
+                >
+                  {githubSubmitFeedback.ok ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                  )}
+                  <span>{githubSubmitFeedback.message}</span>
+                </div>
+              )}
+
+              {activeSubmission && (
+                <div
+                  data-testid="github-submission-receipt"
+                  className="rounded-xl border border-emerald-500/30 bg-slate-950/85 p-3.5 space-y-2"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <GitCommitHorizontal className="h-4 w-4 text-emerald-400 shrink-0" />
+                      <a
+                        href={activeSubmission.repoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold text-white hover:text-cyan-300 inline-flex items-center gap-1 truncate font-mono"
+                      >
+                        <span>{activeSubmission.repoFullName}</span>
+                        <ExternalLink className="h-3 w-3 text-slate-400 shrink-0" />
+                      </a>
+                    </div>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                        activeSubmission.status === 'verified'
+                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                          : 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300'
+                      }`}
+                    >
+                      {activeSubmission.status === 'verified'
+                        ? 'Zweryfikowano z GitHub (100%)'
+                        : `Przesłano z GitHub (${activeSubmission.checksPassed}/${activeSubmission.checksTotal} testów)`}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400 font-mono">
+                    <span>Gałąź: {activeSubmission.branch}</span>
+                    <span>Commit: {activeSubmission.commitSha.slice(0, 7)}</span>
+                    <span>Wysłano: {formatGithubSyncTimestamp(activeSubmission.submittedAt)}</span>
+                  </div>
+
+                  <p className="text-xs text-slate-300">
+                    Ostatni commit: <span className="text-white font-medium">{activeSubmission.commitMessage}</span>
+                  </p>
+
+                  {activeSubmission.matchedFiles.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {activeSubmission.matchedFiles.slice(0, 8).map((filePath) => (
+                        <span
+                          key={filePath}
+                          className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-cyan-300"
+                        >
+                          {filePath}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Interactive Project Code Verification Workspace */}

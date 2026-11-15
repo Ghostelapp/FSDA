@@ -59,3 +59,22 @@ test('getPublicRouteSeoMetadata produces lesson-specific metadata and canonical 
   assert.match(meta.title, /Pierwsze znaczniki HTML/);
   assert.equal(meta.description, 'Dowiedz się, jak działają nagłówki i akapity.');
 });
+
+test('all 96 lessons across 15 modules (including 14 HTML5 lessons) have valid interactive exercises', async () => {
+  const { MODULES_DATA } = await import('../data/modulesData');
+  const { validateExerciseCode } = await import('./codeRunner');
+
+  assert.equal(MODULES_DATA.length, 15);
+  assert.equal(MODULES_DATA[0].lessons.length, 14);
+
+  const allLessons = MODULES_DATA.flatMap((m) => m.lessons);
+  assert.equal(allLessons.length, 96);
+
+  for (const lesson of allLessons) {
+    assert.ok(lesson.theoryMarkdown.length > 500, `Lesson ${lesson.id} theory too short`);
+    const sol = validateExerciseCode(lesson.interactiveExercise, lesson.interactiveExercise.solutionCode);
+    assert.equal(sol.allPassed, true, `Solution failed for ${lesson.id}`);
+    const start = validateExerciseCode(lesson.interactiveExercise, lesson.interactiveExercise.starterCode);
+    assert.equal(start.allPassed, false, `Starter already passed for ${lesson.id}`);
+  }
+});

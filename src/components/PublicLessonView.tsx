@@ -11,12 +11,14 @@ import {
   parseTheoryBlocks,
 } from '../utils/lessonReadability';
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   BookOpen,
   CheckCircle2,
   Clock,
   Lightbulb,
+  ListOrdered,
   Play,
   Terminal,
 } from 'lucide-react';
@@ -143,7 +145,7 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
             <span>Analogia z życia codziennego</span>
           </div>
           <h2 id="lesson-analogy-heading" className="text-base sm:text-lg font-bold text-[#F8FAFC]">
-            {beginnerAid.analogyTitle}
+            <RichInlineText text={beginnerAid.analogyTitle} />
           </h2>
           <p className="text-sm sm:text-base text-[#CBD5E1] leading-relaxed">
             <RichInlineText text={beginnerAid.analogyText} />
@@ -327,6 +329,88 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
           </section>
         )}
 
+        {/* Step-by-Step Guide */}
+        {lesson.stepByStepGuide && lesson.stepByStepGuide.length > 0 && (
+          <section aria-labelledby="lesson-steps-heading" className="space-y-4">
+            <h2
+              id="lesson-steps-heading"
+              className="font-display text-lg sm:text-xl font-bold text-[#F8FAFC] flex items-center gap-2"
+            >
+              <ListOrdered className="h-5 w-5 text-indigo-400" />
+              <span>Instrukcja wykonania krok po kroku</span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {lesson.stepByStepGuide.map((stepItem) => (
+                <div
+                  key={stepItem.step}
+                  className="rounded-xl border border-white/[0.08] bg-[#0B101B] p-5 space-y-2"
+                >
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 font-mono text-xs font-bold text-indigo-300">
+                    Krok {stepItem.step}
+                  </span>
+                  <h3 className="text-sm sm:text-base font-bold text-[#F8FAFC]">
+                    <RichInlineText text={stepItem.title} />
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
+                    <RichInlineText text={stepItem.description} />
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Common Mistakes & How to Fix Them */}
+        {lesson.commonMistakes && lesson.commonMistakes.length > 0 && (
+          <section aria-labelledby="lesson-mistakes-heading" className="space-y-5">
+            <h2
+              id="lesson-mistakes-heading"
+              className="font-display text-lg sm:text-xl font-bold text-[#F8FAFC] flex items-center gap-2"
+            >
+              <AlertTriangle className="h-5 w-5 text-amber-400" />
+              <span>Najczęstsze błędy i jak ich unikać</span>
+            </h2>
+            <div className="space-y-5">
+              {lesson.commonMistakes.map((mistakeItem, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-2xl border border-amber-500/25 bg-[#0E111B] p-6 space-y-4"
+                >
+                  <div className="space-y-1.5">
+                    <h3 className="text-base font-bold text-amber-300">
+                      <RichInlineText text={mistakeItem.mistake} />
+                    </h3>
+                    <p className="text-xs sm:text-sm text-[#94A3B8]">
+                      <strong className="text-[#CBD5E1]">Dlaczego to się zdarza: </strong>
+                      <RichInlineText text={mistakeItem.whyItHappens} />
+                    </p>
+                    <p className="text-xs sm:text-sm text-emerald-300">
+                      <strong>Jak naprawić: </strong>
+                      <RichInlineText text={mistakeItem.howToFix} />
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <CodeBlock
+                      code={mistakeItem.badCode}
+                      language="html"
+                      title="Błędny zapis"
+                      badge="Błąd"
+                      badgeColor="rose"
+                    />
+                    <CodeBlock
+                      code={mistakeItem.goodCode}
+                      language="html"
+                      title="Prawidłowy zapis"
+                      badge="Poprawnie"
+                      badgeColor="emerald"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Key Takeaways & Exercise Solution Reference */}
         <section className="rounded-2xl border border-emerald-500/30 bg-[#0A131F] p-6 sm:p-8 space-y-5">
           <h2 className="font-display text-lg sm:text-xl font-bold text-[#F8FAFC]">
@@ -424,7 +508,9 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Powrót do spisu lekcji
               </span>
-              <p className="text-sm font-bold text-[#F8FAFC]">Wszystkie 15 modułów i 91 lekcji</p>
+              <p className="text-sm font-bold text-[#F8FAFC]">
+                Wszystkie {MODULES_DATA.length} modułów i {allLessons.length} lekcji
+              </p>
             </a>
           )}
 

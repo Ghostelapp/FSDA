@@ -23,6 +23,7 @@
         "claimedRewards": { "type": "array", "items": { "type": "string" }, "description": "Claimed idempotent reward IDs." },
         "quizScores": { "type": "object", "description": "Map of lessonId to highest quiz percentage score." },
         "savedCode": { "type": "object", "description": "Map of exerciseId to saved HTML/CSS/JS code." },
+        "githubIntegration": { "type": "object", "description": "Linked GitHub account, synchronization status, cached repositories, and submitted project commits." },
         "lives": { "type": "number", "description": "Current available hearts (0-5)." },
         "maxLives": { "type": "number", "description": "Maximum hearts (5)." },
         "isPro": { "type": "boolean", "description": "Whether user has active Full Stack PRO subscription." },

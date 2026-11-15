@@ -7,19 +7,24 @@ export const MODULE_2: Module = {
   description: 'Najprostszy start w świat tworzenia stron! Krok po kroku, bez trudnych pojęć i z gotowymi podpowiedziami nauczysz się wstawiać tytuły, teksty, listy, zdjęcia, linki oraz formularze.',
   badgeName: 'Mistrz Podstaw HTML',
   badgeIcon: 'FileCode2',
-  durationHours: 12,
-  totalXp: 600,
+  durationHours: 16,
+  totalXp: 960,
   prerequisites: ['Brak — zaczynamy całkowicie od zera!'],
   topics: [
-    'Pierwsze znaczniki: nagłówki (h1–h3), akapity tekstu (p) i pogrubienie (strong)',
-    'Listy zakupów i kroków (ul, ol, li) oraz klikalne linki (a href)',
-    'Wstawianie obrazków (img) oraz proste tabelki (table, tr, td)',
-    'Grupowanie elementów w pudełka (div, span) oraz nadawanie im nazw (class, id)',
-    'Szkielet pełnej strony HTML: head (ustawienia) i body (widoczna treść)',
-    'Czytelny podział strony: nagłówek (header), menu (nav), treść (main) i stopka (footer)',
-    'Proste formularze: pola tekstowe (input), podpisy (label) i przyciski (button)',
-    'Multimedia na stronie: wideo (video) i dźwięk (audio)',
-    'Dobre praktyki: ułatwienia dla czytników ekranu i opis strony dla Google (SEO)',
+    'Pierwsze znaczniki: nagłówki (h1–h6), akapity tekstu (p) i pogrubienie (strong)',
+    'Formatowanie tekstu: kursywa (em), wyróżnienie (mark), cytaty (blockquote), kod (code, pre) i podziały (br, hr)',
+    'Listy zakupów i kroków (ul, ol, li, dl) oraz klikalne linki (a href)',
+    'Zaawansowane odnośniki: target="_blank", kotwice (#sekcja), mailto:, tel: i ścieżki względne',
+    'Obrazki (img), podpisy zdjęć (figure, figcaption) i optymalizacja ładowania (loading="lazy")',
+    'Tabele danych (table, thead, tbody, tfoot, tr, th, td, colspan)',
+    'Grupowanie elementów w pudełka (div, span), atrybuty class, id oraz własne dane data-*',
+    'Szkielet pełnej strony HTML5: DOCTYPE, head (ustawienia, meta, title) i body (widoczna treść)',
+    'Semantyczny podział strony: header, nav, main, section, article, aside i footer',
+    'Formularze cz. 1: pola tekstowe (input), podpisy (label) i przyciski (button)',
+    'Formularze cz. 2: listy wyboru (select), textarea, checkbox, radio, fieldset i walidacja HTML5',
+    'Multimedia na stronie: odtwarzacz wideo (video), dźwięk (audio) i grafika wektorowa SVG',
+    'Natywne komponenty interaktywne: akordeon FAQ (details, summary), okno modalne (dialog) i iframe',
+    'Dostępność cyfrowa (WCAG / aria-label) i widoczność w wyszukiwarce Google (Podstawy SEO)',
   ],
   projectBrief: 'Projekt końcowy modułu: Twoja pierwsza wizytówka internetowa z tytułem, zdjęciem, listą umiejętności i formularzem kontaktowym.',
   lessons: [
@@ -265,51 +270,54 @@ Aby stworzyć link, używamy krótkiego znacznika **\`<a>\`**. Musimy mu jednak 
       id: 'html-4',
       moduleId: 2,
       moduleTitle: 'Podstawy HTML — Tworzenie Pierwszych Stron od Zera',
-      title: 'Obrazki (img), odnośniki i proste tabele danych (table)',
-      slug: 'multimedia-tabele-linki',
+      title: 'Obrazki na stronie (<img>), podpisy zdjęć (<figure>, <figcaption>) i leniwe ładowanie',
+      slug: 'obrazki-img-figure-figcaption-lazy-loading',
       durationMinutes: 20,
       xpReward: 70,
-      order: 3,
-      summary: 'Dowiedz się, jak wstawić na stronę zdjęcie za pomocą znacznika <img> oraz jak ułożyć dane w prostą tabelkę z wierszami i kolumnami.',
+      order: 5,
+      summary: 'Dowiedz się, jak prawidłowo wstawiać zdjęcia za pomocą <img>, dlaczego atrybut alt jest obowiązkowy, jak podpisać ilustrację w <figure> i przyspieszyć stronę dzięki loading="lazy".',
       objectives: [
         'Wstawiać obrazki za pomocą <img src="adres" alt="opis">',
-        'Rozumieć po co dodajemy opis alternatywny alt w obrazku',
-        'Tworzyć prostą tabelkę za pomocą <table>, wiersza <tr> i komórki <td>',
+        'Rozumieć rolę tekstu alternatywnego alt dla dostępności i SEO',
+        'Opakowywać zdjęcia z podpisem w semantyczną parę <figure> i <figcaption> oraz stosować loading="lazy"',
       ],
-      prerequisites: ['Lekcja 2: Listy i linki'],
-      theoryMarkdown: `Strona internetowa bez zdjęć wyglądałaby nudno! Zobaczmy, jak w jednej linijce wstawić obrazek oraz jak ułożyć dane w prostą tabelkę.
+      prerequisites: ['Lekcja 4: Odnośniki w praktyce i ścieżki plików'],
+      theoryMarkdown: `Strona internetowa bez zdjęć i ilustracji wyglądałaby jak surowy dokument tekstowy. Zobaczmy, jak profesjonalnie wstawiać grafikę w HTML5!
 
 **1. Wstawianie obrazka (\`<img>\`):**
-Znacznik \`<img>\` (od ang. *image*) jest wyjątkowy — jest pojedynczy i nie wymaga osobnego zamknięcia \`</img>\`. Podajemy w nim dwie proste informacje:
-- **\`src="adres-zdjecia.jpg"\`** (od *source* — źródło): skąd przeglądarka ma pobrać obrazek.
-- **\`alt="Opis zdjęcia"\`** (tekst alternatywny): krótki opis słowny tego, co jest na zdjęciu (wyświetli się, gdy zdjęcie się nie załaduje, oraz przeczyta go lektor osobie niewidomej).
+Znacznik \`<img>\` (od ang. *image*) jest samozamykający — nie ma osobnego \`</img>\`. Wymaga dwóch kluczowych atrybutów:
+- **\`src="adres-zdjecia.jpg"\`** (od *source* — źródło): ścieżka do pliku graficznego lub adres URL.
+- **\`alt="Opis zdjęcia"\`** (tekst alternatywny): dokładny opis słowny tego, co przedstawia zdjęcie. Wyświetli się, gdy plik się nie załaduje, oraz przeczyta go czytnik ekranu osobie niewidomej.
 
 \`\`\`html
-<img src="https://picsum.photos/300/160" alt="Krajobraz górski" />
+<img src="https://picsum.photos/320/180" alt="Drewniane biurko z laptopem" width="320" height="180" loading="lazy" />
 \`\`\`
 
-**2. Prosta tabelka (\`<table>\`):**
-Gdy chcesz pokazać cennik lub plan lekcji, używasz tabeli. Składa się ona z 3 prostych znaczników:
-1. **\`<table>\`**: Cała ramka tabeli.
-2. **\`<tr>\` (Table Row — wiersz):** Każdy poziomy rząd w tabeli.
-3. **\`<th>\` lub \`<td>\` (Komórki w wierszu):** \`<th>\` to pogrubiona komórka tytułowa na górze, a \`<td>\` to zwykła komórka z danymi.`,
+**2. Podpis pod zdjęciem (\`<figure>\` oraz \`<figcaption>\`):**
+Kiedy chcesz dodać pod zdjęciem lub wykresem elegancki podpis (np. w artykule lub portfolio), otaczasz obrazek znacznikiem **\`<figure>\`**, a sam podpis umieszczasz w **\`<figcaption>\`**:
+
+\`\`\`html
+<figure>
+  <img src="https://picsum.photos/320/180" alt="Widok na Tatry o wschodzie słońca" />
+  <figcaption>Fot. 1. Panorama Tatr Wysokich o poranku.</figcaption>
+</figure>
+\`\`\`
+
+**3. Szybsze wczytywanie strony (\`loading="lazy"\`):**
+Dopisanie atrybutu \`loading="lazy"\` sprawia, że przeglądarka pobiera zdjęcia znajdujące się niżej na stronie dopiero wtedy, gdy użytkownik zacznie do nich przewijać ekran. Dzięki temu strona otwiera się błyskawicznie!`,
       codeExamples: [
         {
-          title: 'Obrazek oraz prosta dwukolumnowa tabelka',
+          title: 'Zdjęcie z podpisem <figcaption> oraz szybkim ładowaniem loading="lazy"',
           language: 'html',
-          code: `<img src="https://picsum.photos/280/140" alt="Zdjęcie biurka programisty" />
-
-<table>
-  <tr>
-    <th>Technologia</th>
-    <th>Poziom</th>
-  </tr>
-  <tr>
-    <td>HTML</td>
-    <td>Podstawy</td>
-  </tr>
-</table>`,
-          explanation: 'Pierwszy wiersz <tr> zawiera pogrubione nagłówki kolumn <th>, a drugi wiersz <tr> zawiera zwykłe komórki z danymi <td>.',
+          code: `<figure>
+  <img
+    src="https://picsum.photos/320/160"
+    alt="Stanowisko pracy programisty z dwoma monitorami"
+    loading="lazy"
+  />
+  <figcaption>Moje domowe biuro do nauki programowania.</figcaption>
+</figure>`,
+          explanation: 'Znacznik <figure> łączy obrazek <img> z jego podpisem <figcaption> w jedną logiczną całość, a loading="lazy" oszczędza transfer danych.',
         },
       ],
       stepByStepGuide: [
@@ -634,15 +642,20 @@ Dобра wiadomość: **żaden programista nie pisze tego szkieletu z pamięci*
         'Umieszczać menu z linkami wewnątrz znacznika <nav>',
       ],
       prerequisites: ['Lekcja 5: Pełny szkielet pliku HTML5'],
-      theoryMarkdown: `W czwartej lekcji poznaliśmy uniwersalne pudełko \`<div>\`. Moglibyśmy zbudować całą stronę wyłącznie z pudełek \`<div>\`, ale wtedy w kodzie wszystko wyglądałoby tak samo.
+      theoryMarkdown: `W wcześniejszych lekcjach poznaliśmy uniwersalne pudełko \`<div>\`. Moglibyśmy zbudować całą stronę wyłącznie z pudełek \`<div>\`, ale wtedy w kodzie wszystko wyglądałoby identycznie — ani inny programista, ani wyszukiwarka Google nie wiedzieliby, gdzie jest menu, a gdzie główny artykuł.
 
-Dlatego w HTML5 wymyślono **znaczniki semantyczne** — czyli takie pudełka, których nazwa od razu mówi, jaką część strony reprezentują!
+Dlatego w HTML5 wprowadzono **znaczniki semantyczne** — czyli czytelne kontenery, których nazwa od razu mówi, jaką rolę pełnią na stronie!
 
-**4 główne piętra każdej nowoczesnej strony:**
-1. **\`<header>\` (Górny pasek strony):** Sama góra strony — zazwyczaj wkładamy tu logo oraz menu.
-2. **\`<nav>\` (Menu nawigacji):** Pudełko na główne linki menu (np. *Strona główna, O nas, Kontakt*).
-3. **\`<main>\` (Główna treść strony):** Najważniejsza, środkowa część strony (występuje raz na podstronie). W jej środku możemy umieścić np. wpis blogowy **\`<article>\`** lub sekcję tematyczną **\`<section>\`**.
-4. **\`<footer>\` (Stopka na samym dole):** Dolny pasek strony z podpisem autora i rokiem utworzenia.`,
+**1. Cztery główne piętra każdej nowoczesnej strony:**
+1. **\`<header>\` (Nagłówek strony lub sekcji):** Górny pasek witryny — zazwyczaj umieszczamy w nim logo oraz główną nawigację.
+2. **\`<nav>\` (Nawigacja):** Kontener na najważniejsze menu z linkami (np. *Strona główna, Kursy, O nas, Kontakt*).
+3. **\`<main>\` (Główna treść podstrony):** Centralna, unikalna część danej podstrony (występuje dokładnie **raz** na stronie).
+4. **\`<footer>\` (Stopka):** Dolny pasek strony z prawami autorskimi, linkiem do polityki prywatności i danymi kontaktowymi.
+
+**2. Jak dzielić środek strony wewnątrz \`<main>\`? (\`<section>\`, \`<article>\`, \`<aside>\`):**
+- **\`<section>\` (Sekcja tematyczna):** Grupuje powiązane treści w jeden rozdział (np. sekcja *„O nas”*, sekcja *„Cennik”*, sekcja *„FAQ”*) — zazwyczaj zaczyna się od własnego nagłówka \`<h2>\`.
+- **\`<article>\` (Samodzielny artykuł lub karta):** Niezależny fragment treści, który miałby sens nawet po przeniesieniu w inne miejsce (np. wpis na blogu, komentarz użytkownika, karta pojedynczego produktu).
+- **\`<aside>\` (Panel boczny / dygresja):** Treści poboczne towarzyszące głównej części (np. spis treści obok artykułu, ramka *„Zobacz podobne wpisy”* lub słowniczek).`,
       codeExamples: [
         {
           title: 'Przejrzysty podział strony na 4 czytelne części',

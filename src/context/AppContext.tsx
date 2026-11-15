@@ -1,8 +1,29 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo, useRef } from 'react';
-import { User, UserRole, UserStatus, Announcement, Lesson, ReviewItem, DailyReminderSettings, SecurityAuditEvent, AdSenseConfig } from '../types';
+import {
+  User,
+  UserRole,
+  UserStatus,
+  Announcement,
+  Lesson,
+  ReviewItem,
+  DailyReminderSettings,
+  SecurityAuditEvent,
+  AdSenseConfig,
+  GitHubIntegrationState,
+} from '../types';
 import { MODULES_DATA } from '../data/modulesData';
+import { PROJECTS_DATA } from '../data/projectsData';
 import { DEFAULT_ANNOUNCEMENTS } from '../data/defaultAnnouncements';
 import { soundManager } from '../utils/audioFx';
+import {
+  fetchGithubUserAndRepos,
+  submitProjectFromGithubRepo,
+  setSessionGithubToken,
+  clearSessionGithubToken,
+  GithubSyncResult,
+  GithubProjectSubmitResult,
+} from '../utils/githubService';
+import { getProjectInteractiveExercise } from '../utils/codeRunner';
 import {
   DEFAULT_ADSENSE_CONFIG,
   shouldShowAdsForUser,
@@ -165,6 +186,15 @@ interface AppContextType {
   verifyLessonExercise: (exerciseId: string, code: { html: string; css: string; js: string }) => Promise<boolean>;
   saveCodeSnippet: (exerciseId: string, code: { html: string; css: string; js: string }) => void;
   completeProject: (projectId: string, xpReward: number, code?: { html: string; css: string; js: string }) => void;
+  isSyncingGithub: boolean;
+  linkGithubAccount: (usernameOrUrl: string, token?: string) => Promise<GithubSyncResult>;
+  refreshGithubSync: (token?: string) => Promise<GithubSyncResult>;
+  unlinkGithubAccount: () => void;
+  submitProjectFromGithub: (
+    projectId: string,
+    repoIdentifier: string,
+    token?: string
+  ) => Promise<GithubProjectSubmitResult>;
   addAnnouncement: (title: string, content: string, category: Announcement['category']) => void;
   deleteAnnouncement: (id: string) => void;
   updateUserByAdmin: (userId: string, partial: Partial<User>) => void;
@@ -546,6 +576,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [firebaseUid, setFirebaseUid] = useState<string | null>(null);
   const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
   const [isSyncingCloud, setIsSyncingCloud] = useState<boolean>(false);
+  const [isSyncingGithub, setIsSyncingGithub] = useState<boolean>(false);
   const lastCloudSyncHashRef = useRef<string>('');
   const currentUserRef = useRef<User>(currentUser);
   useEffect(() => {
@@ -677,6 +708,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             avatar: cloudProfile.avatar,
             weeklyGoalMinutes: cloudProfile.weeklyGoalMinutes,
             savedCode: cloudProfile.savedCode,
+            githubIntegration: cloudProfile.githubIntegration,
             completedLessons: cloudProfile.completedLessons,
             completedProjects: cloudProfile.completedProjects,
             unlockedBadges: cloudProfile.unlockedBadges,
@@ -705,6 +737,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               avatar: remoteUser.avatar,
               weeklyGoalMinutes: remoteUser.weeklyGoalMinutes,
               savedCode: remoteUser.savedCode,
+              githubIntegration: remoteUser.githubIntegration,
               completedLessons: remoteUser.completedLessons,
               completedProjects: remoteUser.completedProjects,
               unlockedBadges: remoteUser.unlockedBadges,
@@ -757,6 +790,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       avatar: currentUser.avatar,
       weeklyGoalMinutes: currentUser.weeklyGoalMinutes,
       savedCode: currentUser.savedCode,
+      githubIntegration: currentUser.githubIntegration,
       completedLessons: currentUser.completedLessons,
       completedProjects: currentUser.completedProjects,
       unlockedBadges: currentUser.unlockedBadges,
@@ -1672,6 +1706,179 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const linkGithubAccount = async (usernameOrUrl: string, token?: string): Promise<GithubSyncResult> => {
+    const nowIso = new Date().toISOString();
+    if (!isAuthenticated || currentUser.id === 'user-guest') {
+      const errorMsg = 'Zaloguj się na swoje konto w Akademii, aby połączyć repozytoria GitHub.';
+      showToast(errorMsg, 'danger');
+      return {
+        ok: false,
+        error: errorMsg,
+        integration: {
+          ...(currentUser.githubIntegration || { updatedAt: nowIso }),
+          status: 'error',
+          lastSyncError: errorMsg,
+          updatedAt: nowIso,
+        },
+      };
+    }
+
+    if (token !== undefined) {
+      setSessionGithubToken(token);
+    }
+
+    const prevGithub: GitHubIntegrationState = currentUser.githubIntegration || {
+      status: 'disconnected',
+      updatedAt: nowIso,
+    };
+
+    setIsSyncingGithub(true);
+    setCurrentUser((prev) => ({
+      ...prev,
+      githubIntegration: {
+        ...(prev.githubIntegration || { updatedAt: nowIso }),
+        status: 'syncing',
+        updatedAt: nowIso,
+      },
+    }));
+
+    const result = await fetchGithubUserAndRepos(usernameOrUrl, {
+      token,
+      previousIntegration: prevGithub,
+    });
+
+    setCurrentUser((prev) => {
+      const updatedUser: User = {
+        ...prev,
+        githubIntegration: result.integration,
+      };
+      setAllUsers((users) => users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+      return updatedUser;
+    });
+    setIsSyncingGithub(false);
+
+    if (result.ok) {
+      soundManager.playSuccess();
+      showToast(
+        `Zsynchronizowano konto GitHub @${result.integration.username} (${result.integration.repos?.length ?? 0} repozytoriów).`,
+        'success'
+      );
+    } else {
+      showToast(result.error || 'Błąd synchronizacji z GitHub.', 'danger');
+    }
+
+    return result;
+  };
+
+  const refreshGithubSync = async (token?: string): Promise<GithubSyncResult> => {
+    const existingUsername = currentUser.githubIntegration?.username;
+    if (!existingUsername) {
+      const nowIso = new Date().toISOString();
+      const errorMsg = 'Najpierw połącz swoje konto GitHub w ustawieniach profilu.';
+      showToast(errorMsg, 'info');
+      return {
+        ok: false,
+        error: errorMsg,
+        integration: {
+          status: 'disconnected',
+          updatedAt: nowIso,
+        },
+      };
+    }
+    return linkGithubAccount(existingUsername, token);
+  };
+
+  const unlinkGithubAccount = () => {
+    clearSessionGithubToken();
+    const nowIso = new Date().toISOString();
+    setCurrentUser((prev) => {
+      const updatedUser: User = {
+        ...prev,
+        githubIntegration: {
+          status: 'disconnected',
+          repos: [],
+          projectSubmissions: prev.githubIntegration?.projectSubmissions || {},
+          updatedAt: nowIso,
+        },
+      };
+      setAllUsers((users) => users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+      return updatedUser;
+    });
+    showToast('Odłączono konto GitHub od profilu Akademii.', 'info');
+  };
+
+  const submitProjectFromGithub = async (
+    projectId: string,
+    repoIdentifier: string,
+    token?: string
+  ): Promise<GithubProjectSubmitResult> => {
+    if (!isAuthenticated || currentUser.id === 'user-guest') {
+      const errorMsg = 'Zaloguj się na konto kursanta, aby wysłać postęp projektu z GitHub.';
+      showToast(errorMsg, 'danger');
+      return { ok: false, error: errorMsg };
+    }
+
+    const project = PROJECTS_DATA.find((p) => p.id === projectId);
+    if (!project) {
+      return { ok: false, error: 'Nie znaleziono wybranego projektu.' };
+    }
+
+    if (token !== undefined) {
+      setSessionGithubToken(token);
+    }
+
+    setIsSyncingGithub(true);
+    const result = await submitProjectFromGithubRepo(project, repoIdentifier, { token });
+    setIsSyncingGithub(false);
+
+    if (!result.ok || !result.submission) {
+      showToast(result.error || 'Nie udało się wysłać repozytorium projektu.', 'danger');
+      return result;
+    }
+
+    const submission = result.submission;
+    const nowIso = new Date().toISOString();
+
+    setCurrentUser((prev) => {
+      const prevGh = prev.githubIntegration || { status: 'disconnected', updatedAt: nowIso };
+      const updatedUser: User = {
+        ...prev,
+        githubIntegration: {
+          ...prevGh,
+          projectSubmissions: {
+            ...(prevGh.projectSubmissions || {}),
+            [projectId]: submission,
+          },
+          updatedAt: nowIso,
+        },
+      };
+      setAllUsers((users) => users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+      return updatedUser;
+    });
+
+    if (result.extractedCode) {
+      const exercise = getProjectInteractiveExercise(project);
+      saveCodeSnippet(exercise.id, result.extractedCode);
+    }
+
+    if (result.validationSummary?.allPassed) {
+      awardCustomXp(
+        50,
+        `Zweryfikowano kod projektu z GitHub: ${project.title}`,
+        `project-verify-${project.id}`
+      );
+      completeProject(project.id, project.xpReward, result.extractedCode);
+    } else {
+      soundManager.playSuccess();
+      showToast(
+        `Przesłano postęp projektu z GitHub (${submission.repoFullName} @ ${submission.commitSha.slice(0, 7)}).`,
+        'success'
+      );
+    }
+
+    return result;
+  };
+
   const addAnnouncement = (title: string, content: string, category: Announcement['category']) => {
     if (!isAuthenticated || currentUser.role !== 'admin') {
       showToast('Brak uprawnień administratora.', 'danger');
@@ -2012,6 +2219,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         verifyLessonExercise,
         saveCodeSnippet,
         completeProject,
+        isSyncingGithub,
+        linkGithubAccount,
+        refreshGithubSync,
+        unlinkGithubAccount,
+        submitProjectFromGithub,
         addAnnouncement,
         deleteAnnouncement,
         updateUserByAdmin,

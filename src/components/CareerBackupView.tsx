@@ -9,6 +9,7 @@ import {
 } from '../utils/developerSimulators';
 import { ProtectedRoute } from './ProtectedRoute';
 import { CopyButton } from './CopyButton';
+import { GithubSyncCard } from './GithubSyncCard';
 import {
   FileText,
   Download,
@@ -228,6 +229,8 @@ export const CareerBackupView: React.FC = () => {
 
         {/* Right: Cloud Sync, GitHub README Generator & JSON Backup Restore (5 cols) */}
         <div className="lg:col-span-5 space-y-6 print:hidden">
+          <GithubSyncCard compact />
+
           {/* Cloud Firestore Real-time Sync Card */}
           <div className="rounded-2xl border border-indigo-500/30 bg-indigo-950/20 p-5 space-y-3">
             <div className="flex items-center justify-between gap-2">

@@ -106,9 +106,9 @@ export function getPublicRouteSeoMetadata(
   switch (tab) {
     case 'knowledge_base':
       return {
-        title: 'Otwarta Baza Wiedzy — 91 darmowych lekcji programowania | Full Stack Academy',
+        title: 'Otwarta Baza Wiedzy — 96 darmowych lekcji programowania | Full Stack Academy',
         description:
-          'Darmowa, otwarta baza wiedzy Full Stack Developer Academy: 15 modułów i 91 artykułów z przykładami kodu HTML5, CSS, JavaScript, TypeScript, React, Node.js, SQL i Docker bez logowania.',
+          'Darmowa, otwarta baza wiedzy Full Stack Developer Academy: 15 modułów i 96 artykułów z przykładami kodu HTML5, CSS, JavaScript, TypeScript, React, Node.js, SQL i Docker bez logowania.',
         canonicalPath: '/baza-wiedzy',
       };
     case 'public_lesson':
@@ -158,7 +158,7 @@ export function getPublicRouteSeoMetadata(
       return {
         title: 'Full Stack Developer Academy — Interaktywna Akademia Programowania',
         description:
-          'Interaktywna platforma edukacyjna do nauki programowania od podstaw do poziomu Full Stack Developera z wbudowanym edytorem kodu, projektami i otwartą bazą 91 lekcji.',
+          'Interaktywna platforma edukacyjna do nauki programowania od podstaw do poziomu Full Stack Developera z wbudowanym edytorem kodu, projektami i otwartą bazą 96 lekcji.',
         canonicalPath: '/',
       };
   }

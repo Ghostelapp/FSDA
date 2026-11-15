@@ -214,7 +214,7 @@ const MainContent: React.FC = () => {
               }}
               className="hover:text-slate-100 transition-colors"
             >
-              Baza Wiedzy (91 lekcji)
+              Baza Wiedzy (96 lekcji)
             </a>
             <a
               href="/o-nas"

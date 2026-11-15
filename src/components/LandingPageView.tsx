@@ -474,7 +474,7 @@ const FAQ_ITEMS: FaqItem[] = [
     id: 'faq-4',
     question: 'Jak działa darmowy dostęp i kiedy warto wybrać Full Stack PRO?',
     answer:
-      'Plan Darmowy (0 zł bezterminowo) daje dostęp do wszystkich 15 modułów i 91 lekcji z systemem 5 odnawiających się serc energii — pisanie kodu w ćwiczeniach nigdy ich nie odejmuje. Pakiet Full Stack PRO znosi limity w quizach, wyłącza reklamy oraz odblokowuje egzamin Live Coding, kreator CV ATS i certyfikat.',
+      'Plan Darmowy (0 zł bezterminowo) daje dostęp do wszystkich 15 modułów i 96 lekcji z systemem 5 odnawiających się serc energii — pisanie kodu w ćwiczeniach nigdy ich nie odejmuje. Pakiet Full Stack PRO znosi limity w quizach, wyłącza reklamy oraz odblokowuje egzamin Live Coding, kreator CV ATS i certyfikat.',
   },
   {
     id: 'faq-5',
@@ -1258,7 +1258,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               </h2>
             </div>
             <p className="text-sm text-[#94A3B8] max-w-md leading-relaxed">
-              Każda z 91 lekcji łączy trzy elementy: analogię z życia, gotowy w 80% szkielet
+              Każda z {allLessons.length} lekcji łączy trzy elementy: analogię z życia, gotowy w 80% szkielet
               kodu oraz wbudowany symulator do natychmiastowego uruchomienia.
             </p>
           </RevealBlock>
@@ -1565,7 +1565,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               <div className="flex items-center gap-2 text-xs font-medium text-[#94A3B8]">
                 <span className="font-semibold text-indigo-400">Kompletny Sylabus</span>
                 <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums">15 modułów · 91 lekcji · {totalCurriculumHours}h materiału</span>
+                <span className="font-mono tabular-nums">15 modułów · {allLessons.length} lekcji · {totalCurriculumHours}h materiału</span>
               </div>
               <h2
                 style={{ textWrap: 'balance' }}
@@ -2265,14 +2265,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 </div>
 
                 <p className="text-sm text-[#CBD5E1] leading-relaxed">
-                  Pełny dostęp do 15 modułów i 91 lekcji z systemem 5 odnawiających się serc energii.
+                  Pełny dostęp do 15 modułów i {allLessons.length} lekcji z systemem 5 odnawiających się serc energii.
                   Pisanie kodu w edytorze nigdy nie zabiera serc.
                 </p>
 
                 <ul className="space-y-2.5 pt-3 border-t border-white/[0.08] text-xs sm:text-sm text-[#CBD5E1]">
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>Wszystkie 15 modułów i 91 interaktywnych lekcji</span>
+                    <span>Wszystkie 15 modułów i {allLessons.length} interaktywnych lekcji</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />

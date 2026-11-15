@@ -422,14 +422,68 @@ const CURATED_BEGINNER_AIDS: Record<
     ],
   },
   'html-4': {
-    analogyTitle: 'Ramka na zdjęcie (<img>) oraz arkusz z kratkami (<table>)',
+    analogyTitle: 'Ramka na zdjęcie (<img>) z podpisem wystawowym (<figure> i <figcaption>)',
     analogyText:
-      'Znacznik <img> działa jak ramka na zdjęcie powieszona na ścianie: w dopisku src="..." podajesz skąd wziąć fotografię, a w alt="..." piszesz jedno zdanie opisu (na wypadek, gdyby zdjęcie się nie wczytało). Z kolei <table> to prosta tabelka jak w zeszycie: <tr> tworzy nowy poziomy rząd, a <td> pojedynczą kratkę w tym rzędzie.',
+      'Znacznik <img> działa jak ramka na zdjęcie powieszona w galerii: w dopisku src="..." podajesz skąd wziąć fotografię, a w alt="..." piszesz jedno zdanie opisu (na wypadek, gdyby zdjęcie się nie wczytało lub oglądała je osoba niewidoma). A gdy chcesz pod obrazkiem umieścić tabliczkę z podpisem jak w muzeum, otaczasz całość znacznikiem <figure> i podpisujesz w <figcaption>!',
     glossary: [
       { term: '<img src="..." alt="...">', simpleDefinition: 'Wstawia obrazek na stronę (nie wymaga osobnego znacznika zamykającego).' },
-      { term: 'src oraz alt', simpleDefinition: 'src to adres pliku ze zdjęciem, a alt to krótki opis słowny obrazka.' },
-      { term: '<table> i <tr>', simpleDefinition: '<table> to cała tabela, a każde <tr> (table row) to jeden poziomy wiersz.' },
-      { term: '<th> oraz <td>', simpleDefinition: '<th> to pogrubiona komórka tytułowa u góry tabeli, a <td> to zwykła komórka z danymi.' },
+      { term: 'src oraz alt', simpleDefinition: 'src to adres pliku ze zdjęciem, a alt to obowiązkowy opis słowny obrazka.' },
+      { term: '<figure> i <figcaption>', simpleDefinition: '<figure> otacza zdjęcie wraz z jego podpisem umieszczonym w <figcaption>.' },
+      { term: 'loading="lazy"', simpleDefinition: 'Przyspiesza stronę — pobiera zdjęcie dopiero wtedy, gdy użytkownik do niego przewinie.' },
+    ],
+  },
+  'html-10': {
+    analogyTitle: 'Narzędzia redaktora: zakreślacz (<mark>), cytat w ramce (<blockquote>) i czcionka maszynowa (<code>)',
+    analogyText:
+      'Kiedy uczysz się z podręcznika, najważniejsze hasła zaznaczasz żółtym zakreślaczem (<mark>), słowa wypowiadane z naciskiem piszesz pochyłym drukiem (<em>), a cytat znanego autora wycinasz w osobny blok z bocznym paskiem (<blockquote>). Z kolei <hr /> to pozioma kreska oddzielająca dwa wątki w zeszycie.',
+    glossary: [
+      { term: '<em> (Kursywa)', simpleDefinition: 'Pochyla tekst i nadaje słowu emocjonalny nacisk podczas czytania.' },
+      { term: '<mark> (Zakreślacz)', simpleDefinition: 'Podświetla kluczowe słowo (domyślnie na żółto) jak zakreślacz w notatkach.' },
+      { term: '<blockquote> i <code>', simpleDefinition: '<blockquote> wyróżnia dłuższy cytat, a <code> wyświetla fragment kodu komputerowego.' },
+      { term: '<br /> oraz <hr />', simpleDefinition: '<br /> łamie pojedynczą linię tekstu, a <hr /> rysuje poziomą linię podziału.' },
+    ],
+  },
+  'html-11': {
+    analogyTitle: 'Centrala telefoniczna i drogowskazy: nowa karta, winda na piętro (#id) i szybki telefon (tel:)',
+    analogyText:
+      'Zwykły link przenosi Cię do innego pokoju. Dopisek target="_blank" otwiera drugie okno obok, żebyś nie zgubił aktualnej strony. Link z kratką href="#cennik" działa jak winda w tym samym budynku — zjeżdża od razu na piętro oznaczone tabliczką id="cennik". A przedrostki mailto: oraz tel: od razu otwierają pocztę lub wybierają numer na smartfonie!',
+    glossary: [
+      { term: 'target="_blank"', simpleDefinition: 'Otwiera kliknięty link w nowej karcie przeglądarki.' },
+      { term: 'rel="noopener noreferrer"', simpleDefinition: 'Zabezpieczenie dodawane zawsze obok target="_blank" dla ochrony strony.' },
+      { term: 'href="#sekcja" (Kotwica)', simpleDefinition: 'Przewija ekran do elementu posiadającego na tej samej stronie atrybut id="sekcja".' },
+      { term: 'mailto: oraz tel:', simpleDefinition: 'Specjalne linki uruchamiające program pocztowy lub dzwonienie na telefonie.' },
+    ],
+  },
+  'html-12': {
+    analogyTitle: 'Tabela (<table>) jak przejrzysty arkusz kalkulacyjny z nagłówkiem i sumą na dole',
+    analogyText:
+      'Dobrze ułożona tabela przypomina fakturę lub arkusz w Excelu: na samej górze ma wyróżniony pasek z nazwami kolumn (<thead> i pogrubione <th>), w środku główne rzędy z pozycjami (<tbody> i komórki <td>), a na samym dole pasek podsumowania (<tfoot>), w którym napis „Razem” może rozciągać się na dwie kolumny dzięki colspan="2".',
+    glossary: [
+      { term: '<thead>, <tbody>, <tfoot>', simpleDefinition: 'Trzy części tabeli: górny nagłówek (thead), główne dane (tbody) i dolne podsumowanie (tfoot).' },
+      { term: '<tr> (Table Row)', simpleDefinition: 'Pojedynczy poziomy wiersz (rząd) w tabeli.' },
+      { term: '<th> vs <td>', simpleDefinition: '<th> to pogrubiona komórka tytułowa kolumny, a <td> to zwykła komórka z danymi.' },
+      { term: 'colspan="2"', simpleDefinition: 'Łączy dwie sąsiednie komórki w poziomie w jedną szerszą komórkę.' },
+    ],
+  },
+  'html-13': {
+    analogyTitle: 'Rozbudowana ankieta: rozwijane menu (<select>), duże pole na opis (<textarea>) i pola wyboru',
+    analogyText:
+      'Gdy wypełniasz ankietę w sklepie internetowym, kraj wybierasz z rozwijanej listy (<select> z opcjami <option>), uwagi dla kuriera wpisujesz w dużym wieloliniowym okienku (<textarea>), metodę płatności zaznaczasz kółkiem jednokrotnego wyboru (radio), a zgodę na regulamin kwadratowym okienkiem (checkbox).',
+    glossary: [
+      { term: '<select> i <option>', simpleDefinition: 'Tworzy rozwijaną listę wyboru (<select>), w której każda pozycja to osobny <option>.' },
+      { term: '<textarea>', simpleDefinition: 'Duże, wieloliniowe pole tekstowe na dłuższą wiadomość lub komentarz.' },
+      { term: 'checkbox vs radio', simpleDefinition: 'checkbox pozwala zaznaczyć wiele opcji naraz, a radio tylko jedną opcję z grupy.' },
+      { term: 'minlength="10"', simpleDefinition: 'Wbudowana walidacja pilnująca, by użytkownik wpisał co najmniej 10 znaków.' },
+    ],
+  },
+  'html-14': {
+    analogyTitle: 'Szuflada na kliknięcie (<details> i <summary>) oraz okno w ścianie (<iframe>)',
+    analogyText:
+      'Znacznik <details> działa jak szufladka z uchwytem (<summary>): dopóki nie klikniesz w uchwyt z pytaniem, odpowiedź w środku jest schowana i nie zajmuje miejsca na ekranie! Z kolei <iframe> to okienko wycięte w ścianie Twojej strony, przez które widać np. interaktywną mapę Google.',
+    glossary: [
+      { term: '<details> i <summary>', simpleDefinition: 'Tworzy rozwijany po kliknięciu akordeon (np. pytanie i odpowiedź FAQ) bez użycia JavaScriptu.' },
+      { term: '<dialog>', simpleDefinition: 'Natywne wyskakujące okienko modalne wbudowane w standard HTML5.' },
+      { term: '<iframe src="..." title="...">', simpleDefinition: 'Osadza na stronie zewnętrzny element (np. mapę Google lub film z YouTube).' },
     ],
   },
   'html-9': {

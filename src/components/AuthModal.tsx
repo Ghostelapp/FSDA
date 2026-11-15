@@ -6,6 +6,7 @@ import {
   AntiBotChallenge,
 } from '../utils/antiBot';
 import { getPasswordStrength, validateEmailFormat } from '../utils/authValidation';
+import { GithubSyncCard } from './GithubSyncCard';
 import {
   X,
   Lock,
@@ -46,7 +47,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     logout,
   } = useApp();
 
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'profile'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'profile'>(() =>
+    isAuthenticated ? 'profile' : 'login'
+  );
+  const wasOpenRef = React.useRef(false);
 
   // Form fields (Login / Register / Forgot)
   const [email, setEmail] = useState('');
@@ -75,6 +79,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [successMessage, setSuccessMessage] = useState('');
 
   // Reset form timer when modal opens or mode changes
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      setMode(isAuthenticated ? 'profile' : 'login');
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen, isAuthenticated]);
+
   useEffect(() => {
     if (isOpen) {
       setFormOpenTime(Date.now());
@@ -262,7 +273,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+        className={`w-full ${mode === 'profile' ? 'max-w-xl' : 'max-w-lg'} rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -842,7 +853,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
           {/* PROFILE SETTINGS FORM */}
           {mode === 'profile' && (
-            <form onSubmit={handleProfileSave} className="space-y-4">
+            <div className="space-y-4">
               <div className="p-3.5 rounded-2xl border border-slate-800 bg-slate-950/70 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <img
@@ -872,73 +883,78 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 </button>
               </div>
 
-              <div className="space-y-1">
-                <label htmlFor="prof-name" className="text-xs font-semibold text-slate-300 block">
-                  Imię i nazwisko (widoczne na certyfikacie):
-                </label>
-                <input
-                  id="prof-name"
-                  type="text"
-                  required
-                  value={profileName}
-                  onChange={(e) => setProfileName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
+              {/* GitHub Synchronization Status Indicator & Controls */}
+              <GithubSyncCard />
 
-              <div className="space-y-1">
-                <label htmlFor="prof-bio" className="text-xs font-semibold text-slate-300 block">
-                  Bio / Specjalizacja zawodowa (widoczne w CV):
-                </label>
-                <textarea
-                  id="prof-bio"
-                  rows={2}
-                  value={profileBio}
-                  onChange={(e) => setProfileBio(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <form onSubmit={handleProfileSave} className="space-y-4 pt-1 border-t border-slate-800/80">
                 <div className="space-y-1">
-                  <label htmlFor="prof-goal" className="text-xs font-semibold text-slate-300 block">
-                    Tygodniowy cel nauki (minuty):
+                  <label htmlFor="prof-name" className="text-xs font-semibold text-slate-300 block">
+                    Imię i nazwisko (widoczne na certyfikacie):
                   </label>
                   <input
-                    id="prof-goal"
-                    type="number"
-                    min={30}
-                    max={1200}
-                    step={15}
-                    value={profileWeeklyGoal}
-                    onChange={(e) => setProfileWeeklyGoal(Number(e.target.value))}
+                    id="prof-name"
+                    type="text"
+                    required
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
                     className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label htmlFor="prof-pass" className="text-xs font-semibold text-slate-300 block">
-                    Zmień hasło (opcjonalnie):
+                  <label htmlFor="prof-bio" className="text-xs font-semibold text-slate-300 block">
+                    Bio / Specjalizacja zawodowa (widoczne w CV):
                   </label>
-                  <input
-                    id="prof-pass"
-                    type={showPassword ? 'text' : 'password'}
-                    value={profileNewPassword}
-                    onChange={(e) => setProfileNewPassword(e.target.value)}
-                    placeholder="Pozostaw puste bez zmian"
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  <textarea
+                    id="prof-bio"
+                    rows={2}
+                    value={profileBio}
+                    onChange={(e) => setProfileBio(e.target.value)}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"
-              >
-                <Save className="h-4 w-4" />
-                <span>Zapisz zmiany w profilu</span>
-              </button>
-            </form>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label htmlFor="prof-goal" className="text-xs font-semibold text-slate-300 block">
+                      Tygodniowy cel nauki (minuty):
+                    </label>
+                    <input
+                      id="prof-goal"
+                      type="number"
+                      min={30}
+                      max={1200}
+                      step={15}
+                      value={profileWeeklyGoal}
+                      onChange={(e) => setProfileWeeklyGoal(Number(e.target.value))}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label htmlFor="prof-pass" className="text-xs font-semibold text-slate-300 block">
+                      Zmień hasło (opcjonalnie):
+                    </label>
+                    <input
+                      id="prof-pass"
+                      type={showPassword ? 'text' : 'password'}
+                      value={profileNewPassword}
+                      onChange={(e) => setProfileNewPassword(e.target.value)}
+                      placeholder="Pozostaw puste bez zmian"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  <span>Zapisz zmiany w profilu</span>
+                </button>
+              </form>
+            </div>
           )}
         </div>
 

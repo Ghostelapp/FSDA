@@ -1,6 +1,693 @@
 import { Lesson } from '../../types';
 
 export const MISSING_CURRICULUM_LESSONS: Record<number, Lesson[]> = {
+  // Module 2 (HTML5): 5 additional lessons covering full HTML5 curriculum (14 HTML lessons total)
+  2: [
+    {
+      id: 'html-10',
+      moduleId: 2,
+      moduleTitle: 'Podstawy HTML — Tworzenie Pierwszych Stron od Zera',
+      title: 'Formatowanie tekstu, cytaty i kod: Kursywa (<em>), zakreślacz (<mark>), cytaty (<blockquote>) i podziały (<br>, <hr>)',
+      slug: 'formatowanie-tekstu-cytaty-kod-html',
+      durationMinutes: 20,
+      xpReward: 65,
+      order: 2,
+      summary: 'Poznaj znaczniki, dzięki którym Twój tekst na stronie nabierze charakteru: pochylenie tekstu (<em>), żółty zakreślacz (<mark>), blok cytatu (<blockquote>), wyświetlanie kodu (<code>, <pre>) oraz linie podziału (<hr>, <br>).',
+      objectives: [
+        'Stosować semantyczną kursywę <em> oraz wyróżnienie tekstu <mark> i <small>',
+        'Tworzyć czytelne cytaty blokowe <blockquote> oraz fragmenty kodu <code> i <pre>',
+        'Rozróżniać złamanie pojedynczej linii <br> od poziomej linii oddzielającej tematy <hr>',
+      ],
+      prerequisites: ['Lekcja 1: Pierwsze znaczniki HTML'],
+      theoryMarkdown: `W pierwszej lekcji poznaliśmy nagłówki \`<h1>\`–\`<h6>\`, akapit \`<p>\` oraz pogrubienie \`<strong>\`. Prawdziwe artykuły, blogi i dokumentacje techniczne potrzebują jednak bogatszego formatowania tekstu!
+
+**1. Kursywa (\`<em>\`), zakreślacz (\`<mark>\`) i dopisek (\`<small>\`):**
+- **\`<em>\` (Emphasis — nacisk / kursywa):** Pochyla tekst i sygnalizuje czytnikom ekranu, że dane słowo wymawiamy z emocjonalnym naciskiem (np. \`To jest <em>naprawdę</em> proste!\`).
+- **\`<mark>\` (Zakreślacz):** Podświetla fragment zdania (domyślnie na żółto), dokładnie tak jak zakreślaczem w notatkach lub wynik wyszukiwania na stronie.
+- **\`<small>\` (Drobny druk):** Pomniejsza tekst — idealny na dopiski prawne, datę aktualizacji lub prawa autorskie w stopce.
+
+**2. Cytaty (\`<blockquote>\`) oraz wyświetlanie kodu (\`<code>\` i \`<pre>\`):**
+- **\`<blockquote>\`**: Służy do wyróżnienia dłuższego cytatu lub opinii (zazwyczaj z bocznym paskiem i wcięciem).
+- **\`<code>\`**: Oznacza krótkie polecenie lub fragment kodu wewnątrz zdania (np. \`Użyj znacznika <code>&lt;h1&gt;</code>\`), wyświetlając je czcionką maszynową (*monospace*).
+- **\`<pre>\` (Preformatted text):** Zachowuje wszystkie spacje i przejścia do nowej linii dokładnie tak, jak zostały wpisane w edytorze — zawsze łączymy go z \`<code>\` przy dłuższych blokach kodu!
+
+**3. Nowa linia (\`<br>\`) i pozioma kreska (\`<hr>\`):**
+- **\`<br>\` (Line Break):** Przenosi tekst do następnej linijki wewnątrz tego samego akapitu (np. przy zapisywaniu adresu pocztowego lub wiersza).
+- **\`<hr>\` (Horizontal Rule):** Rysuje poziomą linię oddzielającą dwie części tematu. Oba te znaczniki są pojedyncze — nie zamykamy ich ukośnikiem!`,
+      codeExamples: [
+        {
+          title: 'Bogato sformatowany artykuł z cytatem, zakreślaczem i kodem',
+          language: 'html',
+          code: `<p>W języku HTML skrót <mark>SEO</mark> oznacza <em>optymalizację pod wyszukiwarki</em>.</p>
+
+<blockquote>
+  "Najlepszy kod to taki, który łatwo przeczytać drugiemu człowiekowi."
+</blockquote>
+
+<hr />
+
+<p>Aby pogrubić tekst, użyj znacznika <code>&lt;strong&gt;</code>.</p>`,
+          explanation: 'Znacznik <mark> podświetla słowo SEO, <em> pochyla tekst kursywą, <blockquote> wyróżnia cytat, a <hr /> rysuje poziomą linię podziału.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Wyróżnij słowo w zdaniu', description: 'Użyj <em> dla kursywy lub <mark> dla efektu żółtego zakreślacza.' },
+        { step: 2, title: 'Dodaj cytat <blockquote>', description: 'Otocz ważną myśl znacznikiem <blockquote>...</blockquote>.' },
+        { step: 3, title: 'Oddziel sekcję linią <hr />', description: 'Wstaw pojedynczy znacznik <hr /> między częściami tekstu.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-html-10',
+        title: 'Dodaj wyróżnienie <mark> oraz cytat <blockquote>',
+        instructions: 'W edytorze mamy początek notatki z nauki. Dopisz poniżej cytat w znaczniku <blockquote> oraz akapit zawierający podświetlone słowo w znaczniku <mark>!',
+        task: 'Dodaj w kodzie znacznik <blockquote> oraz wyróżnienie <mark>.',
+        starterCode: {
+          html: '<h2>Moje notatki z HTML5</h2>\n<p>Dzisiaj poznaję <em>zaawansowane formatowanie</em> tekstu.</p>\n\n<!-- 👇 DOPISZ PONIŻEJ CYTAT <blockquote> ORAZ WYRÓŻNIENIE <mark> -->\n<!-- Wzór:\n<blockquote>Nauka przez praktykę daje najlepsze efekty!</blockquote>\n<p>Ważny skrót: <mark>HTML5</mark></p>\n-->\n',
+          css: 'body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.6; color: #1e293b; }\nblockquote { margin: 12px 0; padding: 12px 16px; border-left: 4px solid #4f46e5; background: #eef2ff; border-radius: 0 8px 8px 0; font-style: italic; }\nmark { background: #fef08a; padding: 2px 6px; border-radius: 4px; font-weight: bold; }',
+          js: 'console.log("Formatowanie tekstu i cytaty gotowe!");',
+        },
+        solutionCode: {
+          html: '<h2>Moje notatki z HTML5</h2>\n<p>Dzisiaj poznaję <em>zaawansowane formatowanie</em> tekstu.</p>\n\n<blockquote>Nauka przez praktykę daje najlepsze efekty!</blockquote>\n<p>Ważny skrót: <mark>HTML5</mark></p>',
+          css: 'body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.6; color: #1e293b; }\nblockquote { margin: 12px 0; padding: 12px 16px; border-left: 4px solid #4f46e5; background: #eef2ff; border-radius: 0 8px 8px 0; font-style: italic; }\nmark { background: #fef08a; padding: 2px 6px; border-radius: 4px; font-weight: bold; }',
+          js: 'console.log("Formatowanie tekstu i cytaty gotowe!");',
+        },
+        hints: [
+          'Wklej lub wpisz na dole: <blockquote>Nauka przez praktykę daje najlepsze efekty!</blockquote>',
+          'Pod spodem dopisz: <p>Ważny skrót: <mark>HTML5</mark></p>',
+          'Kliknij „Sprawdź kod”, aby zaliczyć ćwiczenie!',
+        ],
+        rules: [
+          { id: 'r1', description: 'Użyto znacznika cytatu <blockquote>', ruleType: 'html_tag_exists', target: 'blockquote' },
+          { id: 'r2', description: 'Użyto znacznika zakreślacza <mark>', ruleType: 'html_tag_exists', target: 'mark' },
+        ],
+      },
+      independentTask: {
+        title: 'Oddziel notatkę poziomą linią <hr />',
+        instructions: 'Wstaw pomiędzy nagłówkiem <h2> a cytatem pojedynczy znacznik <hr /> oraz użyj <code> wewnątrz zdania.',
+        expectedOutcome: 'Widoczna pozioma linia oddzielająca sekcje notatki.',
+        starterHint: 'Znacznik <hr /> nie wymaga znacznika zamykającego.',
+      },
+      quiz: [
+        {
+          id: 'q-h10-1',
+          question: 'Którego znacznika HTML5 używamy, aby podświetlić ważne słowo w tekście niczym żółtym zakreślaczem?',
+          options: [
+            'Znacznika <mark>',
+            'Znacznika <hr>',
+            'Znacznika <br>',
+            'Znacznika <table>',
+          ],
+          correctAnswer: 0,
+          explanation: 'Znacznik <mark> służy do wizualnego wyróżnienia (podświetlenia) kluczowego fragmentu tekstu.',
+        },
+        {
+          id: 'q-h10-2',
+          question: 'Do czego służy para znaczników <pre><code>...</code></pre>?',
+          options: [
+            'Do wyświetlania wieloliniowego bloku kodu z zachowaniem wcięć i spacji',
+            'Do odtwarzania muzyki w tle',
+            'Do wysyłania formularza na serwer',
+            'Do ukrywania tekstu przed przeglądarką',
+          ],
+          correctAnswer: 0,
+          explanation: '<pre> zachowuje oryginalne wcięcia i nowe linie, a <code> informuje przeglądarkę, że w środku znajduje się kod komputerowy.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Wielokrotne wstawianie <br><br><br> w celu zrobienia dużego odstępu między sekcjami',
+          whyItHappens: 'Próba sterowania odstępami jak klawiszem Enter w edytorze Word.',
+          howToFix: 'Używaj osobnych akapitów <p>, a wielkość odstępów między nimi ustawiaj później w CSS za pomocą margin lub padding.',
+          badCode: '<p>Pierwsza myśl</p>\n<br><br><br>\n<p>Druga myśl</p>',
+          goodCode: '<p>Pierwsza myśl</p>\n<p>Druga myśl</p>',
+        },
+      ],
+      practicalTask: {
+        title: 'Dodaj adres pocztowy ze złamaniem linii <br />',
+        brief: 'Napisz w jednym akapicie <p> nazwę ulicy i w nowej linijce za pomocą <br /> kod pocztowy oraz miasto.',
+        steps: ['Wpisz <p>ul. Kwiatowa 12<br />00-001 Warszawa</p>', 'Sprawdź w podglądzie jak działa <br />'],
+        deliverable: 'Poprawnie sformatowany adres kontaktowy.',
+      },
+      completionCriteria: ['Zastosowanie <blockquote> oraz <mark>', 'Zaliczenie quizu z wynikiem min. 80%'],
+    },
+    {
+      id: 'html-11',
+      moduleId: 2,
+      moduleTitle: 'Podstawy HTML — Tworzenie Pierwszych Stron od Zera',
+      title: 'Odnośniki w praktyce: Nowa karta (target="_blank"), kotwice (#sekcja), mailto:, tel: i ścieżki plików',
+      slug: 'zaawansowane-linki-kotwice-sciezki-plikow',
+      durationMinutes: 20,
+      xpReward: 70,
+      order: 4,
+      summary: 'Opanuj wszystkie rodzaje linków używanych w profesjonalnych stronach: otwieranie w nowej karcie z zabezpieczeniem rel="noopener", przewijanie do sekcji (#kontakt), klikalny e-mail i telefon oraz ścieżki względne.',
+      objectives: [
+        'Otwierać zewnętrzne strony w nowej karcie za pomocą target="_blank" i rel="noopener noreferrer"',
+        'Tworzyć kotwice przewijające stronę do wybranej sekcji (href="#cennik" -> id="cennik")',
+        'Tworzyć klikalne linki otwierające program pocztowy (mailto:) oraz wybieranie numeru na telefonie (tel:)',
+      ],
+      prerequisites: ['Lekcja 3: Listy punktowane i numerowane oraz podstawy linków'],
+      theoryMarkdown: `Znacznik \`<a href="...">\` potrafi znacznie więcej niż tylko przechodzić pod inny adres! Zobaczmy 4 zastosowania linków, których używa się w każdym komercyjnym projekcie.
+
+**1. Otwieranie linku w nowej karcie (\`target="_blank"\`):**
+Gdy link prowadzi do zewnętrznego serwisu (np. Twojego profilu na GitHubie lub LinkedInie), nie chcesz, aby użytkownik zamknął Twoją stronę. Dopisujesz wtedy **\`target="_blank"\`** oraz zabezpieczenie **\`rel="noopener noreferrer"\`**:
+
+\`\`\`html
+<a href="https://github.com" target="_blank" rel="noopener noreferrer">
+  Mój profil GitHub (nowa karta)
+</a>
+\`\`\`
+
+**2. Kotwice — płynne przewijanie do sekcji na tej samej stronie (\`#id\`):**
+W menu na górze strony często widzisz linki typu *„Cennik”* lub *„Kontakt”*, które po kliknięciu przewijają ekran w dół. Jak to działa?
+1. Sekcji na dole nadajesz unikalny identyfikator: \`<section id="kontakt">\`
+2. W linku wpisujesz znak kratki \`#\`: \`<a href="#kontakt">Przejdź do kontaktu</a>\`
+
+**3. Klikalny e-mail (\`mailto:\`) oraz numer telefonu (\`tel:\`):**
+- **\`<a href="mailto:kontakt@domena.pl">\`**: Automatycznie otwiera program pocztowy z wpisanym adresem odbiorcy.
+- **\`<a href="tel:+48123456789">\`**: Na smartfonie od razu uruchamia ekran dzwonienia!
+
+**4. Ścieżki bezwzględne vs względne:**
+- **Ścieżka bezwzględna:** Pełny adres w internecie zaczynający się od \`https://...\`
+- **Ścieżka względna:** Prowadzi do innego pliku w Twoim własnym projekcie, np. \`href="/o-nas"\` lub \`href="./kontakt.html"\`.`,
+      codeExamples: [
+        {
+          title: 'Zestaw nawigacji: kotwica, nowa karta oraz klikalny e-mail i telefon',
+          language: 'html',
+          code: `<nav>
+  <a href="#o-mnie">O mnie (na tej stronie)</a>
+  <a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub</a>
+  <a href="mailto:biuro@akademia.pl">Napisz e-mail</a>
+  <a href="tel:+48500600700">Zadzwoń: 500 600 700</a>
+</nav>`,
+          explanation: 'Każdy z czterech linków pełni inną funkcję: przewija stronę do #o-mnie, otwiera nową kartę, uruchamia pocztę lub wybiera numer telefonu.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Link zewnętrzny', description: 'Dodaj target="_blank" rel="noopener noreferrer", aby otworzyć stronę w nowej karcie.' },
+        { step: 2, title: 'Kotwica na stronie', description: 'Połącz <a href="#sekcja"> z elementem posiadającym id="sekcja".' },
+        { step: 3, title: 'Kontakt jednym kliknięciem', description: 'Użyj przedrostka mailto: dla adresu e-mail oraz tel: dla numeru telefonu.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-html-11',
+        title: 'Dodaj link otwierany w nowej karcie oraz link mailto:',
+        instructions: 'W stopce wizytówki dopisz dwa linki: pierwszy otwierający profil GitHub w nowej karcie (z atrybutem target="_blank") oraz drugi otwierający pocztę e-mail (href="mailto:kontakt@kurs.pl").',
+        task: 'Dodaj link z target="_blank" oraz link z href="mailto:...".',
+        starterCode: {
+          html: '<div class="contact-box">\n  <h3>Skontaktuj się ze mną:</h3>\n  <!-- 👇 DOPISZ PONIŻEJ LINK Z target="_blank" ORAZ LINK mailto: -->\n  <!-- Wzór:\n  <a href="https://github.com" target="_blank" rel="noopener noreferrer">Mój GitHub</a>\n  <a href="mailto:kontakt@kurs.pl">Napisz e-mail</a>\n  -->\n</div>',
+          css: 'body { font-family: sans-serif; padding: 20px; }\n.contact-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 16px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px; max-width: 300px; }\na { color: #4f46e5; font-weight: bold; text-decoration: none; }',
+          js: 'console.log("Zaawansowane odnośniki gotowe!");',
+        },
+        solutionCode: {
+          html: '<div class="contact-box">\n  <h3>Skontaktuj się ze mną:</h3>\n  <a href="https://github.com" target="_blank" rel="noopener noreferrer">Mój GitHub</a>\n  <a href="mailto:kontakt@kurs.pl">Napisz e-mail</a>\n</div>',
+          css: 'body { font-family: sans-serif; padding: 20px; }\n.contact-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 16px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px; max-width: 300px; }\na { color: #4f46e5; font-weight: bold; text-decoration: none; }',
+          js: 'console.log("Zaawansowane odnośniki gotowe!");',
+        },
+        hints: [
+          'Dopisz pierwszy link: <a href="https://github.com" target="_blank" rel="noopener noreferrer">Mój GitHub</a>',
+          'Dopisz drugi link: <a href="mailto:kontakt@kurs.pl">Napisz e-mail</a>',
+          'Kliknij „Sprawdź kod”!',
+        ],
+        rules: [
+          { id: 'r1', description: 'Użyto atrybutu target="_blank" do otwarcia nowej karty', ruleType: 'html_attr_exists', target: 'target', param: '_blank' },
+          { id: 'r2', description: 'Dodano link pocztowy z przedrostkiem mailto:', ruleType: 'html_contains', target: 'mailto:' },
+        ],
+      },
+      independentTask: {
+        title: 'Dodaj klikalny numer telefonu (tel:)',
+        instructions: 'Dopisz trzeci link w boksie kontaktowym: <a href="tel:+48123456789">Zadzwoń do mnie</a>.',
+        expectedOutcome: 'Link telefoniczny gotowy do użycia na urządzeniach mobilnych.',
+        starterHint: 'Użyj href="tel:+48123456789".',
+      },
+      quiz: [
+        {
+          id: 'q-h11-1',
+          question: 'Jaki atrybut należy dodać do znacznika <a>, aby po kliknięciu strona otworzyła się w nowej karcie przeglądarki?',
+          options: [
+            'target="_blank" (wraz z rel="noopener noreferrer")',
+            'newtab="true"',
+            'open="window"',
+            'href="new"',
+          ],
+          correctAnswer: 0,
+          explanation: 'Standardowy atrybut HTML otwierający link w nowej karcie to target="_blank", a rel="noopener noreferrer" chroni bezpieczeństwo karty źródłowej.',
+        },
+        {
+          id: 'q-h11-2',
+          question: 'Jak zapisać atrybut href w linku, który ma przewinąć ekran do sekcji <section id="cennik"> znajdującej się niżej na tej samej stronie?',
+          options: [
+            'href="#cennik"',
+            'href="mailto:cennik"',
+            'href="https://cennik"',
+            'href="@cennik"',
+          ],
+          correctAnswer: 0,
+          explanation: 'Znak kratki (#) w href="#cennik" tworzy tzw. kotwicę wskazującą element z id="cennik".',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Używanie target="_blank" dla wewnętrznych podstron własnego serwisu',
+          whyItHappens: 'Dodawanie target="_blank" odruchowo do każdego linku.',
+          howToFix: 'Linki wewnątrz Twojej własnej strony (np. menu główne) powinny otwierać się w tej samej karcie; target="_blank" stosuj tylko dla stron zewnętrznych.',
+          badCode: '<a href="/kontakt" target="_blank">Kontakt</a>',
+          goodCode: '<a href="/kontakt">Kontakt</a>',
+        },
+      ],
+      practicalTask: {
+        title: 'Stwórz kotwicę przewijającą do stopki',
+        brief: 'Dodaj na górze link <a href="#stopka">Skocz na dół</a>, a na dole element <footer id="stopka">Stopka</footer>.',
+        steps: ['Dodaj id="stopka" do elementu na dole', 'Dodaj href="#stopka" w linku na górze'],
+        deliverable: 'Działająca nawigacja wewnątrz strony.',
+      },
+      completionCriteria: ['Zastosowanie target="_blank" oraz mailto:', 'Zaliczenie quizu'],
+    },
+    {
+      id: 'html-12',
+      moduleId: 2,
+      moduleTitle: 'Podstawy HTML — Tworzenie Pierwszych Stron od Zera',
+      title: 'Tabele danych od A do Z (<table>): Nagłówki (<thead>, <th>), ciało (<tbody>), podsumowanie (<tfoot>) i colspan',
+      slug: 'tabele-danych-thead-tbody-tfoot-colspan',
+      durationMinutes: 25,
+      xpReward: 75,
+      order: 6,
+      summary: 'Naucz się budować czytelne tabele cenników, faktur i statystyk: semantyczny podział na <thead>, <tbody> i <tfoot>, wiersze <tr>, komórki nagłówkowe <th> oraz łączenie kolumn za pomocą colspan.',
+      objectives: [
+        'Budować strukturę tabeli z wierszy <tr>, nagłówków <th> oraz komórek danych <td>',
+        'Dzielić tabelę na czytelną część nagłówkową <thead>, dane <tbody> oraz stopkę podsumowania <tfoot>',
+        'Łączyć sąsiednie komórki w poziomie za pomocą atrybutu colspan="2"',
+      ],
+      prerequisites: ['Lekcja 5: Obrazki na stronie i leniwe ładowanie'],
+      theoryMarkdown: `Kiedy chcesz zaprezentować na stronie cennik pakietów, harmonogram zajęć, tabelę wyników lub podsumowanie koszyka zakupowego, najlepszym narzędziem jest semantyczna tabela **\`<table>\`**.
+
+**1. Podstawowe klocki tabeli (\`<tr>\`, \`<th>\`, \`<td>\`):**
+Tabela jest układana **wiersz po wierszu** (od góry do dołu):
+- **\`<tr>\` (Table Row — wiersz):** Tworzy nowy poziomy rząd tabeli.
+- **\`<th>\` (Table Header — komórka tytułowa):** Pogrubiona komórka z nazwą kolumny (np. *Produkt*, *Cena*).
+- **\`<td>\` (Table Data — komórka z danymi):** Zwykła komórka zawierająca konkretną wartość (np. *Kurs HTML*, *0 zł*).
+
+**2. Profesjonalny podział na 3 sekcje (\`<thead>\`, \`<tbody>\`, \`<tfoot>\`):**
+Tak jak cała strona ma \`<header>\`, \`<main>\` i \`<footer>\`, tak dobrze zbudowana tabela dzieli się na:
+1. **\`<thead>\` (Głowa tabeli):** Otacza pierwszy wiersz z tytułami kolumn \`<th>\`.
+2. **\`<tbody>\` (Ciało tabeli):** Otacza wszystkie główne wiersze z danymi \`<td>\`.
+3. **\`<tfoot>\` (Stopka tabeli):** Opcjonalny dolny wiersz z podsumowaniem (np. *Suma zamówienia: 299 zł*).
+
+**3. Łączenie komórek (\`colspan\`):**
+Jeśli w dolnym wierszu podsumowania chcesz, aby jedna komórka rozciągała się na szerokość dwóch kolumn, dopisujesz do niej **\`colspan="2"\`**!`,
+      codeExamples: [
+        {
+          title: 'Tabela zamówienia z podziałem na <thead>, <tbody> oraz <tfoot>',
+          language: 'html',
+          code: `<table>
+  <thead>
+    <tr>
+      <th>Usługa</th>
+      <th>Czas</th>
+      <th>Koszt</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Projekt strony HTML5</td>
+      <td>5 dni</td>
+      <td>1200 zł</td>
+    </tr>
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2"><strong>Razem do zapłaty:</strong></td>
+      <td><strong>1200 zł</strong></td>
+    </tr>
+  </tfoot>
+</table>`,
+          explanation: 'Sekcja <thead> zawiera nazwy 3 kolumn, <tbody> wiersz z usługą, a w <tfoot> komórka z napisem "Razem do zapłaty:" ma colspan="2", dzięki czemu zajmuje szerokość dwóch pierwszych kolumn.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Utwórz nagłówek <thead>', description: 'Wewnątrz <thead><tr> umieść nazwy kolumn w znacznikach <th>.' },
+        { step: 2, title: 'Wypełnij dane w <tbody>', description: 'Każdy kolejny wiersz danych <tr> z komórkami <td> umieść w <tbody>.' },
+        { step: 3, title: 'Dodaj podsumowanie w <tfoot>', description: 'W razie potrzeby połącz kolumny za pomocą atrybutu colspan="2".' },
+      ],
+      interactiveExercise: {
+        id: 'ex-html-12',
+        title: 'Zbuduj tabelę z nagłówkiem <thead> i ciałem <tbody>',
+        instructions: 'W edytorze mamy otwartą tabelę <table> z sekcją nagłówkową <thead>. Dopisz poniżej sekcję <tbody> zawierającą wiersz <tr> z dwiema komórkami <td> (np. <td>Moduł HTML5</td> i <td>Zaliczone</td>).',
+        task: 'Dodaj sekcję <tbody> zawierającą wiersz <tr> i komórki <td>.',
+        starterCode: {
+          html: '<table>\n  <thead>\n    <tr>\n      <th>Moduł kursu</th>\n      <th>Status</th>\n    </tr>\n  </thead>\n  <!-- 👇 DOPISZ PONIŻEJ SEKCJĘ <tbody> Z WIERZEM <tr> I KOMÓRKAMI <td> -->\n  <!-- Wzór:\n  <tbody>\n    <tr>\n      <td>Moduł HTML5</td>\n      <td>Zaliczone</td>\n    </tr>\n  </tbody>\n  -->\n</table>',
+          css: 'body { font-family: sans-serif; padding: 20px; }\ntable { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; }\nth, td { border: 1px solid #cbd5e1; padding: 10px 12px; text-align: left; }\nth { background: #eef2ff; color: #1e1b4b; }',
+          js: 'console.log("Semantyczna tabela danych gotowa!");',
+        },
+        solutionCode: {
+          html: '<table>\n  <thead>\n    <tr>\n      <th>Moduł kursu</th>\n      <th>Status</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <td>Moduł HTML5</td>\n      <td>Zaliczone</td>\n    </tr>\n  </tbody>\n</table>',
+          css: 'body { font-family: sans-serif; padding: 20px; }\ntable { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; }\nth, td { border: 1px solid #cbd5e1; padding: 10px 12px; text-align: left; }\nth { background: #eef2ff; color: #1e1b4b; }',
+          js: 'console.log("Semantyczna tabela danych gotowa!");',
+        },
+        hints: [
+          'Przed zamknięciem </table> dopisz sekcję <tbody>...</tbody>.',
+          'Wewnątrz <tbody> umieść wiersz: <tr><td>Moduł HTML5</td><td>Zaliczone</td></tr>',
+          'Kliknij „Sprawdź kod”!',
+        ],
+        rules: [
+          { id: 'r1', description: 'Tabela posiada sekcję nagłówkową <thead> z komórkami <th>', ruleType: 'html_tag_exists', target: 'thead' },
+          { id: 'r2', description: 'Dodano sekcję ciała tabeli <tbody>', ruleType: 'html_tag_exists', target: 'tbody' },
+          { id: 'r3', description: 'Wiersz zawiera komórki danych <td>', ruleType: 'html_tag_exists', target: 'td' },
+        ],
+      },
+      independentTask: {
+        title: 'Dodaj wiersz podsumowania <tfoot> z colspan="2"',
+        instructions: 'Pod zamknięciem </tbody> dopisz <tfoot><tr><td colspan="2">Łącznie: 14 lekcji HTML</td></tr></tfoot>.',
+        expectedOutcome: 'Dolny wiersz podsumowania rozciągnięty na obie kolumny.',
+        starterHint: 'Użyj atrybutu colspan="2" na znaczniku <td>.',
+      },
+      quiz: [
+        {
+          id: 'q-h12-1',
+          question: 'Czym różni się komórka <th> od komórki <td> w tabeli HTML?',
+          options: [
+            '<th> to komórka nagłówkowa (tytuł kolumny, domyślnie pogrubiona), a <td> to zwykła komórka z danymi',
+            '<th> tworzy nową tabelę, a <td> ją usuwa',
+            '<td> może zawierać tylko liczby',
+            'Nie ma między nimi żadnej różnicy',
+          ],
+          correctAnswer: 0,
+          explanation: '<th> (table header) oznacza nagłówek kolumny lub wiersza, natomiast <td> (table data) przechowuje właściwe dane.',
+        },
+        {
+          id: 'q-h12-2',
+          question: 'Który atrybut pozwala połączyć dwie sąsiednie komórki w jednym wierszu w jedną szerszą komórkę?',
+          options: [
+            'colspan="2"',
+            'width="2"',
+            'merge="true"',
+            'double="2"',
+          ],
+          correctAnswer: 0,
+          explanation: 'Atrybut colspan="2" (od column span) rozciąga komórkę na szerokość dwóch kolumn.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Używanie tabel <table> do układania wyglądu całej strony (np. menu po lewej, artykuł po prawej)',
+          whyItHappens: 'Nawyk ze starych kursów z lat 90., zanim powstał Flexbox i CSS Grid.',
+          howToFix: 'Tabel <table> używaj wyłącznie do danych tabelarycznych (cenników, rozkładów, statystyk). Do układu strony służą znaczniki semantyczne oraz Flexbox / Grid w CSS.',
+          badCode: '<table><tr><td>Menu</td><td>Artykuł</td></tr></table>',
+          goodCode: '<div class="layout"><nav>Menu</nav><main>Artykuł</main></div>',
+        },
+      ],
+      practicalTask: {
+        title: 'Rozbuduj tabelę o 3 wiersze',
+        brief: 'Dodaj w <tbody> wiersze dla modułów HTML, CSS oraz JavaScript.',
+        steps: ['Skopiuj blok <tr>...</tr> wewnątrz <tbody>', 'Zmień nazwy modułów w komórkach <td>'],
+        deliverable: 'Kompletna tabela planu nauki.',
+      },
+      completionCriteria: ['Zbudowanie tabeli z <thead> i <tbody>', 'Zaliczenie quizu'],
+    },
+    {
+      id: 'html-13',
+      moduleId: 2,
+      moduleTitle: 'Podstawy HTML — Tworzenie Pierwszych Stron od Zera',
+      title: 'Zaawansowane formularze HTML5: Listy rozwijane (<select>), <textarea>, checkbox, radio i walidacja',
+      slug: 'zaawansowane-formularze-select-textarea-checkbox-radio',
+      durationMinutes: 25,
+      xpReward: 85,
+      order: 11,
+      summary: 'Rozbuduj swoje formularze o listę rozwijaną (<select> i <option>), duże pole na wiadomość (<textarea>), pola wyboru (checkbox oraz radio), grupowanie <fieldset> i wbudowaną walidację HTML5.',
+      objectives: [
+        'Tworzyć rozwijaną listę wyboru za pomocą <select> oraz opcji <option>',
+        'Dodawać wieloliniowe pole tekstowe <textarea> na dłuższą wiadomość lub komentarz',
+        'Rozróżniać pola wielokrotnego wyboru (type="checkbox") od wyboru jednej opcji (type="radio") oraz stosować walidację (minlength, pattern)',
+      ],
+      prerequisites: ['Lekcja 10: Formularze od podstaw (input, label, button)'],
+      theoryMarkdown: `W poprzedniej lekcji stworzyliśmy prosty formularz z pojedynczym polem \`<input>\`. W prawdziwych aplikacjach (np. przy składaniu zamówienia w sklepie lub w formularzu kontaktowym) potrzebujemy jednak znacznie ciekawszych kontrolek!
+
+**1. Wieloliniowe pole na dłuższą wiadomość (\`<textarea>\`):**
+Zwykły \`<input type="text">\` mieści tylko jedną linijkę tekstu. Gdy użytkownik ma napisać opinię, komentarz lub wiadomość kontaktową, używamy znacznika **\`<textarea>\`** (z otwarciem i zamknięciem \`</textarea>\`):
+
+\`\`\`html
+<label for="wiadomosc">Twoja wiadomość:</label>
+<textarea id="wiadomosc" rows="4" placeholder="Opisz swoje pytanie..." required></textarea>
+\`\`\`
+
+**2. Rozwijana lista wyboru (\`<select>\` oraz \`<option>\`):**
+Gdy użytkownik ma wybrać np. kraj, miasto lub temat zgłoszenia z gotowej listy, używamy ramki **\`<select>\`**, a każdą pozycję na liście zapisujemy w **\`<option value="...">\`**:
+
+\`\`\`html
+<label for="poziom">Twój poziom zaawansowania:</label>
+<select id="poziom" name="poziom">
+  <option value="zero">Zaczynam od zera</option>
+  <option value="junior">Znam podstawy HTML i CSS</option>
+  <option value="mid">Tworzę aplikacje w React</option>
+</select>
+\`\`\`
+
+**3. Kwadratowe pole \`checkbox\` vs okrągłe pole \`radio\`:**
+- **\`<input type="checkbox">\` (Pole wyboru tak/nie lub wiele opcji):** Pozwala zaznaczyć np. zgodę na regulamin albo wybrać kilka ulubionych technologii naraz.
+- **\`<input type="radio" name="platnosc">\` (Jedna opcja z grupy):** Gdy kilka pól \`radio\` ma ten sam atrybut \`name="..."\`, zaznaczenie jednego automatycznie odznacza pozostałe (np. wybór metody płatności: *BLIK* albo *Karta*).
+
+**4. Wbudowana walidacja HTML5 (bez pisania JavaScriptu!):**
+- \`required\` — pole nie może zostać puste,
+- \`minlength="8"\` — tekst musi mieć minimum 8 znaków (np. dla hasła),
+- \`min="1"\` oraz \`max="100"\` — zakres liczb dla \`type="number"\`.`,
+      codeExamples: [
+        {
+          title: 'Kompletny formularz zgłoszeniowy z <select>, <textarea> i checkboxem',
+          language: 'html',
+          code: `<form>
+  <label for="temat">Temat wiadomości:</label>
+  <select id="temat" name="temat">
+    <option value="kurs">Pytanie o kurs Full Stack</option>
+    <option value="wspolpraca">Współpraca projektowa</option>
+  </select>
+
+  <label for="tresc">Treść wiadomości (min. 10 znaków):</label>
+  <textarea id="tresc" rows="3" minlength="10" required></textarea>
+
+  <label>
+    <input type="checkbox" required /> Akceptuję regulamin serwisu
+  </label>
+
+  <button type="submit">Wyślij zgłoszenie</button>
+</form>`,
+          explanation: 'Użytkownik wybiera temat z listy <select>, wpisuje dłuższą wiadomość w <textarea>, zaznacza obowiązkowy checkbox i wysyła formularz.',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Dodaj listę <select>', description: 'Wewnątrz <select> umieść co najmniej dwie opcje <option value="...">Tekst</option>.' },
+        { step: 2, title: 'Dodaj pole <textarea>', description: 'Użyj <textarea rows="3"></textarea> do wpisywania dłuższego tekstu.' },
+        { step: 3, title: 'Dodaj zgodę <input type="checkbox">', description: 'Pozwól użytkownikowi zaznaczyć akceptację regulaminu.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-html-13',
+        title: 'Rozbuduj formularz o listę <select> oraz pole <textarea>',
+        instructions: 'W edytorze mamy formularz kontaktowy. Dopisz wewnątrz niego rozwijaną listę <select> z opcjami <option> oraz wieloliniowe pole <textarea> na wiadomość!',
+        task: 'Dodaj w formularzu element <select> (z <option>) oraz element <textarea>.',
+        starterCode: {
+          html: '<form>\n  <label for="dzial">Wybierz dział:</label>\n  <!-- 👇 DOPISZ PONIŻEJ LISTĘ <select> Z OPCJAMI <option> ORAZ POLE <textarea> -->\n  <!-- Wzór:\n  <select id="dzial">\n    <option value="pomoc">Pomoc techniczna</option>\n    <option value="kurs">Pytanie o kurs</option>\n  </select>\n  <label for="msg">Wiadomość:</label>\n  <textarea id="msg" rows="3" required></textarea>\n  -->\n  <button type="submit">Wyślij</button>\n</form>',
+          css: 'form { display: flex; flex-direction: column; gap: 10px; max-width: 340px; padding: 18px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; font-family: sans-serif; }\nlabel { font-size: 0.85rem; font-weight: bold; color: #334155; }\nselect, textarea, button { padding: 8px 10px; border-radius: 8px; border: 1px solid #94a3b8; font-family: inherit; }\nbutton { background: #4f46e5; color: white; border: none; font-weight: bold; cursor: pointer; }',
+          js: 'console.log("Zaawansowany formularz HTML5 gotowy!");',
+        },
+        solutionCode: {
+          html: '<form>\n  <label for="dzial">Wybierz dział:</label>\n  <select id="dzial">\n    <option value="pomoc">Pomoc techniczna</option>\n    <option value="kurs">Pytanie o kurs</option>\n  </select>\n  <label for="msg">Wiadomość:</label>\n  <textarea id="msg" rows="3" required></textarea>\n  <button type="submit">Wyślij</button>\n</form>',
+          css: 'form { display: flex; flex-direction: column; gap: 10px; max-width: 340px; padding: 18px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; font-family: sans-serif; }\nlabel { font-size: 0.85rem; font-weight: bold; color: #334155; }\nselect, textarea, button { padding: 8px 10px; border-radius: 8px; border: 1px solid #94a3b8; font-family: inherit; }\nbutton { background: #4f46e5; color: white; border: none; font-weight: bold; cursor: pointer; }',
+          js: 'console.log("Zaawansowany formularz HTML5 gotowy!");',
+        },
+        hints: [
+          'Dodaj listę: <select id="dzial"><option value="pomoc">Pomoc techniczna</option></select>',
+          'Dodaj pod spodem wieloliniowe pole: <textarea id="msg" rows="3" required></textarea>',
+          'Kliknij „Sprawdź kod”!',
+        ],
+        rules: [
+          { id: 'r1', description: 'Dodano rozwijaną listę <select>', ruleType: 'html_tag_exists', target: 'select' },
+          { id: 'r2', description: 'Lista zawiera opcję <option>', ruleType: 'html_tag_exists', target: 'option' },
+          { id: 'r3', description: 'Dodano wieloliniowe pole <textarea>', ruleType: 'html_tag_exists', target: 'textarea' },
+        ],
+      },
+      independentTask: {
+        title: 'Dodaj pole wyboru zgody (checkbox)',
+        instructions: 'Nad przyciskiem Wyślij dopisz <label><input type="checkbox" required /> Akceptuję regulamin</label>.',
+        expectedOutcome: 'Formularz wymaga zaznaczenia pola wyboru przed wysłaniem.',
+        starterHint: 'Umieść <input type="checkbox" required /> wewnątrz znacznika <label>.',
+      },
+      quiz: [
+        {
+          id: 'q-h13-1',
+          question: 'Którego znacznika użyjesz, aby stworzyć duże, wieloliniowe pole do wpisania dłuższej wiadomości w formularzu kontaktowym?',
+          options: [
+            'Znacznika <textarea>...</textarea>',
+            'Znacznika <select>',
+            'Znacznika <input type="checkbox">',
+            'Znacznika <img>',
+          ],
+          correctAnswer: 0,
+          explanation: '<textarea> pozwala wpisywać wiele akapitów tekstu, a jego wysokość określamy atrybutem rows.',
+        },
+        {
+          id: 'q-h13-2',
+          question: 'Co musi łączyć kilka okrągłych pól <input type="radio">, aby zaznaczenie jednego automatycznie odznaczało pozostałe?',
+          options: [
+            'Taka sama wartość atrybutu name="..." (np. name="platnosc")',
+            'Taki sam atrybut id="..."',
+            'Taki sam kolor tła w CSS',
+            'Umieszczenie ich w tabeli <table>',
+          ],
+          correctAnswer: 0,
+          explanation: 'Wspólny atrybut name (np. name="plan") grupuje przyciski radiowe tak, że użytkownik może wybrać tylko jedną odpowiedź z grupy.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Próba zapisania domyślnego tekstu w <textarea> za pomocą atrybutu value="..."',
+          whyItHappens: 'W zwykłym <input> używamy value="...", jednak <textarea> działa inaczej.',
+          howToFix: 'Znacznik <textarea> posiada otwarcie i zamknięcie — tekst lub podpowiedź placeholder umieszczamy odpowiednio pomiędzy <textarea>Tekst</textarea> lub w placeholder="...".',
+          badCode: '<textarea value="Domyślna wiadomość" />',
+          goodCode: '<textarea placeholder="Wpisz wiadomość..."></textarea>',
+        },
+      ],
+      practicalTask: {
+        title: 'Dodaj trzecią opcję do listy <select>',
+        brief: 'Dopisz trzeci wiersz <option value="faktura">Pytanie o fakturę</option> i rozwiń listę w podglądzie na żywo.',
+        steps: ['Dodaj nowy <option> wewnątrz <select>', 'Kliknij listę rozwijaną w okienku podglądu'],
+        deliverable: 'Interaktywna lista rozwijana z 3 pozycjami.',
+      },
+      completionCriteria: ['Zastosowanie <select>, <option> oraz <textarea>', 'Zaliczenie quizu'],
+    },
+    {
+      id: 'html-14',
+      moduleId: 2,
+      moduleTitle: 'Podstawy HTML — Tworzenie Pierwszych Stron od Zera',
+      title: 'Natywne komponenty interaktywne HTML5: Akordeony FAQ (<details>, <summary>), <dialog> i <iframe>',
+      slug: 'natywne-komponenty-html5-details-summary-dialog-iframe',
+      durationMinutes: 20,
+      xpReward: 75,
+      order: 13,
+      summary: 'Odkryj potęgę nowoczesnego HTML5 bez pisania ani jednej linijki JavaScriptu: rozwijane pytania i odpowiedzi (<details> oraz <summary>), natywne okienka modalne (<dialog>) oraz bezpieczne osadzanie map i filmów (<iframe>).',
+      objectives: [
+        'Budować rozwijane sekcje FAQ (akordeony) za pomocą samych znaczników <details> i <summary>',
+        'Poznać natywny znacznik okna modalnego <dialog> wprowadzony w nowoczesnym HTML5',
+        'Bezpiecznie osadzać zewnętrzne mapy lub wideo za pomocą <iframe loading="lazy" title="...">',
+      ],
+      prerequisites: ['Lekcja 12: Multimedia na stronie (video, audio, SVG)'],
+      theoryMarkdown: `Wielu początkujących myśli, że aby zrobić na stronie rozwijane pytanie FAQ (tzw. akordeon), trzeba od razu pisać skrypt w JavaScript. Tymczasem nowoczesny **HTML5 potrafi to zrobić sam z siebie**!
+
+**1. Rozwijany akordeon FAQ bez JavaScriptu (\`<details>\` i \`<summary>\`):**
+- **\`<details>\`**: Całe pudełko kryjące dodatkową treść (domyślnie zwinięte). Jeśli dopiszesz do niego słowo \`open\`, będzie domyślnie rozwinięte!
+- **\`<summary>\`**: Widoczny nagłówek z trójkątną strzałką, w który klika użytkownik, aby rozwinąć lub zwinąć odpowiedź.
+
+\`\`\`html
+<details>
+  <summary>Czy potrzebuję wcześniejszego doświadczenia w IT?</summary>
+  <p>Nie! Kurs prowadzi Cię krok po kroku od zupełnych podstaw.</p>
+</details>
+\`\`\`
+
+**2. Natywne okienko wyskakujące (\`<dialog>\`):**
+Znacznik **\`<dialog>\`** to wbudowane w przeglądarkę okno modalne (popup). Posiada automatyczną obsługę klawisza \`Esc\` do zamykania oraz pełne wsparcie dla czytników ekranu.
+
+**3. Osadzanie mapy Google lub filmu z YouTube (\`<iframe>\`):**
+Znacznik **\`<iframe>\`** tworzy „okienko” na Twojej stronie, w którym wyświetla się zawartość zewnętrznego serwisu (np. interaktywna mapa dojazdu Google Maps). Pamiętaj o dwóch dobrych praktykach:
+- Zawsze dodawaj **\`title="Mapa dojazdu do biura"\`** (dla dostępności WCAG),
+- Dodawaj **\`loading="lazy"\`**, aby zewnętrzna ramka nie spowalniała startu Twojej strony!`,
+      codeExamples: [
+        {
+          title: 'Sekcja Najczęściej Zadawanych Pytań (FAQ) zbudowana na <details> i <summary>',
+          language: 'html',
+          code: `<section>
+  <h2>Najczęstsze pytania (FAQ)</h2>
+
+  <details open>
+    <summary>Jak długo trwa nauka HTML5?</summary>
+    <p>Podstawy opanujesz już w pierwszy weekend praktycznych ćwiczeń!</p>
+  </details>
+
+  <details>
+    <summary>Czy moje postępy są zapisywane?</summary>
+    <p>Tak, każde ukończone zadanie dodaje punkty XP do Twojego profilu.</p>
+  </details>
+</section>`,
+          explanation: 'Kliknięcie w dowolny wiersz <summary> natychmiast rozwija lub zwija ukryty pod nim akapit <p> — bez ani jednej linijki JavaScriptu!',
+        },
+      ],
+      stepByStepGuide: [
+        { step: 1, title: 'Otwórz kontener <details>', description: 'Każde rozwijane pytanie umieść w osobnym znaczniku <details>.' },
+        { step: 2, title: 'Dodaj pytanie w <summary>', description: 'Pierwszym elementem wewnątrz <details> musi być <summary>Treść pytania</summary>.' },
+        { step: 3, title: 'Wpisz odpowiedź poniżej', description: 'Pod </summary> dodaj akapit <p> z odpowiedzią, która pojawi się po kliknięciu.' },
+      ],
+      interactiveExercise: {
+        id: 'ex-html-14',
+        title: 'Stwórz rozwijane pytanie FAQ za pomocą <details> i <summary>',
+        instructions: 'W edytorze mamy już jedno pytanie FAQ. Dopisz poniżej drugi blok <details> zawierający nagłówek <summary> oraz akapit <p> z odpowiedzią, a następnie kliknij go w podglądzie na żywo!',
+        task: 'Dodaj w kodzie znacznik <details> zawierający w środku <summary> oraz <p>.',
+        starterCode: {
+          html: '<h2>Pytania i odpowiedzi (FAQ)</h2>\n\n<!-- 👇 DOPISZ PONIŻEJ ROZWIJANY BLOK <details> Z <summary> ORAZ <p> -->\n<!-- Wzór:\n<details>\n  <summary>Jak działa znacznik details?</summary>\n  <p>Po kliknięciu rozwija ukrytą treść bez użycia JavaScriptu!</p>\n</details>\n-->\n',
+          css: 'body { font-family: system-ui, sans-serif; padding: 20px; color: #1e293b; }\ndetails { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; }\nsummary { font-weight: bold; cursor: pointer; color: #312e81; }\ndetails p { margin: 10px 0 0 0; color: #475569; line-height: 1.5; }',
+          js: 'console.log("Interaktywny akordeon HTML5 gotowy!");',
+        },
+        solutionCode: {
+          html: '<h2>Pytania i odpowiedzi (FAQ)</h2>\n\n<details>\n  <summary>Jak działa znacznik details?</summary>\n  <p>Po kliknięciu rozwija ukrytą treść bez użycia JavaScriptu!</p>\n</details>',
+          css: 'body { font-family: system-ui, sans-serif; padding: 20px; color: #1e293b; }\ndetails { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 16px; margin-bottom: 10px; }\nsummary { font-weight: bold; cursor: pointer; color: #312e81; }\ndetails p { margin: 10px 0 0 0; color: #475569; line-height: 1.5; }',
+          js: 'console.log("Interaktywny akordeon HTML5 gotowy!");',
+        },
+        hints: [
+          'Wpisz: <details><summary>Jak działa znacznik details?</summary><p>Po kliknięciu rozwija ukrytą treść!</p></details>',
+          'Kliknij utworzone pytanie w okienku podglądu po prawej stronie, aby zobaczyć jak się rozwija!',
+          'Kliknij „Sprawdź kod”!',
+        ],
+        rules: [
+          { id: 'r1', description: 'Użyto kontenera akordeonu <details>', ruleType: 'html_tag_exists', target: 'details' },
+          { id: 'r2', description: 'Dodano klikalny nagłówek <summary>', ruleType: 'html_tag_exists', target: 'summary' },
+          { id: 'r3', description: 'Dodano treść odpowiedzi w akapicie <p>', ruleType: 'html_tag_exists', target: 'p' },
+        ],
+      },
+      independentTask: {
+        title: 'Spraw, aby pytanie było domyślnie rozwinięte',
+        instructions: 'Dopisz do otwierającego znacznika <details> atrybut open (czyli <details open>) i zobacz efekt w podglądzie.',
+        expectedOutcome: 'Sekcja FAQ wyświetla się od razu rozwinięta po wczytaniu strony.',
+        starterHint: 'Wpisz <details open>.',
+      },
+      quiz: [
+        {
+          id: 'q-h14-1',
+          question: 'Jaka para znaczników HTML5 pozwala stworzyć rozwijany akordeon (np. sekcję FAQ) bez pisania kodu w JavaScript?',
+          options: [
+            '<details> oraz umieszczony w jego wnętrzu <summary>',
+            '<div> oraz <span>',
+            '<table> oraz <tr>',
+            '<head> oraz <meta>',
+          ],
+          correctAnswer: 0,
+          explanation: '<details> tworzy zwijalny kontener, a <summary> stanowi jego widoczny, klikalny tytuł.',
+        },
+        {
+          id: 'q-h14-2',
+          question: 'Dlaczego do ramki <iframe src="..."> zawsze warto dodać atrybut title="..."?',
+          options: [
+            'Aby użytkownicy czytników ekranu wiedzieli, co znajduje się wewnątrz osadzonej ramki (np. "Mapa dojazdu")',
+            'Aby zmienić adres URL strony',
+            'Aby wyłączyć połączenie z internetem',
+            'Atrybut title jest zabroniony na znaczniku iframe',
+          ],
+          correctAnswer: 0,
+          explanation: 'Zgodnie z wytycznymi dostępności WCAG każdy element <iframe> musi posiadać opisowy atrybut title.',
+        },
+      ],
+      commonMistakes: [
+        {
+          mistake: 'Umieszczanie nagłówka pytania poza znacznikiem <details> zamiast w <summary>',
+          whyItHappens: 'Niezrozumienie, że <summary> musi być pierwszym bezpośrednim dzieckiem wewnątrz <details>.',
+          howToFix: 'Zawsze wkładaj <summary>Pytanie</summary> jako pierwszą linijkę zaraz po otwarciu <details>.',
+          badCode: '<summary>Pytanie</summary>\n<details><p>Odpowiedź</p></details>',
+          goodCode: '<details>\n  <summary>Pytanie</summary>\n  <p>Odpowiedź</p>\n</details>',
+        },
+      ],
+      practicalTask: {
+        title: 'Przetestuj rozwijanie i zwijanie w podglądzie',
+        brief: 'Kliknij kilkukrotnie w nagłówek <summary> w prawym oknie podglądu — działa również po naciśnięciu Spacji lub Entera na klawiaturze!',
+        steps: ['Dodaj <details> i <summary>', 'Kliknij w pytanie w podglądzie na żywo'],
+        deliverable: 'W pełni dostępny, natywny akordeon FAQ.',
+      },
+      completionCriteria: ['Stworzenie akordeonu <details> i <summary>', 'Zaliczenie quizu'],
+    },
+  ],
+
   // Module 3 (CSS): 9th lesson — Tailwind CSS & Utility-First Architecture
   3: [
     {

@@ -9,7 +9,7 @@ interface PublicHeaderProps {
 }
 
 export const PublicHeader: React.FC<PublicHeaderProps> = ({ onOpenAuthModal, activeTab }) => {
-  const { isAuthenticated, setActiveTab } = useApp();
+  const { isAuthenticated, setActiveTab, allLessons } = useApp();
 
   const handleLinkClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -31,7 +31,7 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({ onOpenAuthModal, act
 
   const navItems: { tab: PublicTab; label: string }[] = [
     { tab: 'landing', label: 'Strona główna' },
-    { tab: 'knowledge_base', label: 'Baza wiedzy (91 lekcji)' },
+    { tab: 'knowledge_base', label: `Baza wiedzy (${allLessons.length} lekcji)` },
     { tab: 'about', label: 'O Akademii' },
     { tab: 'contact', label: 'Kontakt' },
   ];
