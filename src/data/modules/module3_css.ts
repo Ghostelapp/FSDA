@@ -39,24 +39,33 @@ export const MODULE_3: Module = {
         'Obliczać wagę specyficzności selektorów (inline vs ID vs klasa vs element)',
       ],
       prerequisites: ['Podstawy semantyki HTML'],
-      theoryMarkdown: `W CSS każdy element na stronie jest prostokątnym pudełkiem (**Box Model**).
+      theoryMarkdown: `W CSS każdy element wyświetlany na stronie internetowej jest traktowany przez silnik przeglądarki jak prostokątne pudełko (**Box Model**). Zrozumienie relacji między wymiarami pudełek, kaskadą oraz wagą selektorów eliminuje 90% problemów z rozsypującym się układem strony.
 
-**4 warstwy pudełka:**
-1. **Content**: Właściwa zawartość (tekst, grafika).
-2. **Padding**: Wewnętrzny odstęp między treścią a krawędzią ramki.
-3. **Border**: Obramowanie pudełka.
-4. **Margin**: Zewnętrzny odstęp odsuwający sąsiednie elementy.
+**1. Cztery warstwy modelu pudełkowego (od środka na zewnątrz):**
+1. **Content (Treść):** Właściwy obszar na tekst, grafikę lub dzieci elementu (określany przez \`width\` i \`height\`).
+2. **Padding (Dopełnienie wewnętrzne):** Przezroczysta przestrzeń oddychająca między treścią a krawędzią ramki. Tło elementu (\`background-color\`) rozciąga się również pod paddingiem.
+3. **Border (Obramowanie):** Widoczna lub niewidoczna ramka otaczająca padding i treść.
+4. **Margin (Margines zewnętrzny):** Przezroczysty dystans odpychający sąsiednie elementy od siebie. Uwaga: pionowe marginesy między sąsiadującymi blokami potrafią się ze sobą nakładać (*Margin Collapsing*).
 
-**Problem z domyślnym \`content-box\`:**
-Domyślnie w przeglądarkach szerokość elementu (\`width: 200px\`) dotyczy tylko treści! Dodanie \`padding: 20px\` i \`border: 2px\` powiększa element do 244px, niszcząc układy kolumnowe.
+**2. Dlaczego domyślny \`content-box\` psuje układy i jak naprawia to \`border-box\`?**
+Według pierwotnej specyfikacji CSS ustawienie \`width: 200px\` dotyczy wyłącznie warstwy \`content\`. Jeśli do takiej karty dodasz \`padding: 20px\` (z lewej i prawej) oraz \`border: 2px\`, rzeczywista szerokość elementu na ekranie urośnie do \`244px\`. Dwie takie karty obok siebie o szerokości \`50%\` nie zmieszczą się w jednym wierszu i spadną pod siebie. Dlatego w każdym nowoczesnym projekcie stosujemy globalny reset:
 
-**Rozwiązanie standardowe (CSS Reset):**
 \`\`\`css
 *, *::before, *::after {
   box-sizing: border-box;
 }
 \`\`\`
-Dzięki \`border-box\` wymiary \`padding\` i \`border\` mieszczą się **wewnątrz** zadeklarowanego \`width\`.`,
+
+Dzięki regule \`border-box\` przeglądarka zamyka \`padding\` oraz \`border\` **wewnątrz** zadeklarowanej szerokości \`width\`. Gdy ustawisz \`width: 320px\`, karta ma dokładnie \`320px\`.
+
+**3. Kaskada i specyficzność selektorów (Specificity):**
+Gdy dwie reguły CSS celują w ten sam element, wygrywa reguła o wyższej wadze:
+- **Styl inline (\`style="..."\`)** — waga \`1000\` (unikaj w produkcyjnym kodzie),
+- **Identyfikator (\`#header\`)** — waga \`100\`,
+- **Klasa, pseudoklasa lub atrybut (\`.card\`, \`:hover\`, \`[type="text"]\`)** — waga \`10\`,
+- **Selektor typu lub pseudoelement (\`div\`, \`p\`, \`::before\`)** — waga \`1\`.
+
+Jeżeli dwie reguły mają dokładnie tę samą wagę, decyduje kolejność w pliku — wygrywa reguła zapisana niżej w arkuszu (stąd nazwa **Kaskada**).`,
       codeExamples: [
         {
           title: 'Wzorcowy reset Box Model i karta komponentu',
@@ -166,17 +175,26 @@ Dzięki \`border-box\` wymiary \`padding\` i \`border\` mieszczą się **wewnąt
         'Zrozumieć systemy barw w CSS: HEX (#4f46e5), RGB/RGBA oraz nowoczesny HSL',
       ],
       prerequisites: ['Lekcja 1: Box Model'],
-      theoryMarkdown: `Pisanie skalowalnego CSS zaczyna się od właściwego doboru jednostek i selektorów.
+      theoryMarkdown: `Pisanie łatwego w utrzymaniu CSS zaczyna się od dwóch decyzji architektonicznych: precyzyjnego celowania w elementy bez zbędnego zagnieżdżania oraz wyboru elastycznych jednostek zamiast sztywnych pikseli.
 
-**1. Jednostki w CSS — kiedy używać \`rem\`, a kiedy \`px\`?**
-- **\`rem\` (Root EM):** Względna jednostka powiązana z rozmiarem czcionki elementu \`<html>\` (domyślnie \`1rem = 16px\`). Używaj \`rem\` do **rozmiarów czcionek (\`font-size\`) i odstępów** — jeśli użytkownik niedowidzący powiększy czcionkę w przeglądarce, cała Twoja strona proporcjonalnie się przeskaluje!
-- **\`px\` (Piksele):** Idealne do cienkich obramowań (\`border: 1px solid\`) lub małych zaokrągleń.
-- **\`vw\` / \`vh\` (Viewport Width / Height):** 1% szerokości lub wysokości okna przeglądarki. \`min-height: 100vh\` sprawia, że sekcja zajmuje dokładnie cały ekran.
+**1. Kombinatory — precyzyjne zaznaczanie relacji w drzewie DOM:**
+- **Selektor potomka (\`.card p\`):** Wybiera każdy akapit wewnątrz \`.card\`, niezależnie od głębokości zagnieżdżenia.
+- **Bezpośrednie dziecko (\`.menu > li\`):** Wybiera wyłącznie elementy \`<li>\` leżące bezpośrednio pod \`.menu\`, nie psując zagnieżdżonych podmenu.
+- **Sąsiad bezpośredni (\`h2 + p\`):** Styluje pierwszy akapit występujący zaraz po nagłówku \`<h2>\`.
 
-**2. Niezbędne pseudoklasy interakcji:**
-- **\`:hover\`** — aktywuje się po najechaniu kursorem myszy,
-- **\`:focus-visible\`** — obramowanie przy nawigacji klawiaturą (klawisz Tab),
-- **\`:nth-child(even)\`** — styluje co drugi wiersz tabeli (efekt zebry).`,
+**2. Jednostki w CSS — kiedy używać \`rem\`, \`em\`, \`px\`, a kiedy \`vh/vw\`?**
+- **\`rem\` (Root EM):** Jednostka względna względem rozmiaru czcionki elementu \`<html>\` (standardowo \`1rem = 16px\`). Stosuj \`rem\` do \`font-size\`, \`padding\` i \`gap\`. Jeśli użytkownik z wadą wzroku zmieni domyślny rozmiar tekstu w ustawieniach przeglądarki na \`20px\`, cały interfejs w \`rem\` przeskaluje się proporcjonalnie zgodnie ze standardem dostępności WCAG.
+- **\`em\`:** Odniesienie do rozmiaru czcionki bieżącego elementu lub jego rodzica — świetne np. dla wewnętrznych odstępów przycisku (\`padding: 0.6em 1.2em\`), które rosną razem z tekstem guzika.
+- **\`px\` (Piksele):** Idealne do cienkich linii obramowania (\`border: 1px solid\`) lub precyzyjnych cieni.
+- **\`vw\` / \`vh\` / \`dvh\`:** Procent szerokości lub wysokości okna przeglądarki. Na urządzeniach mobilnych używaj \`min-height: 100dvh\`, aby pasek adresu przeglądarki nie ucinał dolnej części ekranu.
+
+**3. Pseudoklasy interakcji i struktury:**
+- **\`:hover\`** — reakcja po najechaniu kursorem (na urządzeniach dotykowych stosuj ostrożnie),
+- **\`:focus-visible\`** — wyraźna obwódka wyłącznie przy nawigacji klawiaturą (\`Tab\`), bez irytujących ramek po kliknięciu myszką,
+- **\`:nth-child(even)\`** — stylowanie parzystych wierszy tabeli lub kart bez dodawania dodatkowych klas w HTML.
+
+**4. Nowoczesny zapis kolorów — dlaczego profesjonaliści lubią HSL?**
+Format \`hsl(243, 75%, 59%)\` opisuje barwę przez odcień (*Hue* 0–360°), nasycenie (*Saturation*) i jasność (*Lightness*). Aby uzyskać ciemniejszy kolor przycisku po najechaniu myszką, wystarczy obniżyć sam parametr jasności z \`59%\` na \`48%\`, zachowując spójną paletę całej marki.`,
       codeExamples: [
         {
           title: 'Skalowalne rozmiary w rem oraz stany interaktywne przycisku',
@@ -283,16 +301,19 @@ Dzięki \`border-box\` wymiary \`padding\` i \`border\` mieszczą się **wewnąt
         'Tworzyć nowoczesne tła gradientowe linear-gradient() oraz kadrować zdjęcia z object-fit: cover',
       ],
       prerequisites: ['Lekcja 2: Selektory i jednostki'],
-      theoryMarkdown: `Dobra typografia i tło odróżniają amatorską stronę od produktu klasy premium.
+      theoryMarkdown: `Ponad 90% treści w aplikacjach webowych to tekst, etykiety i przyciski. Nawet najdroższe grafiki nie uratują interfejsu, jeśli czcionka jest trudna do przeczytania, wiersze są zbyt szerokie, a kontrast między tekstem a tłem za niski.
 
-**1. Złote zasady czytelnej typografii:**
-- **Interlinia (\`line-height\`):** Dla długiego tekstu akapitowego ustawiaj \`line-height: 1.6\`, a dla dużych nagłówków \`line-height: 1.15\`–\`1.25\`.
-- **Długość linii (\`max-width: 65ch\`):** Ludzkie oko męczy się, gdy linijka tekstu ma więcej niż 65–75 znaków (\`ch\`).
-- **Stos czcionek (\`font-family\`):** Zawsze podawaj czcionki zapasowe, np. \`font-family: 'Inter', system-ui, -apple-system, sans-serif;\`.
+**1. Cztery filary czytelnej typografii w przeglądarce:**
+- **Stos czcionek (\`font-family\`):** Zawsze podawaj listę zapasową (fallback stack), np. \`font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;\`. Jeśli zewnętrzny font z Google Fonts chwilowo się nie wczyta, system użytkownika od razu podstawi estetyczną czcionkę natywną zamiast archaicznego Times New Roman.
+- **Interlinia (\`line-height\`):** Dla zwykłych akapitów ustawiaj bezjednostkową wartość \`1.55\`–\`1.7\`, aby oko łatwo wracało do początku kolejnej linii. Dla dużych nagłówków (\`h1\`, \`h2\`) interlinia powinna być ciaśniejsza (\`1.15\`–\`1.25\`), dzięki czemu tytuł wygląda spójnie i zwarcie.
+- **Optymalna szerokość kolumny (\`max-width: 65ch\`):** Jednostka \`ch\` odpowiada szerokości znaku \`0\` w bieżącym foncie. Gdy akapit ma 140 znaków szerokości na dużym monitorze, czytelnik gubi linijki podczas czytania. Ograniczenie bloku tekstu do \`60ch–70ch\` radykalnie poprawia komfort lektury.
+- **Płynne skalowanie (\`clamp()\`):** Zamiast pisać osobne rozmiary nagłówków dla każdego rozmiaru ekranu, użyj \`font-size: clamp(1.75rem, 3.5vw, 3rem);\`, co automatycznie dopasuje wielkość tekstu między telefonem a desktopem.
 
-**2. Gradienty i obrazy tła:**
-- **\`background: linear-gradient(135deg, #4f46e5, #06b6d4);\`** — tworzy płynne przejście tonalne pod kątem 135 stopni.
-- **\`object-fit: cover;\`** — zapobiega rozciąganiu i deformacji zdjęć \`<img>\`, przycinając je proporcjonalnie jak \`background-size: cover\`.`,
+**2. Nowoczesne tła i wielowarstwowe gradienty:**
+Funkcja \`linear-gradient(135deg, #0f172a 0%, #312e81 100%)\` pozwala tworzyć głębię, podświetlenia kart i czytelne nakładki na zdjęcia bez ładowania dodatkowych plików graficznych PNG czy JPEG. W ten sposób skracasz czas ładowania strony i utrzymujesz idealną ostrość na ekranach Retina/HiDPI.
+
+**3. Bezpieczne kadrowanie zdjęć i miniatury (\`object-fit\`):**
+Gdy zdjęcie użytkownika ma niestandardowe proporcje, nadanie sztywnego \`width: 80px; height: 80px\` spowoduje jego nienaturalne spłaszczenie. Dodanie \`object-fit: cover;\` oraz \`object-position: center;\` sprawia, że obrazek wypełnia wyznaczony kwadrat lub koło, proporcjonalnie przycinając jedynie wystające krawędzie.`,
       codeExamples: [
         {
           title: 'Nowoczesny baner Hero z gradientem i wzorcową typografią',
@@ -399,14 +420,17 @@ Dzięki \`border-box\` wymiary \`padding\` i \`border\` mieszczą się **wewnąt
         'Kontrolować kolejność nakładania się warstw za pomocą właściwości z-index',
       ],
       prerequisites: ['Lekcje 1–3 modułu CSS'],
-      theoryMarkdown: `Czasami musimy wyjąć element ze standardowego przepływu dokumentu i umieścić go w konkretnym punkcie — np. ikonkę powiadomień w prawym górnym rogu dzwoneczka lub okno modalne na środku ekranu.
+      theoryMarkdown: `Domyślnie elementy na stronie układają się kolejno w normalnym przepływie dokumentu (bloki jeden pod drugim, elementy liniowe obok siebie). W nowoczesnych interfejsach często musimy jednak wyjąć pojedynczy komponent z tego przepływu — np. przypiąć górny pasek nawigacji, wyświetlić czerwoną kropkę powiadomień na ikonie albo umieścić okno modalne dokładnie na środku ekranu.
 
-**5 wartości właściwości \`position\`:**
-1. **\`static\` (domyślna):** Normalny przepływ dokumentu. Ignoruje \`top\`, \`right\`, \`bottom\`, \`left\` oraz \`z-index\`.
-2. **\`relative\`:** Element pozostaje na swoim miejscu, ale staje się **punktem odniesienia (kotwicą)** dla swoich dzieci z \`position: absolute\`!
-3. **\`absolute\`:** Całkowicie wyjmuje element z układu i pozycjonuje go względem najbliższego przodka posiadającego \`position: relative\`.
-4. **\`fixed\`:** Przypina element na stałe względem okna przeglądarki (np. pływający przycisk czatu lub tło modala).
-5. **\`sticky\`:** Hybryda — element przewija się normalnie ze stroną, a po dotarciu do górnej krawędzi (\`top: 0\`) przykleja się do ekranu!`,
+**1. Pięć trybów właściwości \`position\` i ich zastosowania:**
+- **\`static\` (domyślna):** Normalny przepływ dokumentu. Element całkowicie ignoruje współrzędne \`top\`, \`right\`, \`bottom\`, \`left\` oraz kolejność \`z-index\`.
+- **\`relative\`:** Element pozostaje dokładnie na swoim miejscu w układzie, ale tworzy **lokalny układ odniesienia** (kotwicę) dla dzieci z \`position: absolute\`. Przesunięcie go przez \`top: 4px\` nie wypycha sąsiednich elementów.
+- **\`absolute\`:** Wyjmuje element z przepływu (przestaje zajmować miejsce w układzie) i ustawia go względem **najbliższego przodka mającego \`position\` inne niż \`static\`**. Jeśli żaden przodek nie ma np. \`relative\`, element przyklei się do krawędzi całego dokumentu!
+- **\`fixed\`:** Przypina element na stałe do okna przeglądarki (*viewport*). Nawet podczas przewijania strony przycisk pomocy, baner cookies lub nakładka modala pozostaje dokładnie w tym samym miejscu.
+- **\`sticky\`:** Inteligentne połączenie \`relative\` i \`fixed\`. Element przewija się razem z treścią, dopóki nie dotknie wyznaczonej krawędzi (np. \`top: 0\`), po czym przykleja się do niej w obrębie swojego rodzica. Uwaga: \`sticky\` przestaje działać, jeśli którykolwiek z przodków ma ustawione \`overflow: hidden\`!
+
+**2. Kontekst warstw (\`z-index\` i *Stacking Context*):**
+Właściwość \`z-index\` decyduje o tym, który element leży wyżej na osi Z (bliżej oka użytkownika), ale działa **wyłącznie** na elementach pozycjonowanych (innych niż \`static\`) oraz bezpośrednich dzieciach kontenerów Flex i Grid. Zamiast wpisywać przypadkowe wartości typu \`z-index: 999999\`, utrzymuj czytelną skalę w projekcie (np. \`10\` dropdowny, \`20\` sticky header, \`40\` szuflada boczna, \`50\` modale, \`60\` powiadomienia toast).`,
       codeExamples: [
         {
           title: 'Plakietka "NOWOŚĆ" w rogu karty produktu (relative + absolute)',
@@ -518,23 +542,30 @@ Dzięki \`border-box\` wymiary \`padding\` i \`border\` mieszczą się **wewnąt
         'Stosować nowoczesną właściwość gap zamiast niewygodnych marginesów',
       ],
       prerequisites: ['Lekcja 1: Box Model'],
-      theoryMarkdown: `Flexbox to jednoosiowy system rozmieszczania elementów w wierszu (\`row\`) lub kolumnie (\`column\`).
+      theoryMarkdown: `**Flexbox (Flexible Box Layout)** to jednoosiowy model układania komponentów, który raz na zawsze rozwiązał odwieczne problemy z równaniem kart, budowaniem pasków nawigacji i centrowaniem treści w pionie.
 
-**Dwie osie Flexbox:**
-1. **Main Axis (Oś główna):** Domyślnie pozioma (od lewej do prawej). Sterujemy nią przez **\`justify-content\`** (\`flex-start\`, \`center\`, \`flex-end\`, \`space-between\`).
-2. **Cross Axis (Oś poprzeczna):** Domyślnie pionowa (od góry do dołu). Sterujemy nią przez **\`align-items\`** (\`stretch\`, \`center\`, \`flex-start\`, \`flex-end\`).
+**1. Relacja Kontener–Dzieci i Dwie Osie Układu:**
+Nadanie właściwości \`display: flex\` kontenerowi nadrzędnemu (*Flex Container*) zamienia jego bezpośrednie dzieci w elastyczne elementy (*Flex Items*):
+- **Main Axis (Oś główna):** Domyślnie biegnie poziomo od lewej do prawej (\`flex-direction: row\`). Za wyrównanie na tej osi odpowiada **\`justify-content\`** (\`flex-start\`, \`center\`, \`flex-end\`, \`space-between\`, \`space-around\`).
+- **Cross Axis (Oś poprzeczna):** Domyślnie biegnie pionowo z góry na dół. Za wyrównanie wzdłuż tej osi odpowiada **\`align-items\`** (\`stretch\`, \`center\`, \`flex-start\`, \`flex-end\`).
 
-**Słynne centrowanie w pionie i poziomie w 3 linijkach:**
+Jeśli zmienisz kierunek układu na kolumnowy (\`flex-direction: column\`), osie zamieniają się miejscami: \`justify-content\` steruje wtedy pionem, a \`align-items\` poziomem!
+
+**2. Centrowanie idealne i brak zbędnych marginesów (\`gap\`):**
 \`\`\`css
-.parent {
+.center-box {
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 16px;
 }
 \`\`\`
+Właściwość \`gap\` wstawia identyczny odstęp wyłącznie *pomiędzy* elementami, eliminując potrzebę czyszczenia marginesu z ostatniego elementu przez \`:last-child\`.
 
-**Właściwość \`gap\`:**
-Zamiast pisać \`.item { margin-right: 16px; }\` i usuwać margines z ostatniego elementu pseudo-klasą \`:last-child\`, po prostu podaj na rodzicu \`gap: 16px;\`.`,
+**3. Kontrola rozciągania i kurczenia dzieci (\`flex: 1\`, \`flex-wrap\`):**
+- **\`flex-wrap: wrap\`:** Pozwala elementom przejść do kolejnej linii, gdy zabraknie miejsca na ekranie telefonu — bez tego elementy potrafią wypchnąć kontener poza szerokość ekranu.
+- **\`flex: 1\`:** Skrót od \`flex-grow: 1; flex-shrink: 1; flex-basis: 0%\` — sprawia, że wybrana sekcja (np. główna część strony między nagłówkiem a stopką albo pole wyszukiwarki w navbarze) zajmuje całą pozostałą wolną przestrzeń.
+- **\`flex-shrink: 0\`:** Niezastąpione przy ikonach i awatarach w wąskich wierszach — zapobiega spłaszczeniu okrągłego zdjęcia, gdy obok pojawi się długi tekst.`,
       codeExamples: [
         {
           title: 'Responsywny pasek nawigacji z Flexbox',
@@ -639,25 +670,28 @@ Zamiast pisać \`.item { margin-right: 16px; }\` i usuwać margines z ostatniego
         'Budować samo-dostosowujące się siatki z funkcją repeat(auto-fit, minmax(250px, 1fr))',
       ],
       prerequisites: ['Lekcja 2: Flexbox'],
-      theoryMarkdown: `CSS Grid to najbardziej zaawansowany system układu w przeglądarkach. Pozwala definiować **zarówno wiersze, jak i kolumny**.
+      theoryMarkdown: `Podczas gdy Flexbox perfekcyjnie sprawdza się w układaniu elementów w jednym kierunku (pasek nawigacji, wiersz przycisków), **CSS Grid** to dwuwymiarowy system siatki pozwalający jednocześnie kontrolować **wiersze oraz kolumny** całego widoku lub galerii kart.
 
-**Kluczowe właściwości:**
-- \`display: grid\` — aktywuje kontekst siatki.
-- \`grid-template-columns: 1fr 1fr 1fr\` — tworzy 3 równe kolumny.
-- \`gap: 24px\` — eleganckie odstępy między wierszami i kolumnami.
+**1. Kiedy wybrać CSS Grid zamiast Flexboxa?**
+Stosuj **Flexbox**, gdy rozmiar elementów ma wynikać z ich własnej treści i potrzebujesz płynnego rozmieszczenia w jednej linii. Wybieraj **CSS Grid**, gdy chcesz narzucić sztywną lub responsywną strukturę kolumn od zewnątrz (np. układ całej strony z panelem bocznym, siatka produktów w sklepie e-commerce, dashboard analityczny z kartami o równej szerokości).
 
-**Jednostka \`fr\` (fraction unit):**
-Reprezentuje ułamek dostępnej przestrzeni w kontenerze siatki. Np. \`1fr 2fr\` dzieli przestrzeń na 3 części: pierwsza kolumna dostanie 33%, druga 66%.
+**2. Jednostka ułamkowa \`fr\` i funkcja \`repeat()\`:**
+- \`display: grid\` włącza silnik siatki na kontenerze rodzica.
+- \`grid-template-columns: 280px 1fr\` tworzy lewy panel boczny o stałej szerokości \`280px\` oraz obszar główny, który automatycznie wypełnia całą resztę ekranu.
+- \`grid-template-columns: 1fr 2fr\` dzieli wolne miejsce w stosunku 1:2 (33.3% i 66.6%), uwzględniając już szerokość odstępów \`gap\`, dzięki czemu nic nigdy nie wyjdzie poza ekran!
 
-**Magiczna responsywna siatka bez Media Queries:**
+**3. Responsywna siatka bez ani jednego \`@media\` query:**
 \`\`\`css
 .gallery {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  gap: 24px;
 }
 \`\`\`
-Przeglądarka sama wstawi tyle kolumn o min. szerokości 280px, ile zmieści się na ekranie! Na telefonie będzie to 1 kolumna, na tablecie 2, na monitorze 4.`,
+To jeden z najbardziej użytecznych wzorców w całym CSS. Mówi przeglądarce: *„Umieść w jednym rzędzie tyle równych kolumn, ile się zmieści, pod warunkiem, że żadna nie będzie węższa niż 280px”*. Na smartfonie siatka sama ułoży 1 kolumnę, na tablecie 2, a na dużym monitorze 4!
+
+**4. Równe wysokości wierszy i \`min-width: 0\`:**
+Wszystkie karty w tym samym rzędzie CSS Grid domyślnie rozciągają się do wysokości najwyższej z nich. Jeśli wewnątrz komórki siatki znajduje się długi blok kodu \`<pre>\`, dodaj na dziecku \`min-width: 0\`, aby nie rozpychało kolumny ponad \`1fr\`.`,
       codeExamples: [
         {
           title: 'Siatka kafelków portfolio z auto-fit',
@@ -766,9 +800,10 @@ Przeglądarka sama wstawi tyle kolumn o min. szerokości 280px, ile zmieści si�
         'Unikać pułapki przeciążania kodu zbędnymi regułami max-width',
       ],
       prerequisites: ['Lekcje 1-3 z modułu CSS'],
-      theoryMarkdown: `Podejście **Mobile-First** oznacza, że domyślny styl w Twoim pliku CSS pisany jest dla najprostszego widoku — małego ekranu smartfona.
+      theoryMarkdown: `Ponad 60% ruchu internetowego pochodzi dzisiaj ze smartfonów. Projektowanie **Mobile-First** nie polega na dopasowaniu desktopowej strony pod koniec pracy — to filozofia, w której najpierw budujesz lekki, czytelny układ na wąski ekran telefonu (360–390 px), a następnie stopniowo wzbogacasz go dla tabletów i monitorów.
 
-Dopiero w miarę jak ekran staje się szerszy, "dokładamy" kolejne reguły za pomocą zapytań o minimalną szerokość (**\`min-width\`**):
+**1. Jak działają zapytania mediów (\`@media (min-width)\`)?**
+W strategii Mobile-First wszystkie bazowe reguły poza blokami \`@media\` dotyczą małych ekranów (układ jednokoluwnowy, \`flex-direction: column\`, mniejsze marginesy). Kolejne progi (*breakpoints*) dokładają rozszerzenia wyłącznie w górę:
 
 \`\`\`css
 /* 1. Domyślnie dla smartfonów (1 kolumna, pionowy układ) */
@@ -795,9 +830,13 @@ Dopiero w miarę jak ekran staje się szerszy, "dokładamy" kolejne reguły za p
 }
 \`\`\`
 
-**Dlaczego to podejście wygrało?**
-1. Na telefonie pobierany i interpretowany jest najprostszy, najlżejszy arkusz stylów.
-2. Zapobiega "nadpisywaniu nadpisań" (tzw. spaghetti CSS), które nagminnie pojawia się przy pisaniu pod desktop z setkami \`@media (max-width)\`.`,
+**2. Dlaczego \`min-width\` wygrywa z \`max-width\`?**
+- Smartfony nie muszą przetwarzać nadpisywanych reguł desktopowych — podstawowy styl od razu jest poprawny.
+- Kod rośnie addytywnie zamiast tworzyć wojny na resetowanie wcześniejszych właściwości (tzw. *spaghetti CSS* przy dziesiątkach \`@media (max-width)\`).
+- Łatwiej utrzymać czytelne marginesy i hierarchię treści, bo projektując najpierw na mały ekran, od razu eliminujesz zbędne ozdobniki.
+
+**3. Obowiązkowy fundament RWD w HTML i grafice:**
+Żadne Media Query nie zadziała poprawnie, jeśli w sekcji \`<head>\` dokumentu HTML zabraknie tagu \`<meta name="viewport" content="width=device-width, initial-scale=1.0" />\`. Pamiętaj też o regule \`img, svg, video { max-width: 100%; height: auto; }\` oraz przyciskach o wysokości co najmniej \`44px\`, aby wygodnie trafić w nie kciukiem na ekranie dotykowym.`,
       codeExamples: [
         {
           title: 'Responsywny układ nawigacji hamburger -> pasek poziomy',
@@ -910,9 +949,11 @@ Dopiero w miarę jak ekran staje się szerszy, "dokładamy" kolejne reguły za p
         'Tworzyć zapętlone animacje ładowania z @keyframes',
       ],
       prerequisites: ['Wszystkie wcześniejsze lekcje modułu CSS'],
-      theoryMarkdown: `Zmienne CSS (**CSS Custom Properties**) pozwalają centralnie zarządzać kolorami, odstępami i promieniami zaokrągleń w całej aplikacji.
+      theoryMarkdown: `Nowoczesny CSS pozwala budować spójne systemy projektowe (Design Systems) oraz płynne mikrointerakcje bez instalowania ciężkich bibliotek animacji czy preprocesorów typu Sass.
 
-**Deklaracja i użycie:**
+**1. Zmienne CSS (Custom Properties) i dynamiczne motywy (Dark Mode):**
+Zmienne zadeklarowane w selektorze \`:root\` są dostępne w całej aplikacji i w przeciwieństwie do zmiennych w Sass żyją w przeglądarce w czasie rzeczywistym — możesz je nawet zmieniać z poziomu JavaScriptu albo przełączać jednym atrybutem:
+
 \`\`\`css
 :root {
   --primary: #4f46e5;
@@ -931,11 +972,13 @@ body {
 }
 \`\`\`
 
-**Płynne przejścia (\`transition\`):**
+Z funkcji \`var(--zmienna, #fallback)\` korzystasz w dowolnym miejscu — podając opcjonalny drugi parametr na wypadek, gdyby zmienna nie była zdefiniowana.
+
+**2. Płynne przejścia (\`transition\`) i wydajność 60 FPS na GPU:**
 \`\`\`css
 .button {
   background-color: var(--primary);
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
 }
 
 .button:hover {
@@ -943,7 +986,10 @@ body {
   background-color: #4338ca;
 }
 \`\`\`
-Animuj tylko właściwości korzystające z akceleracji GPU: **\`transform\`** oraz **\`opacity\`**! Unikaj animowania \`width\`, \`height\` lub \`top/left\`, które wywołują kosztowny reflow/layout w przeglądarce.`,
+Aby animacje nie zacinały się na słabszych telefonach, animuj wyłącznie właściwości obsługiwane bezpośrednio przez warstwę kompozycji GPU: **\`transform\`** (przesunięcie, skala, obrót) oraz **\`opacity\`** (przezroczystość). Unikaj animowania \`width\`, \`height\`, \`margin\` czy \`top/left\`, które zmuszają przeglądarkę do kosztownego przeliczania geometrii całej strony (*Layout Reflow*).
+
+**3. Pętle animacji \`@keyframes\` i dostępność (\`prefers-reduced-motion\`):**
+Dla wskaźników ładowania czy subtelnego pulsowania statusu *Live* używamy reguły \`@keyframes\`. Zadbaj też o użytkowników cierpiących na zaburzenia błędnika — owiń intensywne efekty w \`@media (prefers-reduced-motion: reduce)\`, wyłączając lub wyciszając ruch zgodnie z preferencjami systemu operacyjnego.`,
       codeExamples: [
         {
           title: 'Animacja pulsowania przycisku z @keyframes',

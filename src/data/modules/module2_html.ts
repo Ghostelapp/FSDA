@@ -44,21 +44,22 @@ export const MODULE_2: Module = {
         'Pogrubić ważne słowo za pomocą znacznika <strong>',
       ],
       prerequisites: ['Brak — zaczynamy całkowicie od zera!'],
-      theoryMarkdown: `Witaj na pierwszej lekcji! Każda strona internetowa — od prostego bloga po YouTube czy Allegro — jest zbudowana z prostych klocków zwanych **znacznikami HTML** (po angielsku *tags*).
+      theoryMarkdown: `Witaj na pierwszej lekcji! Każda strona internetowa — od prostego bloga po YouTube czy Allegro — jest zbudowana ze zwykłych instrukcji tekstowych tworzących strukturę dokumentu. Język **HTML (HyperText Markup Language)** nie wymaga zaawansowanej matematyki: składa się z czytelnych klocków zwanych **znacznikami** (po angielsku *tags*).
 
-**1. Jak wygląda znacznik HTML?**
-Znacznik to krótkie słowo zamknięte w nawiasach ostrokątnych \`<\` oraz \`>\`. Pomyśl o nim jak o pudełku, które otwierasz na początku zdania i zamykasz na końcu:
-- **Otwarcie pudełka:** \`<h1>\` (mówi przeglądarce: *„tu zaczyna się duży tytuł”*)
-- **Zamknięcie pudełka (z ukośnikiem \`/\`):** \`</h1>\` (mówi: *„tu kończy się tytuł”*)
+**1. Jak zbudowany jest typowy znacznik HTML?**
+Znacznik to krótkie słowo zamknięte w nawiasach ostrokątnych \`<\` oraz \`>\`. Pomyśl o nim jak o pudełku, które otwierasz przed treścią i zamykasz zaraz za nią:
+- **Znacznik otwierający:** \`<h1>\` — mówi przeglądarce: *„uwaga, tutaj zaczyna się główny tytuł”*.
+- **Zawartość:** \`Mój pierwszy tytuł\` — właściwy tekst, który przeczyta użytkownik na ekranie.
+- **Znacznik zamykający (z ukośnikiem \`/\`):** \`</h1>\` — zamyka pudełko i kończy działanie nagłówka.
 
 \`\`\`html
 <h1>Mój pierwszy tytuł</h1>
 \`\`\`
 
-**2. Trzy najważniejsze znaczniki na start:**
-1. **\`<h1>\` oraz \`<h2>\` (Nagłówki):** \`<h1>\` to największy, główny tytuł strony (jak tytuł na okładce książki). \`<h2>\` to nieco mniejszy podtytuł rozdziału.
-2. **\`<p>\` (Akapit tekstu):** Od angielskiego słowa *paragraph*. Wkładamy do niego zwykłe zdania i opisy.
-3. **\`<strong>\` (Pogrubienie):** Gdy chcesz wyróżnić ważne słowo w zdaniu, otaczasz je znacznikiem \`<strong>ważne słowo</strong>\`.`,
+**2. Hierarchia nagłówków (\`<h1>\` – \`<h6>\`), akapity (\`<p>\`) i pogrubienie (\`<strong>\`):**
+- **Nagłówki \`<h1>\` do \`<h6>\`:** \`<h1>\` to najważniejszy, główny tytuł całej podstrony (niczym tytuł na okładce książki — powinien występować **dokładnie raz** na widoku). \`<h2>\` oznacza tytuły dużych rozdziałów, a \`<h3>\` podpunkty wewnątrz nich. Nigdy nie dobieraj poziomu nagłówka tylko dlatego, że chcesz mieć większą lub mniejszą czcionkę — od wyglądu jest CSS, a nagłówki budują spis treści dla Google i czytników ekranu!
+- **Akapit tekstu (\`<p>\`):** Od angielskiego słowa *paragraph*. Wkładamy do niego kolejne zdania opisu; przeglądarka automatycznie oddziela akapity czytelnym odstępem.
+- **Ważne pogrubienie (\`<strong>\`):** Wyróżnia kluczową myśl w zdaniu. W przeciwieństwie do starego \`<b>\` (które zmieniało tylko wygląd), \`<strong>\` komunikuje także czytnikom ekranu i wyszukiwarkom, że dane słowa niosą istotne znaczenie.`,
       codeExamples: [
         {
           title: 'Prosta wizytówka z tytułem, podtytułem i pogrubieniem',
@@ -159,13 +160,13 @@ Znacznik to krótkie słowo zamknięte w nawiasach ostrokątnych \`<\` oraz \`>\
         'Tworzyć klikalny link za pomocą znacznika <a href="adres">',
       ],
       prerequisites: ['Lekcja 1: Pierwsze znaczniki HTML'],
-      theoryMarkdown: `Na niemal każdej stronie spotkasz wyliczenia (np. listę zalet produktu) oraz linki, w które można kliknąć. W HTML robi się je wyjątkowo łatwo!
+      theoryMarkdown: `Na niemal każdej stronie internetowej spotkasz uporządkowane wyliczenia (np. listę zalet produktu, menu nawigacyjne, kroki rejestracji) oraz klikalne odnośniki pozwalające przeskakiwać między dokumentami. Właśnie hiperłącza dały sieci WWW jej nazwę i siłę.
 
-**1. Dwa rodzaje list — z kropkami (\`<ul>\`) i z numerami (\`<ol>\`):**
-Każda lista składa się z „opakowania” całej listy oraz pojedynczych podpunktów **\`<li>\`** (od ang. *list item*):
-- **\`<ul>\` (Lista z kropkami):** Używamy jej, gdy kolejność nie ma znaczenia (np. lista zakupów: chleb, mleko, masło).
-- **\`<ol>\` (Lista ponumerowana 1, 2, 3...):** Używamy jej, gdy liczy się kolejność kroków (np. przepis kulinarny lub podium zawodów).
-- **\`<li>\` (Podpunkt listy):** Każdy wiersz wewnątrz \`<ul>\` lub \`<ol>\` pakujemy w osobne \`<li>...</li>\`.
+**1. Dwa rodzaje list — punktowana (\`<ul>\`) i numerowana (\`<ol>\`):**
+Każda lista w HTML składa się z kontenera całej listy oraz pojedynczych wierszy **\`<li>\`** (*list item*):
+- **\`<ul>\` (*Unordered List* — lista z kropkami):** Stosujesz ją zawsze wtedy, gdy kolejność elementów nie zmienia sensu (np. składniki na zakupy, cechy pakietu, linki w menu górnym).
+- **\`<ol>\` (*Ordered List* — lista numerowana 1, 2, 3...):** Używasz jej tam, gdzie kolejność jest kluczowa — instrukcja krok po kroku, przepis kulinarny, ranking wyników. Co wygodne, po wstawieniu nowego \`<li>\` w środku listy przeglądarka sama przelicza wszystkie numery!
+- **Zasada poprawności:** Bezpośrednio wewnątrz \`<ul>\` oraz \`<ol>\` wolno umieszczać wyłącznie elementy \`<li>\` — nigdy nie wpisuj tam gołych akapitów ani luźnego tekstu.
 
 \`\`\`html
 <ul>
@@ -174,11 +175,12 @@ Każda lista składa się z „opakowania” całej listy oraz pojedynczych podp
 </ul>
 \`\`\`
 
-**2. Klikalny link (\`<a href="...">\`):**
-Aby stworzyć link, używamy krótkiego znacznika **\`<a>\`**. Musimy mu jednak podać adres strony, do której ma prowadzić — służy do tego dopisek **\`href="adres"\`** wewnątrz otwarcia:
+**2. Klikalny link (\`<a href="...">\` — Anchor):**
+Aby zamienić zwykły tekst lub przycisk w odnośnik prowadzący pod inny adres, otaczasz go znacznikiem **\`<a>\`** z obowiązkowym atrybutem **\`href\`** (*Hypertext Reference*):
 \`\`\`html
 <a href="https://google.pl">Przejdź do Google</a>
-\`\`\``,
+\`\`\`
+Zadbaj o to, aby tekst wewnątrz linku jasno mówił, dokąd prowadzi (np. *„Zobacz cennik pakietów”* zamiast bezkontekstowego *„Kliknij tutaj”*) — ma to ogromne znaczenie zarówno dla pozycjonowania SEO, jak i osób korzystających z czytników ekranu.`,
       codeExamples: [
         {
           title: 'Lista celów nauki oraz klikalny link',
@@ -282,29 +284,22 @@ Aby stworzyć link, używamy krótkiego znacznika **\`<a>\`**. Musimy mu jednak 
         'Opakowywać zdjęcia z podpisem w semantyczną parę <figure> i <figcaption> oraz stosować loading="lazy"',
       ],
       prerequisites: ['Lekcja 4: Odnośniki w praktyce i ścieżki plików'],
-      theoryMarkdown: `Strona internetowa bez zdjęć i ilustracji wyglądałaby jak surowy dokument tekstowy. Zobaczmy, jak profesjonalnie wstawiać grafikę w HTML5!
+      theoryMarkdown: `Strona internetowa bez zdjęć, ikon i ilustracji wyglądałaby jak surowy dokument tekstowy z lat 90. Prawidłowe osadzanie grafiki w HTML5 wpływa nie tylko na estetykę, ale bezpośrednio na szybkość ładowania witryny, jej pozycję w Google Grafika oraz dostępność dla osób niewidomych.
 
-**1. Wstawianie obrazka (\`<img>\`):**
-Znacznik \`<img>\` (od ang. *image*) jest samozamykający — nie ma osobnego \`</img>\`. Wymaga dwóch kluczowych atrybutów:
-- **\`src="adres-zdjecia.jpg"\`** (od *source* — źródło): ścieżka do pliku graficznego lub adres URL.
-- **\`alt="Opis zdjęcia"\`** (tekst alternatywny): dokładny opis słowny tego, co przedstawia zdjęcie. Wyświetli się, gdy plik się nie załaduje, oraz przeczyta go czytnik ekranu osobie niewidomej.
+**1. Wstawianie obrazka (\`<img>\`) i obowiązkowy duet \`src\` + \`alt\`:**
+Znacznik \`<img>\` (*image*) jest samozamykający (nie posiada \`</img>\`) i opiera się na dwóch podstawowych atrybutach:
+- **\`src="sciezka/do/pliku.webp"\` (*Source*):** Wskazuje adres URL z sieci lub ścieżkę lokalną do zdjęcia w Twoim projekcie.
+- **\`alt="Opis zdjęcia"\` (*Alternative Text*):** Krótki, konkretny opis tego, co widać na ilustracji. Wyświetli się na ekranie w razie awarii serwera z obrazkiem, przeczyta go na głos czytnik ekranu osobie niewidomej, a także podpowie wyszukiwarce Google tematykę zdjęcia. Gdy grafika pełni rolę czysto dekoracyjną (np. ozdobna linia), ustaw pusty \`alt=""\`, aby czytnik ekranu pominął ją bez zbędnego hałasu.
 
 \`\`\`html
 <img src="https://picsum.photos/320/180" alt="Drewniane biurko z laptopem" width="320" height="180" loading="lazy" />
 \`\`\`
 
-**2. Podpis pod zdjęciem (\`<figure>\` oraz \`<figcaption>\`):**
-Kiedy chcesz dodać pod zdjęciem lub wykresem elegancki podpis (np. w artykule lub portfolio), otaczasz obrazek znacznikiem **\`<figure>\`**, a sam podpis umieszczasz w **\`<figcaption>\`**:
+**2. Semantyczne zdjęcia z podpisem (\`<figure>\` i \`<figcaption>\`):**
+Gdy publikujesz w artykule wykres, zrzut ekranu z kodu lub fotografię wymagającą podpisu autorskiego, otocz element \`<img>\` kontenerem **\`<figure>\`**, a sam podpis umieść wewnątrz **\`<figcaption>\`**. Dzięki temu przeglądarka traktuje grafikę i podpis jako jedną powiązaną całość.
 
-\`\`\`html
-<figure>
-  <img src="https://picsum.photos/320/180" alt="Widok na Tatry o wschodzie słońca" />
-  <figcaption>Fot. 1. Panorama Tatr Wysokich o poranku.</figcaption>
-</figure>
-\`\`\`
-
-**3. Szybsze wczytywanie strony (\`loading="lazy"\`):**
-Dopisanie atrybutu \`loading="lazy"\` sprawia, że przeglądarka pobiera zdjęcia znajdujące się niżej na stronie dopiero wtedy, gdy użytkownik zacznie do nich przewijać ekran. Dzięki temu strona otwiera się błyskawicznie!`,
+**3. Optymalizacja wydajności: \`width\`, \`height\` i \`loading="lazy"\`:**
+Podawanie atrybutów \`width\` oraz \`height\` rezerwuje miejsce na obrazek jeszcze przed jego pobraniem, eliminując irytujące skakanie tekstu podczas wczytywania strony (tzw. wskaźnik *CLS — Cumulative Layout Shift*). Z kolei dopisanie \`loading="lazy"\` opóźnia pobieranie zdjęć znajdujących się poniżej ekranu startowego aż do momentu, gdy użytkownik przewinie stronę w dół (uwaga: nigdy nie dawaj \`loading="lazy"\` na główne zdjęcie w pierwszej sekcji Hero!).`,
       codeExamples: [
         {
           title: 'Zdjęcie z podpisem <figcaption> oraz szybkim ładowaniem loading="lazy"',
@@ -408,16 +403,16 @@ Dopisanie atrybutu \`loading="lazy"\` sprawia, że przeglądarka pobiera zdjęci
         'Nadawać elementom klasy (class="karta") potrzebne do późniejszego kolorowania w CSS',
       ],
       prerequisites: ['Lekcja 3: Obrazki i tabele'],
-      theoryMarkdown: `Kiedy budujesz stronę (np. sklep internetowy), chcesz pogrupować zdjęcie produktu, jego nazwę i cenę w jedną ładną ramkę. Do tego właśnie służą znaczniki grupujące **\`<div>\`** oraz **\`<span>\`**.
+      theoryMarkdown: `Kiedy projektujesz sklep internetowy, dashboard lub kartę kursu, musisz zgrupować kilka powiązanych elementów — zdjęcie, tytuł, krótki opis i cenę — w jeden wspólny komponent. Gdy brakuje odpowiedniego znacznika semantycznego (takiego jak \`<article>\` czy \`<nav>\`), używamy uniwersalnych kontenerów grupujących **\`<div>\`** oraz **\`<span>\`**.
 
-**1. Duże pudełko \`<div>\` vs mały zakreślacz \`<span>\`:**
-- **\`<div>\` (Pudełko blokowe):** Pomyśl o nim jak o kartonowym pudełku, do którego wkładasz kilka elementów naraz (np. nagłówek \`<h3>\` i akapit \`<p>\`). Każde pudełko \`<div>\` układa się jedno pod drugim, w nowej linii.
-- **\`<span>\` (Zakreślacz w tekście):** Działa wewnątrz pojedynczej linijki tekstu, nie przenosząc niczego do nowego wiersza. Idealny, by pokolorować jedno słowo lub cenę w środku zdania!
+**1. Element blokowy (\`<div>\`) vs element liniowy (\`<span>\`):**
+- **\`<div>\` (*Division* — pudełko blokowe):** Domyślnie rozciąga się na całą dostępną szerokość rodzica i zawsze rozpoczyna nowy wiersz pod poprzednim elementem. Świetnie nadaje się do grupowania całych sekcji UI, rzędów siatki lub wrapperów kart. Pamiętaj jednak o umiarze — nadużywanie zagnieżdżonych divów bez sensu bywa nazywane *„divitis”*; zawsze najpierw sprawdzaj, czy nie istnieje lepszy znacznik semantyczny.
+- **\`<span>\` (kontener liniowy):** Nie łamie linii tekstu i zajmuje tylko tyle miejsca, ile sam fragment wewnątrz. Idealnie sprawdza się do wyróżnienia ceny w zdaniu, plakietki statusu lub pojedynczego słowa wymagającego osobnego koloru w CSS.
 
-**2. Jak nazwać pudełko? Atrybut \`class\` oraz \`id\`:**
-Żeby później w języku CSS pokolorować nasze pudełko, nadajemy mu nazwę:
-- **\`class="nazwa"\` (Klasa — wielokrotnego użytku):** Możesz nadać tę samą klasę np. dziesięciu kartom produktów na stronie (\`<div class="karta">\`).
-- **\`id="unikalna-nazwa"\` (Identyfikator — tylko jeden na stronę):** Działa jak numer PESEL — służy do oznaczenia jednego, konkretnego miejsca na stronie (np. \`id="koszyk"\`).`,
+**2. Atrybuty globalne — etykietowanie przez \`class\`, \`id\` oraz \`data-*\`:**
+- **\`class="product-card"\`:** Etykieta wielokrotnego użytku. Możesz przypisać tę samą klasę stu kartom produktów na liście, a następnie jednym stylem CSS nadać im wszystkim obramowanie i cień (lub połączyć kilka klas rozdzielonych spacją).
+- **\`id="checkout-summary"\`:** Unikalny identyfikator występujący **maksymalnie raz** na całej podstronie. Służy do tworzenia kotwic (\`href="#checkout-summary"\`), wiązania podpisów \`<label for="...">\` z polami formularza oraz szybkiego wyszukiwania w JS.
+- **Atrybuty \`data-*\` (np. \`data-product-id="42"\`):** Pozwalają bezpiecznie przechowywać przy elemencie HTML niestandardowe metadane techniczne, które łatwo odczytasz w JavaScript przez \`element.dataset.productId\`.`,
       codeExamples: [
         {
           title: 'Karta produktu zbudowana z pudełka <div> i wyróżnienia <span>',
@@ -516,14 +511,16 @@ Dopisanie atrybutu \`loading="lazy"\` sprawia, że przeglądarka pobiera zdjęci
         'Uzupełnić widoczną sekcję <body> o główny nagłówek <h1>',
       ],
       prerequisites: ['Lekcja 4: Pudełka div i span'],
-      theoryMarkdown: `W poprzednich lekcjach pisaliśmy od razu nagłówki \`<h1>\` i akapity \`<p>\`. Kiedy jednak tworzysz prawdziwy plik \`index.html\` na komputerze, otaczasz go prostym, standardowym **szkieletem strony**.
+      theoryMarkdown: `W pierwszych ćwiczeniach pisaliśmy od razu nagłówki \`<h1>\` i akapity \`<p>\`, ponieważ wbudowany edytor lekcji dbał o otoczkę strony za nas. Gdy jednak tworzysz prawdziwy plik \`index.html\` na dysku komputera, każdy dokument webowy musi posiadać standardowy **szkielet HTML5**, dzięki któremu przeglądarka poprawnie rozpozna kodowanie polskich znaków, skalowanie na smartfonach i tytuł zakładki.
 
-Dобра wiadomość: **żaden programista nie pisze tego szkieletu z pamięci** — edytory kodu generują go jednym skrótem klawiszowym! Warto jednak rozumieć, z jakich **4 części** się składa:
+**1. Cztery obowiązkowe części pełnego dokumentu HTML5:**
+1. **\`<!DOCTYPE html>\`:** Deklaracja na samej górze pliku (przed pierwszym znacznikiem). Wymusza na przeglądarce nowoczesny *Standards Mode* zamiast archaicznego trybu kompatybilności z lat 90. (*Quirks Mode*).
+2. **\`<html lang="pl">\`:** Główny korzeń całego drzewa DOM. Atrybut \`lang="pl"\` jest kluczowy dla syntezatorów mowy (dzięki niemu lektor nie czyta polskiego tekstu z angielskim akcentem!), automatycznego tłumaczenia strony oraz pozycjonowania w polskim Google.
+3. **\`<head>\` (Niewidoczne metadane dokumentu):** Sekcja techniczna niepokazywana w głównym oknie strony. Trzymamy tu \`<meta charset="UTF-8" />\` (obsługa polskich znaków \`ą, ć, ę, ł, ź, ż\`), \`<meta name="viewport" content="width=device-width, initial-scale=1.0" />\` (fundament responsywności na telefonach), tytuł karty \`<title>\`, opis SEO oraz odwołania do arkuszy stylów \`<link rel="stylesheet" />\`.
+4. **\`<body>\` (Widoczna zawartość strony):** Wszystko, co ma zobaczyć i kliknąć użytkownik — nagłówki, menu, artykuły, obrazki, formularze i stopka — musi znajdować się wewnątrz \`<body>...</body>\`.
 
-1. **\`<!DOCTYPE html>\`**: Krótka informacja na samej górze pliku mówiąca przeglądarce: *„To jest nowoczesna strona HTML5”*.
-2. **\`<html lang="pl">\`**: Główna ramka otaczająca cały plik. Dopisek \`lang="pl"\` oznacza, że strona jest w języku polskim.
-3. **\`<head>\` (Niewidoczna „głowa” z ustawieniami):** Tutaj wpisujemy tytuł wyświetlany na karcie przeglądarki (\`<title>\`) oraz obsługę polskich znaków (\`<meta charset="UTF-8">\`).
-4. **\`<body>\` (Widoczne „ciało” strony):** Wszystko, co wpiszesz wewnątrz \`<body>...</body>\` (nagłówki \`<h1>\`, teksty \`<p>\`, zdjęcia \`<img>\`), wyświetli się na ekranie użytkownika!`,
+**2. Wskazówka z codziennej pracy w VS Code:**
+Żaden programista nie przepisuje szkieletu \`head\` i \`meta\` ręcznie! W nowym pliku \`index.html\` wpisz jeden znak wykrzyknika **\`!\`** i naciśnij \`Tab\` (wbudowany mechanizm *Emmet*), a cały poprawny szablon HTML5 wygeneruje się automatycznie.`,
       codeExamples: [
         {
           title: 'Kompletny plik index.html z podziałem na <head> oraz <body>',
@@ -766,18 +763,19 @@ Dlatego w HTML5 wprowadzono **znaczniki semantyczne** — czyli czytelne kontene
         'Dodawać przycisk zatwierdzający formularz <button type="submit">',
       ],
       prerequisites: ['Lekcja 6: Semantyczny układ strony'],
-      theoryMarkdown: `Kiedy logujesz się na pocztę, wpisujesz hasło lub zamawiasz paczkę, korzystasz z **formularza HTML (\`<form>\`)**. Zobaczmy, z jakich 3 prostych klocków składa się każdy formularz!
+      theoryMarkdown: `Formularze HTML (\`<form>\`) to podstawowy sposób interakcji użytkownika z aplikacją — od logowania i rejestracji, przez wyszukiwarkę produktów i filtry, aż po finalizację zamówienia w sklepie internetowym. Dobrze zaprojektowany formularz jest czytelny, dostępny z klawiatury i sam wyłapuje podstawowe pomyłki zanim wyślesz dane na serwer.
 
-**1. Trzy klocki każdego formularza:**
-1. **\`<form>\` (Ramka formularza):** Otacza wszystkie pola do wypełnienia i przycisk wysyłania.
-2. **\`<label>\` (Podpis nad polem):** Zwykły tekst mówiący użytkownikowi, co ma wpisać w okienku obok (np. *„Podaj swój e-mail:”*).
-3. **\`<input>\` (Okienko do wpisywania):** Pojedynczy znacznik tworzący pole tekstowe. Zmieniając atrybut \`type\`, wybieramy rodzaj pola:
-   - \`<input type="text">\` — zwykłe pole na imię lub nazwisko,
-   - \`<input type="email">\` — pole sprawdzające, czy wpisano znak \`@\` w adresie e-mail,
-   - \`<input type="password">\` — pole na hasło (ukrywa wpisywane znaki pod kropkami \`••••\`).
+**1. Trzy fundamentalne elementy każdego formularza:**
+- **\`<form>\`:** Kontener grupujący pola i przyciski. Pozwala użytkownikowi zatwierdzić cały formularz jednym wciśnięciem klawisza \`Enter\`, a w JavaScript lub React przechwytujemy na nim zdarzenie \`onSubmit\`.
+- **\`<label for="id-pola">\`:** Czytelny podpis opisujący przeznaczenie kontrolki. Połączenie \`for\` w etykiecie z \`id\` pola daje dwie ogromne korzyści: osoba niewidoma słyszy czego dotyczy pole, a kliknięcie w sam napis na telefonie od razu aktywuje okienko do wpisywania! Pamiętaj: szary \`placeholder\` znika po wpisaniu pierwszej litery i nigdy nie zastępuje prawdziwego \`<label>\`.
+- **\`<input>\`:** Uniwersalne pole wejściowe, którego zachowanie zmieniasz atrybutem \`type\`:
+  - \`type="text"\` — imię, nazwisko, miasto,
+  - \`type="email"\` — na smartfonie automatycznie wysuwa klawiaturę ze znakiem \`@\` i weryfikuje poprawność formatu,
+  - \`type="password"\` — maskuje wpisywane znaki hasła,
+  - \`type="number"\` / \`type="date"\` — liczby oraz systemowy kalendarz dat.
 
-**2. Przycisk wysyłania (\`<button type="submit">\`):**
-Na końcu formularza dodajemy przycisk \`<button type="submit">Wyślij</button>\`. Jeśli do pola \`<input>\` dopiszemy słowo **\`required\`** (wymagane), przeglądarka sama przypilnuje, żeby nikt nie wysłał pustego pola!`,
+**2. Przycisk wysyłania (\`<button type="submit">\`) i atrybut \`name\`:**
+Na końcu formularza umieszczamy przycisk z \`type="submit"\` (jeśli przycisk wewnątrz formularza ma jedynie zamykać okienko lub robić coś pobocznego, oznacz go jawnie jako \`type="button"\`, aby niechcący nie wysyłał formularza!). Pamiętaj także o atrybutach \`name="..."\` (identyfikuje pole po stronie serwera) oraz \`required\` (blokuje wysłanie pustego pola w przeglądarce).`,
       codeExamples: [
         {
           title: 'Prosty formularz zapisu na newsletter',
@@ -882,26 +880,23 @@ Na końcu formularza dodajemy przycisk \`<button type="submit">Wyślij</button>\
         'Wiedzieć do czego służy atrybut controls (pasek przycisków Play/Pauza) oraz poster (miniaturka filmu)',
       ],
       prerequisites: ['Lekcja 7: Formularze od podstaw'],
-      theoryMarkdown: `Kiedyś do odtworzenia filmu lub piosenki na stronie trzeba było instalować dodatkowe wtyczki. Dzisiaj przeglądarki mają wbudowany odtwarzacz — wystarczy użyć znacznika **\`<video>\`** lub **\`<audio>\`**!
+      theoryMarkdown: `Współczesne przeglądarki internetowe natywnie obsługują wideo, dźwięk i grafikę wektorową bez instalowania jakichkolwiek zewnętrznych wtyczek typu Flash. Znaczniki \`<video>\`, \`<audio>\` oraz \`<svg>\` zapewniają lekki, dostępny i w pełni responsywny interfejs multimedialny.
 
-**1. Odtwarzacz filmów (\`<video controls>\`):**
-Aby na ekranie pojawił się odtwarzacz z przyciskiem **Play**, paskiem postępu i regulacją głośności, dopisujemy do niego słowo **\`controls\`** (kontrolki sterowania):
-
+**1. Natywny odtwarzacz filmów (\`<video>\`) i jego kluczowe atrybuty:**
 \`\`\`html
-<video src="film.mp4" poster="miniaturka.jpg" controls width="400">
+<video src="film.mp4" poster="miniaturka.jpg" controls width="400" preload="metadata">
   Twoja przeglądarka nie obsługuje wideo.
 </video>
 \`\`\`
+- **\`controls\`:** Wyświetla systemowy panel z przyciskiem Play/Pauza, paskiem przewijania, regulacją głośności i trybem pełnoekranowym. Bez niego film wyglądałby jak statyczny kadr.
+- **\`poster="miniaturka.jpg"\`:** Statyczna okładka widoczna przed uruchomieniem odtwarzania — poprawia estetykę i zapobiega czarnemu prostokątowi podczas ładowania.
+- **\`muted\`, \`loop\`, \`playsinline\`:** Jeśli film pełni wyłącznie rolę cichego tła hero (*ambient video*), dodaj \`autoplay muted loop playsinline\` — przeglądarki blokują autoodtwarzanie z dźwiękiem, a \`playsinline\` zapobiega przymusowemu otwieraniu pełnego ekranu na iPhone'ach.
 
-**Co oznaczają te dopiski?**
-- **\`controls\`**: Wyświetla przyciski Play, Pauza, Głośność i Pełny ekran. Bez tego słówka film wyglądałby jak zwykły nieruchomy obrazek!
-- **\`poster="miniaturka.jpg"\`**: Obrazek okładki wyświetlany zanim użytkownik kliknie Play (tak jak miniaturka na YouTube).
+**2. Odtwarzacz podcastów i muzyki (\`<audio controls>\`):**
+Działa analogicznie do wideo, renderując kompaktowy pasek audio obsługujący formaty MP3, AAC i OGG. Dla maksymalnej kompatybilności możesz zagnieździć w środku kilka źródeł \`<source src="..." type="audio/mpeg" />\`.
 
-**2. Odtwarzacz muzyki lub podcastu (\`<audio controls>\`):**
-Działa dokładnie tak samo jak wideo, ale wyświetla zgrabny pasek do słuchania dźwięku (np. pliku \`.mp3\`):
-\`\`\`html
-<audio src="podcast.mp3" controls></audio>
-\`\`\``,
+**3. Grafika wektorowa SVG (\`<svg>\`):**
+W przeciwieństwie do plików JPEG czy PNG złożonych z pikseli, **SVG (Scalable Vector Graphics)** opisuje ikony i logotypy za pomocą matematycznych krzywych i wektorów. Dzięki temu logo czy ikona koszyka są idealnie ostre na każdym ekranie (nawet przy 400% powiększeniu), ważą ułamek kilobajta, a ich kolor zmieniasz bezpośrednio w CSS za pomocą właściwości \`fill\` lub \`stroke\`.`,
       codeExamples: [
         {
           title: 'Odtwarzacz wideo z miniaturką oraz odtwarzacz podcastu',
@@ -1003,25 +998,22 @@ Działa dokładnie tak samo jak wideo, ale wyświetla zgrabny pasek do słuchani
         'Podsumować wszystkie poznane fundamenty HTML5',
       ],
       prerequisites: ['Lekcja 8: Multimedia na stronie'],
-      theoryMarkdown: `Gratulacje — dotarłeś do ostatniej lekcji modułu HTML! Na koniec poznamy dwie proste sztuczki, które odróżniają amatora od dobrego twórcy stron: **SEO** (widoczność w Google) oraz **Dostępność** (ułatwienia dla osób z niepełnosprawnościami).
+      theoryMarkdown: `Profesjonalna strona internetowa działa świetnie nie tylko dla osoby patrzącej na duży monitor z myszką w ręku, lecz także dla wyszukiwarek (**SEO**), osób obsługujących stronę wyłącznie klawiaturą oraz użytkowników niewidomych korzystających z czytników ekranu (**Dostępność / Accessibility / WCAG**). W większości przypadków te dwa światy idą w parze — kod przyjazny dla czytników ekranu jest automatycznie lepiej rozumiany przez roboty Google.
 
-**1. Jak pomóc wyszukiwarce Google znaleźć Twoją stronę (Podstawy SEO)?**
-Kiedy szukasz czegoś w Google, pod niebieskim tytułem każdej strony widzisz 2 linijki krótkiego opisu zachęcającego do kliknięcia. Ten opis ustawiamy w sekcji \`<head>\` za pomocą znacznika **\`<meta name="description">\`**:
+**1. Fundamenty SEO bezpośrednio w dokumencie HTML:**
+- **\`<title>\` (50–60 znaków):** Najważniejszy tytuł podstrony wyświetlany jako główny niebieski link w wynikach Google i na karcie przeglądarki — każda podstrona powinna mieć unikalny tytuł.
+- **\`<meta name="description" content="...">\` (140–160 znaków):** Zwięzłe streszczenie zachęcające do kliknięcia w wynikach wyszukiwania (zwiększa wskaźnik klikalności *CTR*).
+- **Tagi Open Graph (\`og:title\`, \`og:description\`, \`og:image\`):** Odpowiadają za estetyczną kartę podglądu po wklejeniu linku na LinkedIna, Slacka czy Messenger.
+- **Czysta hierarchia nagłówków (\`h1 -> h2 -> h3\`)** oraz unikanie przeskakiwania poziomów.
 
-\`\`\`html
-<head>
-  <title>Piekarnia Rzemieślnicza Wrocław</title>
-  <meta name="description" content="Świeży chleb na zakwasie pieczony codziennie rano." />
-</head>
-\`\`\`
-
-**2. Jak pomóc osobom niewidomym? Dopisek \`aria-label\`:**
-Osoby niewidome korzystają z programów (czytników ekranu), które czytają stronę na głos. Co się jednak stanie, jeśli na stronie jest przycisk z samym znakiem krzyżyka \`X\` (do zamykania okienka)? Czytnik nie wie, co oznacza sam znaczek!
-Wystarczy wtedy dopisać **\`aria-label="Zamknij okienko"\`**:
+**2. Dostępność cyfrowa (WCAG / A11y) i atrybuty ARIA:**
+- **Natywne elementy interaktywne:** Używaj \`<button>\` do akcji (np. otwórz modal, zapisz) oraz \`<a href>\` do nawigacji — nigdy nie rób przycisków z klikalnego \`<div>\`, bo użytkownik klawiatury (\`Tab\`) nie będzie mógł na niego wejść!
+- **\`aria-label\` dla przycisków ikonowych:** Gdy przycisk zawiera wyłącznie ikonkę lupy, kosza lub krzyżyk \`X\`, czytnik ekranu przeczyta jedynie *„przycisk”*. Dodanie \`aria-label="Zamknij okno"\` nadaje mu czytelną etykietę głosową bez psucia minimalistycznego designu:
 
 \`\`\`html
 <button type="button" aria-label="Zamknij powiadomienie">X</button>
-\`\`\``,
+\`\`\`
+- Pamiętaj też o wyraźnym kontraście kolorów (min. \`4.5:1\` dla zwykłego tekstu) oraz widocznym obramowaniu \`:focus-visible\`.`,
       codeExamples: [
         {
           title: 'Przyjazny dla Google i czytników ekranu fragment strony',

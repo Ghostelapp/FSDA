@@ -36,29 +36,32 @@ export const MODULE_9: Module = {
         'Łączyć dane z powiązanych tabel za pomocą klauzuli INNER JOIN',
       ],
       prerequisites: ['Moduł 8: Backend'],
-      theoryMarkdown: `Dane w relacyjnej bazie (RDBMS), takiej jak **PostgreSQL**, przechowywane są w tabelach składających się z wierszy (rekordów) i kolumn o ściśle określonych typach.
+      theoryMarkdown: `Pamięć RAM i zmienne w programie JavaScript znikają przy każdym restarcie serwera. Aby trwale i bezpiecznie przechowywać dane użytkowników, zamówień i postępów w nauce, wykorzystujemy systemy zarządzania relacyjnymi bazami danych (**RDBMS**), z których najpopularniejszym i najbardziej wszechstronnym standardem produkcyjnym jest **PostgreSQL**.
 
-**Klucze relacji:**
-- **Primary Key (Klucz główny):** Unikalny identyfikator wiersza (np. \`id UUID DEFAULT gen_random_uuid()\`).
-- **Foreign Key (Klucz obcy):** Wskazuje na klucz główny w innej tabeli, tworząc relację (np. \`user_id\` w tabeli \`orders\`).
+**1. Tabele, typy kolumn oraz klucze relacji:**
+Dane w bazie SQL przypominają ściśle pilnowane arkusze: każdy wiersz to pojedynczy rekord, a każda kolumna ma rygorystyczny typ (\`INTEGER\`, \`TEXT\`, \`BOOLEAN\`, \`TIMESTAMPTZ\`). Aby połączyć ze sobą odrębne byty bez duplikowania tych samych informacji w dziesięciu miejscach, stosujemy klucze:
+- **Primary Key (Klucz główny — PK):** Unikalny, niepowtarzalny identyfikator każdego rekordu (np. \`id SERIAL PRIMARY KEY\` lub \`UUID DEFAULT gen_random_uuid()\`).
+- **Foreign Key (Klucz obcy — FK):** Kolumna w tabeli podrzędnej wskazująca dokładnie na klucz główny w tabeli nadrzędnej. Dzięki niemu baza gwarantuje *integralność referencyjną* — nie pozwala przypisać zamówienia do nieistniejącego użytkownika!
 
-**Podstawowe zapytania SQL:**
+**2. Relacja Jeden-do-Wielu (1:N) w praktyce:**
+Jeden kursant może złożyć wiele zamówień, ale pojedyncze zamówienie należy zawsze do jednego kursanta. Klucz obcy \`user_id\` umieszczamy więc po stronie „wielu”, czyli w tabeli \`orders\`.
+
+**3. Podstawowe zapytania \`SELECT\` oraz łączenie tabel klauzulą \`JOIN\`:**
 \`\`\`sql
--- Pobierz wszystkich aktywnych kursantów posortowanych po punktach XP:
-SELECT id, name, xp 
-FROM users 
-WHERE is_active = true 
-ORDER BY xp DESC 
+-- Pobranie TOP 10 aktywnych kursantów według zdobytego doświadczenia:
+SELECT id, name, xp
+FROM users
+WHERE is_active = true
+ORDER BY xp DESC
 LIMIT 10;
-\`\`\`
 
-**Złączenie relacyjne (INNER JOIN):**
-\`\`\`sql
-SELECT users.name, orders.total_amount, orders.created_at
+-- Połączenie danych zamówienia z imieniem właściciela z tabeli users:
+SELECT users.name, orders.amount, orders.status
 FROM orders
 INNER JOIN users ON orders.user_id = users.id
 WHERE orders.status = 'PAID';
-\`\`\``,
+\`\`\`
+Pamiętaj, aby w kodzie produkcyjnym zawsze wymieniać nazwy potrzebnych kolumn zamiast \`SELECT *\` oraz dodawać indeksy na kolumnach używanych w \`WHERE\` i \`JOIN\`.`,
       codeExamples: [
         {
           title: 'Definicja tabeli użytkowników i zamówień w PostgreSQL',
@@ -166,28 +169,20 @@ CREATE TABLE orders (
         'Wykonywać operacje CRUD i złączenia relacji (include / select) za pomocą wygenerowanego klienta Prisma',
       ],
       prerequisites: ['Moduł 9: Lekcja 1 (Podstawy SQL)'],
-      theoryMarkdown: `**Prisma** to nowoczesny Object-Relational Mapper (ORM) dla Node.js i TypeScript. Składa się z trzech filarów:
-1. **Prisma Schema:** Pojedynczy, deklaratywny plik \`schema.prisma\`, w którym opisujesz strukturę bazy i relacje.
-2. **Prisma Migrate:** Narzędzie do automatycznego generowania i uruchamiania skryptów migracji SQL.
-3. **Prisma Client:** W pełni typowany generator zapytań TypeScript z inteligentnym autouzupełnianiem kodu w IDE.
+      theoryMarkdown: `Pisanie surowych zapytań SQL jako zwykłych stringów w JavaScript niesie ryzyko literówek w nazwach kolumn oraz rozjechania się typów TypeScript ze strukturą bazy danych. **Prisma** rozwiązuje ten problem jako nowoczesny ORM (*Object-Relational Mapper*) zaprojektowany od zera pod pełne bezpieczeństwo typów (*Type-Safety*).
 
-**Deklaracja modelu w schema.prisma:**
+**1. Trzy filary ekosystemu Prisma:**
+- **Prisma Schema (\`schema.prisma\`):** Pojedynczy, czytelny plik źródła prawdy, w którym deklarujesz modele (tabele), ich kolumny, wartości domyślne, indeksy (\`@@index\`) oraz relacje (\`@relation\`).
+- **Prisma Migrate:** Mechanizm wersjonowania zmian bazy danych. Gdy dodasz nową kolumnę w schemacie i uruchomisz \`npx prisma migrate dev\`, Prisma automatycznie porówna różnice, wygeneruje i zapisze w repozytorium odpowiedni plik migracji SQL (\`ALTER TABLE...\`), a następnie wykona go na bazie. Na produkcji w CI/CD używamy polecenia \`npx prisma migrate deploy\`.
+- **Prisma Client:** Automatycznie wygenerowany klient z pełnym podpowiadaniem nazw tabel, relacji i typów zwracanych bezpośrednio w edytorze kodu.
+
+**2. Przykład relacji 1:N w \`schema.prisma\`:**
 \`\`\`prisma
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
-}
-
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
   name      String
   xp        Int      @default(0)
-  role      String   @default("student")
   posts     Post[]
   createdAt DateTime @default(now())
 }
@@ -202,22 +197,14 @@ model Post {
 }
 \`\`\`
 
-**Pobieranie powiązanych danych bez pisania JOIN:**
+**3. Pobieranie danych i pułapka wielokrotnych instancji:**
 \`\`\`typescript
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
-
-// Pobierz użytkownika wraz z jego postami:
 const userWithPosts = await prisma.user.findUnique({
   where: { email: 'kursant@academy.dev' },
-  include: {
-    posts: {
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-    },
-  },
+  include: { posts: { orderBy: { createdAt: 'desc' }, take: 5 } },
 });
-\`\`\``,
+\`\`\`
+Zawsze twórz jedną współdzieloną instancję \`PrismaClient\` (wzorzec Singleton w pliku \`db.ts\`), ponieważ każda nowa instancja otwiera osobną pulę połączeń TCP z PostgreSQL i przy dużym ruchu szybko wyczerpie limit połączeń serwera bazy!`,
       codeExamples: [
         {
           title: 'Transakcje w Prisma: Wszystko albo nic (ACID)',
@@ -461,14 +448,15 @@ RETURNING *;`,
         'Świadomie dobierać INNER JOIN vs LEFT JOIN, aby nie gubić rekordów nadrzędnych bez przypisanych relacji',
       ],
       prerequisites: ['Podstawy SQL i relacje 1:N'],
-      theoryMarkdown: `Zamiast pobierać 100 000 zamówień do pamięci Node.js i sumować je w pętli JavaScript, zlecamy to silnikowi PostgreSQL, który wykona agregację w kilka milisekund!
+      theoryMarkdown: `Zamiast pobierać dziesiątki tysięcy wierszy do pamięci Node.js i sumować je w pętli JavaScript, zlecamy obliczenia statystyczne bezpośrednio silnikowi PostgreSQL — baza zoptymalizowana w języku C wykona agregację nawet na milionach rekordów wielokrotnie szybciej, przesyłając przez sieć wyłącznie gotowe podsumowanie.
 
-**1. \`INNER JOIN\` vs \`LEFT JOIN\` — Krytyczna różnica:**
-Wyobraź sobie, że chcesz wyświetlić listę wszystkich kursantów wraz z liczbą ukończonych przez nich projektów:
-- **\`INNER JOIN\`** zwróci **tylko tych** kursantów, którzy mają chociaż jeden projekt. Nowi użytkownicy (z 0 projektów) całkowicie znikną z listy!
-- **\`LEFT JOIN\`** zachowa **wszystkich** kursantów z lewej tabeli (\`users\`), a w przypadku braku dopasowania w prawej tabeli wstawi \`NULL\`.
+**1. \`INNER JOIN\` vs \`LEFT JOIN\` — Dlaczego dobór złączenia jest krytyczny?**
+Wyobraź sobie raport pokazujący wszystkich kursantów wraz z liczbą ukończonych przez nich projektów:
+- **\`INNER JOIN\`** zwraca wyłącznie pary pasujące w obu tabelach. Jeśli świeżo zarejestrowany kursant nie oddał jeszcze żadnego projektu, **całkowicie zniknie z raportu**!
+- **\`LEFT JOIN\`** zachowuje absolutnie **wszystkie rekordy z lewej tabeli (\`users\`)**, a tam, gdzie w prawej tabeli (\`projects\`) brakuje dopasowania, wstawia wartość \`NULL\`.
 
-**2. Grupowanie (\`GROUP BY\`) i funkcja \`COALESCE\`:**
+**2. Funkcje agregujące, \`GROUP BY\` oraz bezpieczne \`COUNT(p.id)\` i \`COALESCE\`:**
+Najczęstszy błąd początkujących przy \`LEFT JOIN\` to użycie \`COUNT(*)\` — ponieważ wiersz użytkownika bez projektów i tak istnieje w wyniku złączenia (z kolumnami projektu jako \`NULL\`), \`COUNT(*)\` policzy go błędnie jako \`1\`! Zawsze zliczaj konkretny klucz obcej tabeli: \`COUNT(p.id)\` (funkcje agregujące ignorują wartości \`NULL\`), a sumę owijaj w \`COALESCE(..., 0)\`, aby zamienić pusty wynik na zero:
 \`\`\`sql
 SELECT
   u.id,
@@ -480,11 +468,10 @@ LEFT JOIN projects p ON p.user_id = u.id
 GROUP BY u.id, u.email
 ORDER BY total_project_xp DESC;
 \`\`\`
-*(Uwaga: \`COUNT(p.id)\` liczy tylko niepuste dopasowania, a \`COALESCE(..., 0)\` zamienia wynik \`NULL\` na eleganckie \`0\`!).*
+Pamiętaj też o regule SQL: każda kolumna wymieniona w \`SELECT\`, która nie znajduje się wewnątrz funkcji agregującej (\`COUNT\`, \`SUM\`, \`AVG\`, \`MIN\`, \`MAX\`), musi trafić do \`GROUP BY\`.
 
 **3. \`WHERE\` vs \`HAVING\`:**
-- **\`WHERE\`** filtruje surowe wiersze **PRZED** wykonaniem \`GROUP BY\`.
-- **\`HAVING\`** filtruje zagregowane grupy **PO** wykonaniu \`GROUP BY\` (np. \`HAVING COUNT(p.id) >= 3\`).`,
+Silnik SQL filtruje pojedyncze rekordy klauzulą **\`WHERE\`** jeszcze **przed** zgrupowaniem danych. Natomiast klauzula **\`HAVING\`** służy do filtrowania gotowych grup **po** wykonaniu \`GROUP BY\` — tylko w \`HAVING\` wolno używać warunków na agregatach, np. \`HAVING COUNT(p.id) >= 3\`.`,
       codeExamples: [
         {
           title: 'Raport przychodów z podziałem na kategorie (WHERE + GROUP BY + HAVING)',

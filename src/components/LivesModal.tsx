@@ -1,8 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { formatCountdown, XP_COST_ONE_HEART, XP_COST_FULL_REFILL, XP_COST_STREAK_FREEZE } from '../utils/gamification';
-import { checkRewardedAdEligibility } from '../utils/adsense';
-import { formatLocalDateKey } from '../utils/pushNotifications';
 import { 
   Heart, 
   Clock, 
@@ -13,8 +11,7 @@ import {
   X, 
   CheckCircle2, 
   ShoppingBag, 
-  BookOpen,
-  PlayCircle
+  BookOpen
 } from 'lucide-react';
 
 // Mini practice questions to earn 1 heart
@@ -54,20 +51,17 @@ const PRACTICE_QUESTIONS = [
 export const LivesModal: React.FC = () => {
   const { 
     currentUser, 
-    isCloudConnected,
     livesInfo, 
     isLivesModalOpen, 
     setIsLivesModalOpen, 
     setIsSubModalOpen,
     earnPracticeLife,
-    earnAdRewardLife,
-    adSenseConfig,
     buyHeart,
     buyRefill,
     buyFreeze
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'practice' | 'adsense' | 'shop'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'practice' | 'shop'>('overview');
   
   // Practice quiz state
   const [currentPracticeIndex, setCurrentPracticeIndex] = useState(0);
@@ -76,66 +70,11 @@ export const LivesModal: React.FC = () => {
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false);
   const [practiceCompleted, setPracticeCompleted] = useState(false);
 
-  // Rewarded AdSense state
-  const [isAdPlaying, setIsAdPlaying] = useState(false);
-  const [adSecondsLeft, setAdSecondsLeft] = useState(10);
-  const [adRewardClaimed, setAdRewardClaimed] = useState(false);
-  const rewardedInsRef = useRef<HTMLModElement | null>(null);
-
-  useEffect(() => {
-    if (!isAdPlaying) return;
-    if (adSecondsLeft <= 0) return;
-    const timer = setInterval(() => {
-      setAdSecondsLeft((prev) => Math.max(0, prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [isAdPlaying, adSecondsLeft]);
-
-  useEffect(() => {
-    if (isAdPlaying && rewardedInsRef.current) {
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch {
-        // Fallback sponsor creative is shown alongside
-      }
-    }
-  }, [isAdPlaying]);
-
   if (!isLivesModalOpen) return null;
 
   const currentLives = currentUser.isPro ? 5 : (livesInfo.currentLives ?? currentUser.lives ?? 5);
   const maxLives = livesInfo.maxLives ?? 5;
   const isFull = currentUser.isPro || currentLives >= maxLives;
-
-  const todayKey = formatLocalDateKey(new Date());
-  const eligibility = checkRewardedAdEligibility({
-    user: currentUser,
-    config: adSenseConfig,
-    todayDateKey: todayKey,
-  });
-  const adEligibility = isCloudConnected
-    ? {
-        ...eligibility,
-        allowed: false,
-        reason: 'Weryfikacja obejrzenia reklamy po stronie serwera nie jest skonfigurowana.',
-      }
-    : eligibility;
-
-  const startRewardedAd = () => {
-    if (!adEligibility.allowed) return;
-    setAdRewardClaimed(false);
-    setAdSecondsLeft(8);
-    setIsAdPlaying(true);
-    setActiveTab('adsense');
-  };
-
-  const handleClaimAdReward = () => {
-    const res = earnAdRewardLife();
-    if (res.success) {
-      setAdRewardClaimed(true);
-      setIsAdPlaying(false);
-    }
-  };
 
   const handlePracticeSubmit = () => {
     if (selectedPracticeOption === null) return;
@@ -262,16 +201,6 @@ export const LivesModal: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('adsense')}
-                className={`flex-1 py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 ${
-                  activeTab === 'adsense' ? 'bg-emerald-600 text-white shadow-sm' : 'text-emerald-400 hover:text-white'
-                }`}
-              >
-                <PlayCircle className="h-3.5 w-3.5 shrink-0" />
-                <span>Reklama (+1 ❤️)</span>
-              </button>
-              <button
-                type="button"
                 onClick={() => setActiveTab('practice')}
                 className={`flex-1 py-1.5 px-2 rounded-lg transition-colors flex items-center justify-center gap-1 ${
                   activeTab === 'practice' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
@@ -349,54 +278,14 @@ export const LivesModal: React.FC = () => {
                 Jak odzyskać serca za darmo:
               </div>
 
-              {/* Way 1: Rewarded Google AdSense Ad */}
-              <div className="p-4 rounded-2xl bg-slate-950 border border-emerald-500/40 flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0 mt-0.5">
-                    <PlayCircle className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-bold text-white">1. Obejrzyj reklamę Google AdSense (+1 ❤️)</h4>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">
-                        {adEligibility.remainingToday}/{adSenseConfig.maxDailyRewardedAds} dziś
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                      Darmowe konta mogą obejrzeć krótką reklamę sponsorowaną Google AdSense, aby natychmiast odebrać +1 serce energii.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={startRewardedAd}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shrink-0 transition-colors cursor-pointer"
-                >
-                  Oglądaj
-                </button>
-              </div>
-
-              {/* Way 2: Time */}
-              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-start gap-3">
-                <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 shrink-0 mt-0.5">
-                  <Clock className="h-5 w-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">2. Czasowa automatyczna regeneracja</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                    Każde serce odnawia się samoczynnie co 15 minut. Możesz w tym czasie czytać teorię, przeglądać kod wzorcowy lub piaskownicę.
-                  </p>
-                </div>
-              </div>
-
-              {/* Way 3: Practice */}
+              {/* Way 1: Practice */}
               <div className="p-4 rounded-2xl bg-slate-950 border border-indigo-500/30 flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shrink-0 mt-0.5">
                     <BookOpen className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">3. Szybka powtórka wiedzy (+1 ❤️)</h4>
+                    <h4 className="text-xs font-bold text-white">1. Szybka powtórka wiedzy (+1 ❤️)</h4>
                     <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
                       Odpowiedz na 3 szybkie pytania teoretyczne. Nie tracisz serc w powtórkach, a zyskujesz serce natychmiast!
                     </p>
@@ -414,16 +303,29 @@ export const LivesModal: React.FC = () => {
                 </button>
               </div>
 
-              {/* Way 4: XP Shop */}
+              {/* Way 2: Time */}
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 shrink-0 mt-0.5">
+                  <Clock className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">2. Czasowa automatyczna regeneracja</h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                    Każde serce odnawia się samoczynnie co 15 minut. Możesz w tym czasie czytać teorię, przeglądać kod wzorcowy lub piaskownicę.
+                  </p>
+                </div>
+              </div>
+
+              {/* Way 3: XP Shop */}
               <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0 mt-0.5">
                     <Zap className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">4. Sklep Programisty (Wymiana XP)</h4>
+                    <h4 className="text-xs font-bold text-white">3. Sklep Programisty (Wymiana XP)</h4>
                     <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                      Wykorzystaj punkty doświadczenia (masz {currentUser.xp} XP), aby natychmiast dokupić serca lub tarczę serii.
+                      Wykorzystaj zdobyte punkty doświadczenia (masz {currentUser.xp} XP), aby natychmiast dokupić serca lub tarczę serii.
                     </p>
                   </div>
                 </div>
@@ -436,15 +338,15 @@ export const LivesModal: React.FC = () => {
                 </button>
               </div>
 
-              {/* Pro Banner Promo */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-600/15 to-indigo-600/15 border border-amber-500/30 flex items-center justify-between gap-3 mt-4">
+              {/* Open Edition / PRO Roadmap Notice */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-indigo-600/15 to-purple-600/10 border border-indigo-500/30 flex items-center justify-between gap-3 mt-4">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-amber-300 text-xs font-bold">
-                    <Crown className="h-4 w-4" />
-                    <span>Nielimitowana nauka bez reklam z PRO</span>
+                  <div className="flex items-center gap-1.5 text-emerald-300 text-xs font-bold">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Edycja Otwarta za 0 zł (PRO wkrótce)</span>
                   </div>
                   <p className="text-[11px] text-slate-300">
-                    Brak limitów serc, 0% reklam Google AdSense, tarcze serii i pełne repozytoria.
+                    Wszystkie moduły i projekty są obecnie w 100% darmowe dzięki Google AdSense. Plan PRO bez reklam pojawi się wkrótce.
                   </p>
                 </div>
                 <button
@@ -453,132 +355,11 @@ export const LivesModal: React.FC = () => {
                     setIsLivesModalOpen(false);
                     setIsSubModalOpen(true);
                   }}
-                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shrink-0 shadow-lg shadow-amber-500/20 transition-all"
+                  className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shrink-0 transition-all"
                 >
-                  Sprawdź PRO
+                  Więcej
                 </button>
               </div>
-            </div>
-          ) : activeTab === 'adsense' ? (
-            /* Rewarded Google AdSense Ad View */
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-                <span className="text-slate-400">Dzienny limit reklam z nagrodą:</span>
-                <span className="font-mono font-bold text-emerald-400">
-                  Pozostało {adEligibility.remainingToday} / {adSenseConfig.maxDailyRewardedAds}
-                </span>
-              </div>
-
-              {adRewardClaimed ? (
-                <div className="p-6 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-center space-y-3">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
-                    <CheckCircle2 className="h-6 w-6" />
-                  </div>
-                  <h3 className="text-base font-bold text-white">Nagroda z reklamy Google AdSense odebrana!</h3>
-                  <p className="text-xs text-slate-300">
-                    Twoje konto otrzymało dodatkowe serce energii (+1 ❤️). Możesz kontynuować naukę!
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('overview')}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer"
-                  >
-                    Wróć do podsumowania
-                  </button>
-                </div>
-              ) : !adEligibility.allowed ? (
-                <div className="p-5 rounded-2xl bg-slate-950 border border-amber-500/30 text-center space-y-3">
-                  <Clock className="h-8 w-8 text-amber-400 mx-auto" />
-                  <h3 className="text-sm font-bold text-white">Reklama z nagrodą chwilowo niedostępna</h3>
-                  <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed">
-                    {adEligibility.reason}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsLivesModalOpen(false);
-                      setIsSubModalOpen(true);
-                    }}
-                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs cursor-pointer"
-                  >
-                    Odblokuj PRO (Nielimitowane serca bez reklam)
-                  </button>
-                </div>
-              ) : isAdPlaying ? (
-                <div className="rounded-2xl border border-emerald-500/40 bg-slate-950 p-4 space-y-4">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400 font-bold">
-                      Reklama Wideo / Display • Google AdSense
-                    </span>
-                    <span className="font-mono text-xs font-bold text-white">
-                      {adSecondsLeft > 0 ? `Nagroda za ${adSecondsLeft}s...` : 'Gotowe do odbioru!'}
-                    </span>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 transition-all duration-700"
-                      style={{ width: `${((8 - adSecondsLeft) / 8) * 100}%` }}
-                    />
-                  </div>
-
-                  {/* Real AdSense slot container + Sponsor Showcase */}
-                  <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-4 space-y-2 text-center">
-                    <ins
-                      ref={rewardedInsRef}
-                      className="adsbygoogle block"
-                      data-ad-client={adSenseConfig.clientId}
-                      data-ad-slot={adSenseConfig.slots.rewarded}
-                      data-ad-format="auto"
-                      data-full-width-responsive="true"
-                    />
-                    <div className="py-2 space-y-1.5">
-                      <span className="inline-block px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-bold">
-                        Sponsor Akademii • Google Cloud & Firebase
-                      </span>
-                      <h4 className="text-sm font-bold text-white">
-                        Hostuj aplikacje React, Node.js i bazy Firestore w chmurze
-                      </h4>
-                      <p className="text-xs text-slate-400 max-w-md mx-auto">
-                        Dziękujemy za wspieranie darmowego planu Full Stack Developer Academy. Po zakończeniu odliczania odbierz darmowe serce!
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={adSecondsLeft > 0}
-                    onClick={handleClaimAdReward}
-                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-black text-xs transition-all cursor-pointer shadow-lg shadow-emerald-900/40"
-                  >
-                    {adSecondsLeft > 0
-                      ? `Oglądanie reklamy (${adSecondsLeft}s)...`
-                      : 'Odbierz nagrodę: +1 Serce ❤️'}
-                  </button>
-                </div>
-              ) : (
-                <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-4">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
-                    <PlayCircle className="h-6 w-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-bold text-white">
-                      Obejrzyj krótką reklamę Google AdSense (8 sekund)
-                    </h3>
-                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                      Użytkownicy planu darmowego mogą odnowić serce oglądając reklamę sponsora. Jeśli masz pełne serca (5/5), otrzymasz bonus +20 XP!
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={startRewardedAd}
-                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition-all cursor-pointer shadow-lg shadow-emerald-900/40"
-                  >
-                    Uruchom reklamę z nagrodą (+1 ❤️)
-                  </button>
-                </div>
-              )}
             </div>
           ) : activeTab === 'practice' ? (
             /* Practice Quiz View */

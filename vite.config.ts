@@ -62,7 +62,7 @@ export default defineConfig(() => {
           navigateFallbackDenylist: [
             /^\/play-store\//,
             /^\/\.well-known\//,
-            /\.(zip|tar|gz|keystore|aab|apk|json|png|jpg|jpeg|webp|ico|svg|html|webmanifest)$/i,
+            /\.(txt|xml|zip|tar|gz|keystore|aab|apk|json|png|jpg|jpeg|webp|ico|svg|html|webmanifest)$/i,
           ],
           runtimeCaching: [
             {

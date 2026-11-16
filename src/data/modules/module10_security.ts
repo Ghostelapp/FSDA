@@ -36,27 +36,25 @@ export const MODULE_10: Module = {
         'Zabezpieczać tokeny przed kradzieżą XSS za pomocą flagi ciasteczka HttpOnly',
       ],
       prerequisites: ['Moduł 8: Backend'],
-      theoryMarkdown: `Bezpieczeństwo kont użytkowników to najważniejsza odpowiedzialność developera.
+      theoryMarkdown: `Bezpieczeństwo kont i tożsamości użytkowników to fundament każdej poważnej aplikacji internetowej. Wbrew pozorom większość wycieków nie wynika z łamania szyfrów matematycznych, lecz z prostych błędów implementacyjnych — np. zapisywania haseł jawnym tekstem lub użycia szybkich skrótów bez soli.
 
-**Haszowanie haseł z bcrypt:**
-Haszowanie to operacja **jednokierunkowa** (nie da się jej "odkodować").
-- Sól (Salt): losowy ciąg bajtów dołączany do każdego hasła, uniemożliwiający użycie tzw. tablic tęczowych (Rainbow Tables).
-- Work Factor (Cost): spowalnia sprawdzanie hasła, zabezpieczając przed atakami typu Brute Force:
+**1. Jednokierunkowe haszowanie haseł: \`bcrypt\` i \`argon2\`:**
+Hasła **nigdy** nie wolno szyfrować (bo szyfr da się odszyfrować po kradzieży klucza) — hasło trzeba **zahaszować jednokierunkowo**. Zwykłe funkcje skrótu jak MD5 czy SHA-256 są zbyt szybkie: nowoczesne karty graficzne sprawdzają miliardy kombinacji na sekundę. Dlatego używamy algorytmów spowolnionych celowo kosztem obliczeniowym (*Work Factor* np. \`12\`) oraz automatyczną **solą (Salt)** — unikalnym losowym ciągiem bajtów sprawiającym, że dwa identyczne hasła dają w bazie zupełnie różne hasze (ochrona przed tablicami tęczowymi):
 \`\`\`typescript
 import bcrypt from 'bcrypt';
 
-// Haszowanie nowego hasła:
+// Podczas rejestracji — nigdy nie zapisuj surowego rawPassword!
 const passwordHash = await bcrypt.hash(rawPassword, 12);
 
-// Porównanie podczas logowania:
+// Podczas logowania — bezpieczne porównanie odporne na ataki czasowe:
 const isMatch = await bcrypt.compare(candidatePassword, passwordHash);
 \`\`\`
 
-**Tokeny JSON Web Token (JWT):**
-Składają się z 3 części rozdzielonych kropkami: \`Header.Payload.Signature\`.
-- **Header:** Algorytm podpisu (np. HS256).
-- **Payload:** Dane tożsamości (np. \`{ userId: "123", role: "student" }\`). **Uwaga: Payload NIE jest szyfrowany!** Każdy może go odczytać na jwt.io. Nie umieszczaj w nim haseł ani numerów kart!
-- **Signature:** Podpis kryptograficzny wygenerowany z użyciem tajnego klucza serwera (\`JWT_SECRET\`). Zapobiega sfałszowaniu tokena.`,
+**2. Budowa i weryfikacja tokenów JSON Web Token (JWT):**
+Token JWT składa się z trzech fragmentów kodowanych w Base64Url i oddzielonych kropkami: \`Header.Payload.Signature\`.
+- **Header:** opisuje algorytm podpisu kryptograficznego (np. \`HS256\`).
+- **Payload:** ładunek z danymi sesji (np. \`{ sub: "usr_123", role: "student", exp: 1730000000 }\`). **Uwaga krytyczna:** Payload **nie jest zaszyfrowany**, a jedynie zakodowany — każdy może go odczytać! Nigdy nie wkładaj tam haseł ani danych poufnych.
+- **Signature (Podpis):** gwarancja integralności wyliczona przy użyciu tajnego klucza serwera (\`JWT_SECRET\`). Jeśli ktokolwiek zmieni choćby jeden znak w Payload (np. \`student\` na \`admin\`), podpis przestanie się zgadzać i \`jwt.verify()\` natychmiast odrzuci token. Tokeny przechowuj wyłącznie w ciasteczkach \`HttpOnly\`, a nie w \`localStorage\`.`,
       codeExamples: [
         {
           title: 'Wzorzec generowania i weryfikacji tokena JWT w Express',
@@ -450,26 +448,24 @@ Dlatego w systemach produkcyjnych:
         'Przeprowadzać audyt bezpieczeństwa zależności zewnętrznych (Supply Chain Security) za pomocą npm audit',
       ],
       prerequisites: ['Walidacja formularzy i nagłówki bezpieczeństwa'],
-      theoryMarkdown: `Boty internetowe nieustannie skanują publiczne formularze rejestracji, logowania i komentarzy. Możemy zatrzymać 99% zautomatyzowanych skryptów za pomocą wielowarstwowej obrony niewidocznej dla prawdziwego użytkownika!
+      theoryMarkdown: `Publiczne formularze rejestracji, logowania, komentarzy i kontaktu są codziennie skanowane przez zautomatyzowane boty. Tradycyjne obrazki CAPTCHA często frustrują prawdziwych ludzi, obniżając konwersję nawet o kilkanaście procent. Znacznie lepsze doświadczenie UX zapewnia wielowarstwowa ochrona działająca w tle.
 
-**1. Pułapka Honeypot ("Słoik miodu" na boty):**
-Dodajemy do formularza dodatkowe pole (np. \`website_url\` lub \`company_fax\`), które ukrywamy wizualnie w CSS (\`opacity: 0; position: absolute; pointer-events: none;\`) i oznaczamy \`tabIndex={-1}\` oraz \`aria-hidden="true"\`.
-- **Człowiek** nie widzi tego pola i zostawia je puste.
-- **Bot spamujący** parsuje kod HTML i automatycznie wpisuje tekst we wszystkie znalezione pola \`<input>\`.
-- Jeśli na serwerze pole \`honeypot\` nie jest puste -> natychmiast odrzucamy żądanie!
+**1. Pułapka Honeypot („Słoik miodu”) i dobre praktyki a11y:**
+Do formularza dokładamy dodatkowe, neutralnie nazwane pole (np. \`website_check\` — nigdy \`phone\` czy \`email\`, bo menedżer haseł użytkownika mógłby je wypełnić z autouzupełniania!). Ukrywamy je wizualnie stylami CSS (\`opacity: 0; position: absolute; pointer-events: none;\`) oraz oznaczamy \`tabIndex={-1}\`, \`autoComplete="off"\` i \`aria-hidden="true"\`. Prawdziwy użytkownik go nie widzi ani nie trafi na nie klawiszem Tab, natomiast bot parsujący HTML wypełni je automatycznie — wtedy serwer cicho odrzuca żądanie.
 
 **2. Heurystyczna weryfikacja czasu (Timing Check):**
-Prawdziwy człowiek potrzebuje przynajmniej **1.5–2 sekund**, aby przeczytać i wypełnić formularz rejestracyjny. Skrypt bota wysyła żądanie \`POST\` w **20 milisekund** od załadowania widoku:
+Przeciętny człowiek potrzebuje co najmniej **1.2–2 sekund**, aby zaznaczyć opcję i wypełnić formularz. Skrypty automatyczne wysyłają \`POST\` w 15–50 milisekund od otwarcia widoku. Porównanie znacznika czasu otwarcia z momentem wysyłki w połączeniu z \`express-rate-limit\` eliminuje masowy spam bez psucia wygody korzystania z aplikacji:
 \`\`\`typescript
-const elapsedMs = Date.now() - formRenderedAtTimestamp;
+const elapsedMs = Date.now() - formOpenedAt;
 if (elapsedMs < 1200) {
-  throw new Error('Podejrzanie szybka wysyłka formularza (Bot detected).');
+  throw new Error('Zbyt szybka wysyłka formularza (Bot detected).');
 }
 \`\`\`
 
-**3. Bezpieczeństwo łańcucha dostaw (Supply Chain Security) i Sekrety:**
-- **Nigdy nie umieszczaj prywatnych kluczy API w zmiennych zaczynających się od \`VITE_\` lub \`NEXT_PUBLIC_\`**, ponieważ bundler wklei je bezpośrednio do pliku JavaScript widocznego dla każdego w DevTools!
-- Regularnie uruchamiaj \`npm audit\`, aby wykrywać znane luki bezpieczeństwa (CVE) w zainstalowanych bibliotekach.`,
+**3. Zarządzanie sekretami i bezpieczeństwo łańcucha dostaw (\`npm audit\`):**
+- **Granica bundlera:** W projektach Vite/React każda zmienna środowiskowa z prefiksem \`VITE_\` zostaje dosłownie wklejona w publiczny plik JavaScript w przeglądarce! Prywatne klucze API (np. Stripe, bazy danych, modele AI) mogą istnieć **wyłącznie po stronie backendu** (\`process.env\`) za endpointami proxy \`/api/*\`.
+- **Nigdy nie commituj pliku \`.env\` do Gita:** Trzymaj jego nazwę w \`.gitignore\`, a w repozytorium udostępniaj wyłącznie bezpieczny szablon \`.env.example\` bez prawdziwych haseł.
+- **Audyt paczek:** Regularnie uruchamiaj \`npm audit --audit-level=high\`, aby wykrywać krytyczne podatności (CVE) w zewnętrznych zależnościach zanim trafią na produkcję.`,
       codeExamples: [
         {
           title: 'Weryfikacja antybotowa używana w naszej Akademii Full Stack',

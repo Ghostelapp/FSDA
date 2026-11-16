@@ -1,9 +1,13 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEFAULT_ADSENSE_CONFIG,
   isValidAdSenseClientId,
   isValidAdSenseSlotId,
+  isPlaceholderAdSenseSlotId,
+  isConfiguredAdUnitSlotId,
   shouldShowAdsForUser,
   checkRewardedAdEligibility,
   generateAdsTxtContent,
@@ -43,10 +47,15 @@ test('isValidAdSenseClientId validates ca-pub-XXXXXXXXXXXXXXXX format', () => {
   assert.equal(isValidAdSenseClientId(''), false);
 });
 
-test('isValidAdSenseSlotId validates numeric slot IDs', () => {
+test('isValidAdSenseSlotId validates numeric slot IDs and placeholder detection separates sample IDs from live units', () => {
   assert.equal(isValidAdSenseSlotId('1092837465'), true);
   assert.equal(isValidAdSenseSlotId('abc1234567'), false);
   assert.equal(isValidAdSenseSlotId('123'), false);
+
+  assert.equal(isPlaceholderAdSenseSlotId('1092837465'), true);
+  assert.equal(isConfiguredAdUnitSlotId('1092837465'), false);
+  assert.equal(isPlaceholderAdSenseSlotId('9823415670'), false);
+  assert.equal(isConfiguredAdUnitSlotId('9823415670'), true);
 });
 
 test('shouldShowAdsForUser shows ads ONLY for authenticated free-tier students', () => {
@@ -133,4 +142,15 @@ test('generateAdsTxtContent formats Google AdSense publisher line properly', () 
     generateAdsTxtContent('ca-pub-7482910384756192'),
     'google.com, pub-7482910384756192, DIRECT, f08c47fec0942fa0'
   );
+});
+
+test('public/ads.txt contains authorized publisher entry and vercel.json does not rewrite it to index.html', () => {
+  const adsTxtPath = path.resolve(import.meta.dirname, '../../public/ads.txt');
+  const adsTxt = fs.readFileSync(adsTxtPath, 'utf8').trim();
+  assert.equal(adsTxt, 'google.com, pub-4030062340198648, DIRECT, f08c47fec0942fa0');
+  assert.equal(adsTxt, generateAdsTxtContent(DEFAULT_ADSENSE_CONFIG.clientId));
+
+  const vercelPath = path.resolve(import.meta.dirname, '../../vercel.json');
+  const vercelRaw = fs.readFileSync(vercelPath, 'utf8');
+  assert.match(vercelRaw, /ads\\\\\.txt/);
 });

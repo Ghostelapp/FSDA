@@ -46,6 +46,30 @@ export function isValidAdSenseSlotId(slotId: string): boolean {
   return /^\d{8,15}$/.test(slotId.trim());
 }
 
+export const PLACEHOLDER_ADSENSE_SLOTS = new Set([
+  '1092837465',
+  '2938475610',
+  '3847561029',
+  '4756102938',
+  '5610293847',
+]);
+
+/**
+ * Returns true if the slot ID is still one of the sample placeholder IDs from .env.example.
+ * When true, manual <ins data-ad-slot> calls are skipped so Google AdSense Auto Ads handle delivery without 400 errors.
+ */
+export function isPlaceholderAdSenseSlotId(slotId: string): boolean {
+  if (!slotId || typeof slotId !== 'string') return true;
+  return PLACEHOLDER_ADSENSE_SLOTS.has(slotId.trim());
+}
+
+/**
+ * Returns true only when a real, non-placeholder Google AdSense Ad Unit ID has been configured.
+ */
+export function isConfiguredAdUnitSlotId(slotId: string): boolean {
+  return isValidAdSenseSlotId(slotId) && !isPlaceholderAdSenseSlotId(slotId);
+}
+
 /**
  * Determines whether Google AdSense ads should be displayed for the given user.
  * Rules:

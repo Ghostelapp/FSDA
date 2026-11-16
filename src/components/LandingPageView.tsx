@@ -473,9 +473,9 @@ const FAQ_ITEMS: FaqItem[] = [
   },
   {
     id: 'faq-4',
-    question: 'Jak działa darmowy dostęp i kiedy warto wybrać Full Stack PRO?',
+    question: 'Czy platforma jest naprawdę w 100% darmowa i jak jest utrzymywana?',
     answer:
-      'Plan Darmowy (0 zł bezterminowo) daje dostęp do wszystkich 15 modułów i 96 lekcji z systemem 5 odnawiających się serc energii — pisanie kodu w ćwiczeniach nigdy ich nie odejmuje. Pakiet Full Stack PRO znosi limity w quizach, wyłącza reklamy oraz odblokowuje egzamin Live Coding, kreator CV ATS i certyfikat.',
+      'Tak. Wszystkie 15 modułów, 96 lekcji, 6 symulatorów, 12 projektów z pełnym kodem, synchronizacja GitHub, Kreator CV ATS oraz certyfikat ukończenia są dostępne za 0 zł. Utrzymujemy serwis dzięki reklamom Google AdSense, a opcjonalny płatny pakiet PRO (bez reklam i z nielimitowanymi sercami) planujemy dodać w kolejnym etapie.',
   },
   {
     id: 'faq-5',
@@ -490,7 +490,7 @@ interface LandingPageViewProps {
 }
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModal }) => {
-  const { isAuthenticated, currentUser, setActiveTab, setIsSubModalOpen, allLessons } = useApp();
+  const { isAuthenticated, currentUser, setActiveTab, allLessons } = useApp();
 
   // Scroll progress bar (GPU scaleX transform) & Back-to-Top visibility
   const [scrollProgress, setScrollProgress] = useState<number>(0);
@@ -603,9 +603,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
       PORTFOLIO_SHOWCASE_PROJECTS[0],
     [selectedProjectId]
   );
-
-  // Pricing billing toggle
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
 
   // Interactive Study Path Calculator & Lead Capture Form state
   const [selectedTrackId, setSelectedTrackId] = useState<CareerTrackId>('fullstack');
@@ -773,7 +770,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               onClick={() => scrollToSection('plany-dostepu')}
               className="hover:text-[#F8FAFC] hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
             >
-              Cennik
+              Darmowy dostęp
             </button>
             <a
               href="/baza-wiedzy"
@@ -2203,72 +2200,56 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
       </section>
 
       {/* =====================================================================
-          6. ACCESS PLANS (Focused Pricing Comparison)
+          6. ACCESS PLANS (100% Free Launch + AdSense, PRO Planned Later)
       ===================================================================== */}
       <section id="plany-dostepu" className="bg-[#090D16] py-20 lg:py-24 border-b border-white/[0.08]">
         <div className="mx-auto max-w-5xl px-4 sm:px-8 space-y-10">
           <RevealBlock className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
             <div className="space-y-2.5">
               <div className="flex items-center gap-2 text-xs font-medium text-[#94A3B8]">
-                <span className="font-semibold text-indigo-400">Przejrzyste Warunki</span>
+                <span className="font-semibold text-emerald-400">100% Edycja Otwarta na Start</span>
                 <span aria-hidden="true">·</span>
-                <span>Zacznij za darmo, rozbuduj kiedy zechcesz</span>
+                <span>Zero ukrytych opłat, finansowanie przez Google AdSense</span>
               </div>
               <h2
                 style={{ textWrap: 'balance' }}
                 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-[#F8FAFC]"
               >
-                Wybierz tryb dopasowany do Twojego tempa.
+                Pełny dostęp za darmo. Opcjonalny plan PRO wkrótce.
               </h2>
             </div>
 
-            <div className="inline-flex items-center gap-1 p-1 rounded-xl border border-white/10 bg-[#0B101B] shrink-0 self-start">
-              <button
-                type="button"
-                onClick={() => setBillingCycle('monthly')}
-                className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
-                  billingCycle === 'monthly'
-                    ? 'bg-white/15 text-[#F8FAFC]'
-                    : 'text-[#94A3B8] hover:text-[#F8FAFC]'
-                }`}
-              >
-                Miesięcznie
-              </button>
-              <button
-                type="button"
-                onClick={() => setBillingCycle('yearly')}
-                className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 ${
-                  billingCycle === 'yearly'
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-[#94A3B8] hover:text-[#F8FAFC]'
-                }`}
-              >
-                Rocznie (2 mies. gratis)
-              </button>
+            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-semibold text-emerald-300 shrink-0 self-start">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+              <span>Bez karty płatniczej</span>
             </div>
           </RevealBlock>
 
           <RevealBlock delayMs={80} className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-            {/* Plan Darmowy */}
-            <div className="rounded-2xl border border-white/10 bg-[#0B101B] p-6 sm:p-8 flex flex-col justify-between space-y-6">
+            {/* Edycja Otwarta — 100% Za Darmo */}
+            <div className="rounded-2xl border border-emerald-500/60 bg-[#0D1526] p-6 sm:p-8 flex flex-col justify-between space-y-6">
               <div className="space-y-4">
-                <div>
-                  <p className="text-xs font-semibold text-[#94A3B8]">Konto Startowe</p>
-                  <h3 className="font-display text-xl font-bold text-[#F8FAFC] mt-1">
-                    Plan Darmowy (Start od Zera)
-                  </h3>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-emerald-400">Dostępny Od Zaraz</p>
+                    <h3 className="font-display text-xl font-bold text-[#F8FAFC] mt-1">
+                      Edycja Otwarta (Pełny Kurs)
+                    </h3>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 whitespace-nowrap shrink-0">
+                    Aktywny
+                  </span>
                 </div>
 
                 <div className="flex items-baseline gap-2">
                   <span className="font-display text-4xl font-extrabold text-[#F8FAFC] tabular-nums">
                     0 zł
                   </span>
-                  <span className="text-xs text-[#94A3B8]">/ bezterminowo</span>
+                  <span className="text-xs text-[#94A3B8]">/ pełny dostęp (z reklamami AdSense)</span>
                 </div>
 
                 <p className="text-sm text-[#CBD5E1] leading-relaxed">
-                  Pełny dostęp do 15 modułów i {allLessons.length} lekcji z systemem 5 odnawiających się serc energii.
-                  Pisanie kodu w edytorze nigdy nie zabiera serc.
+                  Kompletna ścieżka Full Stack bez paywalla: wszystkie lekcje, 6 symulatorów, 12 projektów z pełnym kodem, integracja GitHub oraz narzędzia rekrutacyjne za darmo.
                 </p>
 
                 <ul className="space-y-2.5 pt-3 border-t border-white/[0.08] text-xs sm:text-sm text-[#CBD5E1]">
@@ -2278,15 +2259,69 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>Edytor kodu w przeglądarce z listą kroków na żywo</span>
+                    <span>12 projektów komercyjnych + przesyłanie z GitHuba i 6 symulatorów</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>Synchronizacja postępów między komputerem a telefonem</span>
+                    <span>Symulator Live Coding, Kreator CV ATS, Fiszki SM-2 i Certyfikat</span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>Ligi XP, wyzwania dnia oraz fiszki powtórkowe SM-2</span>
+                    <span>5 odnawiających się serc w quizach (odnowa co 15 min + powtórki)</span>
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                type="button"
+                onClick={handlePrimaryAction}
+                className="w-full py-3.5 px-5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors whitespace-nowrap"
+              >
+                {isAuthenticated ? 'Przejdź do Pulpitu Kursanta' : 'Załóż darmowe konto (0 zł)'}
+              </button>
+            </div>
+
+            {/* Plan PRO — W przygotowaniu */}
+            <div className="rounded-2xl border border-white/10 bg-[#0B101B] p-6 sm:p-8 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-indigo-300">Kolejny Etap Rozwoju</p>
+                    <h3 className="font-display text-xl font-bold text-[#F8FAFC] mt-1">
+                      Full Stack PRO (Bez Reklam)
+                    </h3>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/15 text-[11px] font-semibold text-[#CBD5E1] whitespace-nowrap shrink-0">
+                    Wkrótce
+                  </span>
+                </div>
+
+                <div className="flex items-baseline gap-2">
+                  <span className="font-display text-3xl sm:text-4xl font-extrabold text-[#CBD5E1]">
+                    W przygotowaniu
+                  </span>
+                </div>
+
+                <p className="text-sm text-[#94A3B8] leading-relaxed">
+                  Opcjonalny pakiet dla kursantów, którzy w przyszłości zechcą wesprzeć rozwój platformy i uczyć się bez reklam Google AdSense oraz bez odnawiania serc.
+                </p>
+
+                <ul className="space-y-2.5 pt-3 border-t border-white/[0.08] text-xs sm:text-sm text-[#94A3B8]">
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-indigo-400/80 shrink-0 mt-0.5" />
+                    <span>0% reklam Google AdSense w całym panelu kursanta</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-indigo-400/80 shrink-0 mt-0.5" />
+                    <span>Nielimitowane serca energii podczas quizów i powtórek</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-indigo-400/80 shrink-0 mt-0.5" />
+                    <span>Automatyczna ochrona passy nauki (Auto-Streak Freeze)</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-indigo-400/80 shrink-0 mt-0.5" />
+                    <span>Brak płatności teraz — wszystkie funkcje są już odblokowane za darmo</span>
                   </li>
                 </ul>
               </div>
@@ -2296,76 +2331,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 onClick={handlePrimaryAction}
                 className="w-full py-3.5 px-5 text-sm font-bold text-[#F8FAFC] bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 rounded-xl transition-colors whitespace-nowrap"
               >
-                {isAuthenticated ? 'Przejdź do Pulpitu' : 'Załóż darmowe konto'}
-              </button>
-            </div>
-
-            {/* Plan PRO */}
-            <div className="rounded-2xl border border-indigo-500/70 bg-[#10172A] p-6 sm:p-8 flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold text-indigo-300">Pełna Swoboda Inżynierska</p>
-                    <h3 className="font-display text-xl font-bold text-[#F8FAFC] mt-1">
-                      Full Stack PRO
-                    </h3>
-                  </div>
-                  {billingCycle === 'yearly' && (
-                    <span className="text-xs font-mono font-semibold text-emerald-400 whitespace-nowrap shrink-0">
-                      Oszczędzasz 120 zł / rok
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-baseline gap-2">
-                  <span
-                    key={billingCycle}
-                    className="animate-fsda-card-enter font-display text-4xl font-extrabold text-[#F8FAFC] tabular-nums"
-                  >
-                    {billingCycle === 'yearly' ? '39 zł' : '49 zł'}
-                  </span>
-                  <span className="text-xs text-[#94A3B8]">
-                    / miesiąc {billingCycle === 'yearly' ? '(płatne 468 zł rocznie)' : ''}
-                  </span>
-                </div>
-
-                <p className="text-sm text-[#CBD5E1] leading-relaxed">
-                  Dla osób przygotowujących się intensywnie do pracy w IT — zero limitów serc,
-                  czysty interfejs bez reklam i pełny zestaw narzędzi rekrutacyjnych.
-                </p>
-
-                <ul className="space-y-2.5 pt-3 border-t border-white/[0.08] text-xs sm:text-sm text-[#CBD5E1]">
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
-                    <span>Nielimitowane serca energii podczas quizów i egzaminów</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
-                    <span>Brak reklam sponsorskich w całej Akademii</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
-                    <span>Symulator rozmowy Live Coding oraz Kreator CV ATS</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
-                    <span>Imienny Certyfikat Ukończenia Full Stack Engineer (PL / EN)</span>
-                  </li>
-                </ul>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isAuthenticated) {
-                    onOpenAuthModal();
-                  } else {
-                    setIsSubModalOpen(true);
-                  }
-                }}
-                className="w-full py-3.5 px-5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors whitespace-nowrap"
-              >
-                Wybierz pakiet Full Stack PRO
+                {isAuthenticated ? 'Uczysz się już w Darmowej Edycji' : 'Zacznij teraz w Darmowej Edycji'}
               </button>
             </div>
           </RevealBlock>

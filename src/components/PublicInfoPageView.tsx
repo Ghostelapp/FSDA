@@ -297,10 +297,11 @@ export const PublicInfoPageView: React.FC<PublicInfoPageViewProps> = ({
                 <h2 className="text-lg font-bold text-[#F8FAFC]">2. Dostęp bezpłatny i konta użytkowników</h2>
                 <p>
                   Otwarta Baza Wiedzy zawierająca teorię lekcji i przykłady kodu jest dostępna bez
-                  logowania i bezpłatnie. Założenie bezpłatnego konta kursanta umożliwia dodatkowo
-                  zapis postępów w chmurze, rozwiązywanie quizów z odnawialnym systemem energii oraz
-                  korzystanie z symulatorów. Opcjonalny plan Full Stack PRO znosi limity w quizach i
-                  wyłącza reklamy.
+                  logowania i bezpłatnie. Założenie bezpłatnego konta kursanta umożliwia zapis
+                  postępów w chmurze, korzystanie z edytora kodu, symulatorów, 12 projektów
+                  praktycznych, integracji GitHub oraz uzyskanie certyfikatu — wszystkie te funkcje
+                  są obecnie w 100% bezpłatne dzięki wsparciu reklam Google AdSense. Opcjonalny
+                  pakiet Full Stack PRO bez reklam planowany jest w kolejnym etapie rozwoju.
                 </p>
               </section>
 

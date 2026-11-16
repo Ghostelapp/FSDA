@@ -36,13 +36,13 @@ export const MODULE_7: Module = {
         'Aktualizować stan za pomocą hooka useState bez bezpośredniej mutacji obiektu',
       ],
       prerequisites: ['Moduł 4: JavaScript', 'Moduł 6: TypeScript'],
-      theoryMarkdown: `React opiera się na **komponentach** — niezależnych, reużywalnych klockach interfejsu.
+      theoryMarkdown: `React zmienił sposób budowania interfejsów webowych, wprowadzając **podejście deklaratywne**. Zamiast ręcznie wyszukiwać elementy przez \`document.querySelector\` i modyfikować je przy każdej akcji, opisujesz w komponencie, jak ma wyglądać widok dla konkretnego stanu danych — a React sam dba o wydajną aktualizację drzewa DOM poprzez **Virtual DOM** i proces *Reconciliation*.
 
-**JSX (JavaScript XML):**
-Pozwala pisać strukturę HTML wewnątrz plików JavaScript/TypeScript. Pod spodem kompilator zamienia go na wywołania \`React.createElement()\`.
+**1. Komponenty funkcyjne, JSX i Props:**
+Komponent w React to zwykła funkcja TypeScript zaczynająca się wielką literą, która zwraca strukturę **JSX** (składnię przypominającą HTML, ale kompilowaną do wywołań JavaScript). Parametry przekazywane z komponentu nadrzędnego nazywamy **Props** — są one **tylko do odczytu** (komponent dziecka nie może ich bezpośrednio nadpisywać).
 
-**Zarządzanie stanem (useState):**
-Gdy dane w aplikacji się zmieniają, chcemy aby ekran automatycznie się zaktualizował. Do tego służy hook **\`useState\`**:
+**2. Zarządzanie stanem lokalnym z hookiem \`useState\`:**
+Gdy dane zmieniają się w wyniku kliknięcia użytkownika lub odpowiedzi z serwera, przechowujemy je w stanie komponentu za pomocą \`useState\`. Wywołanie funkcji aktualizującej (settera) planuje ponowne wyrenderowanie komponentu z nową wartością. Jeśli nowy stan zależy od poprzedniego (np. licznik kliknięć), zawsze używaj formy funkcyjnej \`setCount(prev => prev + 1)\`, aby uniknąć błędów przy grupowaniu aktualizacji (*State Batching*):
 \`\`\`tsx
 import { useState } from 'react';
 
@@ -52,21 +52,19 @@ export function Counter() {
   return (
     <div>
       <p>Licznik: {count}</p>
-      <button onClick={() => setCount(prev => prev + 1)}>Zwiększ</button>
+      <button onClick={() => setCount((prev) => prev + 1)}>Zwiększ</button>
     </div>
   );
 }
 \`\`\`
 
-**Święta zasada Reacta: IMMUTABILITY (Niezmienność stanu)**
-Nigdy nie modyfikuj stanu bezpośrednio:
+**3. Święta zasada Reacta — Niezmienność stanu (Immutability):**
+React wykrywa zmianę, porównując referencje obiektów w pamięci (\`Object.is\`). Jeśli zrobisz \`todos.push(newItem)\` i przekażesz tę samą referencję tablicy do \`setTodos(todos)\`, React uzna, że nic się nie zmieniło i **nie odświeży ekranu**! Zawsze twórz nową kopię tablicy lub obiektu:
 \`\`\`tsx
-// BŁĄD KATASTROFALNY (brak re-renderu!):
-todos.push(newTodo);
-setTodos(todos);
-
-// PRAWIDŁOWO (tworzymy nową tablicę operatorem spread ...):
-setTodos(prev => [...prev, newTodo]);
+// Dodanie elementu (nowa tablica):
+setTodos((prev) => [...prev, newTodo]);
+// Aktualizacja pola w obiekcie:
+setUser((prev) => ({ ...prev, xp: prev.xp + 50 }));
 \`\`\``,
       codeExamples: [
         {
@@ -179,26 +177,30 @@ export function StudentCard({ name, initialXp }: StudentCardProps) {
         'Pisać funkcję czyszczącą (cleanup function) zapobiegającą wyciekom pamięci',
       ],
       prerequisites: ['Lekcja 1: Komponenty i useState'],
-      theoryMarkdown: `Komponenty w React powinny być czystymi funkcjami renderującymi. 
+      theoryMarkdown: `Idealny komponent Reacta podczas renderowania powinien być **czystą funkcją**: dla tych samych propsów i tego samego stanu zawsze zwraca identyczny JSX, bez dotykania świata zewnętrznego. Wszystkie operacje wychodzące poza obliczenie widoku — takie jak zapytania sieciowe \`fetch\`, subskrypcje WebSocket, ręczna zmiana \`document.title\`, zapis do \`localStorage\` czy timery \`setInterval\` — nazywamy **efektami ubocznymi (Side Effects)** i zamykamy w hooku **\`useEffect\`**.
 
-Wszystkie operacje dotykające "świata zewnętrznego" (pobieranie danych z API przez fetch, nasłuchiwanie na \`window.addEventListener\`, timery \`setInterval\`) nazywamy **efektami ubocznymi (Side Effects)** i umieszczamy w hooku **\`useEffect\`**.
+**1. Trzy tryby działania tablicy zależności (Dependency Array):**
+Drugi argument \`useEffect\` decyduje o tym, kiedy efekt zostanie uruchomiony ponownie:
+- **Brak tablicy (\`useEffect(fn)\`)** — uruchamia się po **każdym** renderze komponentu. Wywołanie \`setState\` w takim efekcie niemal zawsze prowadzi do nieskończonej pętli renderowania!
+- **Pusta tablica (\`useEffect(fn, [])\`)** — uruchamia się **tylko raz** po pierwszym zamontowaniu komponentu na ekranie (*Mount*). Świetne miejsce na globalne nasłuchiwanie zdarzeń klawiatury lub jednorazową inicjalizację.
+- **Tablica ze zmiennymi (\`useEffect(fn, [courseId])\`)** — uruchamia się przy starcie oraz za każdym razem, gdy zmieni się którakolwiek ze wskazanych wartości (np. użytkownik kliknie inny kurs i trzeba pobrać nowe lekcje).
 
-**3 warianty tablicy zależności (Dependency Array):**
-1. **\`useEffect(fn)\`** (brak tablicy) — wykonuje się po **każdym** renderze (bardzo rzadko używane, niebezpieczne dla fetch!).
-2. **\`useEffect(fn, [])\`** (pusta tablica) — wykonuje się **tylko raz**, gdy komponent pojawia się na ekranie (Mount). Idealne do inicjalizacji danych.
-3. **\`useEffect(fn, [userId])\`** — wykonuje się przy montowaniu oraz **za każdym razem, gdy zmieni się \`userId\`**.
-
-**Funkcja czyszcząca (Cleanup):**
+**2. Funkcja czyszcząca (Cleanup Function) i ochrona przed wyciekami pamięci:**
+Zanim React uruchomi efekt ponownie z nowymi danymi lub gdy komponent zniknie z ekranu (*Unmount*), wywołuje funkcję zwróconą z \`useEffect\`. To tu zatrzymujemy timery, odpinamy \`window.removeEventListener\` oraz anulujemy nieaktualne zapytania sieciowe (\`AbortController\`), aby odpowiedź ze starszego zapytania nie nadpisała nowszej (tzw. *Race Condition*):
 \`\`\`tsx
 useEffect(() => {
-  const timer = setInterval(() => console.log("Tick"), 1000);
+  const controller = new AbortController();
+  const timer = setInterval(() => console.log('Tick'), 1000);
 
-  // Funkcja zwracana wykonuje się przy odmontowaniu komponentu:
   return () => {
-    clearInterval(timer); // Zapobiega wyciekowi pamięci!
+    clearInterval(timer);
+    controller.abort(); // Anuluje trwające żądanie przy opuszczeniu widoku
   };
 }, []);
-\`\`\``,
+\`\`\`
+
+**3. Własne hooki (Custom Hooks):**
+Jeśli tę samą logikę opartą na \`useState\` i \`useEffect\` wykorzystujesz w wielu miejscach (np. \`useDebounce\`, \`useLocalStorage\`), wynieś ją do osobnej funkcji o nazwie zaczynającej się od \`use...\`.`,
       codeExamples: [
         {
           title: 'Wzorzec pobierania danych z API w komponencie React',

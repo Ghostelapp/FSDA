@@ -36,35 +36,32 @@ export const MODULE_6: Module = {
         'Definiować kontrakty danych z interface i opcjonalnymi właściwościami (pole?: string)',
       ],
       prerequisites: ['Moduł 4: JavaScript'],
-      theoryMarkdown: `**TypeScript** to nadzbiór JavaScriptu (superset) z opcjonalnym statycznym typowaniem, stworzony przez firmę Microsoft (pod kierunkiem Andersa Hejlsberga, twórcy języka C#).
+      theoryMarkdown: `**TypeScript** to statycznie typowany nadzbiór JavaScriptu (*superset*) stworzony przez Microsoft. Każdy poprawny plik JavaScript jest też poprawnym kodem TypeScript, ale TypeScript dokłada potężną warstwę analizy statycznej przed uruchomieniem programu. W klasycznym JavaScripcie błąd typu wychodzi na jaw dopiero u klienta w przeglądarce (słynne \`TypeError: Cannot read properties of undefined\`). W TypeScripcie kompilator \`tsc\` i Twój edytor kodu wykrywają literówki, brakujące pola i niezgodne argumenty funkcji jeszcze w trakcie pisania.
 
-W czystym JavaScript błąd typu widzimy dopiero w przeglądarce klienta (np. \`TypeError: Cannot read properties of undefined\`). 
-W TypeScript kompilator ostrzega nas **w ułamku sekundy w edytorze kodu**, zanim aplikacja w ogóle zostanie uruchomiona.
+**1. Typy proste, tablice oraz krotki (Tuples):**
+Podstawowe adnotacje typów zapisujemy po dwukropku: \`string\`, \`number\`, \`boolean\`. Kolekcje oznaczamy jako \`string[]\` lub \`Array<number>\`, natomiast tablicę o stałej długości i konkretnych typach na każdej pozycji nazywamy krotką, np. \`[string, number]\`.
 
-**Definiowanie struktur:**
+**2. Definiowanie kontraktów danych: \`interface\` vs \`type\`:**
+Słowo kluczowe \`interface\` idealnie sprawdza się przy opisywaniu kształtu obiektów, modeli z API i propsów komponentów Reacta, a dodatkowo wspiera deklaratywne rozszerzanie (\`extends\`). Alias typu (\`type\`) jest bardziej elastyczny — oprócz obiektów pozwala tworzyć unie typów (np. \`type Status = 'pending' | 'paid' | 'failed'\`) oraz typy złożone. Modifikator \`?\` oznacza pole opcjonalne, a \`readonly\` blokuje nadpisanie właściwości po utworzeniu obiektu:
 \`\`\`typescript
 interface UserProfile {
   id: string;
   name: string;
   email: string;
-  age?: number; // Właściwość opcjonalna (może być pominięta)
-  readonly createdAt: Date; // Właściwość tylko do odczytu
+  age?: number; // Właściwość opcjonalna (może być undefined)
+  readonly createdAt: Date; // Tylko do odczytu po inicjalizacji
 }
 
 const user: UserProfile = {
   id: 'usr_123',
   name: 'Jan Kowalski',
   email: 'jan@example.com',
-  createdAt: new Date()
+  createdAt: new Date(),
 };
 \`\`\`
 
-**Inferencja typów (Type Inference):**
-TypeScript jest na tyle inteligentny, że w większości przypadków sam domyśla się typu bez potrzeby pisania adnotacji:
-\`\`\`typescript
-let count = 10; // TS automatycznie wie, że to typ 'number'
-count = "tekst"; // BŁĄD KOMPILACJI: Type 'string' is not assignable to type 'number'.
-\`\`\``,
+**3. Inferencja typów (Type Inference) i wymazywanie typów:**
+Nie musisz pisać typów wszędzie ręcznie — TypeScript automatycznie wnioskuje typ z przypisanej wartości (np. \`let count = 10\` od razu ma typ \`number\`). Podczas budowania aplikacji produkcyjnej (\`npm run build\`) wszystkie interfejsy i adnotacje są całkowicie usuwane (*Type Erasure*), więc do przeglądarki trafia czysty, szybki JavaScript bez żadnego narzutu wydajnościowego.`,
       codeExamples: [
         {
           title: 'Typowanie funkcji i parametrów w TypeScript',
@@ -174,24 +171,31 @@ console.log("Cena po rabacie:", finalPrice); // 170`,
         'Typować słowniki klucz-wartość za pomocą Record<string, T>',
       ],
       prerequisites: ['Lekcja 1: Podstawy TypeScript'],
-      theoryMarkdown: `**Generics (Typy uogólnione)** pozwalają pisać komponenty i funkcje, które potrafią pracować z różnymi typami danych, zachowując pełne bezpieczeństwo typów.
+      theoryMarkdown: `**Generics (Typy uogólnione)** to mechanizm pozwalający pisać funkcje, klasy i struktury danych, które działają na wielu różnych typach bez utraty podpowiedzi w edytorze i bez uciekania się do niebezpiecznego typu \`any\`. Zamiast tworzyć osobne funkcje \`getFirstNumber\` i \`getFirstString\`, wprowadzasz parametr typu \`<T>\` działający jak zmienna na poziomie typów — TypeScript podstawia konkretny typ w miejscu wywołania funkcji.
 
-Zamiast pisać osobną funkcję dla każdego typu:
+**1. Funkcje generyczne i ograniczenia (\`extends\`):**
 \`\`\`typescript
 function getFirstItem<T>(items: T[]): T | undefined {
   return items[0];
 }
 
-const num = getFirstItem([10, 20, 30]); // Typ: number
-const str = getFirstItem(['a', 'b', 'c']); // Typ: string
+const num = getFirstItem([10, 20, 30]); // TS wnioskuje: number | undefined
+const str = getFirstItem(['a', 'b']);   // TS wnioskuje: string | undefined
+
+// Ograniczenie generyka: funkcja przyjmie tylko obiekty posiadające pole id
+function findById<T extends { id: string }>(list: T[], id: string): T | undefined {
+  return list.find((item) => item.id === id);
+}
 \`\`\`
 
-**Wbudowane Utility Types (Narzędzia typów):**
-1. **\`Partial<User>\`**: Czyni wszystkie pola obiektu opcjonalnymi (idealne dla endpointów aktualizacji PATCH).
-2. **\`Required<User>\`**: Czyni wszystkie pola obowiązkowymi.
-3. **\`Pick<User, 'id' | 'email'>\`**: Tworzy podtyp zawierający tylko wybrane klucze.
-4. **\`Omit<User, 'passwordHash'>\`**: Usuwa wrażliwe pole z typu.
-5. **\`Record<string, number>\`**: Definiuje mapę klucz -> wartość.`,
+**2. Najważniejsze wbudowane Utility Types (Narzędzia transformacji typów):**
+Zamiast kopiować ten sam interfejs pięć razy dla formularza tworzenia, edycji i widoku publicznego, przekształcasz istniejący typ bazowy (*Single Source of Truth*):
+- **\`Partial<User>\`**: Zamienia wszystkie pola na opcjonalne — niezastąpione przy żądaniach aktualizujących typu \`PATCH /api/users/:id\`.
+- **\`Required<User>\`**: Usuwa znaki zapytania i wymusza podanie każdego pola obiektu.
+- **\`Pick<User, 'id' | 'name'>\`**: Wybiera wyłącznie wskazany podzbiór kluczy z większego interfejsu.
+- **\`Omit<User, 'passwordHash'>\`**: Wyklucza wrażliwe lub generowane przez bazę pola przed wysłaniem obiektu na frontend.
+- **\`Record<string, number>\`**: Tworzy typowany słownik (mapę klucz → wartość), idealny np. do liczników kategorii lub map tłumaczeń.
+- **\`Readonly<Config>\`**: Zabezpiecza obiekt przed przypadkową mutacją w trakcie działania programu.`,
       codeExamples: [
         {
           title: 'Generyczna odpowiedź API (ApiResponse<T>)',
@@ -617,33 +621,32 @@ function throwFatalError(message: string): never {
         'Typować funkcje async/await za pomocą generycznego typu Promise<T>',
       ],
       prerequisites: ['Moduł 4: DOM i Async JS', 'Generics w TypeScript'],
-      theoryMarkdown: `Kiedy pobierasz element ze strony przez \`document.querySelector('.pole')\`, TypeScript widzi go domyślnie jako ogólny \`Element | null\`. Ogólny \`Element\` nie posiada właściwości \`.value\`!
+      theoryMarkdown: `Kiedy pobierasz element ze strony przez \`document.querySelector('.pole')\`, TypeScript widzi go domyślnie jako ogólny \`Element | null\`. Ogólny interfejs \`Element\` posiada właściwości takie jak \`classList\` czy \`id\`, ale **nie posiada właściwości \`.value\` ani \`.disabled\`** — bo skąd kompilator miałby wiedzieć, że selektor wskazuje akurat na \`<input>\`, a nie na zwykły \`<div>\`?
 
-**1. Typowanie elementów DOM:**
-Używamy parametru generycznego w \`querySelector<T>\` oraz sprawdzamy, czy element istnieje:
+**1. Precyzyjne typowanie elementów DOM i obsługa \`null\`:**
+Wykorzystujemy parametr generyczny w \`querySelector<HTMLInputElement>\` oraz bezpieczne zawężenie (\`if (emailInput)\`), zamiast używać ryzykownego wykrzyknika \`!\`, który może doprowadzić do awarii po zmianie struktury HTML:
 \`\`\`typescript
 const emailInput = document.querySelector<HTMLInputElement>('#email-input');
 const submitBtn = document.querySelector<HTMLButtonElement>('#submit-btn');
 
 if (emailInput && submitBtn) {
-  // Tutaj TS wie, że emailInput to HTMLInputElement i ma pole .value!
-  console.log(emailInput.value);
-  submitBtn.disabled = true;
+  console.log(emailInput.value.trim());
+  submitBtn.disabled = false;
 }
 \`\`\`
 
-**2. Typowanie zdarzeń (Events): \`currentTarget\` vs \`target\`:**
-W obsłudze zdarzeń zawsze preferuj \`e.currentTarget\` (element, do którego przypięto listener), ponieważ TypeScript zna jego dokładny typ:
+**2. Typowanie zdarzeń: \`e.currentTarget\` vs \`e.target\`:**
+W obsłudze zdarzeń DOM property \`e.target\` wskazuje element, w który fizycznie kliknięto (np. ikonę \`<span>\` wewnątrz przycisku), więc ma bardzo ogólny typ \`EventTarget | null\`. Natomiast \`e.currentTarget\` zawsze oznacza element, do którego podpięto nasłuchiwacz (\`addEventListener\`):
 \`\`\`typescript
 emailInput?.addEventListener('input', (e: Event) => {
   if (e.currentTarget instanceof HTMLInputElement) {
-    console.log('Wpisano:', e.currentTarget.value);
+    console.log('Aktualna wartość pola:', e.currentTarget.value);
   }
 });
 \`\`\`
 
-**3. Asynchroniczność i \`Promise<T>\`:**
-Każda funkcja oznaczona słowem \`async\` **zawsze** zwraca \`Promise<T>\`:
+**3. Asynchroniczność i generyczny \`Promise<T>\`:**
+Każda funkcja oznaczona słowem \`async\` zawsze zwraca obietnicę \`Promise<T>\`. W połączeniu z \`fetch()\` pamiętaj, że \`res.json()\` zwraca w TypeScripcie typ \`Promise<any>\`, dlatego wynik warto przypisać do konkretnego typu lub zweryfikować strażnikiem typów / biblioteką Zod przed zwróceniem go do komponentów:
 \`\`\`typescript
 interface Course {
   id: string;

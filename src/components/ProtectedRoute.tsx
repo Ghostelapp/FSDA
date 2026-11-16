@@ -92,7 +92,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             <p className="text-xs sm:text-base text-slate-300 leading-relaxed max-w-xl">
               {fallbackMessage ||
                 (isStudentAuthGate
-                  ? 'Dostęp do 15 modułów kursu, 91 interaktywnych lekcji, edytora kodu oraz projektów jest dostępny wyłącznie dla zalogowanych użytkowników. Zaloguj się kontem Google lub utwórz darmowe konto e-mail.'
+                  ? 'Dostęp do 15 modułów kursu, 96 interaktywnych lekcji, edytora kodu oraz projektów jest dostępny wyłącznie dla zalogowanych użytkowników. Zaloguj się kontem Google lub utwórz darmowe konto e-mail.'
                   : access.message)}
             </p>
           </div>

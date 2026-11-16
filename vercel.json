@@ -10,11 +10,24 @@
       "destination": "/index.html"
     },
     {
-      "source": "/((?!api/|assets/|manifest\\.json|sw\\.js|robots\\.txt|sitemap\\.xml|favicon).*)",
+      "source": "/((?!api/|assets/|\\.well-known/|play-store/|ads\\.txt|robots\\.txt|sitemap\\.xml|privacy-policy\\.html|twa-manifest\\.json|manifest\\.json|manifest\\.webmanifest|sw\\.js|sw-notifications\\.js|workbox-|favicon|icon\\.svg|apple-touch-icon|pwa-).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/ads.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [

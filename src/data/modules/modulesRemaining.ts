@@ -37,29 +37,36 @@ export const MODULES_11_TO_15: Module[] = [
           'Obsługiwać błędy sieciowe w całej aplikacji za pomocą Error Boundaries i toastów',
         ],
         prerequisites: ['Moduł 7: React', 'Moduł 8: Backend Express'],
-        theoryMarkdown: `Aplikacja Full Stack to nie dwa odrębne światy, lecz harmonijnie współpracujący system.
+        theoryMarkdown: `Aplikacja Full Stack to nie dwa odrębne światy wrzucone do jednego repozytorium, lecz spójny system komunikujący się przez ściśle zdefiniowany kontrakt danych. Gdy frontend Reacta i backend Node.js współdzielą definicje typów, cała warstwa integracji staje się przewidywalna i odporna na literówki już na etapie pisania kodu.
 
-**Współdzielenie typów (End-to-End Type Safety):**
-Gdy zmienisz schemat użytkownika w bazie lub typ odpowiedzi API, chcesz, aby kompilator TypeScript natychmiast wskazał błędy w komponentach Reacta.
-W strukturze Monorepo tworzymy folder \`shared/types\` importowany zarówno przez \`client\`, jak i \`server\`.
+**1. Architektura Monorepo i End-to-End Type Safety:**
+W nowoczesnych projektach produkcyjnych używamy narzędzi takich jak pnpm workspaces lub Turborepo, aby utrzymywać foldery \`apps/web\`, \`apps/api\` oraz wspólną paczkę \`packages/shared\`. Gdy zmienisz nazwę pola w obiekcie \`CourseDto\` lub dodasz wymagany parametr odpowiedzi po stronie serwera, kompilator TypeScript natychmiast podświetli na czerwono wszystkie komponenty Reacta korzystające ze starego pola. Eliminuje to najczęstszy błąd Full Stacka: ciche \`undefined\` w interfejsie po wdrożeniu aktualizacji API.
 
-**TanStack Query (React Query):**
-Zamiast ręcznego pisania \`useState\` i \`useEffect\` dla każdego zapytania, używamy dedykowanego menedżera pamięci podręcznej serwera:
+**2. Rozdział UI State od Server State:**
+Początkujący programiści często trzymają dane z serwera w zwykłym \`useState\` i pobierają je w ręcznym \`useEffect\`. W praktyce prowadzi to do duplikowania zapytań, problemów z wyścigiem żądań (race conditions) oraz braku obsługi nieaktualnego cache'u. Do stanu interfejsu (otwarty modal, zakładka) używaj \`useState\`, a do danych z bazy dedykowanego menedżera takiego jak **TanStack Query**:
 \`\`\`tsx
 import { useQuery } from '@tanstack/react-query';
+import type { CourseDto } from '@academy/shared';
 
 export function Dashboard() {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery<CourseDto[]>({
     queryKey: ['courses'],
-    queryFn: () => fetch('/api/courses').then(res => res.json()),
-    staleTime: 1000 * 60 * 5, // Cache ważny przez 5 minut!
+    queryFn: async () => {
+      const res = await fetch('/api/courses');
+      if (!res.ok) throw new Error('Nie udało się pobrać listy kursów');
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5, // Dane uznawane za świeże przez 5 minut
   });
 
   if (isLoading) return <Spinner />;
-  if (error) return <ErrorMessage error={error} />;
-  return <CoursesList items={data} />;
+  if (error) return <ErrorMessage error={error} onRetry={refetch} />;
+  return <CoursesList items={data ?? []} />;
 }
-\`\`\``,
+\`\`\`
+
+**3. Odporność na awarie: Error Boundaries i Optymistyczne Aktualizacje:**
+Produkcyjny frontend zakłada, że sieć może zawieść w dowolnym momencie. Każdy formularz i akcja zapisu (\`useMutation\`) powinna obsługiwać czytelne powiadomienia toast, blokować podwójne wysłanie przycisku (\`isPending\`), a krytyczne sekcje widoku należy owijać w **Error Boundary**, aby błąd pojedynczego widżetu nie zawiesił całej aplikacji białym ekranem.`,
         codeExamples: [
           {
             title: 'Współdzielony kontrakt odpowiedzi w architekturze Full Stack',
@@ -481,27 +488,28 @@ Serwery płatnicze ponawiają wysyłkę webhooka, jeśli Twój serwer nie odpowi
           'Odseparowywać czystą logikę biznesową od interfejsu DOM dla ułatwienia testowania',
         ],
         prerequisites: ['Moduł 4: JavaScript', 'Moduł 6: TypeScript'],
-        theoryMarkdown: `Aplikacja bez testów automatycznych to tykająca bomba — każda nowa funkcja może zepsuć dotychczas działający kod (tzw. **regresja**).
+        theoryMarkdown: `Rozwijanie większej aplikacji bez automatycznych testów przypomina remont silnika w trakcie jazdy — każda poprawka w jednym pliku może po cichu zepsuć inną, działającą od miesięcy funkcjonalność. Zjawisko to nazywamy **regresją**, a najskuteczniejszą polisą ubezpieczeniową przed nim jest dobrze zaprojektowany zestaw testów automatycznych.
 
-**Piramida testów:**
-1. **Testy jednostkowe (Unit Tests):** Podstawa piramidy (70%). Testują pojedyncze, czyste funkcje biznesowe w ułamku milisekundy.
-2. **Testy integracyjne (Integration Tests):** Środek piramidy (20%). Testują współpracę komponentów (np. zapytanie API z bazą danych lub formularz React).
-3. **Testy End-to-End (E2E z Playwright):** Szczyt piramidy (10%). Uruchamiają prawdziwą przeglądarkę i klikają po aplikacji jak człowiek.
+**1. Piramida testów — zachowaj zdrowe proporcje:**
+- **Testy jednostkowe (Unit Tests — ~70%):** Podstawa piramidy. Sprawdzają w pełnej izolacji pojedyncze, czyste funkcje (np. obliczanie rabatów, przeliczanie punktów XP, walidatory formatów) bez uruchamiania przeglądarki ani bazy danych. Wykonują się w milisekundy, więc możesz odpalać je po każdym zapisie pliku.
+- **Testy integracyjne (Integration Tests — ~20%):** Sprawdzają współpracę kilku modułów naraz — np. formularza React z walidacją albo endpointu Express z testową bazą PostgreSQL.
+- **Testy End-to-End (E2E — ~10%):** Szczyt piramidy. Narzędzia takie jak Playwright otwierają prawdziwy silnik Chromium i przechodzą kluczowe ścieżki użytkownika od kliknięcia do zapisu w bazie. Są wolniejsze i kosztowniejsze w utrzymaniu, dlatego nie testujemy nimi każdego detalu.
 
-**Wzorcowy test z biblioteki Vitest / Node Test Runner:**
+**2. Schemat AAA (*Arrange – Act – Assert*) i odseparowanie czystej logiki:**
+Czytelny test zawsze ma trzy wyraźne fazy: przygotowanie danych wejściowych (*Arrange*), wywołanie testowanej funkcji (*Act*) oraz sprawdzenie wyniku asercją (\`expect\` / \`assert.equal\`). Aby pisać świetne testy w Vitest lub wbudowanym \`node:test\`, oddzielaj logikę obliczeniową od manipulacji DOM:
 \`\`\`typescript
 import { test, expect } from 'vitest';
 import { calculateDiscount } from './pricing';
 
-test('nalicza 20% rabatu dla kwoty powyżej 100 zł', () => {
-  const result = calculateDiscount(200, 20);
-  expect(result).toBe(160);
+test('nalicza 20% rabatu dla kwoty 200 zł', () => {
+  expect(calculateDiscount(200, 20)).toBe(160);
 });
 
-test('rzuca błąd przy ujemnej cenie', () => {
+test('rzuca wyjątek dla ujemnej ceny', () => {
   expect(() => calculateDiscount(-50, 10)).toThrow('Cena nie może być ujemna');
 });
-\`\`\``,
+\`\`\`
+Testuj zachowanie biznesowe (wejście i wyjście), a nie szczegóły implementacyjne — dzięki temu bezpiecznie zrefaktoryzujesz kod bez ciągłego poprawiania testów.`,
         codeExamples: [
           {
             title: 'Testowanie kalkulacji punktów XP w akademii',
@@ -903,20 +911,18 @@ test('aplikacja ładuje się bez błędów runtime i wyjątków w konsoli', asyn
           'Skonfigurować zautomatyzowany potok CI/CD w pliku .github/workflows/deploy.yml',
         ],
         prerequisites: ['Moduł 1: Terminal', 'Moduł 8: Backend'],
-        theoryMarkdown: `**Docker** rozwiązuje odwieczny problem niezgodności środowisk: różnice w wersjach Node.js, bibliotekach systemowych czy systemie operacyjnym między komputerem programisty a serwerem chmurowym.
+        theoryMarkdown: `**Docker** raz na zawsze kończy z klasyczną wymówką programistów: *„u mnie na komputerze działa!”*. Różnice w wersji Node.js, brakujące biblioteki systemowe albo inne zachowanie systemu Windows względem produkcyjnego Linuxa powodowały dawniej długie awarie przy wdrożeniach. Kontener pakuje całą aplikację wraz ze środowiskiem uruchomieniowym w jeden przewidywalny, izolowany **obraz (Image)**, który uruchomi się identycznie na Twoim laptopie i na serwerze w chmurze.
 
-Kontener pakuje aplikację wraz z jej wszystkimi zależnościami w jeden przenośny **obraz (Image)**.
+**1. Kontener vs Maszyna Wirtualna (VM):**
+Maszyna wirtualna emuluje cały sprzęt i uruchamia osobny system operacyjny, zużywając gigabajty RAM-u i minuty na start. Kontener Docker współdzieli jądro systemu gospodarza, izolując wyłącznie proces i system plików aplikacji — dzięki czemu startuje w ułamku sekundy i ma minimalny narzut pamięciowy.
 
-**Wieloetapowy Dockerfile (Multi-stage build):**
-Zamiast wysyłać na serwer obraz ważący 1.5 GB z narzędziami kompilacji (TypeScript, webpack), rozdzielamy proces na dwa etapy:
-1. **Builder:** Instaluje wszystkie narzędzia i kompiluje kod do katalogu \`dist/\`.
-2. **Runner:** Kopiuje **tylko** skompilowany kod \`dist/\` i zależności produkcyjne do lekkiego obrazu Alpine Linux (waga: zaledwie 80 MB!).
+**2. Wieloetapowy Dockerfile (*Multi-Stage Build*) i \`.dockerignore\`:**
+Aby nie wysyłać na produkcję ciężkiego obrazu ważącego ponad 1 GB (z kompilatorem TypeScript, Vite i wszystkimi \`devDependencies\`), dzielimy \`Dockerfile\` na dwa etapy:
+- **Etap \`builder\`:** Instaluje zależności, uruchamia testy i kompiluje aplikację do folderu \`dist/\`.
+- **Etap \`runner\`:** Startuje z czystego, lekkiego obrazu \`node:20-alpine\`, kopiuje wyłącznie skompilowany katalog \`dist/\` oraz zależności produkcyjne, redukując wagę obrazu nawet o 80–90%! Zawsze utwórz też plik \`.dockerignore\` (z \`node_modules\`, \`.git\`, \`.env\`), by nie kopiować lokalnych śmieci do kontekstu budowania.
 
-**Automatyzacja CI/CD z GitHub Actions:**
-Po wypchnięciu kodu na gałąź \`main\`, serwery GitHub automatycznie:
-1. Odpalają testy jednostkowe.
-2. Budują obraz Dockera.
-3. Wdrażają nową wersję na serwer produkcyjny bez przestoju (Zero Downtime).`,
+**3. Automatyzacja CI/CD w GitHub Actions:**
+Po każdym \`git push\` na gałąź główną (lub otwarciu Pull Requesta) chmurowy runner GitHub automatycznie pobiera kod, wykonuje \`npm ci\` (czystą instalację ściśle według \`package-lock.json\`), sprawdza typy \`tsc --noEmit\`, odpala testy oraz buduje paczkę produkcyjną. Jeśli którykolwiek etap zawiedzie, wdrożenie zostaje automatycznie zatrzymane zanim uszkodzona wersja trafi do użytkowników.`,
         codeExamples: [
           {
             title: 'Wzorcowy plik automatyzacji GitHub Actions (.github/workflows/ci.yml)',
@@ -1167,24 +1173,20 @@ A       api            203.0.113.45             Auto   # Subdomena api.twojadome
           'Zrozumieć proces pakowania aplikacji PWA jako Trusted Web Activity (TWA / Bubblewrap) do publikacji w Google Play Store',
         ],
         prerequisites: ['Docker, Nginx i architektura Full Stack'],
-        theoryMarkdown: `**1. Zasada 3-2-1 Kopii Zapasowych Bazy Danych (\`pg_dump\`):**
-Awaria dysku lub ludzka pomyłka może zdarzyć się w każdej firmie. Profesjonalny inżynier automatyzuje codzienne zrzuty bazy PostgreSQL i wysyła je do zewnętrznej chmury obiektowej:
-\`\`\`bash
-# Zrzut skompresowanej bazy danych z datą w nazwie pliku:
-pg_dump -U postgres -Fc moja_baza > backup_$(date +%F).dump
+        theoryMarkdown: `Wdrożenie aplikacji na serwer to dopiero początek jej życia produkcyjnego. Prawdziwa odpowiedzialność inżyniera polega na zapewnieniu ciągłości działania, szybkim wykrywaniu błędów u użytkowników oraz możliwości odzyskania danych po każdej awarii.
 
-# Odtworzenie bazy z kopii zapasowej ( zawsze testuj odtwarzanie! ):
+**1. Zasada 3-2-1 Kopii Zapasowych Bazy Danych (\`pg_dump\`):**
+Nigdy nie trzymaj backupów wyłącznie na tym samym dysku, na którym działa baza PostgreSQL — awaria maszyny zniszczy wówczas zarówno bazę, jak i jej kopie! Automatyzuj nocne zrzuty przez zadanie \`cron\`, kompresuj je narzędziem \`pg_dump -Fc\` i wysyłaj do zewnętrznej chmury obiektowej (S3, Backblaze, R2). Co równie ważne: cyklicznie testuj procedurę odtwarzania poleceniem \`pg_restore\`, bo niesprawdzony backup to tylko złudzenie bezpieczeństwa:
+\`\`\`bash
+pg_dump -U postgres -Fc moja_baza > backup_$(date +%F).dump
 pg_restore -U postgres -d moja_baza backup_2026-10-23.dump
 \`\`\`
 
-**2. Progressive Web App (PWA) — Aplikacja webowa instalowana jak natywna:**
-Dzięki plikowi **\`manifest.json\`** oraz **Service Workerowi (\`sw.js\`)** Twoja aplikacja React może zostać zainstalowana na ekranie głównym telefonu z Androidem i iOS, działać na pełnym ekranie (\`"display": "standalone"\`) i wyświetlać powiadomienia Push!
+**2. Monitoring i obserwowalność aplikacji na produkcji:**
+Gdy użytkownik napotka błąd w swojej przeglądarce lub na backendzie wystąpi nieoczekiwany wyjątek, narzędzia takie jak Sentry przechwytują pełny *Stack Trace*, wersję wydania oraz kroki prowadzące do usterki (*Breadcrumbs*) zanim ktokolwiek zgłosi problem przez formularz kontaktowy.
 
-**3. Publikacja w sklepie Google Play za pomocą Trusted Web Activity (TWA / Bubblewrap):**
-Google oficjalnie wspiera umieszczanie aplikacji PWA w sklepie Google Play przy użyciu technologii **TWA (Trusted Web Activity)**:
-1. Narzędzie **\`@bubblewrap/cli\`** generuje natywny projekt Androida, który uruchamia Twoją stronę w pełnoekranowym silniku Chrome bez paska adresu.
-2. Plik **\`/.well-known/assetlinks.json\`** umieszczony na Twoim serwerze potwierdza kryptograficznie (przez odcisk klucza SHA-256), że jesteś właścicielem zarówno domeny WWW, jak i aplikacji Android.
-3. Podpisany pakiet **\`.aab\` (Android App Bundle)** wgrywasz bezpośrednio do Google Play Console!`,
+**3. Progressive Web App (PWA) i publikacja w Google Play (TWA / Bubblewrap):**
+Dzięki poprawnemu plikowi \`manifest.json\` (ikony \`192x192\`, \`512x512\`, tryb \`"display": "standalone"\`) oraz rejestracji Service Workera Twoja aplikacja React staje się instalowalną aplikacją **PWA** działającą bez paska adresu przeglądarki. Co więcej, oficjalne narzędzie Google **\`@bubblewrap/cli\`** pozwala zapakować taką aplikację jako **Trusted Web Activity (TWA)** do podpisanego pakietu **\`.aab\`** w sklepie Google Play. Kluczowym elementem weryfikacji jest plik \`/.well-known/assetlinks.json\` z odciskiem SHA-256 certyfikatu aplikacji Android — potwierdza on własność domeny i ukrywa pasek URL przeglądarki na telefonie.`,
         codeExamples: [
           {
             title: 'Plik weryfikacji Digital Asset Links (/.well-known/assetlinks.json)',
@@ -1462,12 +1464,13 @@ export function LikeButton({ initialLikes }: { initialLikes: number }) {
         'Dbać o poprawne czyszczenie nasłuchiwaczy zdarzeń (socket.off) w hooku useEffect w React',
       ],
       prerequisites: ['React useEffect oraz serwer Node.js'],
-      theoryMarkdown: `W klasycznym protokole HTTP serwer nie może sam z siebie zainicjować wiadomości do przeglądarki — musi czekać, aż klient wyśle zapytanie. Odpytywanie serwera co sekundę w pętli (\`setInterval(fetch, 1000)\`, tzw. **Short Polling**) generuje gigantyczne obciążenie sieciowe.
+      theoryMarkdown: `W klasycznym protokole HTTP serwer jest całkowicie pasywny — nie może sam z siebie zainicjować wiadomości do przeglądarki i musi czekać na kolejne zapytanie klienta. Odpytywanie API co sekundę w pętli (\`setInterval(fetch, 1000)\`, tzw. **Short Polling**) wysyła setki pustych nagłówków HTTP nawet wtedy, gdy nic się nie zmieniło, co błyskawicznie przeciąża serwer i zużywa baterię na urządzeniach mobilnych.
 
-**1. Protokół WebSocket (\`wss://\`) — Trwały, dwukierunkowy tunel:**
-Połączenie zaczyna się od zwykłego żądania HTTP z nagłówkiem \`Upgrade: websocket\` (**Handshake**). Po akceptacji(status \`101 Switching Protocols\`) połączenie TCP zostaje otwarte na stałe — zarówno serwer, jak i klient mogą wysyłać do siebie ramki danych w czasie poniżej **2 milisekund**!
+**1. Protokół WebSocket (\`wss://\`) — Trwały, dwukierunkowy tunel (Full-Duplex):**
+Połączenie zaczyna się od zwykłego żądania HTTP z nagłówkami \`Connection: Upgrade\` oraz \`Upgrade: websocket\` (**Handshake**). Po akceptacji przez serwer (status \`101 Switching Protocols\`) gniazdo TCP zostaje otwarte na stałe. Od tego momentu zarówno serwer, jak i przeglądarka mogą przesyłać do siebie lekkie ramki binarne lub JSON z opóźnieniem rzędu kilku milisekund. Jeśli zaś potrzebujesz wyłącznie strumieniowania w jedną stronę (np. status postępu lub odpowiedź chata AI), użyj **Server-Sent Events (SSE)** nad zwykłym HTTP.
 
-**2. Pokoje (Rooms) i rozgłaszanie (Broadcasting) w Socket.io:**
+**2. Pokoje (Rooms), autorytatywny serwer i rozgłaszanie w Socket.io:**
+W aplikacjach wieloosobowych i czatach nigdy nie wysyłaj aktualizacji stanu "na ślepo" do wszystkich podłączonych gniazd. Grupuj użytkowników w **pokoje (Rooms)** po stronie serwera, weryfikuj uprawnienia w middleware połączenia oraz zawsze waliduj payload przed rozesłaniem dalej:
 \`\`\`typescript
 // Serwer Node.js (Socket.io):
 io.on('connection', (socket) => {
@@ -1477,14 +1480,21 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('user-joined', { userId: socket.id });
   });
 
-  socket.on('send-message', ({ roomId, text }) => {
-    // Wyślij wiadomość do WSZYSTKICH uczestników danego pokoju:
-    io.to(roomId).emit('new-message', { id: crypto.randomUUID(), text, sender: socket.id });
+  socket.on('send-message', ({ roomId, text }: { roomId: string; text: string }) => {
+    if (!text.trim() || text.length > 500) return;
+    // Autorytatywny timestamp i ID generujemy wyłącznie na serwerze:
+    io.to(roomId).emit('new-message', {
+      id: crypto.randomUUID(),
+      text: text.trim(),
+      sender: socket.id,
+      createdAt: new Date().toISOString(),
+    });
   });
 });
 \`\`\`
 
-**3. Integracja z Reactem — Pamiętaj o \`socket.off\`!**
+**3. Integracja z Reactem — Singleton gniazda i czyszczenie (\`socket.off\`):**
+Instancję klienta \`io(URL)\` twórz **poza komponentem**, aby przełączanie tras i ponowne renderowanie nie otwierało dziesiątek połączeń. W \`useEffect\` zawsze zwracaj funkcję czyszczącą z \`socket.off\` dla dokładnie tej samej referencji callbacku — inaczej w React Strict Mode każda wiadomość zacznie pojawiać się podwójnie lub wielokrotnie:
 \`\`\`tsx
 useEffect(() => {
   const onNewMessage = (msg: ChatMessage) => {
@@ -1493,7 +1503,7 @@ useEffect(() => {
 
   socket.on('new-message', onNewMessage);
   return () => {
-    // Krytyczne: odpinamy listener przy odmontowaniu, by nie duplikować wiadomości!
+    // Krytyczne: odpinamy dokładnie ten listener przy odmontowaniu komponentu!
     socket.off('new-message', onNewMessage);
   };
 }, []);

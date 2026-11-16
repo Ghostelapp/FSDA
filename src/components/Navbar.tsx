@@ -301,10 +301,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
                 setIsSubModalOpen(true);
                 setMobileMenuOpen(false);
               }}
-              className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-black shrink-0"
+              className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold shrink-0"
             >
-              <Crown className="h-4 w-4 fill-slate-950" />
-              <span>{isPro ? 'PRO Aktywne' : 'Kup PRO'}</span>
+              <Crown className={`h-4 w-4 ${isPro ? 'text-amber-400 fill-amber-400' : 'text-emerald-400'}`} />
+              <span>{isPro ? 'PRO Aktywne' : 'Plan: Darmowy'}</span>
             </button>
           </div>
 

@@ -5,6 +5,7 @@ import { User, UserRole, UserStatus, UserFilters, Announcement } from '../types'
 import { filterAndSortUsers } from '../utils/userFilters';
 import {
   isValidAdSenseClientId,
+  isConfiguredAdUnitSlotId,
   generateAdsTxtContent,
   generateAdSenseHeadSnippet,
 } from '../utils/adsense';
@@ -944,47 +945,59 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
                     { key: 'modules', label: 'Moduły Kursowe (In-Feed Banner)' },
                     { key: 'lesson', label: 'Widok Lekcji (Pod teorią / przed quizem)' },
                     { key: 'sidebar', label: 'Pasek Boczny (Sidebar Compact)' },
-                    { key: 'rewarded', label: 'Reklama z Nagrodą (+1 Serce w LivesModal)' },
+                    { key: 'rewarded', label: 'Jednostka Dodatkowa (Opcjonalna)' },
                   ] as const
-                ).map((item) => (
-                  <div
-                    key={item.key}
-                    className="p-3.5 rounded-xl border border-slate-800 bg-slate-950/80 space-y-2.5"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-white">{item.label}</span>
-                      <input
-                        type="checkbox"
-                        checked={adSenseConfig.placements[item.key]}
-                        onChange={(e) =>
-                          updateAdSenseConfig({
-                            placements: {
-                              ...adSenseConfig.placements,
-                              [item.key]: e.target.checked,
-                            },
-                          })
-                        }
-                        className="h-4 w-4 accent-emerald-500 rounded cursor-pointer"
-                      />
+                ).map((item) => {
+                  const isRealUnit = isConfiguredAdUnitSlotId(adSenseConfig.slots[item.key]);
+                  return (
+                    <div
+                      key={item.key}
+                      className="p-3.5 rounded-xl border border-slate-800 bg-slate-950/80 space-y-2.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-white">{item.label}</span>
+                        <input
+                          type="checkbox"
+                          checked={adSenseConfig.placements[item.key]}
+                          onChange={(e) =>
+                            updateAdSenseConfig({
+                              placements: {
+                                ...adSenseConfig.placements,
+                                [item.key]: e.target.checked,
+                              },
+                            })
+                          }
+                          className="h-4 w-4 accent-emerald-500 rounded cursor-pointer"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] text-slate-400">Ad Slot ID (data-ad-slot):</span>
+                          <span
+                            className={`text-[10px] font-mono font-semibold ${
+                              isRealUnit ? 'text-emerald-400' : 'text-amber-300'
+                            }`}
+                          >
+                            {isRealUnit ? 'Aktywny Slot' : 'Auto Ads (Domyślny)'}
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          value={adSenseConfig.slots[item.key]}
+                          onChange={(e) =>
+                            updateAdSenseConfig({
+                              slots: {
+                                ...adSenseConfig.slots,
+                                [item.key]: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs font-mono text-emerald-300"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <span className="text-[10px] text-slate-400 block">Ad Slot ID (data-ad-slot):</span>
-                      <input
-                        type="text"
-                        value={adSenseConfig.slots[item.key]}
-                        onChange={(e) =>
-                          updateAdSenseConfig({
-                            slots: {
-                              ...adSenseConfig.slots,
-                              [item.key]: e.target.value,
-                            },
-                          })
-                        }
-                        className="w-full rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs font-mono text-emerald-300"
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

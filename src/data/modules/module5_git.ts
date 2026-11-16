@@ -36,21 +36,23 @@ export const MODULE_5: Module = {
         'Pisać profesjonalne komunikaty commitów (feat, fix, docs, chore)',
       ],
       prerequisites: ['Podstawy terminala z Modułu 1'],
-      theoryMarkdown: `Git to rozproszony system kontroli wersji (**Distributed VCS**), stworzony w 2005 roku przez Linusa Torvaldsa. 
+      theoryMarkdown: `**Git** to rozproszony system kontroli wersji (*Distributed Version Control System*), stworzony w 2005 roku przez Linusa Torvaldsa na potrzeby rozwoju jądra Linux. Zamiast tworzyć kopie folderów w stylu \`projekt_final_v2_naprawde_ostateczny\`, każdy programista ma na dysku pełną historię zmian w postaci acyklicznego grafu skierowanego (DAG).
 
-Zamiast kopiować foldery w stylu \`projekt_final_v2_ostateczny\`, Git tworzy drzewo historii (DAG — Directed Acyclic Graph).
+**1. Trzy stany pliku i przepływ zmian w Git:**
+1. **Working Directory (Katalog roboczy):** Bieżące pliki projektu na Twoim dysku, które edytujesz w VS Code. Nowo utworzony plik ma status \`untracked\` (nieśledzony), a zmodyfikowany istniejący plik ma status \`modified\`.
+2. **Staging Area (Poczekalnia / Index):** Precyzyjna lista zmian wybranych do najbliższego zapisu. Dodajesz do niej pliki poleceniem \`git add plik.ts\` lub \`git add .\`. Dzięki poczekalni możesz zacommitować tylko poprawkę błędu w jednym pliku, zostawiając niedokończoną funkcję w drugim na później!
+3. **Repository (Katalog \`.git\`):** Niezmienna, podpisana kryptograficznie migawka (*snapshot*) projektu zapisana komendą \`git commit -m "opis"\`. Każdy commit otrzymuje unikalny 40-znakowy skrót SHA-1 i wskazuje swojego poprzednika (rodzica).
 
-**3 stany pliku w Git:**
-1. **Working Directory (Katalog roboczy):** Pliki na Twoim dysku, które edytujesz w VS Code.
-2. **Staging Area (Poczekalnia / Index):** Zmiany przygotowane do zapisania za pomocą \`git add <plik>\`.
-3. **Repository (.git directory):** Trwała migawka projektu zapisana komendą \`git commit -m "opis"\`.
+**2. Konwencja Conventional Commits w pracy zespołowej:**
+W komercyjnych zespołach nie piszemy niejasnych opisów w rodzaju \`"poprawki"\` czy \`"działa"\`. Standard **Conventional Commits** narzuca czytelny przedrostek pozwalający automatycznie generować listy zmian (*Changelog*):
+- \`feat: add user authentication with JWT\` — nowa funkcjonalność dla użytkownika,
+- \`fix: resolve memory leak in websocket listener\` — naprawa błędu,
+- \`docs: update API endpoints in README\` — wyłącznie zmiany w dokumentacji,
+- \`refactor: extract tax calculation utility\` — porządkowanie kodu bez zmiany działania,
+- \`chore: upgrade dependencies in package.json\` — konfiguracja, skrypty, utrzymanie.
 
-**Konwencja Conventional Commits:**
-W profesjonalnych zespołach IT każdy commit zaczyna się od typu:
-- \`feat: add user authentication with JWT\` (nowa funkcja)
-- \`fix: resolve memory leak in websocket listener\` (naprawa błędu)
-- \`docs: update API endpoints in README\` (dokumentacja)
-- \`chore: upgrade dependencies in package.json\` (prace pomocnicze)`,
+**3. Higiena repozytorium — plik \`.gitignore\`:**
+Przed pierwszym \`git add .\` zawsze konfiguruj \`.gitignore\`, aby wykluczyć folder \`node_modules/\`, pliki zbudowane \`dist/\` oraz prywatne sekrety z \`.env\`.`,
       codeExamples: [
         {
           title: 'Typowy cykl pracy z gitem w terminalu',
@@ -157,16 +159,21 @@ git log --oneline -n 5`,
         'Rozpoznawać i bezstresowo rozwiązywać znaczniki konfliktów (<<<<<<< HEAD)',
       ],
       prerequisites: ['Lekcja 1: Podstawy Gita'],
-      theoryMarkdown: `W profesjonalnych projektach nikt nie commituje bezpośrednio do gałęzi \`main\`. 
+      theoryMarkdown: `W komercyjnych projektach IT gałąź główna \`main\` reprezentuje stabilny kod gotowy do wdrożenia na produkcję — nikt nie commituje do niej bezpośrednio. Cały zespół pracuje równolegle w izolowanych strumieniach nazywanych **gałęziami (Branches)**.
 
-Stosuje się model **Feature Branch Workflow**:
-1. Każda nowa funkcja powstaje na odrębnej gałęzi, np. \`git switch -c feature/koszyk\`.
-2. Po zakończeniu pracy programista wysyła gałąź na serwer: \`git push -u origin feature/koszyk\`.
-3. Otwiera **Pull Request (PR)** na GitHubie, gdzie koledzy z zespołu przeprowadzają **Code Review**.
-4. Po zatwierdzeniu zmian następuje scalenie (**Merge**) do gałęzi produkcyjnej.
+**1. Czym naprawdę jest gałąź i jak działa Feature Branch Workflow?**
+Wewnętrznie gałąź w Git to nie kopia całego katalogu, lecz lekki, 41-bajtowy wskaźnik przesuwający się na najnowszy commit. Tworzenie gałęzi zajmuje ułamek milisekundy:
+1. Zaktualizuj lokalnego \`main\` (\`git pull origin main\`), aby startować z najnowszego kodu zespołu.
+2. Utwórz izolowaną gałąź zadania: \`git switch -c feat/koszyk-zakupowy\`.
+3. Pracuj i zapisuj małe, atomowe commity bez psucia głównej gałęzi kolegom.
+4. Wyślij gałąź do chmury (\`git push -u origin feat/koszyk-zakupowy\`) i otwórz **Pull Request (PR)** na GitHubie.
+5. Po przejściu automatycznych testów CI oraz pozytywnym **Code Review** scal gałąź do \`main\` i usuń starą gałąź roboczą.
 
-**Co to jest konflikt scalania (Merge Conflict)?**
-Konflikt pojawia się, gdy dwóch programistów zmodyfikowało **tę samą linijkę** w tym samym pliku. Git nie zgaduje, czyja zmiana jest poprawna, lecz wstawia znaczniki:
+**2. Rodzaje scaleń (Fast-Forward vs Merge Commit):**
+Jeśli od momentu utworzenia Twojej gałęzi na \`main\` nie pojawiły się żadne nowe commity innych osób, Git przesunie wskaźnik prosto do przodu (*Fast-Forward*). Jeśli obie gałęzie rozwijały się niezależnie, Git wykona *Three-Way Merge* i utworzy specjalny commit scalający łączący obie historie.
+
+**3. Co to jest konflikt scalania (Merge Conflict) i jak go bezpiecznie rozwiązać?**
+Konflikt nie jest awarią Gita — to mechanizm ochronny, który uruchamia się wyłącznie wtedy, gdy dwie osoby zmieniły **te same linijki** w tym samym pliku (albo jedna osoba plik zmodyfikowała, a druga go usunęła). Zamiast zgadywać, Git zatrzymuje scalanie i wstawia znaczniki:
 \`\`\`
 <<<<<<< HEAD (Twoja wersja)
 const apiURL = "https://api.v2.dev";
@@ -174,7 +181,7 @@ const apiURL = "https://api.v2.dev";
 const apiURL = "https://api.v3.dev";
 >>>>>>> feature/new-api (Wersja kolegi)
 \`\`\`
-Twoim zadaniem jest usunięcie znaczników i pozostawienie właściwego kodu.`,
+Twoim zadaniem jest przejrzenie obu wersji, ręczne wybranie docelowego kodu, usunięcie linii znaczników (\`<<<\`, \`===\`, \`>>>\`), przetestowanie aplikacji i wykonanie \`git add . && git commit\`.`,
       codeExamples: [
         {
           title: 'Przepływ pracy na gałęziach krok po kroku',
@@ -282,20 +289,21 @@ git push -u origin feature/dark-mode`,
         'Rozróżniać bezpieczny na wspólnej gałęzi git revert od przepisującego historię git reset',
       ],
       prerequisites: ['Lekcja 1 i 2 modułu Git'],
-      theoryMarkdown: `Każdy programista popełnia błędy — różnica między Juniorem a Seniorem polega na tym, że Senior wie jak w 5 sekund cofnąć pomyłkę w Git bez utraty danych.
+      theoryMarkdown: `Każdy programista popełnia błędy — różnica między początkującym a doświadczonym inżynierem polega na znajomości bezpiecznych sposobów wycofywania zmian w Git bez ryzyka skasowania wielogodzinnej pracy.
 
-**1. \`git restore\` — cofanie zmian przed commitem:**
-- \`git restore src/App.tsx\` — odrzuca lokalne modyfikacje w pliku i przywraca stan z ostatniego commita.
-- \`git restore --staged .\` — wycofuje pliki z poczekalni (Staging Area) z powrotem do katalogu roboczego (odwrotność \`git add\`).
+**1. \`git restore\` — cofanie zmian przed utworzeniem commita:**
+- \`git restore src/App.tsx\` — odrzuca lokalne niezapisane modyfikacje w katalogu roboczym i przywraca plik do stanu z ostatniego commita (uwaga: tych zmian nie ma jeszcze w historii Gita, więc nie da się ich łatwo odzyskać!).
+- \`git restore --staged .\` — wycofuje pliki z poczekalni (*Staging Area*) z powrotem do katalogu roboczego, zachowując całą napisaną treść w plikach (bezpieczne odwrócenie \`git add .\`).
 
-**2. \`git stash\` — tymczasowy schowek:**
-Piszesz nową funkcję, ale nagle musisz przełączyć się na \`main\`, aby naprawić pilny błąd na produkcji?
-- \`git stash\` — chowa Twoje niezacommitowane zmiany do bezpiecznego stosu i czyści katalog roboczy.
-- \`git stash pop\` — wyciąga odłożone zmiany z powrotem do kodu!
+**2. \`git stash\` — tymczasowy schowek na niedokończoną pracę:**
+Piszesz rozbudowany formularz na swojej gałęzi, ale nagle dostajesz zgłoszenie pilnego błędu na produkcji i musisz natychmiast przełączyć się na \`main\`? Nie rób śmieciowego commita w połowie pracy!
+- \`git stash push -m "WIP: formularz płatności"\` — pakuje niezacommitowane zmiany na tymczasowy stos i czyści katalog roboczy.
+- \`git stash list\` — pokazuje listę wszystkich odłożonych pakietów.
+- \`git stash pop\` — wyciąga ostatni pakiet ze schowka, przywraca go do kodu i usuwa ze stosu (lub \`git stash apply\`, jeśli chcesz zostawić kopię w schowku).
 
-**3. \`git revert\` vs \`git reset\` (Złota zasada bezpieczeństwa):**
-- **\`git revert <hash>\`** tworzy **NOWY commit**, który jest dokładną odwrotnością wskazanego commita. Nie kasuje historii, dlatego jest **w 100% bezpieczny na publicznej gałęzi \`main\`**!
-- **\`git reset --soft HEAD~1\`** cofa ostatni commit lokalnie, zostawiając Twoje zmiany w poczekalni (świetne, gdy chcesz poprawić przed chwilą zrobiony lokalny commit przed \`git push\`).`,
+**3. \`git revert\` vs \`git reset\` — najważniejsza zasada bezpieczeństwa:**
+- **\`git revert <hash>\`** tworzy **zupełnie nowy commit**, który dokładnie odwraca zmiany wprowadzone przez wskazany wcześniejszy commit. Ponieważ historia pozostaje nienaruszona i dopisywana do przodu, \`git revert\` jest **jedyną bezpieczną metodą cofania błędów na publicznej gałęzi \`main\`**, z której korzysta cały zespół.
+- **\`git reset --soft HEAD~1\`** cofa wskaźnik gałęzi o jeden commit wstecz, ale zostawia wszystkie zmienione pliki w poczekalni — świetne do poprawienia ostatniego lokalnego commita przed \`git push\`. Natomiast **\`git reset --hard\`** bezpowrotnie kasuje niezacommitowane zmiany i przepisuje historię; stosuj je wyłącznie na prywatnych, niewypchniętych gałęziach. W razie pomyłki ostatnią deską ratunku jest \`git reflog\`.`,
       codeExamples: [
         {
           title: 'Ratowanie pracy schowkiem git stash i bezpieczny revert',
@@ -404,16 +412,19 @@ git revert a4f92c1`,
         'Rozumieć model Fork & Pull Request wykorzystywany w projektach Open Source',
       ],
       prerequisites: ['Lekcje 1–3 modułu Git'],
-      theoryMarkdown: `Git działa lokalnie na Twoim dysku, natomiast **GitHub / GitLab** to chmurowe serwery przechowujące kopię repozytorium (tzw. **remote**, domyślnie nazywany \`origin\`).
+      theoryMarkdown: `Git działa w pełni lokalnie na Twoim dysku (możesz tworzyć commity i gałęzie nawet w samolocie bez internetu). Aby jednak dzielić się kodem z zespołem, uruchamiać automatyczne wdrożenia CI/CD i budować portfolio dla rekruterów, łączymy lokalne repozytorium ze zdalnym serwerem (**Remote**), najczęściej na GitHubie lub GitLabie pod domyślnym aliasem \`origin\`.
 
-**1. \`git fetch\` vs \`git pull\` (Częste pytanie rekrutacyjne!):**
-- **\`git fetch origin\`**: Pobiera informacje o nowych commitach i gałęziach z serwera GitHub do Twojej lokalnej bazy, ale **NIE modyfikuje Twoich plików roboczych**. Pozwala bezpiecznie podejrzeć, co zrobili koledzy przed połączeniem zmian.
-- **\`git pull\`**: To skrót wykonujący pod spodem dwa polecenia naraz: **\`git fetch\` + \`git merge\`** (pobiera zmiany i od razu scala je z Twoją bieżącą gałęzią).
+**1. \`git fetch\` vs \`git pull\` — klasyczne pytanie rekrutacyjne:**
+- **\`git fetch origin\`**: Łączy się z serwerem GitHub i pobiera aktualne informacje o nowych commitach, tagach oraz gałęziach kolegów do ukrytych gałęzi śledzących (\`origin/main\`), ale **nie dotyka ani jednej linijki w Twoich otwartych plikach**. To bezpieczny podgląd (*„zobaczmy, co zmieniło się w zespole”*), po którym możesz uruchomić \`git diff main origin/main\`.
+- **\`git pull origin main\`**: Wykonuje pod spodem dwa kroki naraz — najpierw \`git fetch\`, a od razu po nim \`git merge\` (lub \`rebase\`), natychmiast scalając zdalne zmiany do Twojej bieżącej gałęzi roboczej.
 
-**2. Autoryzacja kluczami SSH (Ed25519):**
-Zamiast wpisywać tokeny przy każdym połączeniu, generujemy parę kluczy kryptograficznych:
-- Klucz prywatny (\`~/.ssh/id_ed25519\`) — nigdy nie opuszcza Twojego komputera.
-- Klucz publiczny (\`~/.ssh/id_ed25519.pub\`) — wklejasz w ustawieniach konta GitHub.`,
+**2. Bezpieczne połączenie kluczami SSH (Ed25519) zamiast haseł:**
+GitHub od dawna nie akceptuje zwykłych haseł do konta podczas wypychania kodu przez HTTPS. Profesjonalnym i wygodnym standardem jest uwierzytelnianie asymetrycznymi kluczami SSH opartymi na nowoczesnym algorytmie **Ed25519**:
+- **Klucz prywatny (\`~/.ssh/id_ed25519\`):** Tajny plik pozostający wyłącznie na Twoim dysku (może być dodatkowo chroniony hasłem *passphrase*).
+- **Klucz publiczny (\`~/.ssh/id_ed25519.pub\`):** Bezpieczny klucz jawny, który wklejasz w ustawieniach profilu GitHub -> *SSH and GPG keys*.
+
+**3. Model pracy Open Source — Fork, Upstream i Pull Request:**
+Gdy chcesz naprawić błąd w popularnej bibliotece (np. React lub Vite), nie masz uprawnień do bezpośredniego \`git push\` do oryginalnego repozytorium. Tworzysz wtedy własną kopię na swoim koncie GitHub (**Fork**), klonujesz ją na dysk jako \`origin\`, a oryginalny projekt podpinasz jako drugi adres zdalny o konwencjonalnej nazwie \`upstream\`, skąd pobierasz bieżące aktualizacje zanim wyślesz swój Pull Request.`,
       codeExamples: [
         {
           title: 'Podpięcie nowego repozytorium do GitHub i generowanie klucza SSH',
@@ -520,17 +531,23 @@ git push -u origin main`,
         'Badać historię powstania konkretnej linijki kodu za pomocą git blame i git log -p',
       ],
       prerequisites: ['Lekcje 1–4 modułu Git'],
-      theoryMarkdown: `Praca programisty to gra zespołowa. **Code Review (przegląd kodu)** w Pull Requeście to najważniejszy filtr jakości i okazja do wzajemnej nauki.
+      theoryMarkdown: `W profesjonalnych zespołach programistycznych żaden kod nie trafia na produkcję bez przejścia przez **Code Review** (przegląd kodu) w Pull Requeście. To nie jest egzamin z ocenami, lecz najważniejszy mechanizm dzielenia się wiedzą architektoniczną, wyłapywania luk bezpieczeństwa oraz utrzymywania spójnego stylu w całym projekcie.
 
-**1. Jak przygotować Pull Request, który zespół pokocha?**
-- **Mały rozmiar:** PR zmieniający 150 linii kodu zostanie sprawdzony w 10 minut. PR zmieniający 3000 linii w 80 plikach będzie wisiał tydzień.
-- **Kontekst w opisie:** Napisz *co* zostało zmienione, *dlaczego* oraz dołącz zrzut ekranu zmian w UI.
-- **Self-Review:** Zawsze sam przejrzyj zakładkę *Files changed* na GitHubie przed poproszeniem kolegów o review — wyłapiesz zapomniane \`console.log\`.
+**1. Jak przygotować Pull Request, który zespół sprawdzi od ręki?**
+- **Zasada małych kroków:** PR zmieniający 150–250 linii w kilku powiązanych plikach dostanie rzetelne review w kwadrans. PR na 3000 linii w 70 plikach paraliżuje zespół i ukrywa błędy w tłumie zmian (*„LGTM” po przejrzeniu pierwszych 3 plików*).
+- **Kontekst biznesowy i techniczny:** W opisie PR wskaż krótko *dlaczego* zmiana powstała, *co* zmieniono, jak ją przetestować lokalnie oraz dołącz zrzut ekranu przy zmianach w UI.
+- **Self-Review przed zaproszeniem recenzentów:** Zawsze sam przejrzyj zakładkę *Files changed* na GitHubie zaraz po utworzeniu PR — błyskawicznie wyłapiesz zapomniane \`console.log\`, zakomentowany kod lub niepotrzebne zmiany w plikach konfiguracyjnych.
 
-**2. \`git merge\` vs \`git rebase\`:**
-- **\`git merge\`**: Zachowuje pełną chronologiczną historię i tworzy dodatkowy *Merge Commit*.
-- **\`git rebase main\`**: "Przepina" Twoją gałąź na sam czubek aktualnej gałęzi \`main\`, tworząc idealnie prostą, liniową historię commitów.
-- **Squash and Merge:** Łączy wszystkie drobne commity z gałęzi roboczej w jeden czysty commit na gałęzi \`main\`.`,
+**2. Kultura konstruktywnych komentarzy podczas recenzji:**
+Komentuj zawsze **kod i jego konsekwencje**, nigdy osobę autora. Zamiast oschłego *„To jest źle napisane”*, napisz konkretnie: *„W tym miejscu pętla wewnątrz pętli daje złożoność O(n²); przy 5000 rekordów może zablokować UI — rozważmy indeksowanie przez new Map()”*. Rozróżniaj blokery bezpieczeństwa od drobnych sugestii stylistycznych (np. prefiks \`nit:\`).
+
+**3. Strategie historii: \`git merge\` vs \`git rebase\` vs *Squash & Merge*:**
+- **\`git merge\`:** Zachowuje wierną, rozgałęzioną historię równoległych prac i dopisuje *Merge Commit* — bezpieczne i nigdy nie zmienia starych identyfikatorów SHA.
+- **\`git rebase origin/main\`:** Odłącza Twoje lokalne commity i nakłada je na świeży czubek gałęzi \`main\`, utrzymując idealnie prostą, liniową historię (nigdy nie rób jednak \`rebase\` na wspólnej gałęzi, na której pracują inni!).
+- **Squash and Merge:** Łączy wszystkie drobne commity robocze z PR-a w jeden czysty commit na gałęzi \`main\`.
+
+**4. Śledzenie kontekstu za pomocą \`git blame\` i \`git log -S\`:**
+Polecenie \`git blame plik.ts\` nie służy do szukania winnego, lecz do szybkiego sprawdzenia, w którym commicie i Pull Requeście powstała nietypowa linijka kodu — zanim usuniesz pozornie zbędny warunek \`if\`, przeczytaj dlaczego tam trafił.`,
       codeExamples: [
         {
           title: 'Aktualizacja gałęzi roboczej za pomocą rebase i inspekcja historii',

@@ -40,23 +40,18 @@ export const MODULE_4: Module = {
         'Stosować ścisłe porównanie === zamiast niebezpiecznego ==',
       ],
       prerequisites: ['Podstawy logiki komputerowej'],
-      theoryMarkdown: `W nowoczesnym standardzie ES6+ zmienne deklarujemy wyłącznie za pomocą **\`const\`** lub **\`let\`**:
+      theoryMarkdown: `**JavaScript** jest językiem dynamicznie typowanym i jedynym natywnym językiem wykonywanym bezpośrednio w każdej przeglądarce internetowej. Dobry start polega na poznaniu nowoczesnych reguł deklarowania danych, zasięgów oraz pułapek konwersji typów.
 
-- **\`const\` (stała):** Domyślny wybór w 95% przypadków. Wskaźnik referencji nie może zostać nadpisany inną wartością.
-- **\`let\` (zmienna mutowalna):** Stosowany tylko wtedy, gdy wartość rzeczywiście będzie ponownie przypisywana (np. licznik pętli).
-- **\`var\` (przestarzałe):** Posiada zakres funkcyjny i problematyczny hoisting — nie używamy go w nowoczesnym kodzie.
+**1. Deklarowanie zmiennych: \`const\` i \`let\` zamiast \`var\`:**
+- **\`const\` (stała referencja):** Domyślny wybór dla niemal każdej zmiennej — od liczb i napisów po funkcje i obiekty. Nie pozwala na ponowne przypisanie znakiem \`=\` (chroniąc przed przypadkowym nadpisaniem), choć zawartość samego obiektu lub tablicy nadal można modyfikować, jeśli zajdzie potrzeba.
+- **\`let\` (zmienna mutowalna):** Stosujemy wyłącznie wtedy, gdy wartość rzeczywiście musi się zmieniać w trakcie działania programu (np. licznik pętli \`for\` lub akumulator sumy). Zarówno \`const\`, jak i \`let\` mają bezpieczny **zasięg blokowy** ograniczony nawiasami \`{ }\`.
+- **\`var\` (legacy):** Posiada zasięg funkcyjny i niezrozumiały dla początkujących *hoisting* (podnoszenie deklaracji na górę funkcji z wartością \`undefined\`), co bywało źródłem ukrytych błędów — we współczesnym kodzie ES6+ nie używamy go wcale.
 
-**Ścisłe porównanie (===) vs Luźne (==):**
-Nigdy nie używaj operatora \`==\`! Wykonuje on niejawną konwersję typów (type coercion), prowadząc do absurdów:
-\`\`\`javascript
-0 == ''        // true (niebezpieczne!)
-0 === ''       // false (prawidłowo)
-null == undefined  // true
-null === undefined // false
-\`\`\`
+**2. Typy prymitywne vs typy referencyjne:**
+W JS mamy siedem typów prostych (m.in. \`string\`, \`number\`, \`boolean\`, \`undefined\`, \`null\`, \`bigint\`, \`symbol\`), które kopiowane są przez **wartość**. Natomiast obiekty, tablice i funkcje są typami złożonymi i przekazywane są przez **referencję** (adres w pamięci). Pamiętaj o historycznej osobliwości języka: \`typeof null\` zwraca \`"object"\`, dlatego obecność wartości pustej sprawdzamy wprost przez \`val === null\`.
 
-**Template Literals (Szablony ciągów):**
-Zamiast łączenia \`"Witaj " + name + "!"\` używamy znaków backtick: \`\`\` \`Witaj \${name}!\` \`\`\`.`,
+**3. Ścisłe porównanie (\`===\`) vs luźne (\`==\`) i Template Literals:**
+Operator \`==\` przeprowadza niejawną konwersję typów (*type coercion*), co daje zaskakujące rezultaty (\`0 == ''\` daje \`true\`). Zawsze używaj ścisłego porównania **\`===\`** oraz **\`!==\`**, które sprawdzają zarówno wartość, jak i typ. Do budowania tekstów ze zmiennymi stosuj wygodne literały szablonowe w grawisach: \`\`\` \`Witaj \${name}!\` \`\`\`.`,
       codeExamples: [
         {
           title: 'Bezpieczna deklaracja i łańcuchy szablonowe',
@@ -161,18 +156,18 @@ console.log(greeting);`,
         'Rozumieć wartości prawdziwe (Truthy) i fałszywe (Falsy) oraz operator domyślnej wartości ??',
       ],
       prerequisites: ['Lekcja 1: Zmienne (const, let), tekst i liczby'],
-      theoryMarkdown: `Program komputerowy nieustannie podejmuje proste decyzje: czy użytkownik wpisał poprawne hasło? Czy gracz zdobył wystarczającą liczbę punktów?
+      theoryMarkdown: `Aby program potrafił reagować na działania użytkownika — weryfikować formularze, naliczać rabaty czy blokować dostęp bez uprawnień — musi podejmować decyzje logiczne w oparciu o **instrukcje warunkowe** i operatory logiczne.
 
-**1. Jak działa instrukcja \`if / else\`?**
-Zapisujemy pytanie w zwykłych nawiasach \`( )\`, a czynność do wykonania w nawiasach klamrowych \`{ }\`:
-1. **\`if (punkty >= 70)\`**: Jeżeli warunek jest prawdziwy, komputer wykonuje kod z pierwszego bloku \`{ ... }\`.
-2. **\`else\`**: W przeciwnym razie (gdy punktów jest mniej niż 70), komputer wykonuje kod z bloku zapasowego \`else { ... }\`.
+**1. Budowa instrukcji \`if / else if / else\`:**
+Warunek zapisujemy w nawiasach okrągłych \`( )\`, a blok instrukcji do wykonania w klamrach \`{ }\`. Jeśli pierwszy warunek okaże się fałszywy, silnik sprawdza kolejne gałęzie \`else if\`, a na końcu opcjonalny blok zapasowy \`else\`. W funkcjach warto stosować wzorzec **Early Return** (wczesne wyjście na błędnych warunkach na początku funkcji), aby uniknąć głębokich, nieczytelnych piramid zagnieżdżonych \`if\`-ów.
 
-**2. Wartości traktowane jako Fałsz (Falsy):**
-W JavaScript wartość \`false\`, liczba \`0\`, pusty tekst \`""\`, \`null\` oraz \`undefined\` są traktowane w warunku \`if\` jako fałsz.
+**2. Wartości Truthy i Falsy (pułapki w JavaScript):**
+Każda wartość w JS użyta wewnątrz warunku \`if (x)\` jest sprowadzana do prawdy lub fałszu. Istnieje dokładnie **6 wartości Falsy**: \`false\`, \`0\` (oraz \`-0\`), pusty napis \`""\`, \`null\`, \`undefined\` i \`NaN\`. **Uwaga rekrutacyjna:** pusta tablica \`[]\` oraz pusty obiekt \`{}\` są w JavaScript wartościami **Truthy**! Dlatego nigdy nie pisz \`if (items)\` do sprawdzenia, czy lista ma elementy — sprawdzaj jawnie \`if (items.length > 0)\`.
 
-**3. Bezpieczna wartość domyślna (\`??\`):**
-Gdy chcesz podstawić wartość zapasową tylko wtedy, gdy zmienna jest pusta (\`null\` lub \`undefined\`), użyj operatora \`??\`, np. \`const rola = wybranaRola ?? "kursant";\`.`,
+**3. Operatory logiczne, trójargumentowy i Nullish Coalescing (\`??\`):**
+- **\`&&\` (AND) oraz \`||\` (OR):** Działają w trybie *short-circuit* — jeśli lewa strona przesądza o wyniku, prawa w ogóle się nie wykonuje.
+- **Operator warunkowy (\`condition ? a : b\`):** Zwięzły zapis prostego wyboru jednej z dwóch wartości (bardzo popularny w JSX Reacta).
+- **Nullish Coalescing (\`??\`):** Bezpiecznie ustawia wartość domyślną **wyłącznie wtedy**, gdy lewa strona to \`null\` lub \`undefined\`. Dzięki temu ważna wartość liczbowa \`0\` (np. rabat 0 zł lub stan magazynowy 0 sztuk) nie zostanie przypadkowo nadpisana przez wartość zapasową, jak dzieje się przy starym \`0 || 10\`.`,
       codeExamples: [
         {
           title: 'Proste sprawdzenie wyniku i wieku kursanta za pomocą if / else',
@@ -280,29 +275,25 @@ console.log("Witaj,", wyswietlanaNazwa);`,
         'Iterować po kolekcjach za pomocą klasycznej pętli for oraz nowoczesnej pętli for (const item of items)',
       ],
       prerequisites: ['Lekcja 2: Instrukcje warunkowe'],
-      theoryMarkdown: `**Tablica (Array)** to uporządkowana lista wartości przechowywana pod jedną zmienną.
+      theoryMarkdown: `Prawie każda aplikacja webowa przetwarza listy danych: koszyki zamówień, listy wiadomości, wyniki wyszukiwania czy tabele użytkowników. Podstawową strukturą do przechowywania uporządkowanych kolekcji w JavaScript jest **Tablica (Array)**.
 
-**1. Indeksowanie od zera (Zero-based indexing):**
+**1. Indeksowanie od zera i właściwości tablicy:**
 \`\`\`javascript
 const techStack = ['HTML', 'CSS', 'JavaScript', 'React'];
-console.log(techStack[0]); // 'HTML' (pierwszy element ma indeks 0!)
+console.log(techStack[0]); // 'HTML' (pierwszy element ma zawsze indeks 0!)
 console.log(techStack.length); // 4
-console.log(techStack[techStack.length - 1]); // 'React' (ostatni element)
+console.log(techStack.at(-1)); // 'React' (nowoczesny sposób na ostatni element!)
 \`\`\`
+Pamiętaj: ostatni element tablicy znajduje się pod indeksem \`length - 1\`. Próba odczytu \`techStack[10]\` nie rzuca błędu, lecz zwraca \`undefined\`.
 
-**2. Podstawowe metody tablicowe:**
-- **\`push(el)\`** — dodaje element na koniec tablicy.
-- **\`pop()\`** — usuwa i zwraca ostatni element.
-- **\`includes(el)\`** — zwraca \`true\` lub \`false\`, sprawdzając czy element istnieje w tablicy.
-- **\`slice(start, end)\`** — wycina fragment tablicy do NOWEJ tablicy bez psucia oryginału.
+**2. Metody mutujące vs niemutujące (bardzo ważne w React!):**
+- **Metody podstawowe:** \`push(el)\` (dodaje na koniec) oraz \`pop()\` (zdejmuje z końca) zmieniają oryginalną tablicę w miejscu. \`includes(el)\` zwraca \`true/false\`, sprawdzając czy wartość istnieje w liście.
+- **\`slice(start, end)\` vs \`splice(...)\`:** \`slice\` bezpiecznie wycina kopię fragmentu bez naruszania oryginału, natomiast \`splice\` modyfikuje tablicę źródłową. W nowoczesnym kodzie (szczególnie w React) preferujemy operacje niemutowalne, takie jak kopiowanie przez \`[...arr, newItem]\`.
 
-**3. Pętla \`for...of\` (ES6) vs klasyczne \`for\`:**
-Gdy chcesz przejść po każdym elemencie tablicy od początku do końca, najczytelniejsza jest pętla **\`for...of\`**:
-\`\`\`javascript
-for (const tech of techStack) {
-  console.log(\`Uczę się technologii: \${tech}\`);
-}
-\`\`\``,
+**3. Pętle: klasyczna \`for\`, \`while\` oraz nowoczesna \`for...of\`:**
+- **\`for (let i = 0; i < arr.length; i++)\`**: Przydatna, gdy musisz kontrolować krok licznika lub przerywać pętlę instrukcjami \`break\` i \`continue\`.
+- **\`while (warunek)\`**: Wykonuje się dopóki warunek jest prawdziwy (świetna np. przy pobieraniu kolejnych stron paginacji z API; zawsze pilnuj warunku stopu, aby nie zawiesić karty!).
+- **\`for (const item of items)\`**: Najczytelniejszy standard ES6+ do przejścia przez wszystkie elementy tablicy lub ciągu znaków — zero błędów z indeksem *off-by-one*.`,
       codeExamples: [
         {
           title: 'Zliczanie sumy wydatków za pomocą pętli for...of',
@@ -405,30 +396,31 @@ console.log(\`Liczba transakcji: \${expenses.length}, Suma: \${total} zł\`);`,
         'Rozumieć różnicę między zasięgiem globalnym a lokalnym (Block & Function Scope)',
       ],
       prerequisites: ['Lekcja 3: Pętle i tablice'],
-      theoryMarkdown: `Funkcje to podstawowe cegiełki architektury aplikacji — pozwalają napisać logikę raz i wywoływać ją setki razy z różnymi danymi.
+      theoryMarkdown: `**Funkcje** to fundament ponownego użycia kodu i czystej architektury. Zamiast kopiować ten sam wzór obliczający podatek VAT w pięciu miejscach aplikacji, zamykasz logikę w nazwanej funkcji przyjmującej dane wejściowe (**parametry**) i zwracającej gotowy rezultat (**\`return\`**).
 
-**1. \`return\` vs \`console.log\` (Kluczowa różnica dla początkujących!):**
-- \`console.log()\` tylko wyświetla napis w konsoli deweloperskiej i zwraca \`undefined\`.
-- **\`return\`** przekazuje obliczoną wartość z powrotem do miejsca, w którym funkcja została wywołana, i **natychmiast kończy działanie funkcji**.
+**1. \`return\` vs \`console.log\` — najczęstsze nieporozumienie na starcie:**
+- \`console.log()\` służy wyłącznie do podglądu technicznego dla programisty; niczego nie przekazuje dalej i funkcja bez \`return\` zawsze oddaje \`undefined\`.
+- Instrukcja **\`return\`** oddaje obliczoną wartość na zewnątrz (aby można było zapisać ją w zmiennej lub przekazać do kolejnej funkcji) i **natychmiast przerywa** dalsze wykonywanie bloku funkcji.
 
-**2. Trzy sposoby zapisu funkcji:**
+**2. Trzy sposoby zapisu funkcji w nowoczesnym JS:**
 \`\`\`javascript
-// 1. Klasyczna deklaracja funkcji:
+// 1. Deklaracja funkcji (podlega hoistingowi, czytelna dla głównych funkcji modułu):
 function add(a, b = 0) {
   return a + b;
 }
 
-// 2. Funkcja strzałkowa (Arrow Function — ES6):
+// 2. Funkcja strzałkowa (Arrow Function ES6):
 const multiply = (a, b) => {
   return a * b;
 };
 
-// 3. Skrócona funkcja strzałkowa z niejawnym return (Implicit Return):
+// 3. Jednoliniowy zapis z niejawnym return (Implicit Return — hit w React!):
 const square = (n) => n * n;
 \`\`\`
+Parametry domyślne (np. \`b = 0\`) chronią kod przed wynikiem \`NaN\`, jeśli wywołujący pominie opcjonalny argument.
 
-**3. Zasięg zmiennych (Scope):**
-Zmienna zadeklarowana wewnątrz funkcji lub bloku \`{ }\` za pomocą \`const\`/\`let\` jest **lokalna** — nie jest widoczna na zewnątrz tej funkcji.`,
+**3. Zasięg leksykalny (Scope) i domknięcia (Closures):**
+Zmienne utworzone wewnątrz funkcji lub bloku \`{ }\` pozostają prywatne i znikają po jej zakończeniu — nie zaśmiecają zasięgu globalnego. Co więcej, funkcja wewnętrzna zapamiętuje środowisko zmiennych zewnętrznych, w którym została stworzona (mechanizm **Closure**), co leży u podstaw prywatnych liczników, debouncingu i hooków Reacta.`,
       codeExamples: [
         {
           title: 'Funkcja obliczająca cenę brutto z domyślną stawką VAT',
@@ -531,31 +523,25 @@ console.log(laptopPrice, bookPrice);`,
         'Tworzyć niemutowalne kopie obiektów i tablic operatorem Spread (...) oraz zapisywać dane w localStorage',
       ],
       prerequisites: ['Lekcja 4: Funkcje od podstaw'],
-      theoryMarkdown: `W prawdziwych aplikacjach (i w React!) 99% danych z serwera przychodzi w postaci **obiektów** oraz **tablic obiektów**.
+      theoryMarkdown: `W komercyjnych projektach webowych (od sklepów e-commerce po panele administracyjne) niemal wszystkie dane wymieniane z bazą i backendem przychodzą jako **obiekty** (\`{ klucz: wartość }\`) oraz ich kolekcje.
 
-**1. Destrukturyzacja obiektów (Object Destructuring):**
-Zamiast pisać w kółko \`user.name\`, \`user.email\`, \`user.role\`, rozpakowujemy właściwości w jednej linijce:
+**1. Destrukturyzacja i bezpieczny odczyt właściwości:**
+Zamiast wielokrotnie powtarzać \`user.profile.name\` i \`user.profile.role\`, rozpakowujemy wybrane pola w jednej czytelnej deklaracji (możemy od razu nadać alias lub wartość domyślną):
 \`\`\`javascript
 const user = { id: 1, name: 'Anna', role: 'Admin', xp: 1200 };
-const { name, role } = user;
-console.log(name, role); // 'Anna', 'Admin'
+const { name, role, bio = 'Brak opisu' } = user;
 \`\`\`
+Gdy pracujesz z zagnieżdżonymi danymi z API, w których niektóre obiekty mogą nie istnieć, stosuj operator **Optional Chaining (\`?.\`)** (np. \`user?.address?.city ?? 'Nieznane'\`), który zwraca \`undefined\` zamiast wywoływać awaryjny \`TypeError\`.
 
-**2. Operator Spread (\`...\`) — bezpieczne kopiowanie i aktualizacja:**
-Obiekty są typami referencyjnymi. Aby stworzyć zaktualizowaną kopię obiektu bez psucia oryginału (fundament stanu w React!):
+**2. Operator Spread (\`...\`) i niemutowalność (fundament Reacta):**
+Zwykłe przypisanie \`const copy = user;\` **nie kopiuje** obiektu — tworzy jedynie drugi wskaźnik na dokładnie to samo miejsce w pamięci RAM! Zmiana \`copy.xp\` zmodyfikuje także oryginał. Aby bezpiecznie zaktualizować pojedyncze pole w stylu niemutowalnym, użyj operatora Spread:
 \`\`\`javascript
 const updatedUser = { ...user, xp: 1350 };
 \`\`\`
+Uwaga: \`{ ...obj }\` tworzy płytką kopię (*shallow copy*); do głębokiego klonowania zagnieżdżonych obiektów używaj natywnego \`structuredClone(obj)\`.
 
-**3. Pamięć podręczna \`localStorage\` i \`JSON\`:**
-\`localStorage\` pozwala trwale zapisać dane w przeglądarce użytkownika (nie znikają po odświeżeniu strony!):
-\`\`\`javascript
-// Zapis obiektu (zamiana na tekst JSON):
-localStorage.setItem('profile', JSON.stringify(updatedUser));
-
-// Odczyt (zamiana tekstu JSON z powrotem na obiekt JS):
-const saved = JSON.parse(localStorage.getItem('profile'));
-\`\`\``,
+**3. Trwały zapis w przeglądarce: \`JSON\` i \`localStorage\`:**
+\`localStorage\` zapisuje trwałe preferencje użytkownika (np. motyw, wersję roboczą formularza), ale przyjmuje **wyłącznie ciągi tekstowe**. Dlatego przed zapisem obiekt serializujemy przez \`JSON.stringify(data)\`, a przy odczycie zawsze owijamy \`JSON.parse(...)\` w bezpieczny blok \`try / catch\`, na wypadek gdyby zapisane dane zostały ręcznie uszkodzone.`,
       codeExamples: [
         {
           title: 'Zarządzanie ustawieniami użytkownika z destrukturyzacją i Spread',
@@ -665,27 +651,23 @@ console.log(\`Motyw: \${theme}, Cel dzienny: \${dailyGoalMinutes} min\`);`,
         'Obliczać sumy i statystyki za pomocą metody reduce()',
       ],
       prerequisites: ['Lekcja 1: Zmienne i typy danych'],
-      theoryMarkdown: `Nowoczesny JavaScript stawia na **programowanie funkcyjne** i niemutowalne operacje na tablicach.
+      theoryMarkdown: `Współczesny JavaScript oraz komponenty React opierają się na **programowaniu deklaratywnym i niemutowalności**. Zamiast pisać ręczne pętle \`for\`, tworzyć puste tablice pomocnicze i pilnować indeksów \`i\`, deklarujemy *co* chcemy uzyskać z kolekcji za pomocą metod tablicowych przyjmujących funkcje zwrotne (tzw. *Higher-Order Functions*).
 
-Zamiast pętli imperatywnej:
+**1. Styl imperatywny vs deklaratywny:**
 \`\`\`javascript
-// IMPERATYWNIE (stary styl):
-const passed = [];
-for (let i = 0; i < scores.length; i++) {
-  if (scores[i] >= 80) passed.push(scores[i]);
-}
-\`\`\`
-
-Piszemy **deklaratywnie**:
-\`\`\`javascript
-// DEKLARATYWNIE (nowoczesny standard):
+// DEKLARATYWNIE (czytelne intencje, zero mutacji):
 const passed = scores.filter(score => score >= 80);
 \`\`\`
 
-**3 królewskie metody tablic:**
-1. **\`map(item => newItem)\`**: Zwraca NOWĄ tablicę o tej samej długości, transformując każdy element (np. wyciągając same imiona).
-2. **\`filter(item => boolean)\`**: Zwraca NOWĄ tablicę zawierającą tylko te elementy, które spełniają warunek.
-3. **\`reduce((acc, curr) => newAcc, initVal)\`**: Agreguje tablicę do pojedynczej wartości (np. suma cen w koszyku).`,
+**2. Pięć kluczowych metod każdego Full Stack Developera:**
+1. **\`map(item => newItem)\`**: Zwraca **nową tablicę dokładnie tej samej długości**, przekształcając każdy element (np. zamiana tablicy obiektów użytkowników na listę komponentów \`<UserCard />\` w React lub wyciągnięcie samych adresów e-mail).
+2. **\`filter(item => boolean)\`**: Zwraca **nową tablicę** zawierającą wyłącznie elementy, dla których funkcja zwróciła \`true\` (np. aktywne subskrypcje, nieukończone zadania).
+3. **\`reduce((acc, curr) => newAcc, initialValue)\`**: Sprowadza całą tablicę do jednej wartości wynikowej — np. sumy kwot w koszyku albo pogrupowanego obiektu słownikowego. Zawsze przekazuj drugi argument (wartość startową \`0\`, \`[]\` lub \`{}\`), aby nie wywołać błędu na pustej liście!
+4. **\`find(item => boolean)\`**: Zwraca pierwszy pasujący obiekt (lub \`undefined\`) i natychmiast przerywa przeszukiwanie — wydajniejsze niż \`filter()[0]\`.
+5. **\`some\` / \`every\`**: Sprawdzają błyskawicznie, czy przynajmniej jeden lub wszystkie elementy spełniają warunek (np. walidacja formularza).
+
+**3. Łączenie w czytelne potoki (Method Chaining):**
+Ponieważ \`filter\` i \`map\` zawsze zwracają nowe tablice, możesz łączyć je łańcuchowo (\`items.filter(...).map(...)\`), budując czytelne transformacje danych bez efektów ubocznych.`,
       codeExamples: [
         {
           title: 'Łączenie metod tablicowych w potok (Chaining)',
@@ -792,27 +774,26 @@ console.log("Łączne XP aktywnych:", totalActiveXp); // 900`,
         'Stosować delegację zdarzeń (Event Delegation) na rodzicu zamiast 100 osobnych nasłuchiwaczy',
       ],
       prerequisites: ['Moduł 2: HTML', 'Lekcja 1 i 2 modułu JS'],
-      theoryMarkdown: `**DOM (Document Object Model)** to obiektowa reprezentacja dokumentu HTML w pamięci przeglądarki. Za pomocą JavaScript możemy w ułamku sekundy zmieniać treść, kolory i układ elementów.
+      theoryMarkdown: `**DOM (Document Object Model)** to żywa, drzewiasta reprezentacja dokumentu HTML utrzymywana w pamięci przeglądarki. To właśnie dzięki interfejsowi DOM kod JavaScript może reagować na kliknięcia przycisków, otwierać okna modalne, walidować formularze na żywo i aktualizować treść strony bez jej przeładowywania.
 
-**Podstawowe metody:**
-- \`document.querySelector('.moja-klasa')\` — pobiera pierwszy pasujący element (zwraca \`Element\` lub \`null\`).
-- \`document.querySelectorAll('button')\` — pobiera kolekcję węzłów (\`NodeList\`).
-- \`element.textContent = "Nowy tekst"\` — bezpiecznie zmienia tekst (chroni przed atakami XSS!).
-- \`element.classList.add('active')\` / \`remove\` / \`toggle\` — modyfikuje klasy CSS.
+**1. Wyszukiwanie i bezpieczna modyfikacja węzłów:**
+- \`document.querySelector('.klasa')\` zwraca pierwszy dopasowany element lub \`null\` — zawsze sprawdzaj czy istnieje przed modyfikacją.
+- \`document.querySelectorAll('li')\` zwraca kolekcję \`NodeList\`, po której można bezpośrednio iterować pętlą \`.forEach()\`.
+- **Bezpieczeństwo XSS (\`textContent\` vs \`innerHTML\`):** Do wstawiania danych wpisanych przez użytkownika **zawsze** używaj \`element.textContent = value\`, ponieważ traktuje ono tekst dosłownie i unieszkodliwia złośliwe znaczniki \`<script>\`. \`innerHTML\` parsuje kod HTML i może otworzyć lukę bezpieczeństwa XSS.
+- **Zarządzanie wyglądem:** Zamiast mieszać style liniowe w \`element.style\`, przełączaj klasy CSS przez \`element.classList.add / remove / toggle('active')\`.
 
-**Zdarzenia i Delegacja (Event Delegation):**
-Zamiast przypinać 50 nasłuchiwaczy do każdego elementu \`<li>\` z osobna, przypinamy **jeden** nasłuchiwacz do listy nadrzędnej \`<ul>\` i wykorzystujemy mechanizm bąbelkowania (**Event Bubbling**):
+**2. Bąbelkowanie (Event Bubbling) i Delegacja Zdarzeń:**
+Gdy klikniesz w przycisk wewnątrz elementu \`<li>\`, zdarzenie *bąbelkuje* w górę drzewa DOM — kolejno do \`<li>\`, \`<ul>\`, \`<main>\` aż do \`document\`. Zamiast podpinać 200 osobnych nasłuchiwaczy do każdego wiersza listy (co zużywa pamięć i psuje się przy dynamicznie dodanych nowych elementach), podpinamy **jeden listener na wspólnym rodzicu** (\`Event Delegation\`):
+
 \`\`\`javascript
 const list = document.querySelector('.todo-list');
-
 list.addEventListener('click', (event) => {
-  // Sprawdź czy kliknięto w przycisk usuwania:
-  if (event.target.matches('.delete-btn')) {
-    const item = event.target.closest('li');
-    item.remove();
-  }
+  const deleteBtn = event.target.closest('.delete-btn');
+  if (!deleteBtn) return;
+  deleteBtn.closest('li')?.remove();
 });
-\`\`\``,
+\`\`\`
+Metoda \`closest()\` pewnie odnajduje najbliższy pasujący przycisk nawet wtedy, gdy użytkownik kliknął w ikonę SVG umieszczoną wewnątrz \`<button>\`.`,
       codeExamples: [
         {
           title: 'Interaktywny licznik kliknięć w czystym JS',
@@ -917,30 +898,30 @@ btn.addEventListener('click', () => {
         'Pisać synchronicznie wyglądający kod asynchroniczny z użyciem słów kluczowych async i await',
       ],
       prerequisites: ['Lekcje 1-3 z modułu JS'],
-      theoryMarkdown: `JavaScript jest **jednowątkowy** — wykonuje jedną operację w danym momencie. 
+      theoryMarkdown: `JavaScript wykonuje kod w **jednym głównym wątku (Single-Threaded)**. Gdyby długie operacje — takie jak zapytanie sieciowe do bazy danych czy odczyt dużego pliku — blokowały ten wątek, cała strona zamarzłaby całkowicie na kilka sekund. Przeglądarka i Node.js rozwiązują ten problem dzięki **architekturze asynchronicznej opartej na Event Loop**.
 
-Gdyby pobieranie danych z serwera (trwające np. 2 sekundy) blokowało wątek główny, interfejs przeglądarki całkowicie by zamarzł (brak reakcji na kliknięcia, kursor myszy).
-
-**Rozwiązanie: Pętla Zdarzeń (Event Loop)**
+**1. Jak naprawdę działa Pętla Zdarzeń (Event Loop)?**
 1. **Call Stack (Stos wywołań):** Wykonuje bieżące funkcje synchroniczne.
-2. **Web APIs (Przeglądarka):** Przejmuje zadania długotrwałe w tle (timery \`setTimeout\`, zapytania sieciowe \`fetch\`).
-3. **Microtask Queue:** Kolejka zadań z obietnic (\`Promise\`). Ma absolutne pierwszeństwo przed Callback Queue.
-4. **Callback Queue:** Kolejka zdarzeń z timerów i kliknięć.
+2. **Web APIs:** Przeglądarka przejmuje zadania oczekujące w tle (timery \`setTimeout\`, operacje sieciowe \`fetch\`, nasłuchiwacze kliknięć), zwalniając główny wątek dla płynnych animacji 60 FPS.
+3. **Microtask Queue vs Macrotask (Callback) Queue:** Gdy zakończy się \`Promise\`, jego kontynuacja trafia do priorytetowej kolejki **Microtasks** i wykona się natychmiast po wyczyszczeniu stosu wywołań — zawsze przed callbackami z \`setTimeout(..., 0)\` czekającymi w kolejce makrozadań!
 
-**Rewolucja: async / await (ES2017)**
-Zamiast plątaniny \`.then().then().then()\` (tzw. Promise Hell), piszemy czytelny kod sekwencyjny:
+**2. Cykl życia obietnicy \`Promise\` i rewolucja \`async / await\`:**
+Obiekt \`Promise\` reprezentuje przyszłą wartość i może znajdować się w jednym z trzech stanów: *pending* (w toku), *fulfilled* (spełniona) lub *rejected* (odrzucona). Zamiast nieczytelnego łańcucha zagnieżdżonych callbacków lub długiego \`.then().then()\`, nowoczesny standard ES2017 daje nam składnię **\`async / await\`**:
+
 \`\`\`javascript
 async function loadUserData(userId) {
   try {
     const res = await fetch(\`/api/users/\${userId}\`);
     if (!res.ok) throw new Error("Błąd pobierania danych");
-    const user = await res.json();
-    return user;
+    return await res.json();
   } catch (error) {
     console.error("Wystąpił problem:", error.message);
   }
 }
-\`\`\``,
+\`\`\`
+
+**3. Równoległość (\`Promise.all\` i \`Promise.allSettled\`):**
+Gdy dwa zapytania nie zależą od siebie (np. profil użytkownika i lista powiadomień), nie czekaj na nie po kolei dwoma osobnymi \`await\`, bo podwoisz czas ładowania. Uruchom je jednocześnie przez \`await Promise.all([fetchUser(), fetchAlerts()])\`, a obie odpowiedzi spłyną w czasie najwolniejszego z nich.`,
       codeExamples: [
         {
           title: 'Własna obietnica opóźnienia (Sleep Utility)',
@@ -1046,37 +1027,36 @@ runDemo();`,
         'Wysyłać nagłówki Content-Type: application/json oraz Authorization Bearer token',
       ],
       prerequisites: ['Lekcja 4: Asynchroniczność async/await'],
-      theoryMarkdown: `**Fetch API** to wbudowany w każdą nowoczesną przeglądarkę standard komunikacji sieciowej zastępujący archaiczne zapytania XMLHttpRequest (AJAX).
+      theoryMarkdown: `**Fetch API** to wbudowany standard komunikacji sieciowej w przeglądarkach i Node.js 18+, który pozwala aplikacjom React/SPA wymieniać dane z serwerami REST API i GraphQL w formacie JSON bez przeładowania strony.
 
-**Kluczowa pułapka \`fetch()\`:**
-Obietnica zwracana przez \`fetch()\` **NIE** zostaje odrzucona (nie wpada do bloku \`catch\`) w przypadku błędów HTTP serwera (takich jak \`404 Not Found\` czy \`500 Internal Server Error\`)! Wpada do \`catch\` wyłącznie wtedy, gdy wystąpi awaria sieci (brak internetu, błąd DNS).
+**1. Największa pułapka \`fetch()\` — dlaczego samo \`try / catch\` nie wystarcza?**
+W przeciwieństwie do bibliotek takich jak Axios, natywny \`fetch()\` **nie rzuca wyjątku** i nie przechodzi do bloku \`catch\`, gdy serwer odpowie błędem HTTP \`404 Not Found\`, \`401 Unauthorized\` czy \`500 Internal Server Error\`! Z punktu widzenia sieci serwer poprawnie udzielił odpowiedzi, więc obietnica zostaje spełniona (*resolved*). \`catch\` łapie wyłącznie zerwanie połączenia sieciowego, blokadę CORS lub przerwanie żądania. Dlatego **zawsze** sprawdzaj flagę **\`response.ok\`** (prawda tylko dla statusów \`200–299\`):
 
-Dlatego **zawsze** musimy sprawdzić flagę **\`response.ok\`**:
 \`\`\`javascript
 async function fetchProducts() {
   const response = await fetch('https://api.example.com/products');
-  
-  // Weryfikacja kodu statusu HTTP (czy mieści się w zakresie 200-299):
   if (!response.ok) {
     throw new Error(\`Błąd serwera: status \${response.status}\`);
   }
-  
-  // Asynchroniczne odczytanie strumienia i parsowanie JSON:
-  const data = await response.json();
-  return data;
+  return await response.json();
 }
 \`\`\`
 
-**Wysyłanie danych metodą POST:**
+**2. Wysyłanie danych (\`POST\`, \`PATCH\`, \`PUT\`) i nagłówki HTTP:**
+Wysyłając formularz w JSON musisz jawnie ustawić metodę, nagłówek \`Content-Type: application/json\` (bez niego backend Expressa nie sparsuje \`req.body\`) oraz zserializować obiekt przez \`JSON.stringify()\`:
 \`\`\`javascript
 const res = await fetch('/api/tasks', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
+    'Authorization': \`Bearer \${token}\`,
   },
-  body: JSON.stringify({ title: 'Kupić mleko', done: false })
+  body: JSON.stringify({ title: 'Kupić mleko', done: false }),
 });
-\`\`\``,
+\`\`\`
+
+**3. Anulowanie zapytań (\`AbortController\`) w prawdziwych aplikacjach:**
+Gdy użytkownik szybko wpisuje frazy w wyszukiwarkę lub przełącza zakładki zanim stare żądanie się zakończy, przekazuj \`signal: controller.signal\` do \`fetch()\`, aby przerwać nieaktualne połączenia i uniknąć wyścigu odpowiedzi (*race condition*).`,
       codeExamples: [
         {
           title: 'Kompletna funkcja wysyłki danych formularza przez Fetch POST',

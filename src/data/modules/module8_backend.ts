@@ -36,21 +36,20 @@ export const MODULE_8: Module = {
         'Stosować funkcje pośredniczące (Middleware) i sterować przepływem za pomocą next()',
       ],
       prerequisites: ['Moduł 4: JavaScript'],
-      theoryMarkdown: `**Node.js** to środowisko uruchomieniowe umożliwiające wykonywanie kodu JavaScript poza przeglądarką — bezpośrednio na serwerze, z pełnym dostępem do systemu plików, sieci i baz danych.
+      theoryMarkdown: `**Node.js** to środowisko uruchomieniowe pozwalające wykonywać kod JavaScript i TypeScript poza przeglądarką — bezpośrednio na serwerze, z dostępem do sieci, procesów systemu operacyjnego, bazy danych i plików. Jego fundamentem jest silnik Chrome **V8** połączony z biblioteką **libuv**, dzięki której operacje wejścia/wyjścia (I/O) takie jak zapytania SQL czy odczyt z dysku działają **asynchronicznie i nieblokująco** na pętli zdarzeń (*Event Loop*). Jedna instancja Node.js bez trudu obsługuje tysiące współbieżnych zapytań sieciowych naraz.
 
-**Framework Express.js:**
-Najpopularniejszy na świecie minimalistyczny framework serwerowy dla Node.js. 
+**1. Framework Express.js i Routing HTTP:**
+Express jest minimalistycznym, niezwykle popularnym frameworkiem HTTP dla Node.js. Pozwala przypisywać funkcje obsługujące (kontrolery) do konkretnych metod HTTP i ścieżek URL: \`app.get('/api/courses', ...)\`, \`app.post('/api/orders', ...)\`, \`app.patch()\`, \`app.delete()\`. Parametry dynamiczne w ścieżce (np. \`/api/courses/:id\`) odczytujesz w \`req.params.id\`, parametry po znaku zapytania (\`?page=2\`) w \`req.query\`, a wysłany JSON w \`req.body\`.
 
-**Architektura Middleware (Potok przetwarzania):**
-Żądanie HTTP przechodzi przez łańcuch funkcji pośredniczących:
+**2. Architektura Middleware (Potok przetwarzania żądania):**
+Każde przychodzące żądanie HTTP przechodzi w Expressie przez uporządkowany łańcuch funkcji pośredniczących (*Middleware*) aż do momentu wysłania odpowiedzi do klienta:
 \`\`\`
-Klient ---> [express.json()] ---> [authMiddleware] ---> [Route Handler] ---> Odpowiedź
+Klient ---> [express.json()] ---> [logger] ---> [authGuard] ---> [Route Handler] ---> res.json()
 \`\`\`
-
-Każdy middleware przyjmuje 3 argumenty: \`(req, res, next)\`:
-- \`req\` (Request) — nagłówki, parametry URL (\`req.params\`), query string (\`req.query\`) oraz ciało (\`req.body\`).
-- \`res\` (Response) — metody do odesłania odpowiedzi: \`res.status(200).json({ status: 'ok' })\`.
-- \`next\` — funkcja przekazująca kontrolę do kolejnego middleware w łańcuchu.`,
+Każda funkcja middleware przyjmuje sygnaturę \`(req, res, next)\`:
+- **\`req\` (Request):** obiekt reprezentujący nadchodzące żądanie (nagłówki \`req.headers\`, ciasteczka, ciało JSON, adres IP).
+- **\`res\` (Response):** narzędzie do sformułowania odpowiedzi serwera (\`res.status(201).json({ ok: true })\`). Uwaga: po wysłaniu odpowiedzi zakończ obsługę instrukcją \`return\`, aby uniknąć błędu *Cannot set headers after they are sent*.
+- **\`next()\`:** wywołanie tej funkcji przekazuje żądanie do kolejnego middleware w łańcuchu. Jeśli w middleware zapomnisz wywołać zarówno \`res.send/json()\`, jak i \`next()\`, zapytanie klienta zawiesi się aż do limitu czasu (*Timeout*).`,
       codeExamples: [
         {
           title: 'Minimalny, kompletny serwer Express w TypeScript',
@@ -168,31 +167,33 @@ app.listen(3000, () => console.log('Serwer działa na porcie 3000'));`,
         'Obsługiwać błędy w centralnym middleware (err, req, res, next) bez ujawniania sekretów',
       ],
       prerequisites: ['Lekcja 1: Podstawy Node.js i Express'],
-      theoryMarkdown: `Zasada numer jeden inżynierii backendowej: **Nigdy nie ufaj danym przesyłanym przez przeglądarkę**. Użytkownik może ominąć walidację HTML/JS za pomocą Postmana lub curl.
+      theoryMarkdown: `Najważniejsza zasada bezpieczeństwa backendu brzmi: **nigdy nie ufaj danym przychodzącym od klienta**. Walidacja w formularzu HTML lub React służy wyłącznie wygodzie użytkownika — atakujący może w 5 sekund wysłać dowolnie zmodyfikowany JSON za pomocą narzędzia \`curl\`, Postmana lub konsoli przeglądarki, przekazując błędne typy danych (np. ujemną cenę albo obiekt zamiast tekstu).
 
-**Biblioteka Zod:**
-To światowy standard walidacji danych w ekosystemie TypeScript:
+**1. Rygorystyczna walidacja schematów za pomocą Zod:**
+Biblioteka **Zod** to branżowy standard w ekosystemie TypeScript. Pozwala zdefiniować jeden schemat walidacji w czasie rzeczywistym (*runtime*), a następnie automatycznie wygenerować z niego statyczny typ TypeScript za pomocą \`z.infer\`:
 \`\`\`typescript
 import { z } from 'zod';
 
 const CreateCourseSchema = z.object({
-  title: z.string().min(5, "Tytuł musi mieć min. 5 znaków"),
-  price: z.number().positive("Cena musi być większa od zera"),
-  category: z.enum(["Frontend", "Backend", "FullStack"])
+  title: z.string().trim().min(5, 'Tytuł musi mieć min. 5 znaków'),
+  price: z.number().nonnegative('Cena nie może być ujemna'),
+  category: z.enum(['Frontend', 'Backend', 'FullStack']),
 });
 
-// Automatyczny typ TypeScript wygenerowany ze schematu:
+// Typ powstaje automatycznie — zero duplikacji kodu:
 type CreateCourseInput = z.infer<typeof CreateCourseSchema>;
 \`\`\`
+Metoda \`safeParse()\` zwraca czytelny obiekt błędu zamiast rzucać wyjątek, a \`parse()\` automatycznie odcina nieznane pola, chroniąc API przed tzw. *Mass Assignment* (np. próbą wstrzyknięcia pola \`"role": "ADMIN"\` w ciele rejestracji).
 
-**Centralny Error Handler:**
-Wszystkie błędy z bloków \`catch\` przekazujemy do \`next(err)\`. Na samym końcu aplikacji rejestrujemy 4-argumentowy middleware:
+**2. Spójne kody statusów HTTP i Centralny Error Handler:**
+Dobre REST API komunikuje rezultat precyzyjnymi kodami: \`200 OK\`, \`201 Created\` (utworzono zasób), \`400 Bad Request\` (błędne dane), \`401 Unauthorized\` (brak logowania), \`403 Forbidden\` (brak uprawnień), \`404 Not Found\` i \`500 Internal Server Error\`. Zamiast powtarzać \`try/catch\` z formatowaniem JSON-a w każdym kontrolerze, błędy kierujemy przez \`next(err)\` do jednego 4-argumentowego middleware na końcu pliku:
 \`\`\`typescript
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error("Błąd serwera:", err.message);
-  res.status(500).json({ error: "Wewnętrzny błąd serwera" });
+  console.error('[API Error]:', err);
+  res.status(500).json({ error: 'Wystąpił wewnętrzny błąd serwera' });
 });
-\`\`\``,
+\`\`\`
+Na produkcji nigdy nie zwracaj w odpowiedzi \`err.stack\`, aby nie ujawniać ścieżek plików ani szczegółów bazy danych.`,
       codeExamples: [
         {
           title: 'Bezpieczny endpoint rejestracji kursanta z walidacją Zod',
@@ -309,15 +310,15 @@ app.post('/api/register', async (req, res, next) => {
         'Wdrażać centralny middleware błędów (err, req, res, next) obsługujący błędy synchroniczne i asynchroniczne',
       ],
       prerequisites: ['Moduł 8: Lekcja 1 i 2'],
-      theoryMarkdown: `W profesjonalnych aplikacjach komercyjnych nie wolno łączyć obsługi protokołu HTTP (nagłówki, statusy) z logiką biznesową (kalkulacja rabatów, wysyłka e-maili) ani z zapytaniami do bazy.
+      theoryMarkdown: `Gdy API rozrasta się powyżej kilku prostych tras, umieszczenie całej logiki w jednym pliku \`server.ts\` prowadzi do chaosu niemożliwego do przetestowania i utrzymania. W profesjonalnych projektach backendowych stosuje się **architekturę warstwową (Layered Architecture)** opartą na zasadzie pojedynczej odpowiedzialności (*Single Responsibility Principle*), w której każda warstwa ma ściśle określoną rolę.
 
-**Architektura 3-warstwowa (Layered Architecture):**
-1. **Routing & Controller:** Odbiera żądanie (\`req\`), wyciąga parametry, waliduje je (np. Zod) i wywołuje odpowiedni serwis. Następnie zwraca odpowiedź (\`res.status(...).json(...)\`).
-2. **Service Layer (Logika biznesowa):** Czyste reguły biznesowe, niezależne od Expressa. Tu sprawdzamy np. czy kursant ma wystarczającą ilość XP lub czy subskrypcja jest aktywna.
-3. **Data Access / Repository:** Bezpośrednia komunikacja z bazą danych (SQL / Prisma / Firestore).
+**1. Trzy główne warstwy backendu:**
+- **Warstwa Routingu i Kontrolera (\`routes\` / \`controllers\`):** Odpowiada wyłącznie za protokół HTTP. Odbiera żądanie (\`req\`), wywołuje walidację wejścia (np. Zod), przekazuje czyste parametry do serwisu i formatuje odpowiedź (\`res.status(201).json(...)\`). Kontroler nie powinien zawierać zapytań SQL ani skomplikowanych reguł biznesowych!
+- **Warstwa Serwisu (\`services\`):** Serce aplikacji zawierające czystą logikę domenową (np. sprawdzenie limitu miejsc, obliczenie rabatu, weryfikację czy użytkownik ma dość punktów XP). Ponieważ serwis nie zależy od obiektów \`req\` i \`res\`, możesz wywołać go zarówno z endpointu REST, jak i z zadania w tle (Cron) oraz łatwo przetestować testem jednostkowym.
+- **Warstwa Dostępu do Danych (\`repositories\` / Prisma):** Izoluje konkretny silnik bazy danych (PostgreSQL, Firestore) od reguł biznesowych.
 
-**Centralny Error Handler:**
-Express posiada specjalny 4-argumentowy middleware:
+**2. Własna klasa błędu domenowego i Centralny Error Handler:**
+Zamiast zwracać \`res.status(404)\` z głębi serwisu, rzucamy spójny wyjątek biznesowy \`AppError\`, który trafia przez \`next(error)\` do jednego centralnego middleware błędów na samym końcu łańcucha Expressa:
 \`\`\`typescript
 import { ErrorRequestHandler } from 'express';
 
@@ -328,20 +329,15 @@ export class AppError extends Error {
 }
 
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
-  const statusCode = err instanceof AppError ? err.statusCode : 500;
-  const message = err.message || 'Wewnętrzny błąd serwera';
+  const isOperational = err instanceof AppError;
+  const statusCode = isOperational ? err.statusCode : 500;
+  const message = isOperational ? err.message : 'Wewnętrzny błąd serwera';
 
   console.error('[API Error]:', err);
-
-  res.status(statusCode).json({
-    success: false,
-    error: {
-      status: statusCode,
-      message,
-    },
-  });
+  res.status(statusCode).json({ success: false, error: { status: statusCode, message } });
 };
-\`\`\``,
+\`\`\`
+Dzięki temu podziałowi błędy nieoczekiwane (np. zerwane połączenie z bazą) są bezpiecznie logowane na serwerze i maskowane przed użytkownikiem komunikatem 500, podczas gdy błędy biznesowe (404, 403, 409) trafiają do klienta w spójnym formacie JSON.`,
       codeExamples: [
         {
           title: 'Wzorzec separacji Kontroler vs Serwis w Express',
@@ -594,14 +590,14 @@ async function compressFile(inputPath: string, outputPath: string) {
         'Konfigurować mechanizm Cross-Origin Resource Sharing (CORS) dla komunikacji między domenami',
       ],
       prerequisites: ['Podstawy Express.js i walidacja Zod'],
-      theoryMarkdown: `Gdy w bazie danych znajduje się 50 000 zamówień, endpoint \`GET /api/orders\` nie może zwrócić ich wszystkich naraz. Profesjonalne API zawsze udostępnia **paginację, filtrowanie i sortowanie** poprzez parametry zapytania (**Query Parameters**).
+      theoryMarkdown: `Gdy w bazie danych rośnie liczba rekordów (np. 50 000 zamówień lub 10 000 użytkowników), endpoint \`GET /api/orders\` nie może za każdym razem zwracać całej tabeli naraz — przeciążyłoby to bazę, transfer sieciowy oraz przeglądarkę klienta. Profesjonalne REST API od pierwszego dnia wdraża **paginację, filtrowanie oraz sortowanie** z użyciem parametrów zapytania (*Query Parameters*).
 
-**1. \`req.params\` vs \`req.query\` — Kiedy czego używać?**
-- **\`req.params\`** (\`/api/courses/:id\`): Służy do jednoznacznego wskazania **konkretnego zasobu** (np. \`/api/courses/react-101\`).
-- **\`req.query\`** (\`/api/courses?category=frontend&page=2&limit=10\`): Służy do **filtrowania, sortowania, wyszukiwania i stronicowania** listy zasobów.
+**1. \`req.params\` vs \`req.query\` — Złota reguła projektowania URL:**
+- **\`req.params\`** (\`/api/courses/:id\`): Wskazuje **jednoznaczny identyfikator konkretnego zasobu**, bez którego adres nie ma sensu.
+- **\`req.query\`** (\`/api/courses?category=frontend&page=2&limit=20&sort=xp\`): Służy do **opcjonalnego filtrowania, wyszukiwania, sortowania i dzielenia listy na strony**.
 
-**2. Wzorcowa implementacja paginacji z walidacją Zod:**
-Wszystkie wartości w \`req.query\` przychodzą jako teksty (\`string\`). Używamy \`z.coerce.number()\`, aby bezpiecznie zamienić je na liczby i narzucić maksymalny limit (np. max 100 rekordów na stronę):
+**2. Bezpieczna paginacja z walidacją \`z.coerce\` i ochroną przed przeciążeniem:**
+Wszystkie parametry pochodzące z \`req.query\` są domyślnie ciągami znaków (\`string\`), więc dodanie \`page + 1\` bez konwersji zamieniłoby stronę \`"2"\` w \`"21"\`! Stosując \`z.coerce.number()\` w bibliotece Zod, bezpiecznie parsujemy liczby i — co równie ważne — nakładamy twarde maksimum (np. \`max(100)\`), aby nikt nie wywołał \`?limit=9999999\` w celu zawieszenia serwera:
 \`\`\`typescript
 const PaginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -611,24 +607,18 @@ const PaginationSchema = z.object({
 });
 
 app.get('/api/lessons', async (req, res) => {
-  const { page, limit, search, sortBy } = PaginationSchema.parse(req.query);
+  const { page, limit } = PaginationSchema.parse(req.query);
   const offset = (page - 1) * limit;
 
-  // Zwracamy dane wraz z metadanymi paginacji dla frontendu:
   res.status(200).json({
     data: paginatedItems,
-    meta: {
-      page,
-      limit,
-      totalItems: 120,
-      totalPages: Math.ceil(120 / limit),
-    },
+    meta: { page, limit, totalItems: 120, totalPages: Math.ceil(120 / limit) },
   });
 });
 \`\`\`
 
-**3. Zrozumieć CORS (Cross-Origin Resource Sharing):**
-Gdy Twój frontend działa na \`https://app.twojadomena.pl\`, a backend na \`https://api.twojadomena.pl\`, przeglądarka domyślnie zablokuje zapytania \`fetch\` ze względów bezpieczeństwa (Same-Origin Policy), jeśli serwer nie odeśle nagłówka \`Access-Control-Allow-Origin\`.`,
+**3. Mechanizm CORS (*Cross-Origin Resource Sharing*):**
+Jeśli frontend działa pod innym adresem lub portem niż backend (np. \`https://app.domena.pl\` pyta \`https://api.domena.pl\`), przeglądarka domyślnie blokuje takie zapytanie zgodnie z polityką *Same-Origin Policy*. Serwer musi jawnie zezwolić zaufanej domenie w nagłówku \`Access-Control-Allow-Origin\`. Przy bardziej złożonych żądaniach (\`POST\`, \`DELETE\`, nagłówek \`Authorization\`) przeglądarka wysyła najpierw kontrolne zapytanie **\`OPTIONS\` (Preflight Request)**, na które Express z pakietem \`cors\` odpowiada statusem 204 zanim przepuści właściwy ruch.`,
       codeExamples: [
         {
           title: 'Bezpieczna konfiguracja pakietu cors na produkcji',

@@ -161,19 +161,19 @@ Content-Type: text/html; charset=UTF-8
         'Rozróżniać kompilację (C++, Rust, TypeScript) od interpretacji JIT (JavaScript V8)',
       ],
       prerequisites: ['Lekcja 1: Architektura Internetu'],
-      theoryMarkdown: `Programowanie to sztuka tłumaczenia ludzkich celów na precyzyjną listę instrukcji, które potrafi wykonać procesor.
+      theoryMarkdown: `Programowanie to sztuka tłumaczenia ludzkich celów biznesowych na precyzyjną listę jednoznacznych kroków, które potrafi wykonać procesor. Zanim nauczysz się dziesiątek bibliotek, warto dokładnie zrozumieć, co dzieje się pod spodem w sprzęcie i pamięci operacyjnej komputera.
 
-**1. Czym jest algorytm?**
-Algorytm to skończony ciąg jasno zdefiniowanych kroków prowadzących do rozwiązania problemu (jak przepis kulinarny). Każdy algorytm składa się z 3 klocków:
-- **Sekwencji** (wykonaj krok A, potem krok B),
-- **Warunku (Selekcji)** (*jeśli* użytkownik podał poprawne hasło -> zaloguj, *w przeciwnym razie* -> pokaż błąd),
-- **Pętli (Iteracji)** (*powtarzaj* wysyłkę powiadomienia dla każdego kursanta z listy).
+**1. Czym jest algorytm i jego trzy fundamentalne klocki?**
+Algorytm to skończony, powtarzalny przepis prowadzący od danych wejściowych (*Input*) do oczekiwanego wyniku (*Output*). Absolutnie każdy program — od prostego kalkulatora po silnik rekomendacji Netflixa — buduje się z zaledwie trzech struktur sterujących:
+- **Sekwencji:** Wykonywanie instrukcji linijka po linijce od góry do dołu (np. pobierz dane, sprawdź hasło, zapisz sesję).
+- **Warunku (Selekcji):** Rozgałęzienie decyzji za pomocą \`if / else\` (*jeśli* koszyk przekracza 200 zł -> nalicz darmową dostawę, *w przeciwnym razie* -> dolicz 15 zł).
+- **Pętli (Iteracji):** Wielokrotne powtarzanie operacji dla całej kolekcji danych (np. wyświetlenie 50 produktów z listy).
 
-**2. Pamięć RAM jako szafka z szufladkami:**
-Gdy w kodzie piszesz \`const wiek = 25;\`, komputer rezerwuje komórkę w szybkiej pamięci **RAM**, nadaje jej czytelną etykietę \`wiek\` i zapisuje w niej wartość binarną liczby \`25\`.
+**2. Jak zmienne rezerwują pamięć RAM?**
+Gdy w kodzie piszesz \`const wiek = 25;\`, środowisko uruchomieniowe rezerwuje miejsce w szybkiej pamięci operacyjnej **RAM**, zapisuje tam reprezentację binarną liczby \`25\` i wiąże z nią czytelną etykietę \`wiek\`. Typy proste (liczby, krótkie flagi) trafiają na szybki **Stos (Stack)**, natomiast rozbudowane obiekty i tablice są alokowane na dynamicznej **Stercie (Heap)**, do której zmienna przechowuje jedynie adres (referencję).
 
-**3. Kompilacja vs Interpretacja (JIT):**
-Procesor rozumie wyłącznie kod maszynowy (zera i jedynki). Silnik **V8** (w Chrome i Node.js) używa techniki **JIT (Just-In-Time Compilation)** — wczytuje Twój kod JavaScript i w locie kompiluje najczęściej używane fragmenty bezpośrednio do superszybkiego kodu maszynowego.`,
+**3. Kompilacja, interpretacja i silnik V8 (JIT):**
+Procesor rozumie wyłącznie kod maszynowy. Języki takie jak C++ czy Rust kompiluje się z góry do pliku wykonywalnego przed wysłaniem do użytkownika. Z kolei nowoczesny JavaScript w przeglądarce Chrome i środowisku Node.js wykorzystuje silnik **V8** z kompilatorem **JIT (Just-In-Time)**: kod startuje błyskawicznie jako interpreter, a fragmenty wykonywane w pętlach tysiące razy (*hot paths*) są w locie zamieniane bezpośrednio na ultraszybki kod maszynowy.`,
       codeExamples: [
         {
           title: 'Od problemu w języku polskim do pierwszego algorytmu w JS',
@@ -279,18 +279,23 @@ if (punktyKursanta >= progZaliczenia) {
         'Zrozumieć różnicę między formaterem wyglądu (Prettier) a analizatorem błędów logicznych (ESLint)',
       ],
       prerequisites: ['Lekcja 1 i 2'],
-      theoryMarkdown: `Dobry rzemieślnik dba o swoje narzędzia. **Visual Studio Code (VS Code)** to obecnie standard rynkowy używany przez ponad 75% programistów Full Stack.
+      theoryMarkdown: `Dobry inżynier dba o swoje narzędzia pracy tak samo jak o architekturę kodu. **Visual Studio Code (VS Code)** to lekki, rozszerzalny edytor kodu będący dziś niekwestionowanym standardem w świecie Full Stack — od pracy z Reactem i Node.js po kontenery Docker i zdalne serwery SSH.
 
-**1. Skróty klawiszowe, które musisz znać na pamięć:**
-- **\`Ctrl + P\` (Mac: \`Cmd + P\`):** Błyskawiczne otwieranie dowolnego pliku po nazwie (bez szukania myszką w drzewie folderów!).
-- **\`Ctrl + Shift + P\` (Mac: \`Cmd + Shift + P\`):** Paleta poleceń (Command Palette) — dostęp do wszystkich funkcji edytora.
-- **\`Ctrl + D\`:** Zaznacza kolejne wystąpienie tego samego słowa (edycja wielokursorowa!).
-- **\`Alt + Strzałka Góra/Dół\`:** Przenosi całą bieżącą linijkę kodu w górę lub w dół.
-- **\`Ctrl + /\`:** Komentuje lub odkomentowuje zaznaczone linie kodu.
+**1. Skróty klawiszowe oszczędzające godziny pracy:**
+Przełączanie ręki między klawiaturą a myszką przy każdym pliku wybija z rytmu. Opanuj pięć podstawowych skrótów:
+- **\`Ctrl + P\` (Mac: \`Cmd + P\`):** Błyskawiczne przechodzenie do dowolnego pliku w projekcie po fragmentach nazwy (np. wpisujesz \`navbar\` i naciskasz Enter).
+- **\`Ctrl + Shift + P\` (Mac: \`Cmd + Shift + P\`):** Paleta poleceń (*Command Palette*) — uruchamiasz z niej restart TypeScriptu, formatowanie dokumentu czy komendy Gita.
+- **\`Ctrl + D\`:** Wielokursorowe zaznaczanie kolejnych wystąpień tej samej nazwy zmiennej lub klasy CSS i edycja wszystkich miejsc naraz.
+- **\`Alt + Strzałka Góra/Dół\`:** Płynne przesuwanie całych wierszy lub zaznaczonego bloku kodu bez wycinania i wklejania.
+- **\`Ctrl + ~\` (tylda):** Natychmiastowe otwieranie i ukrywanie wbudowanego terminala.
 
-**2. Duet doskonały: Prettier + ESLint**
-- **Prettier (Formater):** Dba wyłącznie o wygląd kodu (wcięcia, średniki, cudzysłowy, łamanie długich linii). Włącz opcję **Format On Save**, a po każdym \`Ctrl + S\` Twój kod sam ułoży się idealnie!
-- **ESLint (Linter):** Analizuje kod pod kątem błędów i złych praktyk (np. nieużywane zmienne, brakujące zależności w React, przypisanie w warunku \`if\`).`,
+**2. Duet jakości: Prettier + ESLint (Styl vs Poprawność):**
+Początkujący często mylą te dwa narzędzia, choć pełnią zupełnie inne role:
+- **Prettier (Formater):** Odpowiada wyłącznie za estetykę zapisu — spójne wcięcia, cudzysłowy, średniki i łamanie zbyt długich linii. Gdy włączysz opcję **Format On Save**, po każdym naciśnięciu \`Ctrl + S\` cały plik układa się w ułamku sekundy, kończąc jałowe dyskusje o spacjach na Code Review.
+- **ESLint (Linter):** Analizuje drzewo składniowe kodu w poszukiwaniu realnych błędów i ryzykownych wzorców — ostrzega przed nieużywanymi zmiennymi, brakującymi importami, nieskończonymi pętlami efektów w React czy niebezpiecznym typem \`any\`.
+
+**3. Konfiguracja zespołowa w repozytorium:**
+Współdzielone pliki \`.prettierrc\`, \`eslint.config.js\` oraz folder \`.vscode/settings.json\` sprawiają, że każdy nowy programista otwierający projekt ma identyczne zasady formatowania od pierwszej minuty.`,
       codeExamples: [
         {
           title: 'Przykładowy plik konfiguracyjny .prettierrc w projekcie',
@@ -393,18 +398,21 @@ if (punktyKursanta >= progZaliczenia) {
         'Poznać potoki, łączenie komend operatorem && i strukturę katalogów projektu',
       ],
       prerequisites: ['Lekcja 1-3 z modułu Fundamenty'],
-      theoryMarkdown: `Terminal to tekstowy interfejs do komunikacji z jądrem systemu operacyjnego (shell). 
+      theoryMarkdown: `**Terminal (wiersz poleceń)** to tekstowy interfejs komunikacji z powłoką systemu operacyjnego (*Bash*, *Zsh*). Choć na początku okno z migającym kursorem może wydawać się surowe, w pracy Full Stack Developera jest szybsze i bardziej precyzyjne niż przeklikiwanie dziesiątek okienek — używasz go codziennie do instalacji paczek \`npm\`, pracy z Gitem, uruchamiania testów, budowania kontenerów Docker i łączenia się przez SSH z serwerem Linux VPS.
 
-Jako Full Stack Developer będziesz używać terminala codziennie: do uruchamiania serwerów, kompilacji kodu, pracy z Git, budowania kontenerów Docker i zarządzania serwerami VPS.
+**1. Nawigacja i operacje na plikach, które musisz znać:**
+- **\`pwd\`** (*Print Working Directory*) — wyświetla pełną ścieżkę bieżącego katalogu, w którym się znajdujesz.
+- **\`ls -la\`** — listuje zawartość folderu ze szczegółami uprawnień i rozmiaru; flaga \`-a\` ujawnia ukryte pliki konfiguracyjne zaczynające się od kropki (np. \`.env\`, \`.gitignore\`, \`.git/\`).
+- **\`cd ścieżka\`** — zmienia katalog; \`cd ..\` cofa o jeden poziom wyżej, a \`cd ~\` wraca do Twojego katalogu domowego.
+- **\`mkdir -p src/components/ui\`** — tworzy od razu całe drzewo zagnieżdżonych folderów.
+- **\`touch index.ts\`** — błyskawicznie tworzy nowy, pusty plik.
+- **\`cat\` / \`head -n 20\` / \`tail -f\`** — podgląda zawartość plików i śledzi logi serwera na żywo bez otwierania ciężkiego edytora.
+- **\`rm -rf katalog\`** — nieodwracalnie usuwa katalog (w terminalu nie ma Kosza — przed wciśnięciem Enter dwa razy sprawdź ścieżkę!).
 
-**Najważniejsze komendy nawigacji:**
-- \`pwd\` (print working directory) — wyświetla ścieżkę bieżącego folderu.
-- \`ls -la\` — listuje zawartość katalogu, w tym ukryte pliki konfiguracyjne (zaczynające się od kropki, np. \`.env\`, \`.gitignore\`).
-- \`cd nazwa_folderu\` — przechodzi do wskazanego katalogu.
-- \`cd ..\` — cofa się o jeden poziom w górę drzewa katalogów.
-- \`mkdir nazwa\` — tworzy nowy katalog.
-- \`touch index.js\` — tworzy pusty plik.
-- \`rm -rf folder\` — usuwa katalog i jego zawartość (używać z rozwagą!).`,
+**2. Łączenie poleceń i przekierowania (\`&&\`, \`|\`, \`>\`):**
+- Operator **\`&&\`** uruchamia kolejne polecenie wyłącznie wtedy, gdy poprzednie zakończyło się sukcesem (kod wyjścia \`0\`), np. \`npm run build && npm test\`.
+- Potok **\`|\`** (*pipe*) przekazuje wynik pierwszego programu jako wejście drugiego, np. \`ls -la | grep ".env"\`.
+- Wskazówka produktywności: używaj klawisza **\`Tab\`** do autouzupełniania długich nazw plików oraz strzałki w górę lub **\`Ctrl + R\`** do przeszukiwania historii wcześniejszych poleceń.`,
       codeExamples: [
         {
           title: 'Typowy ciąg poleceń przy tworzeniu nowego projektu',
@@ -513,22 +521,24 @@ ls -la`,
         'Stosować pliki .env.example jako wzorzec konfiguracyjny dla zespołu',
       ],
       prerequisites: ['Lekcja 4: Terminal i system plików'],
-      theoryMarkdown: `Sekrety aplikacji (hasła do baz danych PostgreSQL, klucze Stripe, tajne klucze JWT) **nigdy nie mogą znaleźć się bezpośrednio w kodzie źródłowym**.
+      theoryMarkdown: `Hasła do produkcyjnej bazy PostgreSQL, tajne klucze Stripe do pobierania płatności, tokeny OAuth oraz sekrety podpisujące JWT **nigdy nie mogą trafić na sztywno do kodu źródłowego**. Zgodnie z metodologią *Twelve-Factor App* konfigurację zależną od środowiska oddzielamy od logiki aplikacji za pomocą **zmiennych środowiskowych (Environment Variables)**.
 
-**1. Plik \`.env\`:**
-Przechowujemy w nim pary \`KLUCZ=WARTOŚĆ\` czytane przez serwer podczas startu:
+**1. Plik \`.env\` — lokalne centrum konfiguracji:**
+W pliku \`.env\` trzymamy pary \`KLUCZ=WARTOŚĆ\`, które różnią się między komputerem programisty, serwerem testowym a produkcją:
 \`\`\`bash
-# .env (NIGDY nie commituj tego pliku do repozytorium!)
+# .env (Plik wyłącznie lokalny — NIGDY nie wysyłaj go do repozytorium!)
+NODE_ENV=development
 PORT=3000
 DATABASE_URL=postgresql://user:tajne_haslo@localhost:5432/db
-JWT_SECRET=super_tajny_klucz_kryptograficzny
+JWT_SECRET=super_dlugi_losowy_ciag_znakow
 \`\`\`
+Po stronie backendu (Node.js/Express) odczytujemy te dane bezpiecznie przez obiekt \`process.env\`. Pamiętaj o zasadniczym podziale w projektach Vite/React: każda zmienna zaczynająca się od \`VITE_\` trafia do publicznej paczki przeglądarkowej i **każdy użytkownik może ją odczytać w DevTools**, dlatego klucze prywatne zawsze zostają wyłącznie na serwerze!
 
-**2. Strażnik \`.gitignore\`:**
-W pliku \`.gitignore\` wpisujemy listę plików i katalogów, które Git ma całkowicie ignorować (np. \`node_modules/\`, \`.env\`, \`dist/\`).
+**2. Strażnik \`.gitignore\` i dlaczego wyciek to realny problem:**
+Zautomatyzowane skanery nieustannie przeszukują nowe publiczne commity na GitHubie w poszukiwaniu kluczy API i haseł do baz danych — skradziony klucz chmurowy bywa wykorzystany w ciągu kilkudziesięciu sekund. Dlatego wpisanie \`.env\`, \`.env.local\` oraz \`node_modules/\` do pliku **\`.gitignore\`** to absolutnie pierwsza czynność przed \`git init\`.
 
-**3. Wzorzec \`.env.example\`:**
-Do repozytorium GitHub wrzucamy wyłącznie bezpieczny szablon **\`.env.example\`** z pustymi lub przykładowymi wartościami, aby inni programiści w zespole wiedzieli, jakie zmienne muszą utworzyć na swoim komputerze.`,
+**3. Wzorzec \`.env.example\` i walidacja przy starcie serwera:**
+Ponieważ prawdziwy plik \`.env\` nie trafia do Gita, do repozytorium dodajemy bezpieczny szablon **\`.env.example\`** zawierający nazwy wszystkich wymaganych kluczy bez wrażliwych wartości. Dobrą praktyką produkcyjną jest także walidacja zmiennych przy starcie aplikacji (np. przy użyciu Zod) — jeśli brakuje \`DATABASE_URL\`, serwer od razu zgłasza jasny błąd zamiast wybuchnąć po cichu dopiero przy pierwszym logowaniu użytkownika.`,
       codeExamples: [
         {
           title: 'Odczyt zmiennych środowiskowych w Node.js',
@@ -635,16 +645,16 @@ console.log(\`Serwer uruchomiony na porcie \${port}\`);`,
         'Stosować profesjonalne techniki logowania: console.log, console.error, console.table, breakpointy',
       ],
       prerequisites: ['Lekcje 1-5 z modułu Fundamenty'],
-      theoryMarkdown: `Błąd w kodzie nie jest porażką — to precyzyjna wskazówka przekazywana przez interpreter, gdzie i dlaczego wykonanie programu zostało przerwane.
+      theoryMarkdown: `Wielu początkujących traktuje czerwony komunikat błędu w konsoli jak powód do paniki. W rzeczywistości **komunikat błędu i ślad stosu (Stack Trace)** to najlepszy przyjaciel programisty — precyzyjny raport wskazujący dokładny plik, numer linii oraz powód zatrzymania programu. Spokojne, metodyczne debugowanie to jedna z najważniejszych umiejętności odróżniających samodzielnego inżyniera od osoby kopiującej kod na ślepo.
 
-**Główne kategorie błędów:**
-1. **SyntaxError (Błąd składni):** Zły zapis kodu, np. brakujący nawias klamrowy \`}\` lub literówka w słowie kluczowym. Kod w ogóle się nie uruchomi.
-2. **ReferenceError (Błąd odwołania):** Próba użycia zmiennej lub funkcji, która nie została zadeklarowana w danym zasięgu (np. \`console.log(user)\` przed jej definicją).
-3. **TypeError (Błąd typu):** Wywołanie metody na wartości niewłaściwego typu, np. wywołanie \`user.map()\` gdy \`user\` jest obiektem lub \`null\`, albo słynne \`Cannot read properties of undefined\`.
-4. **Logic Error (Błąd logiczny):** Kod wykonuje się bez błędu w konsoli, ale zwraca zły wynik (np. dodawanie zamiast mnożenia).
+**1. Cztery główne kategorie błędów, które spotkasz najczęściej:**
+- **SyntaxError (Błąd składni):** Niepoprawny zapis języka — brakujący nawias klamrowy \`}\`, niedomknięty cudzysłów lub literówka w słowie kluczowym. Program nie przechodzi nawet etapu parsowania i w ogóle nie startuje.
+- **ReferenceError (Błąd odwołania):** Próba odczytania zmiennej lub funkcji nieistniejącej w bieżącym zasięgu (np. literówka w nazwie lub odwołanie się do \`let\` przed jego deklaracją).
+- **TypeError (Błąd typu):** Wywołanie metody lub odczyt pola na wartości złego typu — klasyczne \`Cannot read properties of undefined (reading 'name')\` albo próba użycia \`.map()\` na obiekcie zamiast na tablicy.
+- **Logic Error (Błąd logiczny):** Najbardziej podstępny rodzaj usterki — konsola jest czysta, program działa bez awarii, ale oblicza złą kwotę rabatu lub wyświetla niewłaściwy stan przez błędny warunek \`<\` zamiast \`<=\`.
 
-**Anatomia Stack Trace:**
-Ślad stosu pokazuje łańcuch wywołań funkcji prowadzący do miejsca awarii. Pierwszy wiersz podaje typ błędu i opis, a kolejne wiersze wskazują dokładny plik oraz numer linii i kolumny: \`at calculateTotal (cart.js:42:15)\`.`,
+**2. Jak czytać Stack Trace i używać DevTools?**
+Ślad stosu pokazany w konsoli czytaj zawsze **od góry do pierwszego wiersza wskazującego na Twój własny plik źródłowy** (np. \`at calculateTotal (cart.ts:42:15)\` — plik \`cart.ts\`, linia 42, znak 15), ignorując na start wewnętrzne ścieżki \`node_modules\`. Jeśli \`console.log()\` nie wystarcza, otwórz w przeglądarce zakładkę **Sources** (lub wpisz słowo \`debugger;\` w kodzie), zatrzymaj wykonanie na *breakpoincie* i podejrzyj na żywo zawartość wszystkich zmiennych oraz kolejność żądań w zakładce **Network**.`,
       codeExamples: [
         {
           title: 'Przykład analizy błędu TypeError w konsoli',
