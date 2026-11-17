@@ -33,9 +33,11 @@ import {
   RotateCcw,
   Eye,
   SlidersHorizontal,
-  Smartphone
+  Smartphone,
+  Image as ImageIcon
 } from 'lucide-react';
 import { AndroidPlayStoreModal } from './AndroidPlayStoreModal';
+import { PromoAssetsPanel } from './PromoAssetsPanel';
 
 interface AdminPanelViewProps {
   onOpenAuthModal?: () => void;
@@ -66,7 +68,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
   } = useApp();
   const isEn = language === 'en';
 
-  const [adminTab, setAdminTab] = useState<'students' | 'security' | 'announcements' | 'analytics' | 'curriculum' | 'adsense'>('students');
+  const [adminTab, setAdminTab] = useState<'students' | 'security' | 'announcements' | 'analytics' | 'curriculum' | 'adsense' | 'promo'>('students');
   const [securityFilter, setSecurityFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
   const [isPlayStoreModalOpen, setIsPlayStoreModalOpen] = useState(false);
   const [copiedAdSnippet, setCopiedAdSnippet] = useState<'none' | 'adstxt' | 'head'>('none');
@@ -328,6 +330,18 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
         >
           <Sparkles className="h-4 w-4" />
           <span>{isEn ? 'Google AdSense (Free Tier)' : 'Google AdSense (Free Konta)'}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setAdminTab('promo')}
+          className={`pb-3 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+            adminTab === 'promo'
+              ? 'border-cyan-500 text-cyan-400'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <ImageIcon className="h-4 w-4" />
+          <span>{isEn ? 'Promo Kit (Wykop)' : 'Grafiki Promo (Wykop)'}</span>
         </button>
         <button
           type="button"
@@ -1128,6 +1142,9 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
           </div>
         </div>
       )}
+
+      {/* TAB: Promo Graphics & Wykop Kit */}
+      {adminTab === 'promo' && <PromoAssetsPanel />}
 
       {/* TAB 5: Security Audit Log */}
       {adminTab === 'security' && (

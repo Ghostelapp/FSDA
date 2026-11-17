@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Materiały Promocyjne — Full Stack Developer Academy</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: #020617;
+        color: #f1f5f9;
+        padding: 32px 20px 64px;
+      }
+      .wrap { max-width: 1100px; margin: 0 auto; }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 32px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      }
+      h1 { margin: 0 0 6px; font-size: 24px; }
+      p.sub { margin: 0; color: #94a3b8; font-size: 14px; }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 16px;
+        border-radius: 10px;
+        background: #4f46e5;
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 13px;
+        text-decoration: none;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        cursor: pointer;
+      }
+      .btn:hover { background: #4338ca; }
+      .btn-secondary { background: rgba(30, 41, 59, 0.9); color: #e2e8f0; }
+      .btn-secondary:hover { background: rgba(51, 65, 85, 0.95); }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+      @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+      .card {
+        background: #0b101b;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 14px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .card img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; background: #020617; }
+      .card-body { padding: 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+      .card-title { font-weight: 600; font-size: 15px; margin: 0 0 4px; }
+      .card-meta { font-size: 12px; color: #94a3b8; margin: 0; }
+      .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+      .modal {
+        position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
+        display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50;
+      }
+      .modal.open { display: flex; }
+      .modal-box {
+        max-width: 960px; width: 100%; background: #0f172a;
+        border: 1px solid #334155; border-radius: 14px; padding: 16px;
+      }
+      .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; }
+      .modal-box img { width: 100%; border-radius: 10px; display: block; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <h1>Grafiki promocyjne — Full Stack Developer Academy (fsda.tech)</h1>
+          <p class="sub">Zestaw 4 grafik 16:9 gotowych pod Wykop, X i LinkedIn. Możesz pobrać przez przycisk lub prawy klik &rarr; „Zapisz grafikę jako…”.</p>
+        </div>
+        <button class="btn" type="button" onclick="downloadBlob('/promo/fsda-grafiki-wykop.zip', 'fsda-grafiki-wykop.zip')">
+          Pobierz wszystkie 4 (.ZIP)
+        </button>
+      </header>
+
+      <div class="grid">
+        <article class="card">
+          <img src="/promo/01-baner-glowny-fsda.jpg" alt="Baner główny Full Stack Developer Academy" />
+          <div class="card-body">
+            <div>
+              <h2 class="card-title">01. Baner główny + kod React/TS</h2>
+              <p class="card-meta">01-baner-glowny-fsda.jpg · 16:9</p>
+            </div>
+            <div class="actions">
+              <button class="btn" type="button" onclick="downloadBlob('/promo/01-baner-glowny-fsda.jpg', '01-baner-glowny-fsda.jpg')">Pobierz</button>
+              <button class="btn btn-secondary" type="button" onclick="openPreview('/promo/01-baner-glowny-fsda.jpg', '01-baner-glowny-fsda.jpg')">Powiększ</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <img src="/promo/02-symulatory-fsda.jpg" alt="6 interaktywnych symulatorów w przeglądarce" />
+          <div class="card-body">
+            <div>
+              <h2 class="card-title">02. 6 interaktywnych symulatorów</h2>
+              <p class="card-meta">02-symulatory-fsda.jpg · 16:9</p>
+            </div>
+            <div class="actions">
+              <button class="btn" type="button" onclick="downloadBlob('/promo/02-symulatory-fsda.jpg', '02-symulatory-fsda.jpg')">Pobierz</button>
+              <button class="btn btn-secondary" type="button" onclick="openPreview('/promo/02-symulatory-fsda.jpg', '02-symulatory-fsda.jpg')">Powiększ</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <img src="/promo/03-sciezka-nauki-fsda.jpg" alt="Ścieżka nauki Full Stack i Baza Wiedzy" />
+          <div class="card-body">
+            <div>
+              <h2 class="card-title">03. Ścieżka Full Stack i Baza Wiedzy</h2>
+              <p class="card-meta">03-sciezka-nauki-fsda.jpg · 16:9</p>
+            </div>
+            <div class="actions">
+              <button class="btn" type="button" onclick="downloadBlob('/promo/03-sciezka-nauki-fsda.jpg', '03-sciezka-nauki-fsda.jpg')">Pobierz</button>
+              <button class="btn btn-secondary" type="button" onclick="openPreview('/promo/03-sciezka-nauki-fsda.jpg', '03-sciezka-nauki-fsda.jpg')">Powiększ</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <img src="/promo/04-edycja-otwarta-fsda.jpg" alt="Darmowy dostęp 0 zł i metodyka 80%" />
+          <div class="card-body">
+            <div>
+              <h2 class="card-title">04. Edycja Otwarta 0 zł i metodyka 80%</h2>
+              <p class="card-meta">04-edycja-otwarta-fsda.jpg · 16:9</p>
+            </div>
+            <div class="actions">
+              <button class="btn" type="button" onclick="downloadBlob('/promo/04-edycja-otwarta-fsda.jpg', '04-edycja-otwarta-fsda.jpg')">Pobierz</button>
+              <button class="btn btn-secondary" type="button" onclick="openPreview('/promo/04-edycja-otwarta-fsda.jpg', '04-edycja-otwarta-fsda.jpg')">Powiększ</button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div id="modal" class="modal" onclick="closePreview()">
+      <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-head">
+          <span id="modalTitle" style="font-size:14px;font-weight:600"></span>
+          <button class="btn btn-secondary" type="button" onclick="closePreview()">Zamknij</button>
+        </div>
+        <img id="modalImg" src="" alt="Podgląd" />
+      </div>
+    </div>
+
+    <script>
+      async function downloadBlob(url, filename) {
+        try {
+          var res = await fetch(url);
+          var blob = await res.blob();
+          var objUrl = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = objUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(objUrl); }, 4000);
+        } catch (e) {
+          var a2 = document.createElement('a');
+          a2.href = url;
+          a2.download = filename;
+          a2.click();
+        }
+      }
+      async function openPreview(url, name) {
+        var modal = document.getElementById('modal');
+        var img = document.getElementById('modalImg');
+        document.getElementById('modalTitle').textContent = name + ' — prawy klik i „Zapisz grafikę jako…”';
+        try {
+          var res = await fetch(url);
+          var blob = await res.blob();
+          var reader = new FileReader();
+          reader.onload = function () { img.src = reader.result; modal.classList.add('open'); };
+          reader.readAsDataURL(blob);
+        } catch (e) {
+          img.src = url;
+          modal.classList.add('open');
+        }
+      }
+      function closePreview() {
+        document.getElementById('modal').classList.remove('open');
+      }
+    </script>
+  </body>
+</html>

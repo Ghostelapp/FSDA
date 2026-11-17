@@ -23,6 +23,7 @@ const ProjectsView = React.lazy(() => import('./components/ProjectsView').then((
 const CertificateView = React.lazy(() => import('./components/CertificateView').then(({ CertificateView }) => ({ default: CertificateView })));
 const ReviewCenterView = React.lazy(() => import('./components/ReviewCenterView').then(({ ReviewCenterView }) => ({ default: ReviewCenterView })));
 const AdminPanelView = React.lazy(() => import('./components/AdminPanelView').then(({ AdminPanelView }) => ({ default: AdminPanelView })));
+const PromoAssetsPanel = React.lazy(() => import('./components/PromoAssetsPanel').then(({ PromoAssetsPanel }) => ({ default: PromoAssetsPanel })));
 const DeploymentGuideView = React.lazy(() => import('./components/DeploymentGuideView').then(({ DeploymentGuideView }) => ({ default: DeploymentGuideView })));
 const TerminalSimulator = React.lazy(() => import('./components/TerminalSimulator').then(({ TerminalSimulator }) => ({ default: TerminalSimulator })));
 const SqlStudioView = React.lazy(() => import('./components/SqlStudioView').then(({ SqlStudioView }) => ({ default: SqlStudioView })));
@@ -101,7 +102,19 @@ const MainContent: React.FC = () => {
       )}
 
       {/* App Body */}
-      {isPublicTab(activeTab) ? (
+      {typeof window !== 'undefined' &&
+      (/^\/promo\/?$/i.test(window.location.pathname) || new URLSearchParams(window.location.search).get('promo') === '1') ? (
+        <main className="flex-1 min-w-0 max-w-6xl w-full mx-auto px-4 py-8">
+          <React.Suspense fallback={<div className="py-12 text-center text-sm text-slate-400">Ładowanie...</div>}>
+            <PromoAssetsPanel
+              onClose={() => {
+                window.history.pushState(null, '', '/');
+                setActiveTab('landing');
+              }}
+            />
+          </React.Suspense>
+        </main>
+      ) : isPublicTab(activeTab) ? (
         <main className="flex-1 min-w-0 overflow-x-clip print:pb-0">
           {activeTab === 'landing' && (
             <LandingPageView onOpenAuthModal={() => setIsAuthModalOpen(true)} />

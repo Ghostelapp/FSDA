@@ -59,7 +59,9 @@ export default defineConfig(() => {
           importScripts: ['/sw-notifications.js'],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,webp,svg,woff,woff2,json}'],
+          globIgnores: ['promo/**', 'play-store/**'],
           navigateFallbackDenylist: [
+            /^\/promo\//,
             /^\/play-store\//,
             /^\/\.well-known\//,
             /\.(txt|xml|zip|tar|gz|keystore|aab|apk|json|png|jpg|jpeg|webp|ico|svg|html|webmanifest)$/i,
