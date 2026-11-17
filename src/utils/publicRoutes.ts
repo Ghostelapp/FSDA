@@ -20,7 +20,7 @@ export const PUBLIC_TABS: readonly PublicTab[] = [
   'privacy',
 ];
 
-export const SITE_BASE_URL = 'https://fsda-phi.vercel.app';
+export const SITE_BASE_URL = 'https://fsda.tech';
 
 export function isPublicTab(tab: string): tab is PublicTab {
   return (PUBLIC_TABS as readonly string[]).includes(tab);

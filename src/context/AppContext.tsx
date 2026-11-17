@@ -1351,19 +1351,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Update <html lang>, og:locale, <title>, <meta name="description">, og:title and canonical URL on route/language changes
+  // Update <html lang>, og:locale, <title>, <meta name="description">, robots and canonical URL on route/language changes
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.documentElement.lang = language;
     const ogLocale = document.querySelector('meta[property="og:locale"]');
     if (ogLocale) ogLocale.setAttribute('content', getOgLocale(language));
 
+    const robotsMeta = document.querySelector('meta[name="robots"]');
+
     if (!isPublicTab(activeTab)) {
       document.title =
         language === 'en'
           ? 'Student Workspace | Full Stack Developer Academy'
           : 'Pulpit Kursanta | Full Stack Developer Academy';
+      if (robotsMeta) robotsMeta.setAttribute('content', 'noindex, nofollow');
       return;
+    }
+
+    if (robotsMeta) {
+      robotsMeta.setAttribute('content', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
     }
 
     const activeLesson =
@@ -1385,6 +1392,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const canonicalUrl = `${SITE_BASE_URL}${seo.canonicalPath}`;
     const canonicalLink = document.querySelector('link[rel="canonical"]');
     if (canonicalLink) canonicalLink.setAttribute('href', canonicalUrl);
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl) ogUrl.setAttribute('content', canonicalUrl);
   }, [activeTab, selectedLessonId, language, allLessons]);
 
   const setActiveTab = (tab: AppTab, lessonId?: string, projectId?: string) => {

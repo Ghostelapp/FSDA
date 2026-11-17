@@ -628,19 +628,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[#94A3B8]">
-                  <span>Portal: fsda-phi.vercel.app</span>
+                  <span>fsda.tech</span>
                   <span aria-hidden="true">·</span>
                   <a
-                    href="https://app.fsda-phi.vercel.app"
+                    href="/baza-wiedzy"
                     onClick={(e) => {
-                      if (window.location.hostname !== 'app.fsda-phi.vercel.app') {
-                        e.preventDefault();
-                        handlePrimaryAction();
-                      }
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                      e.preventDefault();
+                      setActiveTab('knowledge_base');
                     }}
                     className="font-medium text-indigo-400 hover:text-indigo-300 underline underline-offset-4"
                   >
-                    {isEn ? 'App: app.fsda-phi.vercel.app' : 'Aplikacja: app.fsda-phi.vercel.app'}
+                    {isEn ? 'Open Knowledge Base (96 free lessons)' : 'Otwarta Baza Wiedzy (96 lekcji bez logowania)'}
                   </a>
                   <span aria-hidden="true">·</span>
                   <span>{isEn ? 'No credit card required' : 'Bez karty płatniczej'}</span>

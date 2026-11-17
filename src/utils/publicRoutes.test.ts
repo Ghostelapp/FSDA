@@ -78,3 +78,20 @@ test('all 96 lessons across 15 modules (including 14 HTML5 lessons) have valid i
     assert.equal(start.allPassed, false, `Starter already passed for ${lesson.id}`);
   }
 });
+
+test('SITE_BASE_URL, robots.txt, and privacy-policy.html target https://fsda.tech without legacy staging domains', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { SITE_BASE_URL } = await import('./publicRoutes');
+
+  assert.equal(SITE_BASE_URL, 'https://fsda.tech');
+
+  const robotsTxt = fs.readFileSync(path.resolve('public/robots.txt'), 'utf8');
+  assert.match(robotsTxt, /Sitemap:\s*https:\/\/fsda\.tech\/sitemap\.xml/);
+  assert.doesNotMatch(robotsTxt, /fsda-phi\.vercel\.app/);
+
+  const privacyHtml = fs.readFileSync(path.resolve('public/privacy-policy.html'), 'utf8');
+  assert.match(privacyHtml, /https:\/\/fsda\.tech/);
+  assert.doesNotMatch(privacyHtml, /fsda-phi\.vercel\.app/);
+});
+

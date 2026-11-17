@@ -11,6 +11,7 @@ import { LandingPageView } from './components/LandingPageView';
 import { KnowledgeBaseView } from './components/KnowledgeBaseView';
 import { PublicLessonView } from './components/PublicLessonView';
 import { PublicInfoPageView } from './components/PublicInfoPageView';
+import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { isPublicTab } from './utils/publicRoutes';
 import { Sparkles, Trophy, X, Code2, AlertTriangle } from 'lucide-react';
 
@@ -289,6 +290,9 @@ const MainContent: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Cookie / GDPR Consent Banner */}
+      <CookieConsentBanner />
 
       {/* Auth Modal */}
       <AuthModal

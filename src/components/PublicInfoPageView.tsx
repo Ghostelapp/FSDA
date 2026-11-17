@@ -334,7 +334,7 @@ export const PublicInfoPageView: React.FC<PublicInfoPageViewProps> = ({
                 <p>
                   {isEn ? (
                     <>
-                      The website available at <strong className="text-white">fsda-phi.vercel.app</strong> and
+                      The website available at <strong className="text-white">fsda.tech</strong> and
                       its companion educational application provide web engineering lessons and an interactive
                       browser practice environment. The service is owned and operated by Full Stack Developer
                       Academy (contact:{' '}
@@ -346,7 +346,7 @@ export const PublicInfoPageView: React.FC<PublicInfoPageViewProps> = ({
                   ) : (
                     <>
                       Serwis internetowy dostępny pod adresem{' '}
-                      <strong className="text-white">fsda-phi.vercel.app</strong> oraz powiązana aplikacja
+                      <strong className="text-white">fsda.tech</strong> oraz powiązana aplikacja
                       edukacyjna udostępniają materiały szkoleniowe z zakresu programowania webowego oraz
                       interaktywne środowisko ćwiczeniowe. Właścicielem i administratorem serwisu jest
                       Full Stack Developer Academy (kontakt:{' '}
@@ -438,7 +438,7 @@ export const PublicInfoPageView: React.FC<PublicInfoPageViewProps> = ({
                 <p>
                   {isEn ? (
                     <>
-                      The data controller for Full Stack Developer Academy (fsda-phi.vercel.app) is the
+                      The data controller for Full Stack Developer Academy (fsda.tech) is the
                       platform creator, reachable via email at{' '}
                       <a href="mailto:zordonzordon1@gmail.com" className="text-indigo-400 underline">
                         zordonzordon1@gmail.com
@@ -447,7 +447,7 @@ export const PublicInfoPageView: React.FC<PublicInfoPageViewProps> = ({
                     </>
                   ) : (
                     <>
-                      Administratorem serwisu Full Stack Developer Academy (fsda-phi.vercel.app) jest
+                      Administratorem serwisu Full Stack Developer Academy (fsda.tech) jest
                       twórca platformy, dostępny pod adresem e-mail:{' '}
                       <a href="mailto:zordonzordon1@gmail.com" className="text-indigo-400 underline">
                         zordonzordon1@gmail.com

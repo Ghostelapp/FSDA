@@ -3,11 +3,31 @@
   "rewrites": [
     {
       "source": "/app",
-      "destination": "/index.html"
+      "destination": "/app/index.html"
     },
     {
       "source": "/app/:path*",
-      "destination": "/index.html"
+      "destination": "/app/index.html"
+    },
+    {
+      "source": "/baza-wiedzy",
+      "destination": "/baza-wiedzy/index.html"
+    },
+    {
+      "source": "/o-nas",
+      "destination": "/o-nas/index.html"
+    },
+    {
+      "source": "/kontakt",
+      "destination": "/kontakt/index.html"
+    },
+    {
+      "source": "/regulamin",
+      "destination": "/regulamin/index.html"
+    },
+    {
+      "source": "/polityka-prywatnosci",
+      "destination": "/polityka-prywatnosci/index.html"
     },
     {
       "source": "/((?!api/|assets/|\\.well-known/|play-store/|ads\\.txt|robots\\.txt|sitemap\\.xml|privacy-policy\\.html|twa-manifest\\.json|manifest\\.json|manifest\\.webmanifest|sw\\.js|sw-notifications\\.js|workbox-|favicon|icon\\.svg|apple-touch-icon|pwa-).*)",
