@@ -113,6 +113,30 @@ A tag is a short keyword wrapped inside angle brackets \`<\` and \`>\`. Think of
         explanation:
           'In HTML a closing tag repeats the tag name with a forward slash "/" right after "<", giving </h1>.',
       },
+      {
+        id: 'q-h7-2',
+        question: 'How many main <h1> headings should typically appear on a single web page?',
+        options: [
+          'One primary <h1> heading describing the main topic of the page',
+          'At least ten, one for every paragraph',
+          'Zero — <h1> is deprecated and replaced by <p>',
+          'Exactly six, from <h1> through <h6> in every section',
+        ],
+        explanation:
+          'Good SEO and WCAG accessibility practice recommends one main <h1> for the page title, with nested sections organized under <h2> and <h3>.',
+      },
+      {
+        id: 'q-h7-3',
+        question: 'How does <strong> differ from plain CSS font-weight: bold?',
+        options: [
+          '<strong> conveys semantic importance (recognized by screen readers and search engines), not just visual thickness',
+          '<strong> automatically turns the text color red',
+          '<strong> only works inside <h1> headings',
+          'There is no difference — both mean the exact same thing to screen readers',
+        ],
+        explanation:
+          'The <strong> element signals strong semantic importance for assistive technologies and search crawlers.',
+      },
     ],
     commonMistakes: [
       {
@@ -206,6 +230,25 @@ Always make link text descriptive (e.g. *"View pricing tiers"* instead of vague 
         ],
         explanation: 'Both bulleted <ul> and numbered <ol> lists wrap every single entry inside <li>...</li>.',
       },
+      {
+        id: 'q-h8-2',
+        question: 'Which list type should you pick for recipe steps or a step-by-step guide?',
+        options: [
+          '<ol> (ordered list numbered 1, 2, 3...)',
+          '<ul> (unordered bulleted list)',
+          '<dl> without child tags',
+          '<nav> instead of a list',
+        ],
+        explanation:
+          'Whenever item order affects meaning (such as step-by-step instructions), <ol> is the proper semantic tag.',
+      },
+      {
+        id: 'q-h8-3',
+        question: 'Which attribute on the <a> tag specifies the destination URL of the link?',
+        options: ['href', 'src', 'action', 'target'],
+        explanation:
+          'The href (Hypertext Reference) attribute points to the destination URL or resource opened by the <a> link.',
+      },
     ],
     commonMistakes: [
       {
@@ -297,6 +340,18 @@ Always make link text descriptive (e.g. *"View pricing tiers"* instead of vague 
           'Hiding text from browser rendering',
         ],
         explanation: '<pre> preserves whitespace/line breaks and <code> marks the content as computer code.',
+      },
+      {
+        id: 'q-h10-3',
+        question: 'When is it best to use <em> instead of <i>?',
+        options: [
+          'When you want to give a word semantic vocal stress in a sentence (e.g. "This is REALLY important")',
+          'Only for rendering CSS icon fonts',
+          'When centering a paragraph on the screen',
+          'For creating bold table headers',
+        ],
+        explanation:
+          'The <em> (emphasis) tag conveys spoken stress and meaning, helping screen readers emphasize that word.',
       },
     ],
     commonMistakes: [
@@ -390,6 +445,18 @@ Developers never type boilerplate \`head\` and \`meta\` tags from scratch! Insid
         ],
         explanation: '<title> defines the browser tab title (e.g. "My First Website") and search result headline.',
       },
+      {
+        id: 'q-h1-3',
+        question: 'Why do we place the <!DOCTYPE html> declaration at the very top of the document?',
+        options: [
+          'It tells the browser to render the page in modern HTML5 Standards Mode (instead of legacy Quirks Mode)',
+          'It imports Tailwind CSS automatically',
+          'It generates the first heading on the page',
+          'It encrypts the website with HTTPS',
+        ],
+        explanation:
+          'Omitting <!DOCTYPE html> can push browsers into legacy compatibility mode (Quirks Mode), breaking modern CSS layouts.',
+      },
     ],
     commonMistakes: [
       {
@@ -467,6 +534,24 @@ Giving a wide photo fixed dimensions like \`80px × 80px\` squashes faces unless
         question: 'Which CSS property prevents an <img> element with fixed 200x200px dimensions from stretching or squashing?',
         options: ['text-align: justify', 'object-fit: cover', 'font-weight: bold', 'display: inline'],
         explanation: 'object-fit: cover preserves the image aspect ratio while filling the 200x200px box and trimming overflow edges cleanly.',
+      },
+      {
+        id: 'q-css7-2',
+        question: 'Which CSS property sets the foreground text color of an element (such as a <p> paragraph)?',
+        options: ['color', 'background-color', 'font-color', 'text-fill'],
+        explanation: 'In CSS, text foreground color is set simply with the color property (there is no font-color property).',
+      },
+      {
+        id: 'q-css7-3',
+        question: 'What does linear-gradient(135deg, #4f46e5, #06b6d4) produce in CSS?',
+        options: [
+          'A smooth color transition angled at 135 degrees between two colors',
+          'An infinite 135-degree rotation animation',
+          'A thick border around a card',
+          'A drop shadow beneath heading text',
+        ],
+        explanation:
+          'linear-gradient creates a smooth background gradient across multiple color stops along the specified angle or direction.',
       },
     ],
     commonMistakes: [
@@ -555,6 +640,25 @@ The \`gap\` property places spacing strictly *between* items so you never have t
         options: ['align-items', 'justify-content', 'flex-direction', 'align-content'],
         explanation: 'justify-content controls placement along the Main Axis (horizontally by default when flex-direction is row).',
       },
+      {
+        id: 'q-css2-2',
+        question: 'Which Flexbox property allows items to wrap onto a new line when horizontal space runs out?',
+        options: [
+          'flex-wrap: wrap;',
+          'justify-content: space-between;',
+          'align-items: stretch;',
+          'flex-direction: row-reverse;',
+        ],
+        explanation:
+          'By default flex-wrap is nowrap (squeezing items into one row); setting flex-wrap: wrap lets items flow gracefully onto multiple rows.',
+      },
+      {
+        id: 'q-css2-3',
+        question: 'Inside a display: flex container, how do you cleanly add an even 16px space between every item without trailing margins?',
+        options: ['gap: 16px;', 'margin-auto: 16px;', 'padding-between: 16px;', 'flex-spacing: 16px;'],
+        explanation:
+          'The gap property in Flexbox and CSS Grid adds spacing strictly between adjacent items.',
+      },
     ],
     commonMistakes: [
       {
@@ -637,6 +741,24 @@ JS defines seven primitives (\`string\`, \`number\`, \`boolean\`, \`undefined\`,
           'var only works on Windows systems',
         ],
         explanation: 'Unlike let and const, var ignores { } block boundaries and leaks out of loops and if-statements.',
+      },
+      {
+        id: 'q-js1-2',
+        question: 'When should you declare variables with const vs let in JavaScript?',
+        options: [
+          'Default to const, and use let only when the binding needs to be reassigned later',
+          'Always use let, because const blocks adding items to arrays',
+          'const works only for numbers and let only for strings',
+          'let works outside functions while const only works inside for loops',
+        ],
+        explanation:
+          'const prevents accidental reassignment of the variable binding, making JavaScript code clearer and safer.',
+      },
+      {
+        id: 'q-js1-3',
+        question: 'What does typeof "42" evaluate to in JavaScript?',
+        options: ['"string"', '"number"', '"boolean"', '"undefined"'],
+        explanation: 'Any value wrapped in quotes ("42") is a string primitive, not a number.',
       },
     ],
     commonMistakes: [
@@ -729,6 +851,13 @@ JS defines seven primitives (\`string\`, \`number\`, \`boolean\`, \`undefined\`,
           'Transpiles TypeScript into JavaScript',
         ],
         explanation: 'DNS acts like a distributed directory resolving domain names to numeric IP addresses.',
+      },
+      {
+        id: 'q-f1-3',
+        question: 'Which HTTP status code family indicates a client-side error (such as 401 Unauthorized or 404 Not Found)?',
+        options: ['4xx (400-499)', '2xx (200-299)', '3xx (300-399)', '1xx (100-199)'],
+        explanation:
+          '2xx means success, 3xx indicates redirects, 4xx signals client request errors, and 5xx indicates server-side failures.',
       },
     ],
     commonMistakes: [
@@ -826,6 +955,30 @@ React compares object references via \`Object.is\`. Mutating \`todos.push(newIte
         ],
         explanation: 'React checks reference identity. Always pass a new array [...state, newItem] to trigger a UI update.',
       },
+      {
+        id: 'q-react1-2',
+        question: 'What is true about props passed into a child React component?',
+        options: [
+          'Props are read-only (immutable) from the child component perspective — data flows top-down',
+          'The child component should directly reassign props.title = "New"',
+          'Props can only hold boolean values',
+          'Props only work inside class components',
+        ],
+        explanation:
+          'One-way data flow means child components never mutate incoming props directly; they notify parents via callback props or update local state.',
+      },
+      {
+        id: 'q-react1-3',
+        question: 'Why is setCount(prev => prev + 1) safer than setCount(count + 1) when updating state multiple times in one action?',
+        options: [
+          'The functional updater always reads the latest queued state value instead of a stale closure value from the render',
+          'The functional updater skips re-rendering the UI',
+          'setCount(count + 1) only works for strings',
+          'The functional updater persists counts to cookies automatically',
+        ],
+        explanation:
+          'React batches state updates; passing an updater function guarantees each update computes cleanly from the latest queued value.',
+      },
     ],
     commonMistakes: [
       {
@@ -911,6 +1064,30 @@ Each middleware receives \`(req, res, next)\`:
           'Express sends a 404 Not Found automatically',
         ],
         explanation: 'Without calling next() or sending a response with res, the pipeline stalls and the browser waits indefinitely.',
+      },
+      {
+        id: 'q-node1-2',
+        question: 'What does app.use(express.json()) do in an Express.js backend?',
+        options: [
+          'Mounts built-in middleware that parses incoming JSON request bodies into req.body',
+          'Creates a package.json file in the root directory',
+          'Automatically connects Express to PostgreSQL',
+          'Converts every HTML response into a PDF document',
+        ],
+        explanation:
+          'Without express.json() middleware, req.body remains undefined on incoming POST and PUT requests.',
+      },
+      {
+        id: 'q-node1-3',
+        question: 'What is the difference between req.params and req.query in Express?',
+        options: [
+          'req.params captures dynamic URL path segments (e.g. /users/:id -> req.params.id), whereas req.query captures query-string pairs after ? (e.g. ?page=2)',
+          'req.params is only for passwords and req.query is only for images',
+          'req.query only works on DELETE routes',
+          'There is no difference — both read Authorization headers',
+        ],
+        explanation:
+          'Route params identify a specific resource (/users/42), while query strings handle filtering, sorting, and pagination.',
       },
     ],
     commonMistakes: [
@@ -1009,6 +1186,25 @@ Always select explicit columns instead of \`SELECT *\` in production and index c
           'Exports full database snapshots to disk',
         ],
         explanation: 'JOIN links related rows across normalized tables into unified query results.',
+      },
+      {
+        id: 'q-db1-2',
+        question: 'What is a Foreign Key in a relational database (such as user_id inside an orders table)?',
+        options: [
+          'A column storing the primary key ID of a related row in another table, enforcing referential integrity at the database level',
+          'A master password used to encrypt the entire database',
+          'A Google Maps API key stored in text format',
+          'An automatic full-text index used only in NoSQL',
+        ],
+        explanation:
+          'Foreign keys ensure database integrity so child records cannot point to non-existent parent rows.',
+      },
+      {
+        id: 'q-db1-3',
+        question: 'Which SQL clause sorts query results from highest value to lowest value?',
+        options: ['ORDER BY column DESC', 'SORT BY column MAX', 'GROUP BY column TOP', 'FILTER column DESC'],
+        explanation:
+          'ORDER BY ... DESC sorts rows in descending order (for example newest posts or highest XP scores first), whereas ASC sorts ascending.',
       },
     ],
     commonMistakes: [

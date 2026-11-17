@@ -70,7 +70,68 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4030062340198648"
      crossorigin="anonymous"></script>
 
-    <!-- Synchronous pre-paint theme & language resolution -->
+    <!-- Critical pre-paint theme background & crawler-safe preloader styles -->
+    <style>
+      html.dark,
+      html.dark body {
+        background-color: #020617;
+        color: #f1f5f9;
+        margin: 0;
+      }
+      html.light,
+      html.light body {
+        background-color: #f8fafc;
+        color: #0f172a;
+        margin: 0;
+      }
+      .fsda-preloader {
+        display: none;
+      }
+      html.fsda-js-booting .fsda-seo-fallback {
+        display: none !important;
+      }
+      html.fsda-js-booting .fsda-preloader {
+        display: flex;
+        min-height: 100vh;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 14px;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      .fsda-preloader-badge {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #4f46e5, #6366f1);
+        color: #ffffff;
+        box-shadow: 0 10px 30px -8px rgba(79, 70, 229, 0.55);
+      }
+      .fsda-preloader-spinner {
+        width: 24px;
+        height: 24px;
+        border-radius: 9999px;
+        border: 2.5px solid rgba(99, 102, 241, 0.22);
+        border-top-color: #6366f1;
+        animation: fsdaBootSpin 0.75s linear infinite;
+      }
+      @keyframes fsdaBootSpin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .fsda-preloader-spinner {
+          animation: none;
+        }
+      }
+    </style>
+
+    <!-- Synchronous pre-paint theme, language, and JS boot detection -->
     <script>
       (function () {
         try {
@@ -79,8 +140,11 @@
           var resolved = pref === 'light' || pref === 'dark' ? pref : (pref === 'system' ? (sysDark ? 'dark' : 'light') : 'dark');
           var root = document.documentElement;
           root.classList.remove('dark', 'light');
-          root.classList.add(resolved);
+          root.classList.add(resolved, 'fsda-js-booting');
           root.style.colorScheme = resolved;
+          window.__fsdaBootTimer = window.setTimeout(function () {
+            root.classList.remove('fsda-js-booting');
+          }, 6000);
           var savedLang = (localStorage.getItem('fsda_language_v1') || '').trim().toLowerCase();
           if (savedLang === 'en' || savedLang.indexOf('en-') === 0) {
             root.lang = 'en';
@@ -92,45 +156,58 @@
     </script>
   </head>
   <body class="bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+    <!-- FSDA_ROOT_START -->
     <div id="root">
-      <div style="max-width:960px;margin:0 auto;padding:32px 16px;font-family:sans-serif;line-height:1.7">
-        <header>
-          <h1>Full Stack Developer Academy (fsda.tech) — Interaktywna Akademia Programowania i Otwarta Baza Wiedzy</h1>
-          <p>Darmowa platforma edukacyjna do nauki tworzenia aplikacji webowych od zera aż do poziomu Junior / Regular Full Stack Developera. Program obejmuje 15 modułów tematycznych i 96 rozbudowanych lekcji z przykładami kodu HTML5, CSS3, JavaScript ES2025, TypeScript, React 19, Next.js, Node.js, PostgreSQL, testami automatycznymi, bezpieczeństwem aplikacji webowych (OWASP) oraz konteneryzacją Docker i CI/CD.</p>
-          <nav aria-label="Nawigacja główna">
-            <a href="/baza-wiedzy">Otwarta Baza Wiedzy (96 lekcji bez logowania)</a> ·
-            <a href="/o-nas">O Akademii i Metodyce</a> ·
-            <a href="/kontakt">Kontakt</a> ·
-            <a href="/regulamin">Regulamin</a> ·
-            <a href="/polityka-prywatnosci">Polityka Prywatności i Cookies</a>
-          </nav>
-        </header>
-        <main>
-          <section>
-            <h2>Metodyka nauczania: od analogii i szkieletu kodu 80% do pełnych projektów</h2>
-            <p>Każda lekcja została zaprojektowana specjalnie z myślą o osobach stawiających pierwsze kroki w branży IT. Zamiast abstrakcyjnego żargonu naukowego materiał rozpoczyna się od prostej analogii z codziennego życia, słowniczka kluczowych pojęć oraz gotowego w 80% kodu startowego, który możesz uruchomić i zmodyfikować bezpośrednio w przeglądarce bez instalowania dodatkowego oprogramowania.</p>
-            <p>Poza lekcjami teoretycznymi i bazą wiedzy akademia zawiera 6 interaktywnych symulatorów (Terminal Bash i Git, Studio Zapytań SQL JOIN, Studio REST API, Wizualizator Pętli Zdarzeń Event Loop, Piaskownicę HTML/CSS/JS oraz egzamin Live Coding), a także specyfikacje 12 projektów biznesowych do portfolio programisty.</p>
-          </section>
-          <section>
-            <h2>Wybrane otwarte lekcje programowania (dostępne za darmo bez rejestracji)</h2>
-            <ul>
-              <li><a href="/baza-wiedzy/html-7">Moduł 1 — Pierwsze znaczniki HTML: Nagłówki (&lt;h1&gt;–&lt;h6&gt;), akapity (&lt;p&gt;) i pogrubienie (&lt;strong&gt;)</a></li>
-              <li><a href="/baza-wiedzy/html-10">Moduł 1 — Formatowanie tekstu, cytaty i kod: Kursywa (&lt;em&gt;), zakreślacz (&lt;mark&gt;), cytaty (&lt;blockquote&gt;) i podziały (&lt;br&gt;, &lt;hr&gt;)</a></li>
-              <li><a href="/baza-wiedzy/html-12">Moduł 1 — Tabele danych od A do Z (&lt;table&gt;): Nagłówki (&lt;thead&gt;, &lt;th&gt;), ciało (&lt;tbody&gt;), podsumowanie (&lt;tfoot&gt;) i colspan</a></li>
-              <li><a href="/baza-wiedzy/html-13">Moduł 1 — Formularze HTML5: Listy wyboru (&lt;select&gt;), &lt;textarea&gt;, checkbox, radio i walidacja</a></li>
-              <li><a href="/baza-wiedzy/css-2">Moduł 2 — Flexbox od podstaw: łatwe układanie elementów obok siebie i wyśrodkowanie</a></li>
-              <li><a href="/baza-wiedzy/js-1">Moduł 3 — Pierwsze kroki w JavaScript: Zmienne (const, let), tekst i liczby</a></li>
-              <li><a href="/baza-wiedzy/react-1">Moduł 7 — Wprowadzenie do React i komponentów funkcyjnych JSX</a></li>
-              <li><a href="/baza-wiedzy/node-1">Moduł 8 — Wprowadzenie do Node.js i serwera HTTP Express</a></li>
-              <li><a href="/baza-wiedzy/db-1">Moduł 9 — Relacyjne bazy danych SQL i PostgreSQL od podstaw</a></li>
-            </ul>
-          </section>
-        </main>
-        <footer style="margin-top:32px;border-top:1px solid #334155;padding-top:16px">
-          <p>Full Stack Developer Academy (fsda.tech) — Darmowa nauka programowania po polsku i po angielsku. Kontakt: <a href="mailto:zordonzordon1@gmail.com">zordonzordon1@gmail.com</a></p>
-        </footer>
+      <div class="fsda-preloader" aria-hidden="true">
+        <div class="fsda-preloader-badge">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+        </div>
+        <div class="fsda-preloader-spinner"></div>
+      </div>
+      <div class="fsda-seo-fallback">
+        <div style="max-width:960px;margin:0 auto;padding:32px 16px;font-family:sans-serif;line-height:1.7">
+          <header>
+            <h1>Full Stack Developer Academy (fsda.tech) — Interaktywna Akademia Programowania i Otwarta Baza Wiedzy</h1>
+            <p>Darmowa platforma edukacyjna do nauki tworzenia aplikacji webowych od zera aż do poziomu Junior / Regular Full Stack Developera. Program obejmuje 15 modułów tematycznych i 96 rozbudowanych lekcji z przykładami kodu HTML5, CSS3, JavaScript ES2025, TypeScript, React 19, Next.js, Node.js, PostgreSQL, testami automatycznymi, bezpieczeństwem aplikacji webowych (OWASP) oraz konteneryzacją Docker i CI/CD.</p>
+            <nav aria-label="Nawigacja główna">
+              <a href="/baza-wiedzy">Otwarta Baza Wiedzy (96 lekcji bez logowania)</a> ·
+              <a href="/o-nas">O Akademii i Metodyce</a> ·
+              <a href="/kontakt">Kontakt</a> ·
+              <a href="/regulamin">Regulamin</a> ·
+              <a href="/polityka-prywatnosci">Polityka Prywatności i Cookies</a>
+            </nav>
+          </header>
+          <main>
+            <section>
+              <h2>Metodyka nauczania: od analogii i szkieletu kodu 80% do pełnych projektów</h2>
+              <p>Każda lekcja została zaprojektowana specjalnie z myślą o osobach stawiających pierwsze kroki w branży IT. Zamiast abstrakcyjnego żargonu naukowego materiał rozpoczyna się od prostej analogii z codziennego życia, słowniczka kluczowych pojęć oraz gotowego w 80% kodu startowego, który możesz uruchomić i zmodyfikować bezpośrednio w przeglądarce bez instalowania dodatkowego oprogramowania.</p>
+              <p>Poza lekcjami teoretycznymi i bazą wiedzy akademia zawiera 6 interaktywnych symulatorów (Terminal Bash i Git, Studio Zapytań SQL JOIN, Studio REST API, Wizualizator Pętli Zdarzeń Event Loop, Piaskownicę HTML/CSS/JS oraz egzamin Live Coding), a także specyfikacje 12 projektów biznesowych do portfolio programisty.</p>
+            </section>
+            <section>
+              <h2>Wybrane otwarte lekcje programowania (dostępne za darmo bez rejestracji)</h2>
+              <ul>
+                <li><a href="/baza-wiedzy/html-7">Moduł 1 — Pierwsze znaczniki HTML: Nagłówki (&lt;h1&gt;–&lt;h6&gt;), akapity (&lt;p&gt;) i pogrubienie (&lt;strong&gt;)</a></li>
+                <li><a href="/baza-wiedzy/html-10">Moduł 1 — Formatowanie tekstu, cytaty i kod: Kursywa (&lt;em&gt;), zakreślacz (&lt;mark&gt;), cytaty (&lt;blockquote&gt;) i podziały (&lt;br&gt;, &lt;hr&gt;)</a></li>
+                <li><a href="/baza-wiedzy/html-12">Moduł 1 — Tabele danych od A do Z (&lt;table&gt;): Nagłówki (&lt;thead&gt;, &lt;th&gt;), ciało (&lt;tbody&gt;), podsumowanie (&lt;tfoot&gt;) i colspan</a></li>
+                <li><a href="/baza-wiedzy/html-13">Moduł 1 — Formularze HTML5: Listy wyboru (&lt;select&gt;), &lt;textarea&gt;, checkbox, radio i walidacja</a></li>
+                <li><a href="/baza-wiedzy/css-2">Moduł 2 — Flexbox od podstaw: łatwe układanie elementów obok siebie i wyśrodkowanie</a></li>
+                <li><a href="/baza-wiedzy/js-1">Moduł 3 — Pierwsze kroki w JavaScript: Zmienne (const, let), tekst i liczby</a></li>
+                <li><a href="/baza-wiedzy/react-1">Moduł 7 — Wprowadzenie do React i komponentów funkcyjnych JSX</a></li>
+                <li><a href="/baza-wiedzy/node-1">Moduł 8 — Wprowadzenie do Node.js i serwera HTTP Express</a></li>
+                <li><a href="/baza-wiedzy/db-1">Moduł 9 — Relacyjne bazy danych SQL i PostgreSQL od podstaw</a></li>
+              </ul>
+            </section>
+          </main>
+          <footer style="margin-top:32px;border-top:1px solid #334155;padding-top:16px">
+            <p>Full Stack Developer Academy (fsda.tech) — Darmowa nauka programowania po polsku i po angielsku. Kontakt: <a href="mailto:zordonzordon1@gmail.com">zordonzordon1@gmail.com</a></p>
+          </footer>
+        </div>
       </div>
     </div>
+    <!-- FSDA_ROOT_END -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

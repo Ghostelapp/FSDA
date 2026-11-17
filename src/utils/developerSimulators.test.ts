@@ -5,8 +5,12 @@ import {
   checkApiMissionCompleted,
   API_MISSIONS,
   EVENT_LOOP_SCENARIOS,
+  EVENT_LOOP_SCENARIOS_EN,
   buildWeeklyLeaderboard,
   DAILY_CHALLENGES,
+  DAILY_CHALLENGES_EN,
+  FLASHCARDS_DECK,
+  FLASHCARDS_DECK_EN,
   evaluateDailyChallenge,
   calculateNextFlashcardReview,
   filterCheatSheets,
@@ -90,8 +94,9 @@ test('REST API Simulator enforces Bearer token on /api/profile', () => {
   assert.equal(auth.ok, true);
 });
 
-test('JS Event Loop scenarios have valid sequential steps', () => {
-  assert.ok(EVENT_LOOP_SCENARIOS.length >= 2);
+test('JS Event Loop scenarios have valid sequential steps (5 scenarios in PL & EN)', () => {
+  assert.ok(EVENT_LOOP_SCENARIOS.length >= 5);
+  assert.equal(EVENT_LOOP_SCENARIOS_EN.length, EVENT_LOOP_SCENARIOS.length);
   const first = EVENT_LOOP_SCENARIOS[0];
   assert.equal(first.steps[0].consoleOutput[0], '1. Start skryptu');
   const lastStep = first.steps[first.steps.length - 1];
@@ -101,10 +106,20 @@ test('JS Event Loop scenarios have valid sequential steps', () => {
     '3. Mikro-zadanie Promise',
     '2. Callback setTimeout',
   ]);
+  for (const scenario of EVENT_LOOP_SCENARIOS) {
+    assert.ok(scenario.steps.length >= 4, `Scenario ${scenario.id} needs >=4 steps`);
+  }
 });
 
-test('Daily Challenge evaluator validates user solutions accurately and blocks starterCode', () => {
+test('Daily Challenge evaluator validates all 14 challenges in PL & EN and blocks starterCode', () => {
+  assert.ok(DAILY_CHALLENGES.length >= 14);
+  assert.equal(DAILY_CHALLENGES_EN.length, DAILY_CHALLENGES.length);
+  const seenIds = new Set<string>();
+
   for (const challenge of DAILY_CHALLENGES) {
+    assert.ok(!seenIds.has(challenge.id), `Duplicate challenge id: ${challenge.id}`);
+    seenIds.add(challenge.id);
+
     const starterRes = evaluateDailyChallenge(challenge, challenge.starterCode);
     assert.equal(
       starterRes.passedAll,
@@ -116,10 +131,20 @@ test('Daily Challenge evaluator validates user solutions accurately and blocks s
     assert.equal(
       solutionRes.passedAll,
       true,
-      `Daily challenge ${challenge.id} solutionCode MUST pass all unit tests`
+      `Daily challenge ${challenge.id} solutionCode MUST pass all unit tests (error: ${solutionRes.error})`
     );
     assert.equal(solutionRes.results.length, 3);
   }
+});
+
+test('Flashcards deck contains at least 36 unique cards across all 5 categories in PL & EN', () => {
+  assert.ok(FLASHCARDS_DECK.length >= 36);
+  assert.equal(FLASHCARDS_DECK_EN.length, FLASHCARDS_DECK.length);
+
+  const categories = new Set(FLASHCARDS_DECK.map((f) => f.category));
+  assert.equal(categories.size, 5);
+  const ids = new Set(FLASHCARDS_DECK.map((f) => f.id));
+  assert.equal(ids.size, FLASHCARDS_DECK.length);
 });
 
 test('Weekly Leaderboard ranks users by XP and assigns leagues', () => {

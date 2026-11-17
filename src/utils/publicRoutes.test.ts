@@ -95,3 +95,21 @@ test('SITE_BASE_URL, robots.txt, and privacy-policy.html target https://fsda.tec
   assert.doesNotMatch(privacyHtml, /fsda-phi\.vercel\.app/);
 });
 
+test('index.html and generate-seo-pages hide static crawler HTML during JS boot while keeping it visible for non-JS crawlers', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+
+  const indexHtml = fs.readFileSync(path.resolve('index.html'), 'utf8');
+  assert.match(indexHtml, /root\.classList\.add\(resolved,\s*'fsda-js-booting'\)/);
+  assert.match(indexHtml, /html\.fsda-js-booting\s+\.fsda-seo-fallback\s*\{\s*display:\s*none\s*!important;/);
+  assert.match(indexHtml, /class="fsda-preloader"/);
+  assert.match(indexHtml, /class="fsda-seo-fallback"/);
+  assert.match(indexHtml, /<!-- FSDA_ROOT_START -->[\s\S]*<!-- FSDA_ROOT_END -->/);
+
+  const seoGen = fs.readFileSync(path.resolve('scripts/generate-seo-pages.ts'), 'utf8');
+  assert.match(seoGen, /fsda-preloader/);
+  assert.match(seoGen, /<div class="fsda-seo-fallback">/);
+  assert.match(seoGen, /FSDA_ROOT_START/);
+});
+
+

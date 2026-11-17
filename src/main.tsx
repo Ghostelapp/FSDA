@@ -14,5 +14,32 @@ const updateSW = registerSW({
   },
 });
 
-createRoot(document.getElementById('root')!).render(<App />);
+const rootEl = document.getElementById('root')!;
+
+const clearBootState = () => {
+  const win = window as Window & { __fsdaBootTimer?: number };
+  if (win.__fsdaBootTimer !== undefined) {
+    window.clearTimeout(win.__fsdaBootTimer);
+    win.__fsdaBootTimer = undefined;
+  }
+  document.documentElement.classList.remove('fsda-js-booting');
+};
+
+if (typeof MutationObserver !== 'undefined') {
+  const bootObserver = new MutationObserver(() => {
+    if (!rootEl.querySelector('.fsda-seo-fallback')) {
+      bootObserver.disconnect();
+      clearBootState();
+    }
+  });
+  bootObserver.observe(rootEl, { childList: true });
+}
+
+createRoot(rootEl).render(<App />);
+
+window.requestAnimationFrame(() => {
+  if (!rootEl.querySelector('.fsda-seo-fallback')) {
+    clearBootState();
+  }
+});
 

@@ -187,25 +187,41 @@ export const LeaderboardChallengeView: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {dailyChallenges.map((ch, idx) => (
+            <div className="flex items-center justify-between gap-2 w-full sm:w-auto">
+              <span className="text-[11px] font-mono text-slate-400 tabular-nums">
+                {isEn
+                  ? `Completed: ${solvedIds.length}/${dailyChallenges.length}`
+                  : `Zaliczone: ${solvedIds.length}/${dailyChallenges.length}`}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+            {dailyChallenges.map((ch, idx) => {
+              const isSolved = solvedIds.includes(ch.id);
+              const isActive = ch.id === activeChallenge.id;
+              return (
                 <button
                   key={ch.id}
                   type="button"
+                  title={ch.title}
                   onClick={() => {
                     setSelectedChallengeId(ch.id);
                     setEvalResult(null);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    ch.id === activeChallenge.id
+                  className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                    isActive
                       ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-950 text-slate-300 hover:bg-slate-800'
+                      : isSolved
+                      ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/50'
+                      : 'bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800'
                   }`}
                 >
-                  {isEn ? `Task #${idx + 1}` : `Zadanie #${idx + 1}`}
+                  <span>#{idx + 1}</span>
+                  {isSolved && <CheckCircle2 className="h-3 w-3 shrink-0" />}
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
           <div className="space-y-2">

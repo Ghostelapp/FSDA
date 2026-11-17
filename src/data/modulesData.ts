@@ -11,6 +11,7 @@ import { MODULE_9 } from './modules/module9_databases';
 import { MODULE_10 } from './modules/module10_security';
 import { MODULES_11_TO_15 } from './modules/modulesRemaining';
 import { MISSING_CURRICULUM_LESSONS } from './modules/missingCurriculumLessons';
+import { EXTRA_LESSON_QUIZZES } from './lessonQuizExpansion';
 
 /**
  * Canonical pedagogical lesson ordering per module (strictly from easiest/zero-knowledge to advanced).
@@ -144,12 +145,20 @@ export function normalizeAndOrderModules(rawModules: Module[]): Module[] {
         cleanPrerequisites = [`Lekcja ${idx}: ${prevLesson.title}`];
       }
 
+      const extraQuizQuestions = EXTRA_LESSON_QUIZZES[lesson.id] || [];
+      const existingQuizIds = new Set(lesson.quiz.map((q) => q.id));
+      const mergedQuiz = [
+        ...lesson.quiz,
+        ...extraQuizQuestions.filter((q) => !existingQuizIds.has(q.id)),
+      ];
+
       return {
         ...lesson,
         moduleId: newModuleId,
         moduleTitle: mod.title,
         order: idx + 1,
         prerequisites: cleanPrerequisites,
+        quiz: mergedQuiz,
       };
     });
 

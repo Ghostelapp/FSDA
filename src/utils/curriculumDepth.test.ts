@@ -42,14 +42,21 @@ test('every lesson has substantial educational theory (>= 200 words) and complet
         `Lesson ${lesson.id} must have at least one codeExample`
       );
       assert.ok(
-        Array.isArray(lesson.quiz) && lesson.quiz.length >= 1,
-        `Lesson ${lesson.id} must have at least one quiz question`
+        Array.isArray(lesson.quiz) && lesson.quiz.length >= 3,
+        `Lesson ${lesson.id} must have at least 3 quiz questions (got ${lesson.quiz?.length || 0})`
       );
+      const quizIds = new Set<string>();
       for (const question of lesson.quiz) {
+        assert.ok(
+          !quizIds.has(question.id),
+          `Lesson ${lesson.id} has duplicate quiz question id: ${question.id}`
+        );
+        quizIds.add(question.id);
         assert.ok(
           question.options.length >= 3 &&
             question.correctAnswer >= 0 &&
-            question.correctAnswer < question.options.length,
+            question.correctAnswer < question.options.length &&
+            question.explanation.trim().length >= 15,
           `Lesson ${lesson.id} quiz question ${question.id} has an invalid configuration`
         );
       }

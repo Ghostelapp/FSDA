@@ -36,6 +36,7 @@ export const FlashcardsCheatSheetView: React.FC = () => {
 
   // Flashcards state
   const [cardIndex, setCardIndex] = useState<number>(0);
+  const [deckCategory, setDeckCategory] = useState<string>('Wszystkie');
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
   const [scheduleMap, setScheduleMap] = useState<Record<string, FlashcardScheduleState>>({});
   const [reviewedCount, setReviewedCount] = useState<number>(0);
@@ -45,7 +46,19 @@ export const FlashcardsCheatSheetView: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Wszystkie');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  const flashcardCategories = [
+    'Wszystkie',
+    'HTML & CSS',
+    'JavaScript & TS',
+    'React & Next.js',
+    'Backend & SQL',
+    'DevOps & Git',
+  ];
+
   const currentCard = flashcardsDeck[cardIndex] || flashcardsDeck[0];
+  const visibleDeckCards = flashcardsDeck
+    .map((fc, idx) => ({ fc, idx }))
+    .filter(({ fc }) => deckCategory === 'Wszystkie' || fc.category === deckCategory);
   const currentCardSchedule = scheduleMap[currentCard.id];
 
   const getCategoryLabel = (catKey: string): string => {
@@ -150,7 +163,19 @@ export const FlashcardsCheatSheetView: React.FC = () => {
                     {currentCard.codeSnippet && (
                       <CodeBlock
                         code={currentCard.codeSnippet}
-                        language="javascript"
+                        language={
+                          currentCard.category === 'HTML & CSS'
+                            ? currentCard.codeSnippet.trim().startsWith('<')
+                              ? 'html'
+                              : 'css'
+                            : currentCard.category === 'Backend & SQL'
+                            ? /\b(SELECT|BEGIN|UPDATE|INSERT)\b/.test(currentCard.codeSnippet)
+                              ? 'sql'
+                              : 'javascript'
+                            : currentCard.category === 'DevOps & Git'
+                            ? 'bash'
+                            : 'javascript'
+                        }
                         title={isEn ? 'Code Example' : 'Przykład kodu'}
                         showLineNumbers={true}
                       />
@@ -233,8 +258,34 @@ export const FlashcardsCheatSheetView: React.FC = () => {
               <Sparkles className="h-4 w-4 text-amber-400" />
             </div>
 
-            <div className="space-y-2">
-              {flashcardsDeck.map((fc, idx) => {
+            <div className="flex flex-wrap gap-1.5">
+              {flashcardCategories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => {
+                    setDeckCategory(cat);
+                    const firstMatchIdx = flashcardsDeck.findIndex(
+                      (fc) => cat === 'Wszystkie' || fc.category === cat
+                    );
+                    if (firstMatchIdx >= 0) {
+                      setCardIndex(firstMatchIdx);
+                      setIsFlipped(false);
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                    deckCategory === cat
+                      ? 'bg-indigo-600 text-white'
+                      : 'border border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  {cat === 'Wszystkie' ? (isEn ? 'All' : 'Wszystkie') : cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
+              {visibleDeckCards.map(({ fc, idx }) => {
                 const sched = scheduleMap[fc.id];
                 return (
                   <button

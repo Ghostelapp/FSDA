@@ -39,6 +39,16 @@ function markdownToSimpleHtml(md: string): string {
   return parts.join('\n');
 }
 
+const PRELOADER_HTML = `      <div class="fsda-preloader" aria-hidden="true">
+        <div class="fsda-preloader-badge">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+        </div>
+        <div class="fsda-preloader-spinner"></div>
+      </div>`;
+
 function renderHtmlFromTemplate(
   templateHtml: string,
   params: {
@@ -88,6 +98,16 @@ function renderHtmlFromTemplate(
     );
   }
 
+  const rootMarkerStart = out.indexOf('<!-- FSDA_ROOT_START -->');
+  const rootMarkerEnd = out.indexOf('<!-- FSDA_ROOT_END -->');
+  if (rootMarkerStart !== -1 && rootMarkerEnd !== -1 && rootMarkerEnd > rootMarkerStart) {
+    out =
+      out.slice(0, rootMarkerStart) +
+      `<!-- FSDA_ROOT_START -->\n    <div id="root">\n${PRELOADER_HTML}\n      <div class="fsda-seo-fallback">\n${params.bodyHtml}\n      </div>\n    </div>\n    ` +
+      out.slice(rootMarkerEnd);
+    return out;
+  }
+
   const rootStart = out.indexOf('<div id="root">');
   const bodyEnd = out.lastIndexOf('</body>');
   if (rootStart === -1 || bodyEnd === -1 || bodyEnd <= rootStart) {
@@ -96,7 +116,7 @@ function renderHtmlFromTemplate(
 
   out =
     out.slice(0, rootStart) +
-    `<div id="root">\n${params.bodyHtml}\n    </div>\n  ` +
+    `<div id="root">\n${PRELOADER_HTML}\n      <div class="fsda-seo-fallback">\n${params.bodyHtml}\n      </div>\n    </div>\n  ` +
     out.slice(bodyEnd);
 
   return out;

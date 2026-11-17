@@ -1,5 +1,13 @@
 import { User } from '../types';
 import type { AppLanguage } from './i18n';
+import {
+  EXTRA_DAILY_CHALLENGES,
+  EXTRA_DAILY_CHALLENGES_EN,
+  EXTRA_EVENT_LOOP_SCENARIOS,
+  EXTRA_EVENT_LOOP_SCENARIOS_EN,
+  EXTRA_FLASHCARDS,
+  EXTRA_FLASHCARDS_EN,
+} from '../data/simulatorContentExpansion';
 
 // ============================================================================
 // 1. REST API / POSTMAN SIMULATOR ENGINE
@@ -564,6 +572,7 @@ export const EVENT_LOOP_SCENARIOS: EventLoopScenario[] = [
       },
     ],
   },
+  ...EXTRA_EVENT_LOOP_SCENARIOS,
 ];
 
 export const EVENT_LOOP_SCENARIOS_EN: (EventLoopScenario & { displayDifficulty: string })[] = [
@@ -732,6 +741,7 @@ export const EVENT_LOOP_SCENARIOS_EN: (EventLoopScenario & { displayDifficulty: 
       },
     ],
   },
+  ...EXTRA_EVENT_LOOP_SCENARIOS_EN,
 ];
 
 export function getLocalizedEventLoopScenarios(
@@ -913,6 +923,7 @@ export const DAILY_CHALLENGES: DailyChallengeSpec[] = [
       { inputDesc: 'sumaPodzielnych(4)', args: [4], expected: 3 },
     ],
   },
+  ...EXTRA_DAILY_CHALLENGES,
 ];
 
 export const DAILY_CHALLENGES_EN: DailyChallengeSpec[] = [
@@ -944,6 +955,7 @@ export const DAILY_CHALLENGES_EN: DailyChallengeSpec[] = [
       { inputDesc: 'sumaPodzielnych(4)', args: [4], expected: 3 },
     ],
   },
+  ...EXTRA_DAILY_CHALLENGES_EN,
 ];
 
 export function getLocalizedDailyChallenges(language: AppLanguage = 'pl'): DailyChallengeSpec[] {
@@ -1123,6 +1135,7 @@ export const FLASHCARDS_DECK: FlashcardItem[] = [
     answer: 'Closure to mechanizm, dzięki któremu funkcja wewnętrzna zachowuje dostęp do zmiennych ze swojego zakresu leksykalnego (funkcji zewnętrznej) nawet po zakończeniu wykonywania funkcji zewnętrznej.',
     codeSnippet: 'function licznik() {\n  let n = 0;\n  return () => ++n;\n}',
   },
+  ...EXTRA_FLASHCARDS,
 ];
 
 export const FLASHCARDS_DECK_EN: FlashcardItem[] = [
@@ -1168,6 +1181,7 @@ export const FLASHCARDS_DECK_EN: FlashcardItem[] = [
     answer: 'A closure lets an inner function retain access to variables from its enclosing lexical scope even after the outer function has returned.',
     codeSnippet: 'function counter() {\n  let n = 0;\n  return () => ++n;\n}',
   },
+  ...EXTRA_FLASHCARDS_EN,
 ];
 
 export function getLocalizedFlashcardsDeck(language: AppLanguage = 'pl'): FlashcardItem[] {
