@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Archive, Eye, X, Copy, Check, Image as ImageIcon } from 'lucide-react';
+import { Download, Archive, Eye, X, Copy, Check, Image as ImageIcon, Film } from 'lucide-react';
 
 interface PromoItem {
   id: string;
@@ -66,6 +66,7 @@ export const PromoAssetsPanel: React.FC<PromoAssetsPanelProps> = ({ onClose }) =
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<{ title: string; filename: string; dataUrl: string } | null>(null);
   const [copiedPost, setCopiedPost] = useState(false);
+  const [videoLang, setVideoLang] = useState<'pl' | 'en'>('pl');
 
   const downloadViaBlob = async (url: string, filename: string, id: string) => {
     setDownloadingId(id);
@@ -122,16 +123,19 @@ export const PromoAssetsPanel: React.FC<PromoAssetsPanelProps> = ({ onClose }) =
     }
   };
 
+  const activeVideoUrl = videoLang === 'en' ? '/promo/fsda-promo-15s-en.mp4' : '/promo/fsda-promo-15s.mp4';
+  const activeVideoFilename = videoLang === 'en' ? 'fsda-promo-15s-en.mp4' : 'fsda-promo-15s.mp4';
+
   return (
     <div className="space-y-6 rounded-2xl border border-slate-800 bg-slate-900/90 p-5 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <ImageIcon className="h-5 w-5 text-indigo-400" />
-            <span>Grafiki Promocyjne i Wpis na Wykop (16:9)</span>
+            <span>Wideo Promo 15s (HD) oraz Grafiki Wykop / Social</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Kliknij <strong>Pobierz JPG</strong> lub otwórz <strong>Pełny rozmiar</strong>, aby zapisać obraz prawym przyciskiem myszy (np. w podglądzie AI Studio).
+            Odtwórz dynamiczne wideo 15s (edytor kodu + metodyka 80% + symulatory) lub pobierz pliki JPG / MP4 / ZIP.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -142,7 +146,7 @@ export const PromoAssetsPanel: React.FC<PromoAssetsPanelProps> = ({ onClose }) =
             className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-500 transition-colors cursor-pointer disabled:opacity-60"
           >
             <Archive className="h-4 w-4" />
-            <span>{downloadingId === 'zip' ? 'Przygotowywanie ZIP...' : 'Pobierz wszystkie 4 (.ZIP)'}</span>
+            <span>{downloadingId === 'zip' ? 'Przygotowywanie ZIP...' : 'Pobierz 4 grafiki (.ZIP)'}</span>
           </button>
           {onClose && (
             <button
@@ -155,6 +159,63 @@ export const PromoAssetsPanel: React.FC<PromoAssetsPanelProps> = ({ onClose }) =
             </button>
           )}
         </div>
+      </div>
+
+      {/* 15s Promo Video Showcase */}
+      <div className="rounded-2xl border border-indigo-500/30 bg-slate-950/90 p-4 sm:p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Film className="h-4 w-4 text-cyan-400" />
+              <span>Wideo Promocyjne 15s (1280×720 HD · 30 fps · H.264 MP4)</span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Pokazuje metodykę 80% Ready Code, animowane wpisywanie w edytorze + podgląd na żywo oraz montaż symulatorów Git, SQL i REST API.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-lg border border-slate-700 bg-slate-900 p-0.5 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => setVideoLang('pl')}
+                className={`px-2.5 py-1 rounded-md cursor-pointer ${
+                  videoLang === 'pl' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                PL
+              </button>
+              <button
+                type="button"
+                onClick={() => setVideoLang('en')}
+                className={`px-2.5 py-1 rounded-md cursor-pointer ${
+                  videoLang === 'en' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                EN
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => void downloadViaBlob(activeVideoUrl, activeVideoFilename, 'video-' + videoLang)}
+              disabled={downloadingId === 'video-' + videoLang}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 transition-colors cursor-pointer disabled:opacity-60"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>{downloadingId === 'video-' + videoLang ? 'Pobieranie...' : `Pobierz MP4 (${videoLang.toUpperCase()})`}</span>
+            </button>
+          </div>
+        </div>
+
+        <video
+          key={activeVideoUrl}
+          src={activeVideoUrl}
+          controls
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full max-w-4xl mx-auto rounded-xl border border-slate-800 bg-black aspect-video"
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
