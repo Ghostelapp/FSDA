@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { formatDurationUntilReminder } from '../utils/pushNotifications';
 import { Bell, BellRing, CheckCircle2, Clock, Send, Target } from 'lucide-react';
 
-const DAYS_OPTIONS = [
+const DAYS_OPTIONS_PL = [
   { day: 1, label: 'Pn' },
   { day: 2, label: 'Wt' },
   { day: 3, label: 'Śr' },
@@ -13,10 +13,21 @@ const DAYS_OPTIONS = [
   { day: 0, label: 'Nd' },
 ];
 
+const DAYS_OPTIONS_EN = [
+  { day: 1, label: 'Mon' },
+  { day: 2, label: 'Tue' },
+  { day: 3, label: 'Wed' },
+  { day: 4, label: 'Thu' },
+  { day: 5, label: 'Fri' },
+  { day: 6, label: 'Sat' },
+  { day: 0, label: 'Sun' },
+];
+
 const GOAL_MINUTES_OPTIONS = [15, 30, 45, 60];
 
 export const DailyGoalReminderCard: React.FC = () => {
   const {
+    language,
     reminderSettings,
     notificationPermission,
     todaySpentMinutes,
@@ -26,6 +37,8 @@ export const DailyGoalReminderCard: React.FC = () => {
     updateReminderSettings,
     triggerGoalReminderNow,
   } = useApp();
+  const isEn = language === 'en';
+  const daysOptions = isEn ? DAYS_OPTIONS_EN : DAYS_OPTIONS_PL;
 
   const [isSendingTest, setIsSendingTest] = useState(false);
 
@@ -53,11 +66,19 @@ export const DailyGoalReminderCard: React.FC = () => {
 
   const permissionStatusText =
     notificationPermission === 'granted'
-      ? 'Aktywne (Service Worker)'
+      ? isEn
+        ? 'Active (Service Worker)'
+        : 'Aktywne (Service Worker)'
       : notificationPermission === 'denied'
-      ? 'Tryb w aplikacji (Powiadomienia przeglądarki zablokowane)'
+      ? isEn
+        ? 'In-App Mode (Browser notifications blocked)'
+        : 'Tryb w aplikacji (Powiadomienia przeglądarki zablokowane)'
       : notificationPermission === 'unsupported'
-      ? 'Tryb w aplikacji'
+      ? isEn
+        ? 'In-App Mode'
+        : 'Tryb w aplikacji'
+      : isEn
+      ? 'Browser permission required'
       : 'Wymagana zgoda przeglądarki';
 
   return (
@@ -67,15 +88,17 @@ export const DailyGoalReminderCard: React.FC = () => {
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <Target className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
-            <span>Harmonogram Nauki</span>
+            <span>{isEn ? 'Study Schedule' : 'Harmonogram Nauki'}</span>
             <span aria-hidden="true">·</span>
             <span>{permissionStatusText}</span>
           </div>
           <h2 className="text-lg sm:text-xl font-bold text-white">
-            Dzienny Cel Nauki i Przypomnienia Push
+            {isEn ? 'Daily Study Goal & Push Reminders' : 'Dzienny Cel Nauki i Przypomnienia Push'}
           </h2>
           <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
-            Ustaw dzienny cel minutowy oraz godzinę, o której Service Worker przypomni Ci o dokończeniu lekcji i utrzymaniu serii.
+            {isEn
+              ? 'Set your daily minute goal and the time when the Service Worker reminds you to finish a lesson and keep your streak alive.'
+              : 'Ustaw dzienny cel minutowy oraz godzinę, o której Service Worker przypomni Ci o dokończeniu lekcji i utrzymaniu serii.'}
           </p>
         </div>
 
@@ -93,12 +116,12 @@ export const DailyGoalReminderCard: React.FC = () => {
             {reminderSettings.enabled ? (
               <>
                 <BellRing className="h-3.5 w-3.5" />
-                <span>Przypomnienia: Włączone</span>
+                <span>{isEn ? 'Reminders: On' : 'Przypomnienia: Włączone'}</span>
               </>
             ) : (
               <>
                 <Bell className="h-3.5 w-3.5" />
-                <span>Przypomnienia: Wyłączone</span>
+                <span>{isEn ? 'Reminders: Off' : 'Przypomnienia: Wyłączone'}</span>
               </>
             )}
           </button>
@@ -111,7 +134,9 @@ export const DailyGoalReminderCard: React.FC = () => {
         <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl border border-slate-800/90 bg-slate-950/60 p-5 space-y-5">
           <div className="space-y-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-300">Dzisiejsza realizacja celu</span>
+              <span className="font-semibold text-slate-300">
+                {isEn ? "Today's goal progress" : 'Dzisiejsza realizacja celu'}
+              </span>
               <span className="font-mono font-bold text-white tabular-nums">
                 {todaySpentMinutes} / {dailyGoalMinutes} min ({progressPercent}%)
               </span>
@@ -133,14 +158,31 @@ export const DailyGoalReminderCard: React.FC = () => {
                 <>
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                   <span className="text-emerald-300 font-medium">
-                    Cel dzienny osiągnięty! Dzisiejsze przypomnienie zostało wyciszone.
+                    {isEn
+                      ? "Daily goal achieved! Today's reminder has been muted."
+                      : 'Cel dzienny osiągnięty! Dzisiejsze przypomnienie zostało wyciszone.'}
                   </span>
                 </>
               ) : (
                 <>
                   <Clock className="h-4 w-4 text-indigo-400 shrink-0" />
                   <span>
-                    Pozostało <strong className="text-white tabular-nums">{dailyGoalMinutes - todaySpentMinutes} min</strong> nauki do zrealizowania dzisiejszego celu.
+                    {isEn ? (
+                      <>
+                        <strong className="text-white tabular-nums">
+                          {dailyGoalMinutes - todaySpentMinutes} min
+                        </strong>{' '}
+                        of study left to hit today&apos;s goal.
+                      </>
+                    ) : (
+                      <>
+                        Pozostało{' '}
+                        <strong className="text-white tabular-nums">
+                          {dailyGoalMinutes - todaySpentMinutes} min
+                        </strong>{' '}
+                        nauki do zrealizowania dzisiejszego celu.
+                      </>
+                    )}
                   </span>
                 </>
               )}
@@ -150,7 +192,7 @@ export const DailyGoalReminderCard: React.FC = () => {
           {/* Daily Goal Target Selector */}
           <div className="space-y-2 pt-3 border-t border-slate-800/80">
             <label className="block text-xs font-medium text-slate-400">
-              Wybierz dzienny cel nauki:
+              {isEn ? 'Choose daily study goal:' : 'Wybierz dzienny cel nauki:'}
             </label>
             <div className="grid grid-cols-4 gap-2">
               {GOAL_MINUTES_OPTIONS.map((mins) => {
@@ -180,7 +222,7 @@ export const DailyGoalReminderCard: React.FC = () => {
             {/* Time Picker */}
             <div className="space-y-1.5">
               <label htmlFor="reminder-time-input" className="block text-xs font-medium text-slate-300">
-                Godzina przypomnienia
+                {isEn ? 'Reminder time' : 'Godzina przypomnienia'}
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -194,7 +236,11 @@ export const DailyGoalReminderCard: React.FC = () => {
               </div>
               <p className="text-[11px] text-slate-400 tabular-nums">
                 {reminderSettings.enabled && nextReminderInMs !== null
-                  ? `Następne powiadomienie za: ${formatDurationUntilReminder(nextReminderInMs)}`
+                  ? isEn
+                    ? `Next notification in: ${formatDurationUntilReminder(nextReminderInMs, language)}`
+                    : `Następne powiadomienie za: ${formatDurationUntilReminder(nextReminderInMs, language)}`
+                  : isEn
+                  ? 'Schedule paused'
                   : 'Harmonogram wstrzymany'}
               </p>
             </div>
@@ -202,10 +248,10 @@ export const DailyGoalReminderCard: React.FC = () => {
             {/* Days of Week Selector */}
             <div className="space-y-1.5">
               <span className="block text-xs font-medium text-slate-300">
-                Dni aktywności harmonogramu
+                {isEn ? 'Active schedule days' : 'Dni aktywności harmonogramu'}
               </span>
               <div className="flex items-center gap-1.5">
-                {DAYS_OPTIONS.map(({ day, label }) => {
+                {daysOptions.map(({ day, label }) => {
                   const isSelected = reminderSettings.daysOfWeek.includes(day);
                   return (
                     <button
@@ -225,7 +271,10 @@ export const DailyGoalReminderCard: React.FC = () => {
                 })}
               </div>
               <p className="text-[11px] text-slate-400">
-                Aktywne dni: <span className="text-slate-200 font-medium tabular-nums">{reminderSettings.daysOfWeek.length} / 7</span>
+                {isEn ? 'Active days:' : 'Aktywne dni:'}{' '}
+                <span className="text-slate-200 font-medium tabular-nums">
+                  {reminderSettings.daysOfWeek.length} / 7
+                </span>
               </p>
             </div>
           </div>
@@ -239,11 +288,13 @@ export const DailyGoalReminderCard: React.FC = () => {
                   onClick={() => void requestNotificationPermission()}
                   className="px-3.5 py-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-xs font-semibold transition-colors whitespace-nowrap shrink-0"
                 >
-                  Autoryzuj powiadomienia systemowe
+                  {isEn ? 'Authorize system notifications' : 'Autoryzuj powiadomienia systemowe'}
                 </button>
               ) : (
                 <span>
-                  Kliknięcie powiadomienia przenosi bezpośrednio do kolejnej lekcji.
+                  {isEn
+                    ? 'Clicking a notification takes you straight to the next lesson.'
+                    : 'Kliknięcie powiadomienia przenosi bezpośrednio do kolejnej lekcji.'}
                 </span>
               )}
             </div>
@@ -255,7 +306,15 @@ export const DailyGoalReminderCard: React.FC = () => {
               className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-2 whitespace-nowrap shrink-0 disabled:opacity-60"
             >
               <Send className="h-3.5 w-3.5 text-cyan-400" />
-              <span>{isSendingTest ? 'Wysyłanie...' : 'Wyślij testowe powiadomienie'}</span>
+              <span>
+                {isSendingTest
+                  ? isEn
+                    ? 'Sending...'
+                    : 'Wysyłanie...'
+                  : isEn
+                  ? 'Send test notification'
+                  : 'Wyślij testowe powiadomienie'}
+              </span>
             </button>
           </div>
         </div>

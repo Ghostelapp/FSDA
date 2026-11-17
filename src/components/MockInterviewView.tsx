@@ -38,9 +38,10 @@ interface InterviewTask {
 }
 
 export const MockInterviewView: React.FC = () => {
-  const { currentUser, awardCustomXp } = useApp();
+  const { currentUser, awardCustomXp, language } = useApp();
+  const isEn = language === 'en';
 
-  const TASKS: InterviewTask[] = [
+  const TASKS_PL: InterviewTask[] = [
     {
       id: 'task-brackets',
       title: 'Walidacja nawiasów (Balanced Parentheses)',
@@ -149,6 +150,93 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
     },
   ];
 
+  const TASKS_EN: InterviewTask[] = [
+    {
+      id: 'task-brackets',
+      title: 'Balanced Parentheses Validation',
+      difficulty: 'Junior',
+      timeMinutes: 15,
+      xpReward: 80,
+      description: `Frequent stage-1 technical interview challenge (Live Coding):
+Write a function isValidBrackets(str) that checks whether all brackets '()', '{}', '[]' in the input string are properly paired and closed in the right order.
+Return true if valid, false otherwise.`,
+      starterCode: `function isValidBrackets(str) {
+  // Complete using a stack (array):
+  // Return true if (), {}, [] brackets match cleanly, otherwise false.
+  return false;
+}`,
+      solutionCode: TASKS_PL[0].solutionCode,
+      testCases: [
+        { input: '"()[]{}"', expected: 'true', description: 'Sequential simple brackets' },
+        { input: '"{[()]}"', expected: 'true', description: 'Nested brackets' },
+        { input: '"(]"', expected: 'false', description: 'Mismatched bracket types' },
+        { input: '"([)]"', expected: 'false', description: 'Incorrect interleaving' },
+        { input: '""', expected: 'true', description: 'Empty string (Edge Case)', isHidden: true },
+      ],
+      hints: [
+        'Use a LIFO Stack backed by an array with .push() / .pop().',
+        'Push opening brackets onto the stack, and when encountering a closing bracket verify it matches the popped top item.',
+      ],
+    },
+    {
+      id: 'task-groupby',
+      title: 'Group & Sum Data (Array Reduce)',
+      difficulty: 'Junior/Mid',
+      timeMinutes: 20,
+      xpReward: 90,
+      description: `Classic backend & frontend data-aggregation interview exercise:
+Write groupSpendingByPlan(orders), accepting an array like:
+[{ plan: 'monthly', amount: 49 }, { plan: 'yearly', amount: 99 }, { plan: 'monthly', amount: 49 }]
+and returning an object summing amounts per plan:
+{ monthly: 98, yearly: 99 }`,
+      starterCode: `function groupSpendingByPlan(orders) {
+  // Complete implementation (e.g. using orders.reduce):
+  return {};
+}`,
+      solutionCode: TASKS_PL[1].solutionCode,
+      testCases: [
+        {
+          input: `[{ plan: 'monthly', amount: 49 }, { plan: 'monthly', amount: 49 }]`,
+          expected: `{"monthly":98}`,
+          description: 'Summing two identical plans',
+        },
+        {
+          input: `[{ plan: 'monthly', amount: 50 }, { plan: 'yearly', amount: 100 }]`,
+          expected: `{"monthly":50,"yearly":100}`,
+          description: 'Grouping distinct plans',
+        },
+      ],
+      hints: [
+        'Use orders.reduce((acc, curr) => ..., {}) initialized with an empty object {}.',
+        'Add amount to the running bucket or initialize at 0: (acc[curr.plan] || 0) + curr.amount.',
+      ],
+    },
+    {
+      id: 'task-debounce',
+      title: 'Implement Debounce Utility',
+      difficulty: 'Mid',
+      timeMinutes: 20,
+      xpReward: 100,
+      description: `A favorite JavaScript & performance interview question:
+Write debounce(fn, delayMs) which delays invoking fn until delayMs milliseconds have elapsed since the last call.`,
+      starterCode: `function debounce(fn, delayMs) {
+  // Complete implementation:
+  // Store timer ID inside closure and use clearTimeout + setTimeout
+  return null;
+}`,
+      solutionCode: TASKS_PL[2].solutionCode,
+      testCases: [
+        { input: 'debounce(log, 200)', expected: 'Returns a wrapped debounced function', description: 'Valid closure wrapper' },
+      ],
+      hints: [
+        'Capture a mutable timer ID variable inside the outer debounce closure.',
+        'Cancel any pending scheduled execution on each call via clearTimeout(timer).',
+      ],
+    },
+  ];
+
+  const TASKS = isEn ? TASKS_EN : TASKS_PL;
+
   const [selectedTaskIdx, setSelectedTaskIdx] = useState(0);
   const currentTask = TASKS[selectedTaskIdx];
 
@@ -164,6 +252,11 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
   useEffect(() => {
     setIsCompleted(Boolean(currentUser.claimedRewards?.includes(`interview-${currentTask.id}`)));
   }, [currentTask.id, currentUser.claimedRewards]);
+
+  useEffect(() => {
+    const otherStarter = (isEn ? TASKS_PL : TASKS_EN)[selectedTaskIdx]?.starterCode;
+    setUserCode((prev) => (prev === otherStarter ? currentTask.starterCode : prev));
+  }, [isEn, selectedTaskIdx, currentTask.starterCode]);
 
   // Timer tick
   useEffect(() => {
@@ -210,23 +303,23 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
         
         results.push({
           passed: fn('()[]{}') === true,
-          message: 'Test 1: ()[]{} -> oczekiwano true',
+          message: isEn ? 'Test 1: ()[]{} -> expected true' : 'Test 1: ()[]{} -> oczekiwano true',
         });
         results.push({
           passed: fn('{[()]}') === true,
-          message: 'Test 2: {[()]} -> oczekiwano true',
+          message: isEn ? 'Test 2: {[()]} -> expected true' : 'Test 2: {[()]} -> oczekiwano true',
         });
         results.push({
           passed: fn('(]') === false,
-          message: 'Test 3: (] -> oczekiwano false',
+          message: isEn ? 'Test 3: (] -> expected false' : 'Test 3: (] -> oczekiwano false',
         });
         results.push({
           passed: fn('([)]') === false,
-          message: 'Test 4: ([)] -> oczekiwano false',
+          message: isEn ? 'Test 4: ([)] -> expected false' : 'Test 4: ([)] -> oczekiwano false',
         });
         results.push({
           passed: fn('') === true,
-          message: 'Test 5 (Ukryty Edge Case): pusty string -> oczekiwano true',
+          message: isEn ? 'Test 5 (Hidden Edge Case): empty string -> expected true' : 'Test 5 (Ukryty Edge Case): pusty string -> oczekiwano true',
         });
       } else if (currentTask.id === 'task-groupby') {
         // eslint-disable-next-line no-new-func
@@ -236,11 +329,11 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
 
         results.push({
           passed: res1?.monthly === 98,
-          message: 'Test 1: podwójny plan monthly zsumowany do 98',
+          message: isEn ? 'Test 1: two monthly plans summed to 98' : 'Test 1: podwójny plan monthly zsumowany do 98',
         });
         results.push({
           passed: res2?.monthly === 50 && res2?.yearly === 100,
-          message: 'Test 2: rozdzielenie planów monthly i yearly',
+          message: isEn ? 'Test 2: separate monthly and yearly plan totals' : 'Test 2: rozdzielenie planów monthly i yearly',
         });
       } else {
         // Debounce test with synchronous timer verification
@@ -268,12 +361,12 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
 
         results.push({
           passed: typeof d === 'function',
-          message: 'Test 1: funkcja zwraca właściwy wrapper closure',
+          message: isEn ? 'Test 1: returns a valid closure wrapper function' : 'Test 1: funkcja zwraca właściwy wrapper closure',
         });
 
         if (typeof d === 'function') {
-          d('pierwsze');
-          d('drugie');
+          d('first');
+          d('second');
           if (capturedTimerFn) {
             (capturedTimerFn as () => void)();
           }
@@ -284,8 +377,10 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
             /clearTimeout\s*\(/.test(codeWithoutComments) &&
             /setTimeout\s*\(/.test(codeWithoutComments) &&
             clearedCount >= 1 &&
-            receivedArg === 'drugie',
-          message: 'Test 2: anuluje poprzedni timer (clearTimeout) i wywołuje docelowy callback z argumentami',
+            receivedArg === 'second',
+          message: isEn
+            ? 'Test 2: cancels previous timer (clearTimeout) and invokes target callback with latest args'
+            : 'Test 2: anuluje poprzedni timer (clearTimeout) i wywołuje docelowy callback z argumentami',
         });
       }
 
@@ -295,7 +390,7 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
       if (allPassed) {
         awardCustomXp(
           currentTask.xpReward,
-          `Zadanie Live Coding: ${currentTask.title}`,
+          `${isEn ? 'Live Coding Challenge' : 'Zadanie Live Coding'}: ${currentTask.title}`,
           `interview-${currentTask.id}`,
           { code: userCode }
         );
@@ -308,7 +403,7 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
     } catch (err: any) {
       soundManager.playHeartLost();
       setTestResults([
-        { passed: false, message: `Błąd wykonania kodu: ${err.message}` },
+        { passed: false, message: `${isEn ? 'Code execution error' : 'Błąd wykonania kodu'}: ${err.message}` },
       ]);
     }
   };
@@ -321,13 +416,15 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
         <div>
           <div className="flex items-center gap-2 text-rose-400 text-xs font-bold uppercase tracking-wider mb-1">
             <Briefcase className="h-4 w-4" />
-            <span>Symulator Rozmowy Technicznej</span>
+            <span>{isEn ? 'Technical Interview Simulator' : 'Symulator Rozmowy Technicznej'}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Live Coding & Pytania Rekrutacyjne
+            {isEn ? 'Live Coding & Interview Questions' : 'Live Coding & Pytania Rekrutacyjne'}
           </h1>
           <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-            Poczuj atmosferę prawdziwej rozmowy kwalifikacyjnej: rozwiąż zadanie algorytmiczne w limicie czasu, przejdź testy automatyczne i zdobądź rekomendację Junior Developera.
+            {isEn
+              ? 'Simulate a real engineering interview: solve an algorithm under a countdown timer, pass automated unit tests, and build confidence.'
+              : 'Poczuj atmosferę prawdziwej rozmowy kwalifikacyjnej: rozwiąż zadanie algorytmiczne w limicie czasu, przejdź testy automatyczne i zdobądź rekomendację Junior Developera.'}
           </p>
         </div>
 
@@ -352,7 +449,7 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
             }`}
           >
             {isTimerRunning ? <Pause className="h-3.5 w-3.5 fill-white" /> : <Play className="h-3.5 w-3.5 fill-white" />}
-            <span>{isTimerRunning ? 'Pauza' : 'Start'}</span>
+            <span>{isTimerRunning ? (isEn ? 'Pause' : 'Pauza') : 'Start'}</span>
           </button>
         </div>
       </div>
@@ -399,7 +496,7 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
                   className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition-colors"
                 >
                   <RotateCcw className="h-3 w-3" />
-                  <span>Resetuj</span>
+                  <span>{isEn ? 'Reset' : 'Resetuj'}</span>
                 </button>
                 <button
                   type="button"
@@ -407,7 +504,7 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
                   className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-900/40"
                 >
                   <Send className="h-3 w-3" />
-                  <span>Testy (Submit)</span>
+                  <span>{isEn ? 'Run Tests (Submit)' : 'Testy (Submit)'}</span>
                 </button>
               </div>
             </div>
@@ -433,11 +530,15 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
                   isCompleted ? 'text-emerald-300' : 'text-rose-300'
                 }`}>
                   {isCompleted ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <AlertCircle className="h-4 w-4 text-rose-400" />}
-                  <span>{isCompleted ? 'Wszystkie Testy Zaliczone!' : 'Niektóre testy nie przeszły pomyślnie'}</span>
+                  <span>
+                    {isCompleted
+                      ? isEn ? 'All Tests Passed!' : 'Wszystkie Testy Zaliczone!'
+                      : isEn ? 'Some tests failed' : 'Niektóre testy nie przeszły pomyślnie'}
+                  </span>
                 </span>
                 {isCompleted && (
                   <span className="text-xs font-mono font-bold text-amber-300">
-                    +{currentTask.xpReward} XP Odblokowane!
+                    +{currentTask.xpReward} XP {isEn ? 'Unlocked!' : 'Odblokowane!'}
                   </span>
                 )}
               </div>
@@ -460,8 +561,8 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
           
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
             <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <span className="text-xs font-bold text-white uppercase tracking-wider">Treść Zadania</span>
-              <span className="text-xs text-indigo-400 font-bold">Nagroda: {currentTask.xpReward} XP</span>
+              <span className="text-xs font-bold text-white uppercase tracking-wider">{isEn ? 'Task Brief' : 'Treść Zadania'}</span>
+              <span className="text-xs text-indigo-400 font-bold">{isEn ? 'Reward:' : 'Nagroda:'} {currentTask.xpReward} XP</span>
             </div>
             <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">
               {currentTask.description}
@@ -473,7 +574,7 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                 <HelpCircle className="h-4 w-4 text-amber-400" />
-                <span>Wskazówki Mentora:</span>
+                <span>{isEn ? 'Mentor Hints:' : 'Wskazówki Mentora:'}</span>
               </span>
             </div>
 
@@ -494,7 +595,7 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
                         className="text-cyan-400 hover:text-cyan-300 font-semibold text-[11px] flex items-center gap-1"
                       >
                         <Eye className="h-3 w-3" />
-                        <span>Odkryj wskazówkę #{hIdx + 1}</span>
+                        <span>{isEn ? `Reveal hint #${hIdx + 1}` : `Odkryj wskazówkę #${hIdx + 1}`}</span>
                       </button>
                     )}
                   </div>
@@ -507,10 +608,12 @@ Napisz funkcję debounce(fn, delayMs), która opóźnia wykonanie przekazanej fu
           <div className="rounded-2xl border border-indigo-500/20 bg-indigo-950/20 p-4 text-xs text-slate-300 space-y-1.5 leading-relaxed">
             <span className="font-bold text-indigo-300 flex items-center gap-1">
               <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-              Porada Senior Developera:
+              {isEn ? 'Senior Developer Tip:' : 'Porada Senior Developera:'}
             </span>
             <p className="text-[11px] text-slate-400">
-              Na prawdziwym Live Codingu nie milcz! Mów na głos co robisz, jakie przypadki brzegowe bierzesz pod uwagę i jaka będzie złożoność czasowa Twojego algorytmu (Big-O).
+              {isEn
+                ? 'Never go silent in a real live-coding interview! Think out loud, explain edge cases you are checking, and mention time complexity (Big-O).'
+                : 'Na prawdziwym Live Codingu nie milcz! Mów na głos co robisz, jakie przypadki brzegowe bierzesz pod uwagę i jaka będzie złożoność czasowa Twojego algorytmu (Big-O).'}
             </p>
           </div>
 

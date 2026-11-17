@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { MODULES_DATA } from '../data/modulesData';
+import { formatCategoryLabel } from '../utils/i18n';
 import { GoogleAdSenseBanner } from './GoogleAdSenseBanner';
 import { RichInlineText } from './RichInlineText';
 import { 
@@ -20,9 +20,10 @@ import {
 } from 'lucide-react';
 
 export const ModulesView: React.FC = () => {
-  const { currentUser, setActiveTab } = useApp();
+  const { currentUser, setActiveTab, allModules, language } = useApp();
+  const isEn = language === 'en';
   const [selectedCategory, setSelectedCategory] = useState<string>('Wszystkie');
-  const [expandedModuleId, setExpandedModuleId] = useState<number | null>(1); // Default expand Module 1 (Fundamenty od zera)
+  const [expandedModuleId, setExpandedModuleId] = useState<number | null>(1);
 
   const categories = [
     'Wszystkie',
@@ -35,8 +36,8 @@ export const ModulesView: React.FC = () => {
   ];
 
   const filteredModules = selectedCategory === 'Wszystkie'
-    ? MODULES_DATA
-    : MODULES_DATA.filter((m) => m.category === selectedCategory);
+    ? allModules
+    : allModules.filter((m) => m.category === selectedCategory);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
@@ -46,13 +47,29 @@ export const ModulesView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400">
             <Layers className="h-4 w-4" />
-            <span>Kompletny Program Nauki · Od Zera do Junior Full Stack</span>
+            <span>
+              {isEn
+                ? 'Complete Curriculum · From Zero to Junior Full Stack'
+                : 'Kompletny Program Nauki · Od Zera do Junior Full Stack'}
+            </span>
           </div>
           <h1 className="mt-2 text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Ścieżka Full Stack Developera (15 Modułów)
+            {isEn
+              ? `Full Stack Developer Track (${allModules.length} Modules)`
+              : `Ścieżka Full Stack Developera (${allModules.length} Modułów)`}
           </h1>
           <p className="mt-3 text-sm sm:text-base text-slate-300 max-w-3xl leading-relaxed">
-            Każda lekcja zawiera tryb <strong className="text-white font-semibold">„Wyjaśnij od zera”</strong> z codziennymi analogiami, słowniczkiem prostych pojęć oraz podpowiedziami krok po kroku do ćwiczeń.
+            {isEn ? (
+              <>
+                Every lesson includes a <strong className="text-white font-semibold">“Explain from Zero”</strong>{' '}
+                guide with everyday analogies, plain-English glossary cards, and step-by-step exercise hints.
+              </>
+            ) : (
+              <>
+                Każda lekcja zawiera tryb <strong className="text-white font-semibold">„Wyjaśnij od zera”</strong>{' '}
+                z codziennymi analogiami, słowniczkiem prostych pojęć oraz podpowiedziami krok po kroku do ćwiczeń.
+              </>
+            )}
           </p>
         </div>
 
@@ -62,7 +79,11 @@ export const ModulesView: React.FC = () => {
           className="inline-flex items-center gap-2.5 self-start lg:self-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold transition-colors shadow-lg shadow-emerald-950/50 shrink-0"
         >
           <BookOpen className="h-4 w-4" />
-          <span>Zacznij od Lekcji 1 (Podstawy HTML od zera)</span>
+          <span>
+            {isEn
+              ? 'Start Lesson 1 (HTML Basics from Scratch)'
+              : 'Zacznij od Lekcji 1 (Podstawy HTML od zera)'}
+          </span>
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>
@@ -80,7 +101,7 @@ export const ModulesView: React.FC = () => {
                 : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
             }`}
           >
-            {cat}
+            {formatCategoryLabel(cat, language)}
           </button>
         ))}
       </div>
@@ -118,16 +139,30 @@ export const ModulesView: React.FC = () => {
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
                       <span className="font-semibold text-slate-300">
-                        {module.category}
+                        {module.displayCategory}
                       </span>
                       <span aria-hidden="true">·</span>
                       <span className="text-emerald-400 font-medium">
-                        {module.id <= 2 ? 'Poziom: Start od Zera' : module.id <= 5 ? 'Poziom: Podstawy' : module.id <= 10 ? 'Poziom: Średniozaawansowany' : 'Poziom: Zaawansowany'}
+                        {isEn
+                          ? module.id <= 2
+                            ? 'Level: From Scratch'
+                            : module.id <= 5
+                            ? 'Level: Foundations'
+                            : module.id <= 10
+                            ? 'Level: Intermediate'
+                            : 'Level: Advanced'
+                          : module.id <= 2
+                          ? 'Poziom: Start od Zera'
+                          : module.id <= 5
+                          ? 'Poziom: Podstawy'
+                          : module.id <= 10
+                          ? 'Poziom: Średniozaawansowany'
+                          : 'Poziom: Zaawansowany'}
                       </span>
                       <span aria-hidden="true">·</span>
                       <span className="text-indigo-400 font-semibold flex items-center gap-1">
                         <Award className="h-3.5 w-3.5" />
-                        Odznaka: {module.badgeName}
+                        {isEn ? 'Badge:' : 'Odznaka:'} {module.badgeName}
                       </span>
                     </div>
                     <h3 className="text-lg sm:text-xl font-bold text-white">{module.title}</h3>
@@ -150,14 +185,14 @@ export const ModulesView: React.FC = () => {
                     </span>
                     {totalInModule > 0 && (
                       <span className="text-emerald-400 font-semibold">
-                        {completedInModule} / {totalInModule} lekcji
+                        {completedInModule} / {totalInModule} {isEn ? 'lessons' : 'lekcji'}
                       </span>
                     )}
                   </div>
 
                   <button
                     type="button"
-                    aria-label={isExpanded ? 'Zwiń moduł' : 'Rozwiń moduł'}
+                    aria-label={isExpanded ? (isEn ? 'Collapse module' : 'Zwiń moduł') : (isEn ? 'Expand module' : 'Rozwiń moduł')}
                     className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white"
                   >
                     {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -172,7 +207,7 @@ export const ModulesView: React.FC = () => {
                   {/* Topics Covered */}
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                      Kluczowe zagadnienia modułu:
+                      {isEn ? 'Key module topics:' : 'Kluczowe zagadnienia modułu:'}
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-sm text-slate-300">
                       {module.topics.map((t, idx) => (
@@ -187,7 +222,9 @@ export const ModulesView: React.FC = () => {
                   {/* Project Brief if present */}
                   {module.projectBrief && (
                     <div className="p-4 rounded-xl bg-indigo-950/20 border border-indigo-500/30 text-sm">
-                      <span className="font-bold text-indigo-300 block mb-1">Projekt praktyczny modułu:</span>
+                      <span className="font-bold text-indigo-300 block mb-1">
+                        {isEn ? 'Module practical project:' : 'Projekt praktyczny modułu:'}
+                      </span>
                       <p className="text-slate-200"><RichInlineText text={module.projectBrief} /></p>
                     </div>
                   )}
@@ -196,7 +233,9 @@ export const ModulesView: React.FC = () => {
                   {module.lessons.length > 0 ? (
                     <div className="space-y-3 pt-2">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                        Lekcje w tym module ({module.lessons.length} — ułożone od najprostszych do zaawansowanych):
+                        {isEn
+                          ? `Lessons in this module (${module.lessons.length} — ordered from beginner-friendly to advanced):`
+                          : `Lekcje w tym module (${module.lessons.length} — ułożone od najprostszych do zaawansowanych):`}
                       </h4>
                       <div className="space-y-2.5">
                         {module.lessons.map((lesson) => {
@@ -217,12 +256,12 @@ export const ModulesView: React.FC = () => {
                                 <div className="space-y-1">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <h5 className="text-sm sm:text-base font-bold text-white group-hover:text-indigo-400 transition-colors">
-                                      Lekcja {lesson.order}: <RichInlineText text={lesson.title} />
+                                      {isEn ? 'Lesson' : 'Lekcja'} {lesson.order}: <RichInlineText text={lesson.title} />
                                     </h5>
                                     {isDone && (
                                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400">
                                         <CheckCircle2 className="h-3.5 w-3.5" />
-                                        Zaliczone
+                                        {isEn ? 'Completed' : 'Zaliczone'}
                                       </span>
                                     )}
                                   </div>
@@ -239,7 +278,9 @@ export const ModulesView: React.FC = () => {
                                     </span>
                                     <span aria-hidden="true">·</span>
                                     <span className="text-emerald-400">
-                                      {lesson.order <= 2 && module.id <= 3 ? 'Start od zera (z analogią)' : 'Zawiera wyjaśnienie krok po kroku'}
+                                      {lesson.order <= 2 && module.id <= 3
+                                        ? isEn ? 'Zero-to-hero (with analogy)' : 'Start od zera (z analogią)'
+                                        : isEn ? 'Includes step-by-step guide' : 'Zawiera wyjaśnienie krok po kroku'}
                                     </span>
                                   </div>
                                 </div>
@@ -249,7 +290,11 @@ export const ModulesView: React.FC = () => {
                                 type="button"
                                 className="self-end sm:self-center shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600/30 text-indigo-200 group-hover:bg-indigo-600 group-hover:text-white text-xs font-semibold transition-all"
                               >
-                                <span>{isDone ? 'Powtórz lekcję' : 'Otwórz lekcję'}</span>
+                                <span>
+                                  {isDone
+                                    ? isEn ? 'Review lesson' : 'Powtórz lekcję'
+                                    : isEn ? 'Open lesson' : 'Otwórz lekcję'}
+                                </span>
                                 <ArrowRight className="h-3.5 w-3.5" />
                               </button>
                             </div>
@@ -261,14 +306,18 @@ export const ModulesView: React.FC = () => {
                     <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40 text-xs text-slate-400 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Lock className="h-4 w-4 text-slate-500" />
-                        <span>Kolejne lekcje tego modułu odblokowują się po zaliczeniu modułów wstępnych (HTML/CSS).</span>
+                        <span>
+                          {isEn
+                            ? 'Further lessons unlock after finishing introductory modules (HTML/CSS).'
+                            : 'Kolejne lekcje tego modułu odblokowują się po zaliczeniu modułów wstępnych (HTML/CSS).'}
+                        </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setActiveTab('projects')}
                         className="text-indigo-400 hover:underline font-semibold"
                       >
-                        Zobacz projekt modułu &rarr;
+                        {isEn ? 'View module project →' : 'Zobacz projekt modułu →'}
                       </button>
                     </div>
                   )}

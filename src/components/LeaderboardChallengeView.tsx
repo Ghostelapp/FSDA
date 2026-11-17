@@ -3,12 +3,12 @@ import { useApp } from '../context/AppContext';
 import {
   buildWeeklyLeaderboard,
   DAILY_CHALLENGES,
+  getLocalizedDailyChallenges,
   evaluateDailyChallenge,
   ChallengeEvalResult,
 } from '../utils/developerSimulators';
 import {
   Trophy,
-  Flame,
   Sparkles,
   CheckCircle2,
   XCircle,
@@ -18,10 +18,17 @@ import {
 } from 'lucide-react';
 
 export const LeaderboardChallengeView: React.FC = () => {
-  const { currentUser, allUsers, awardCustomXp } = useApp();
+  const { currentUser, allUsers, awardCustomXp, language } = useApp();
+  const isEn = language === 'en';
+
+  const dailyChallenges = useMemo(
+    () => getLocalizedDailyChallenges(language),
+    [language]
+  );
+
   const [selectedChallengeId, setSelectedChallengeId] = useState<string>(DAILY_CHALLENGES[0].id);
   const activeChallenge =
-    DAILY_CHALLENGES.find((c) => c.id === selectedChallengeId) || DAILY_CHALLENGES[0];
+    dailyChallenges.find((c) => c.id === selectedChallengeId) || dailyChallenges[0];
 
   const [codeMap, setCodeMap] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
@@ -39,29 +46,31 @@ export const LeaderboardChallengeView: React.FC = () => {
       Array.from(
         new Set([
           ...localSolvedIds,
-          ...DAILY_CHALLENGES.filter((c) => (currentUser.claimedRewards || []).includes(`daily-${c.id}`)).map(
-            (c) => c.id
-          ),
+          ...dailyChallenges
+            .filter((c) => (currentUser.claimedRewards || []).includes(`daily-${c.id}`))
+            .map((c) => c.id),
         ])
       ),
-    [localSolvedIds, currentUser.claimedRewards]
+    [localSolvedIds, currentUser.claimedRewards, dailyChallenges]
   );
 
   const leaderboard = useMemo(
-    () => buildWeeklyLeaderboard(currentUser, allUsers),
-    [currentUser, allUsers]
+    () => buildWeeklyLeaderboard(currentUser, allUsers, language),
+    [currentUser, allUsers, language]
   );
 
   const handleRunTests = () => {
     const userCode = codeMap[activeChallenge.id] || '';
-    const res = evaluateDailyChallenge(activeChallenge, userCode);
+    const res = evaluateDailyChallenge(activeChallenge, userCode, language);
     setEvalResult(res);
 
     if (res.passedAll) {
       setLocalSolvedIds((prev) => (prev.includes(activeChallenge.id) ? prev : [...prev, activeChallenge.id]));
       awardCustomXp(
         activeChallenge.xpReward,
-        `Rozwiązano Wyzwanie Dnia: ${activeChallenge.title}`,
+        isEn
+          ? `Solved Daily Challenge: ${activeChallenge.title}`
+          : `Rozwiązano Wyzwanie Dnia: ${activeChallenge.title}`,
         `daily-${activeChallenge.id}`,
         { code: userCode }
       );
@@ -73,12 +82,16 @@ export const LeaderboardChallengeView: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
-          <p className="text-xs font-semibold text-amber-400">Rywalizacja & Algorytmika</p>
+          <p className="text-xs font-semibold text-amber-400">
+            {isEn ? 'Competition & Algorithms' : 'Rywalizacja & Algorytmika'}
+          </p>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
-            Ligi Tygodniowe XP & Wyzwanie Dnia
+            {isEn ? 'Weekly XP Leagues & Daily Kata' : 'Ligi Tygodniowe XP & Wyzwanie Dnia'}
           </h1>
           <p className="text-sm text-slate-300 mt-1 max-w-2xl">
-            Zdobywaj punkty doświadczenia za ukończone lekcje, misje API i codzienne zadania kodowania, aby utrzymać miejsce w Lidze Diamentowej.
+            {isEn
+              ? 'Earn XP from lessons, API missions, and daily coding challenges to hold your spot in the Diamond League.'
+              : 'Zdobywaj punkty doświadczenia za ukończone lekcje, misje API i codzienne zadania kodowania, aby utrzymać miejsce w Lidze Diamentowej.'}
           </p>
         </div>
       </div>
@@ -90,11 +103,17 @@ export const LeaderboardChallengeView: React.FC = () => {
             <div className="flex items-center gap-2.5">
               <Trophy className="h-5 w-5 text-amber-400" />
               <div>
-                <h2 className="text-base font-bold text-white">Ranking Tygodniowy Kursantów</h2>
-                <p className="text-xs text-slate-400">Aktualizacja na żywo według łącznego XP</p>
+                <h2 className="text-base font-bold text-white">
+                  {isEn ? 'Weekly Student Leaderboard' : 'Ranking Tygodniowy Kursantów'}
+                </h2>
+                <p className="text-xs text-slate-400">
+                  {isEn ? 'Live standings by total XP' : 'Aktualizacja na żywo według łącznego XP'}
+                </p>
               </div>
             </div>
-            <span className="text-xs font-semibold text-amber-300">Sezon Jesień 2026</span>
+            <span className="text-xs font-semibold text-amber-300">
+              {isEn ? 'Fall 2026 Season' : 'Sezon Jesień 2026'}
+            </span>
           </div>
 
           <div className="divide-y divide-slate-800/80">
@@ -133,14 +152,18 @@ export const LeaderboardChallengeView: React.FC = () => {
                       {entry.rank === 1 && <Crown className="h-3.5 w-3.5 text-amber-400 shrink-0" />}
                     </div>
                     <p className="text-[11px] text-slate-400">
-                      Liga {entry.league} · Seria {entry.streakDays} dni
+                      {isEn
+                        ? `${entry.displayLeague} League · ${entry.streakDays}d streak`
+                        : `Liga ${entry.displayLeague} · Seria ${entry.streakDays} dni`}
                     </p>
                   </div>
                 </div>
 
                 <div className="text-right font-mono tabular-nums shrink-0">
                   <p className="text-xs font-bold text-indigo-300">{entry.xp} XP</p>
-                  <p className="text-[10px] text-emerald-400">+{entry.weeklyXp} w tym tyg.</p>
+                  <p className="text-[10px] text-emerald-400">
+                    {isEn ? `+${entry.weeklyXp} this wk` : `+${entry.weeklyXp} w tym tyg.`}
+                  </p>
                 </div>
               </div>
             ))}
@@ -153,13 +176,19 @@ export const LeaderboardChallengeView: React.FC = () => {
             <div className="flex items-center gap-2">
               <Code2 className="h-5 w-5 text-cyan-400" />
               <div>
-                <h2 className="text-base font-bold text-white">Wyzwanie Dnia (Daily Kata)</h2>
-                <p className="text-xs text-slate-400">Rozwiąż zadanie i zgarnij bonus +{activeChallenge.xpReward} XP</p>
+                <h2 className="text-base font-bold text-white">
+                  {isEn ? 'Daily Coding Challenge (Kata)' : 'Wyzwanie Dnia (Daily Kata)'}
+                </h2>
+                <p className="text-xs text-slate-400">
+                  {isEn
+                    ? `Solve the puzzle and claim +${activeChallenge.xpReward} XP bonus`
+                    : `Rozwiąż zadanie i zgarnij bonus +${activeChallenge.xpReward} XP`}
+                </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              {DAILY_CHALLENGES.map((ch, idx) => (
+              {dailyChallenges.map((ch, idx) => (
                 <button
                   key={ch.id}
                   type="button"
@@ -173,7 +202,7 @@ export const LeaderboardChallengeView: React.FC = () => {
                       : 'bg-slate-950 text-slate-300 hover:bg-slate-800'
                   }`}
                 >
-                  Zadanie #{idx + 1}
+                  {isEn ? `Task #${idx + 1}` : `Zadanie #${idx + 1}`}
                 </button>
               ))}
             </div>
@@ -185,7 +214,7 @@ export const LeaderboardChallengeView: React.FC = () => {
               {solvedIds.includes(activeChallenge.id) && (
                 <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Zaliczone
+                  {isEn ? 'Solved' : 'Zaliczone'}
                 </span>
               )}
             </div>
@@ -194,7 +223,7 @@ export const LeaderboardChallengeView: React.FC = () => {
 
           <div className="space-y-2">
             <label htmlFor="daily-challenge-editor" className="text-xs font-semibold text-slate-300">
-              Twój kod JavaScript:
+              {isEn ? 'Your JavaScript solution:' : 'Twój kod JavaScript:'}
             </label>
             <textarea
               id="daily-challenge-editor"
@@ -214,12 +243,12 @@ export const LeaderboardChallengeView: React.FC = () => {
               className="flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 text-xs font-bold text-white transition-colors"
             >
               <Play className="h-3.5 w-3.5" />
-              <span>Uruchom testy jednostkowe</span>
+              <span>{isEn ? 'Run unit tests' : 'Uruchom testy jednostkowe'}</span>
             </button>
 
             <span className="text-xs font-mono text-indigo-300 tabular-nums flex items-center gap-1">
               <Sparkles className="h-3.5 w-3.5" />
-              Nagroda: +{activeChallenge.xpReward} XP
+              {isEn ? `Reward: +${activeChallenge.xpReward} XP` : `Nagroda: +${activeChallenge.xpReward} XP`}
             </span>
           </div>
 
@@ -234,7 +263,11 @@ export const LeaderboardChallengeView: React.FC = () => {
                       <span className="text-slate-300">{r.inputDesc}</span>
                       <span className={`flex items-center gap-1 font-bold ${r.passed ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {r.passed ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
-                        {r.passed ? `OK (${r.actual})` : `Otrzymano ${r.actual}, oczekiwano ${r.expected}`}
+                        {r.passed
+                          ? `OK (${r.actual})`
+                          : isEn
+                          ? `Got ${r.actual}, expected ${r.expected}`
+                          : `Otrzymano ${r.actual}, oczekiwano ${r.expected}`}
                       </span>
                     </div>
                   ))}

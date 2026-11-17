@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { soundManager } from '../utils/audioFx';
 import {
@@ -13,8 +13,6 @@ import {
   Share2, 
   CheckCircle2, 
   ShieldCheck, 
-  Sparkles, 
-  AlertCircle,
   Copy,
   Check,
   Search,
@@ -25,7 +23,8 @@ import {
 } from 'lucide-react';
 
 export const CertificateView: React.FC = () => {
-  const { currentUser, isAuthenticated, allUsers, setActiveTab } = useApp();
+  const { currentUser, isAuthenticated, allUsers, setActiveTab, language } = useApp();
+  const isEn = language === 'en';
   const printRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
@@ -41,8 +40,12 @@ export const CertificateView: React.FC = () => {
 
   const [lookupInput, setLookupInput] = useState(verificationCode);
   const [lookupResult, setLookupResult] = useState<CertificateVerificationResult | null>(() =>
-    verifyCertificateCode(verificationCode, allUsers, currentUser)
+    verifyCertificateCode(verificationCode, allUsers, currentUser, language)
   );
+
+  useEffect(() => {
+    setLookupResult(verifyCertificateCode(lookupInput, allUsers, currentUser, language));
+  }, [language, verificationCode]);
 
   const handlePrint = () => {
     soundManager.playClick();
@@ -59,12 +62,14 @@ export const CertificateView: React.FC = () => {
   const handleVerifySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     soundManager.playClick();
-    const res = verifyCertificateCode(lookupInput, allUsers, currentUser);
+    const res = verifyCertificateCode(lookupInput, allUsers, currentUser, language);
     setLookupResult(res);
   };
 
   const linkedInShareUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(
-    `Z dumą dzielę się certyfikatem ukończenia ścieżki Full Stack Developer Academy! Opanowałem technologie: TypeScript, React, Node.js, Express, PostgreSQL i architekturę chmurową. Weryfikacja certyfikatu: ${verificationUrl} #FullStack #WebDevelopment #Programming #React #TypeScript #NodeJS`
+    isEn
+      ? `Proud to share my Full Stack Developer Academy Certificate of Completion! Mastered TypeScript, React, Node.js, Express, PostgreSQL, and cloud architecture. Certificate verification: ${verificationUrl} #FullStack #WebDevelopment #Programming #React #TypeScript #NodeJS`
+      : `Z dumą dzielę się certyfikatem ukończenia ścieżki Full Stack Developer Academy! Opanowałem technologie: TypeScript, React, Node.js, Express, PostgreSQL i architekturę chmurową. Weryfikacja certyfikatu: ${verificationUrl} #FullStack #WebDevelopment #Programming #React #TypeScript #NodeJS`
   )}`;
 
   return (
@@ -75,13 +80,21 @@ export const CertificateView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-400 uppercase tracking-wider">
             <Award className="h-4 w-4" />
-            <span>Oficjalna Certyfikacja Kompetencji Full Stack</span>
+            <span>
+              {isEn
+                ? 'Official Full Stack Competency Certification'
+                : 'Oficjalna Certyfikacja Kompetencji Full Stack'}
+            </span>
           </div>
           <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Certyfikat Ukończenia Programu Inżynierskiego
+            {isEn
+              ? 'Full Stack Engineering Certificate'
+              : 'Certyfikat Ukończenia Programu Inżynierskiego'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1">
-            Weryfikowalny certyfikat z unikalnym podpisem kryptograficznym i kodem QR poświadczającym wiedzę w standardzie produkcyjnym.
+            {isEn
+              ? 'Verifiable credential with a unique cryptographic signature and QR code validating production-grade full-stack skills.'
+              : 'Weryfikowalny certyfikat z unikalnym podpisem kryptograficznym i kodem QR poświadczającym wiedzę w standardzie produkcyjnym.'}
           </p>
         </div>
 
@@ -93,7 +106,15 @@ export const CertificateView: React.FC = () => {
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 px-3.5 py-2.5 text-xs font-bold transition-all"
             >
               {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-              <span>{copied ? 'Skopiowano link!' : 'Kopiuj link'}</span>
+              <span>
+                {copied
+                  ? isEn
+                    ? 'Link copied!'
+                    : 'Skopiowano link!'
+                  : isEn
+                  ? 'Copy link'
+                  : 'Kopiuj link'}
+              </span>
             </button>
 
             <a
@@ -104,7 +125,7 @@ export const CertificateView: React.FC = () => {
               className="inline-flex items-center gap-1.5 rounded-xl bg-[#0077b5] hover:bg-[#006097] text-white px-3.5 py-2.5 text-xs font-bold transition-all shadow-md shadow-blue-900/30"
             >
               <Share2 className="h-4 w-4" />
-              <span>Dodaj na LinkedIn</span>
+              <span>{isEn ? 'Add to LinkedIn' : 'Dodaj na LinkedIn'}</span>
             </a>
 
             <button
@@ -113,7 +134,7 @@ export const CertificateView: React.FC = () => {
               className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40"
             >
               <Printer className="h-4 w-4" />
-              <span>Drukuj / Pobierz PDF</span>
+              <span>{isEn ? 'Print / Save PDF' : 'Drukuj / Pobierz PDF'}</span>
             </button>
           </div>
         )}
@@ -128,10 +149,14 @@ export const CertificateView: React.FC = () => {
             <Lock className="h-7 w-7" />
           </div>
           <h2 className="text-xl font-extrabold text-white">
-            Imienny Certyfikat Zablokowany dla Gości
+            {isEn
+              ? 'Personal Certificate Locked for Guests'
+              : 'Imienny Certyfikat Zablokowany dla Gości'}
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
-            Konto Gościa (Niezalogowany) nie może generować ani drukować oficjalnych dyplomów ukończenia. Zaloguj się lub załóż bezpłatne konto kursanta, aby przypisać certyfikat do swojego imienia i nazwiska. Poniżej nadal możesz skorzystać z publicznej wyszukiwarki certyfikatów.
+            {isEn
+              ? 'Guest mode cannot issue or print official diplomas. Sign in or create a free student account to bind the certificate to your full name. You can still use the public certificate registry below.'
+              : 'Konto Gościa (Niezalogowany) nie może generować ani drukować oficjalnych dyplomów ukończenia. Zaloguj się lub załóż bezpłatne konto kursanta, aby przypisać certyfikat do swojego imienia i nazwiska. Poniżej nadal możesz skorzystać z publicznej wyszukiwarki certyfikatów.'}
           </p>
           <div className="pt-1">
             <button
@@ -140,7 +165,11 @@ export const CertificateView: React.FC = () => {
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors shadow-lg shadow-indigo-600/20"
             >
               <LogIn className="h-4 w-4" />
-              <span>Zaloguj się, aby wygenerować imienny certyfikat</span>
+              <span>
+                {isEn
+                  ? 'Sign in to issue your personal certificate'
+                  : 'Zaloguj się, aby wygenerować imienny certyfikat'}
+              </span>
             </button>
           </div>
         </div>
@@ -152,11 +181,15 @@ export const CertificateView: React.FC = () => {
           <div className="flex items-center gap-2 text-xs font-bold text-white">
             <ShieldCheck className={`h-4 w-4 ${isEligible ? 'text-emerald-400' : 'text-amber-400'}`} />
             <span>
-              Status dyplomu:{' '}
+              {isEn ? 'Diploma status:' : 'Status dyplomu:'}{' '}
               {isEligible ? (
-                <span className="text-emerald-400">Oficjalnie Zatwierdzony (Zweryfikowany)</span>
+                <span className="text-emerald-400">
+                  {isEn ? 'Officially Approved (Verified)' : 'Oficjalnie Zatwierdzony (Zweryfikowany)'}
+                </span>
               ) : (
-                <span className="text-amber-400">Wersja Robocza (W trakcie nauki)</span>
+                <span className="text-amber-400">
+                  {isEn ? 'Draft Preview (In progress)' : 'Wersja Robocza (W trakcie nauki)'}
+                </span>
               )}
             </span>
           </div>
@@ -177,7 +210,11 @@ export const CertificateView: React.FC = () => {
                   lessonsCount >= 3 || currentUser.role === 'admin' ? 'text-emerald-400' : 'text-slate-500'
                 }`}
               />
-              <span>Minimum 3 ukończone lekcje ({lessonsCount}/3)</span>
+              <span>
+                {isEn
+                  ? `At least 3 completed lessons (${lessonsCount}/3)`
+                  : `Minimum 3 ukończone lekcje (${lessonsCount}/3)`}
+              </span>
             </div>
             {lessonsCount < 3 && (
               <button
@@ -186,7 +223,7 @@ export const CertificateView: React.FC = () => {
                 className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-400 hover:text-indigo-300"
               >
                 <BookOpen className="h-3 w-3" />
-                <span>Moduły</span>
+                <span>{isEn ? 'Modules' : 'Moduły'}</span>
               </button>
             )}
           </div>
@@ -204,7 +241,11 @@ export const CertificateView: React.FC = () => {
                   projectsCount >= 1 || currentUser.role === 'admin' ? 'text-emerald-400' : 'text-slate-500'
                 }`}
               />
-              <span>Minimum 1 projekt praktyczny ({projectsCount}/1)</span>
+              <span>
+                {isEn
+                  ? `At least 1 completed project (${projectsCount}/1)`
+                  : `Minimum 1 projekt praktyczny (${projectsCount}/1)`}
+              </span>
             </div>
             {projectsCount < 1 && (
               <button
@@ -213,7 +254,7 @@ export const CertificateView: React.FC = () => {
                 className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-400 hover:text-indigo-300"
               >
                 <Code2 className="h-3 w-3" />
-                <span>Projekty</span>
+                <span>{isEn ? 'Projects' : 'Projekty'}</span>
               </button>
             )}
           </div>
@@ -238,10 +279,12 @@ export const CertificateView: React.FC = () => {
             <Award className="h-7 w-7 sm:h-9 sm:w-9" />
           </div>
           <p className="text-[9px] sm:text-[11px] font-bold tracking-wider sm:tracking-[0.25em] uppercase text-amber-400 print:text-amber-700 break-words px-2">
-            FULL STACK DEVELOPER ACADEMY • OFICJALNY DYPLOM INŻYNIERSKI
+            {isEn
+              ? 'FULL STACK DEVELOPER ACADEMY • OFFICIAL ENGINEERING DIPLOMA'
+              : 'FULL STACK DEVELOPER ACADEMY • OFICJALNY DYPLOM INŻYNIERSKI'}
           </p>
           <h2 className="text-2xl sm:text-5xl font-black text-white tracking-tight uppercase print:text-slate-900 break-words">
-            Certyfikat Ukończenia
+            {isEn ? 'Certificate of Completion' : 'Certyfikat Ukończenia'}
           </h2>
           <p className="text-[10px] sm:text-xs text-slate-400 print:text-slate-600 uppercase tracking-wider sm:tracking-widest font-mono break-words px-2">
             CERTIFICATE OF FULL STACK ENGINEERING EXCELLENCE
@@ -250,22 +293,25 @@ export const CertificateView: React.FC = () => {
 
         {/* Recipient */}
         <div className="my-6 sm:my-10 space-y-3">
-          <p className="text-xs text-slate-400 print:text-slate-600 italic">Niniejszym zaświadcza się, że</p>
+          <p className="text-xs text-slate-400 print:text-slate-600 italic">
+            {isEn ? 'This is to proudly certify that' : 'Niniejszym zaświadcza się, że'}
+          </p>
           <div className="inline-block border-b-2 border-amber-400/60 pb-2 px-4 sm:px-8 max-w-full">
             <h3 className="text-2xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 print:text-slate-900 print:bg-none break-words">
               {currentUser.name}
             </h3>
           </div>
           <p className="text-xs text-slate-300 print:text-slate-700 max-w-xl mx-auto leading-relaxed pt-2 px-2">
-            z wyróżnieniem opanował(a) praktyczne kompetencje w pełnym stosie technologicznym (Full Stack),
-            zaliczył(a) testy wiedzy technicznej ({lessonsCount} lekcji), zadania Live Coding oraz zrealizował(a) projekty w portfolio ({projectsCount}).
+            {isEn
+              ? `has successfully mastered practical Full Stack Engineering skills, completed ${lessonsCount} technical assessments, passed live coding workshops, and delivered ${projectsCount} portfolio project(s).`
+              : `z wyróżnieniem opanował(a) praktyczne kompetencje w pełnym stosie technologicznym (Full Stack), zaliczył(a) testy wiedzy technicznej (${lessonsCount} lekcji), zadania Live Coding oraz zrealizował(a) projekty w portfolio (${projectsCount}).`}
           </p>
         </div>
 
         {/* Competencies Breakdown */}
         <div className="my-6 sm:my-8 rounded-2xl border border-slate-800 bg-slate-950/60 p-4 sm:p-6 max-w-2xl mx-auto text-left space-y-3 print:border-slate-300 print:bg-slate-50">
           <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 print:text-amber-700 text-center">
-            Zweryfikowane kompetencje produkcyjne:
+            {isEn ? 'Verified production competencies:' : 'Zweryfikowane kompetencje produkcyjne:'}
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-300 print:text-slate-800">
             <div className="flex items-center gap-2">
@@ -274,15 +320,15 @@ export const CertificateView: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 print:text-emerald-600 shrink-0" />
-              <span>Backend: Node.js, Express REST API, Walidacja</span>
+              <span>{isEn ? 'Backend: Node.js, Express REST API, Validation' : 'Backend: Node.js, Express REST API, Walidacja'}</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 print:text-emerald-600 shrink-0" />
-              <span>Bazy danych: PostgreSQL, Relacje SQL & ORM</span>
+              <span>{isEn ? 'Databases: PostgreSQL, SQL Relations & ORM' : 'Bazy danych: PostgreSQL, Relacje SQL & ORM'}</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 print:text-emerald-600 shrink-0" />
-              <span>Bezpieczeństwo: OWASP Top 10, JWT & Anty-Bot</span>
+              <span>{isEn ? 'Security: OWASP Top 10, JWT & Anti-Bot' : 'Bezpieczeństwo: OWASP Top 10, JWT & Anty-Bot'}</span>
             </div>
           </div>
         </div>
@@ -293,7 +339,9 @@ export const CertificateView: React.FC = () => {
           {/* Instructor Signature */}
           <div className="text-center sm:text-left space-y-1">
             <p className="font-semibold text-slate-200 print:text-slate-900">Zordon</p>
-            <p className="text-[11px] text-slate-400 print:text-slate-600">Główny Architekt & Administrator Akademii</p>
+            <p className="text-[11px] text-slate-400 print:text-slate-600">
+              {isEn ? 'Lead Architect & Academy Director' : 'Główny Architekt & Administrator Akademii'}
+            </p>
             <p className="text-[10px] font-mono text-indigo-400 print:text-indigo-700">zordonzordon1@gmail.com</p>
             <div className="font-serif italic text-base text-amber-400/90 print:text-amber-700 pt-1">Zordon Admin</div>
           </div>
@@ -334,7 +382,9 @@ export const CertificateView: React.FC = () => {
                 <rect x="16" y="22" width="2" height="3" fill="black"/>
                 <rect x="22" y="25" width="4" height="2" fill="black"/>
               </svg>
-              <span className="text-[8px] font-mono font-bold text-slate-800 mt-0.5">SKANUJ QR</span>
+              <span className="text-[8px] font-mono font-bold text-slate-800 mt-0.5">
+                {isEn ? 'SCAN QR' : 'SKANUJ QR'}
+              </span>
             </div>
 
             {/* Golden Verified Badge */}
@@ -347,9 +397,13 @@ export const CertificateView: React.FC = () => {
 
           {/* Verification Code Details */}
           <div className="text-center sm:text-right space-y-1">
-            <p className="font-semibold text-slate-200 print:text-slate-900">Data: {new Date().toISOString().split('T')[0]}</p>
+            <p className="font-semibold text-slate-200 print:text-slate-900">
+              {isEn ? 'Date:' : 'Data:'} {new Date().toISOString().split('T')[0]}
+            </p>
             <p className="font-mono text-[10px] sm:text-[11px] text-amber-400/90 print:text-amber-700 font-bold break-all">ID: {verificationCode}</p>
-            <p className="text-[9px] sm:text-[10px] text-slate-400 print:text-slate-600">Podpis kryptograficzny SHA-256</p>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 print:text-slate-600">
+              {isEn ? 'SHA-256 cryptographic signature' : 'Podpis kryptograficzny SHA-256'}
+            </p>
           </div>
 
         </div>
@@ -364,10 +418,14 @@ export const CertificateView: React.FC = () => {
           <div>
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-emerald-400" />
-              <span>Publiczny Rejestr Weryfikacji Certyfikatów</span>
+              <span>
+                {isEn ? 'Public Certificate Verification Registry' : 'Publiczny Rejestr Weryfikacji Certyfikatów'}
+              </span>
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Wpisz kod identyfikacyjny certyfikatu (np. {verificationCode}), aby potwierdzić jego autentyczność oraz kompetencje absolwenta.
+              {isEn
+                ? `Enter a certificate ID (e.g. ${verificationCode}) to verify authenticity and graduate credentials.`
+                : `Wpisz kod identyfikacyjny certyfikatu (np. ${verificationCode}), aby potwierdzić jego autentyczność oraz kompetencje absolwenta.`}
             </p>
           </div>
 
@@ -380,7 +438,7 @@ export const CertificateView: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setLookupInput(code);
-                    setLookupResult(verifyCertificateCode(code, allUsers, currentUser));
+                    setLookupResult(verifyCertificateCode(code, allUsers, currentUser, language));
                   }}
                   className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-950 hover:bg-slate-800 text-[11px] font-mono text-slate-300 transition-colors"
                 >
@@ -396,7 +454,11 @@ export const CertificateView: React.FC = () => {
             type="text"
             value={lookupInput}
             onChange={(e) => setLookupInput(e.target.value)}
-            placeholder="Wpisz kod certyfikatu np. FSDA-2026-ADMIN-10X"
+            placeholder={
+              isEn
+                ? 'Enter certificate ID, e.g. FSDA-2026-ADMIN-10X'
+                : 'Wpisz kod certyfikatu np. FSDA-2026-ADMIN-10X'
+            }
             className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-xs font-mono text-white focus:border-indigo-500 focus:outline-none"
           />
           <button
@@ -404,7 +466,7 @@ export const CertificateView: React.FC = () => {
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-5 py-2.5 text-xs font-bold text-white transition-colors shrink-0"
           >
             <Search className="h-3.5 w-3.5" />
-            <span>Weryfikuj w rejestrze</span>
+            <span>{isEn ? 'Verify in registry' : 'Weryfikuj w rejestrze'}</span>
           </button>
         </form>
 
@@ -428,10 +490,10 @@ export const CertificateView: React.FC = () => {
             </div>
             {lookupResult.valid && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-[11px] text-slate-300 font-mono">
-                <div>Właściciel: <strong className="text-white">{lookupResult.holderName}</strong></div>
-                <div>Poziom: <strong className="text-white">{lookupResult.level} ({lookupResult.xp} XP)</strong></div>
-                <div>Zaliczone lekcje: <strong className="text-white">{lookupResult.completedLessonsCount}</strong></div>
-                <div>Projekty: <strong className="text-white">{lookupResult.completedProjectsCount}</strong></div>
+                <div>{isEn ? 'Holder:' : 'Właściciel:'} <strong className="text-white">{lookupResult.holderName}</strong></div>
+                <div>{isEn ? 'Level:' : 'Poziom:'} <strong className="text-white">{lookupResult.level} ({lookupResult.xp} XP)</strong></div>
+                <div>{isEn ? 'Lessons:' : 'Zaliczone lekcje:'} <strong className="text-white">{lookupResult.completedLessonsCount}</strong></div>
+                <div>{isEn ? 'Projects:' : 'Projekty:'} <strong className="text-white">{lookupResult.completedProjectsCount}</strong></div>
               </div>
             )}
           </div>

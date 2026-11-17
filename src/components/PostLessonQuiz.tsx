@@ -37,7 +37,9 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
     livesInfo,
     setIsLivesModalOpen,
     setActiveTab,
+    language,
   } = useApp();
+  const isEn = language === 'en';
 
   const questions = lesson.quiz || [];
   const currentLives = currentUser.isPro ? 5 : (livesInfo.currentLives ?? currentUser.lives ?? 5);
@@ -147,7 +149,9 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
 
       if (scorePercent < 80) {
         loseLife(
-          `Wynik quizu końcowego: ${scorePercent}%. Wymagane minimum to 80% — tracisz 1 serce.`
+          isEn
+            ? `Final quiz score: ${scorePercent}%. Minimum passing score is 80% — 1 heart deducted.`
+            : `Wynik quizu końcowego: ${scorePercent}%. Wymagane minimum to 80% — tracisz 1 serce.`
         );
       } else if (isExercisePassed && !currentUser.completedLessons.includes(lesson.id)) {
         completeLesson(lesson.id, lesson.xpReward, answersHistory);
@@ -192,18 +196,18 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400">
             <Sparkles className="h-4 w-4" />
-            <span>Weryfikacja wiedzy po lekcji</span>
+            <span>{isEn ? 'Post-Lesson Knowledge Check' : 'Weryfikacja wiedzy po lekcji'}</span>
             {previousBestScore !== undefined && (
               <>
                 <span aria-hidden="true">·</span>
                 <span className="text-emerald-400">
-                  Najlepszy wynik: {previousBestScore}%
+                  {isEn ? `Best score: ${previousBestScore}%` : `Najlepszy wynik: ${previousBestScore}%`}
                 </span>
               </>
             )}
           </div>
           <h2 className="text-lg sm:text-xl font-extrabold text-white">
-            Interaktywny Quiz Podsumowujący: {lesson.title}
+            {isEn ? `Interactive Lesson Quiz: ${lesson.title}` : `Interaktywny Quiz Podsumowujący: ${lesson.title}`}
           </h2>
         </div>
 
@@ -211,7 +215,7 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
           {streak > 1 && !isFinished && (
             <div className="flex items-center gap-1.5 text-amber-400 font-bold">
               <Flame className="h-4 w-4 fill-amber-400" />
-              <span>Seria: {streak}x</span>
+              <span>{isEn ? `Streak: ${streak}x` : `Seria: ${streak}x`}</span>
             </div>
           )}
 
@@ -228,7 +232,13 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
               }`}
             />
             <span>
-              {currentUser.isPro ? 'PRO: Nielimitowane serca' : `Serca: ${currentLives}/5`}
+              {currentUser.isPro
+                ? isEn
+                  ? 'PRO: Unlimited hearts'
+                  : 'PRO: Nielimitowane serca'
+                : isEn
+                ? `Hearts: ${currentLives}/5`
+                : `Serca: ${currentLives}/5`}
             </span>
           </button>
         </div>
@@ -239,9 +249,11 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
           <div className="flex items-center gap-2.5 text-rose-200">
             <Heart className="h-5 w-5 text-rose-500 fill-rose-500 shrink-0" />
             <div>
-              <span className="font-bold">Brak serc (0/5)!</span>
+              <span className="font-bold">{isEn ? 'Out of hearts (0/5)!' : 'Brak serc (0/5)!'}</span>
               <p className="text-[11px] text-slate-300">
-                Uzupełnij serce za darmo w Szybkiej Powtórce lub wymień XP w Sklepie, aby kontynuować quiz.
+                {isEn
+                  ? 'Refill a heart for free in Quick Review or exchange XP in the Shop to continue this quiz.'
+                  : 'Uzupełnij serce za darmo w Szybkiej Powtórce lub wymień XP w Sklepie, aby kontynuować quiz.'}
               </p>
             </div>
           </div>
@@ -250,7 +262,7 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
             onClick={() => setIsLivesModalOpen(true)}
             className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shrink-0 transition-colors"
           >
-            Odnów serca (+1 ❤️)
+            {isEn ? 'Refill hearts (+1 ❤️)' : 'Odnów serca (+1 ❤️)'}
           </button>
         </div>
       )}
@@ -261,9 +273,13 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs text-slate-400">
               <span className="font-semibold text-slate-200">
-                Pytanie {currentStep + 1} z {questions.length}
+                {isEn
+                  ? `Question ${currentStep + 1} of ${questions.length}`
+                  : `Pytanie ${currentStep + 1} z ${questions.length}`}
               </span>
-              <span className="font-mono">{progressPercent}% ukończono</span>
+              <span className="font-mono">
+                {isEn ? `${progressPercent}% completed` : `${progressPercent}% ukończono`}
+              </span>
             </div>
             <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
               <div
@@ -284,11 +300,11 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
                 <button
                   type="button"
                   onClick={handleUseHint}
-                  title="Odrzuć jedną błędną odpowiedź"
+                  title={isEn ? 'Eliminate one incorrect option' : 'Odrzuć jedną błędną odpowiedź'}
                   className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 text-xs font-semibold transition-colors"
                 >
                   <Lightbulb className="h-3.5 w-3.5" />
-                  <span>Podpowiedź 50/50</span>
+                  <span>{isEn ? '50/50 Hint' : 'Podpowiedź 50/50'}</span>
                 </button>
               )}
             </div>
@@ -369,12 +385,16 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
                   {selectedOption === currentQuestion.correctAnswer ? (
                     <>
                       <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                      <span>Świetnie! To poprawna odpowiedź.</span>
+                      <span>{isEn ? 'Great job! Correct answer.' : 'Świetnie! To poprawna odpowiedź.'}</span>
                     </>
                   ) : (
                     <>
                       <XCircle className="h-4 w-4 text-rose-400 shrink-0" />
-                      <span>Niepoprawna odpowiedź. Sprawdź wyjaśnienie poniżej:</span>
+                      <span>
+                        {isEn
+                          ? 'Incorrect answer. Check the explanation below:'
+                          : 'Niepoprawna odpowiedź. Sprawdź wyjaśnienie poniżej:'}
+                      </span>
                     </>
                   )}
                 </div>
@@ -389,9 +409,15 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
           <div className="flex items-center justify-between gap-4 pt-1">
             <div className="text-xs text-slate-400">
               {!isAnswerChecked
-                ? 'Wybierz jedną odpowiedź i zatwierdź wybór.'
+                ? isEn
+                  ? 'Select one answer and submit.'
+                  : 'Wybierz jedną odpowiedź i zatwierdź wybór.'
                 : currentStep < questions.length - 1
-                ? 'Gotowy na kolejne pytanie?'
+                ? isEn
+                  ? 'Ready for the next question?'
+                  : 'Gotowy na kolejne pytanie?'
+                : isEn
+                ? 'Last question done! View your summary.'
                 : 'To było ostatnie pytanie! Zobacz podsumowanie.'}
             </div>
 
@@ -403,7 +429,7 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs sm:text-sm font-bold transition-all shadow-lg shadow-indigo-950/50"
               >
                 <Check className="h-4 w-4" />
-                <span>Sprawdź odpowiedź</span>
+                <span>{isEn ? 'Check answer' : 'Sprawdź odpowiedź'}</span>
               </button>
             ) : (
               <button
@@ -413,7 +439,11 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
               >
                 <span>
                   {currentStep < questions.length - 1
-                    ? 'Następne pytanie'
+                    ? isEn
+                      ? 'Next question'
+                      : 'Następne pytanie'
+                    : isEn
+                    ? 'Finish & see score'
                     : 'Zakończ i zobacz wynik'}
                 </span>
                 <ArrowRight className="h-4 w-4" />
@@ -441,20 +471,22 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
 
             <div className="space-y-1">
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Wynik końcowy quizu
+                {isEn ? 'Final Quiz Score' : 'Wynik końcowy quizu'}
               </div>
               <div className="text-3xl sm:text-4xl font-extrabold text-white">
                 {finalScorePercent}%
               </div>
               <p className="text-xs sm:text-sm text-slate-300">
-                Poprawne odpowiedzi:{' '}
+                {isEn ? 'Correct answers:' : 'Poprawne odpowiedzi:'}{' '}
                 <strong className="text-white">
-                  {correctAnswersCount} z {questions.length}
+                  {isEn
+                    ? `${correctAnswersCount} of ${questions.length}`
+                    : `${correctAnswersCount} z ${questions.length}`}
                 </strong>
                 {bestStreak > 1 && (
                   <>
                     {' '}
-                    · Najdłuższa seria:{' '}
+                    · {isEn ? 'Best streak:' : 'Najdłuższa seria:'}{' '}
                     <strong className="text-amber-400">{bestStreak}x</strong>
                   </>
                 )}
@@ -463,7 +495,11 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
 
             <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
               {isPassed
-                ? 'Gratulacje! Doskonale opanowałeś materiał z tej lekcji. Twój wynik został zapisany w profilu, a kolejna lekcja czeka na Ciebie.'
+                ? isEn
+                  ? 'Congratulations! You mastered the material in this lesson. Your score has been saved to your profile and the next lesson awaits.'
+                  : 'Gratulacje! Doskonale opanowałeś materiał z tej lekcji. Twój wynik został zapisany w profilu, a kolejna lekcja czeka na Ciebie.'
+                : isEn
+                ? 'To pass the quiz without losing a heart, at least 80% correct answers is required. Review the explanations below and try again!'
                 : 'Aby zaliczyć test bez utraty serca, wymagane jest minimum 80% poprawnych odpowiedzi. Przejrzyj wyjaśnienia poniżej i spróbuj jeszcze raz!'}
             </p>
 
@@ -475,7 +511,7 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs sm:text-sm font-bold text-slate-200 transition-colors"
               >
                 <RotateCcw className="h-4 w-4" />
-                <span>Rozwiąż ponownie</span>
+                <span>{isEn ? 'Retake quiz' : 'Rozwiąż ponownie'}</span>
               </button>
 
               {nextLesson ? (
@@ -490,7 +526,9 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
                   }}
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs sm:text-sm font-bold text-white transition-colors shadow-lg shadow-indigo-950/50"
                 >
-                  <span>Następna lekcja: {nextLesson.title}</span>
+                  <span>
+                    {isEn ? `Next lesson: ${nextLesson.title}` : `Następna lekcja: ${nextLesson.title}`}
+                  </span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
               ) : (
@@ -500,7 +538,7 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs sm:text-sm font-bold text-white transition-colors"
                 >
                   <BookOpen className="h-4 w-4" />
-                  <span>Wróć do modułów</span>
+                  <span>{isEn ? 'Back to modules' : 'Wróć do modułów'}</span>
                 </button>
               )}
             </div>
@@ -509,7 +547,7 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
           {/* Detailed Question Review */}
           <div className="space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Podsumowanie odpowiedzi krok po kroku:
+              {isEn ? 'Step-by-step answer review:' : 'Podsumowanie odpowiedzi krok po kroku:'}
             </h3>
             <div className="space-y-2.5">
               {questions.map((q, idx) => {
@@ -526,22 +564,22 @@ export const PostLessonQuiz: React.FC<PostLessonQuizProps> = ({
                       </span>
                       {isCorrect ? (
                         <span className="shrink-0 text-emerald-400 font-bold flex items-center gap-1">
-                          <CheckCircle2 className="h-4 w-4" /> Poprawnie
+                          <CheckCircle2 className="h-4 w-4" /> {isEn ? 'Correct' : 'Poprawnie'}
                         </span>
                       ) : (
                         <span className="shrink-0 text-rose-400 font-bold flex items-center gap-1">
-                          <XCircle className="h-4 w-4" /> Błąd
+                          <XCircle className="h-4 w-4" /> {isEn ? 'Incorrect' : 'Błąd'}
                         </span>
                       )}
                     </div>
 
                     {!isCorrect && userChoice !== undefined && (
                       <p className="text-rose-300">
-                        Twoja odpowiedź: {q.options[userChoice]}
+                        {isEn ? 'Your answer:' : 'Twoja odpowiedź:'} {q.options[userChoice]}
                       </p>
                     )}
                     <p className="text-emerald-300 font-medium">
-                      Poprawna odpowiedź: {q.options[q.correctAnswer]}
+                      {isEn ? 'Correct answer:' : 'Poprawna odpowiedź:'} {q.options[q.correctAnswer]}
                     </p>
                     <p className="text-slate-400 pt-1 border-t border-slate-800/60">
                       {q.explanation}

@@ -2,6 +2,8 @@
  * Anti-Bot (Anybot) Security & Human Verification Utilities
  */
 
+import type { AppLanguage } from './i18n';
+
 export interface AntiBotChallenge {
   id: string;
   question: string;
@@ -42,12 +44,46 @@ export const ANTI_BOT_CHALLENGES: AntiBotChallenge[] = [
   },
 ];
 
+export const ANTI_BOT_CHALLENGES_EN: AntiBotChallenge[] = [
+  {
+    id: 'ch-math',
+    question: 'What is 14 + 8?',
+    hint: 'Enter only the number',
+    expectedAnswers: ['22'],
+  },
+  {
+    id: 'ch-tag',
+    question: 'Which closing tag closes <span>?',
+    hint: 'Start with </',
+    expectedAnswers: ['</span>', '/span'],
+  },
+  {
+    id: 'ch-css',
+    question: 'Enter the 3-letter abbreviation for Cascading Style Sheets:',
+    hint: 'C..',
+    expectedAnswers: ['css', 'CSS'],
+  },
+  {
+    id: 'ch-word',
+    question: 'Type the word ACADEMY in capital letters:',
+    hint: 'Exactly: ACADEMY',
+    expectedAnswers: ['ACADEMY', 'academy', 'AKADEMIA', 'akademia'],
+  },
+  {
+    id: 'ch-first-arr',
+    question: 'What is the first element in the array ["HTML", "CSS", "JS"]?',
+    hint: 'Enter with or without quotes',
+    expectedAnswers: ['HTML', 'html', '"HTML"'],
+  },
+];
+
 export interface AntiBotVerificationParams {
   challengeId: string;
   userAnswer: string;
   honeypotValue: string; // should always be empty
   sliderProgress: number; // 0 to 100, should be >= 95
   timeSpentMs: number; // should be > 1200ms
+  language?: AppLanguage;
 }
 
 export interface AntiBotVerificationResult {
@@ -56,16 +92,28 @@ export interface AntiBotVerificationResult {
   reason?: string;
 }
 
+export function getLocalizedAntiBotChallengeById(
+  challengeId: string,
+  language: AppLanguage = 'pl'
+): AntiBotChallenge | undefined {
+  const pool = language === 'en' ? ANTI_BOT_CHALLENGES_EN : ANTI_BOT_CHALLENGES;
+  return pool.find((c) => c.id === challengeId);
+}
+
 /**
  * Validates whether the user is a human based on multi-factor heuristics.
  */
 export function verifyAntiBotSubmission(params: AntiBotVerificationParams): AntiBotVerificationResult {
+  const isEn = params.language === 'en';
+
   // 1. Honeypot check: Bots routinely autofill all visible/hidden inputs
   if (params.honeypotValue && params.honeypotValue.trim().length > 0) {
     return {
       isHuman: false,
       score: 0,
-      reason: 'Wykryto automatyczny skrypt (pułapka honeypot).',
+      reason: isEn
+        ? 'Automated script detected (honeypot trap).'
+        : 'Wykryto automatyczny skrypt (pułapka honeypot).',
     };
   }
 
@@ -74,7 +122,9 @@ export function verifyAntiBotSubmission(params: AntiBotVerificationParams): Anti
     return {
       isHuman: false,
       score: 10,
-      reason: 'Formularz został wysłany zbyt szybko (podejrzenie bota).',
+      reason: isEn
+        ? 'Form submitted too quickly (suspected bot).'
+        : 'Formularz został wysłany zbyt szybko (podejrzenie bota).',
     };
   }
 
@@ -83,17 +133,21 @@ export function verifyAntiBotSubmission(params: AntiBotVerificationParams): Anti
     return {
       isHuman: false,
       score: 30,
-      reason: 'Przesuń suwak weryfikacji człowieka do prawej krawędzi.',
+      reason: isEn
+        ? 'Drag the human verification slider to the right edge.'
+        : 'Przesuń suwak weryfikacji człowieka do prawej krawędzi.',
     };
   }
 
   // 4. Interactive challenge question
-  const challenge = ANTI_BOT_CHALLENGES.find((c) => c.id === params.challengeId);
+  const challenge =
+    getLocalizedAntiBotChallengeById(params.challengeId, params.language || 'pl') ||
+    ANTI_BOT_CHALLENGES.find((c) => c.id === params.challengeId);
   if (!challenge) {
     return {
       isHuman: false,
       score: 20,
-      reason: 'Nieznane wyzwanie anty-bot.',
+      reason: isEn ? 'Unknown anti-bot challenge.' : 'Nieznane wyzwanie anty-bot.',
     };
   }
 
@@ -106,7 +160,9 @@ export function verifyAntiBotSubmission(params: AntiBotVerificationParams): Anti
     return {
       isHuman: false,
       score: 40,
-      reason: 'Niepoprawna odpowiedź na pytanie weryfikacyjne anty-bot.',
+      reason: isEn
+        ? 'Incorrect answer to the anti-bot verification question.'
+        : 'Niepoprawna odpowiedź na pytanie weryfikacyjne anty-bot.',
     };
   }
 
@@ -123,7 +179,8 @@ export function verifyAntiBotSubmission(params: AntiBotVerificationParams): Anti
 /**
  * Pick a random anti-bot challenge
  */
-export function getRandomAntiBotChallenge(): AntiBotChallenge {
-  const index = Math.floor(Math.random() * ANTI_BOT_CHALLENGES.length);
-  return ANTI_BOT_CHALLENGES[index];
+export function getRandomAntiBotChallenge(language: AppLanguage = 'pl'): AntiBotChallenge {
+  const pool = language === 'en' ? ANTI_BOT_CHALLENGES_EN : ANTI_BOT_CHALLENGES;
+  const index = Math.floor(Math.random() * pool.length);
+  return pool[index];
 }

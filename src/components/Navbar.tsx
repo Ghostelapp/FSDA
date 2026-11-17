@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { calculateLevel, formatCountdown } from '../utils/gamification';
-import { 
-  Code2, 
-  Flame, 
-  Sparkles, 
-  Moon, 
-  Sun, 
-  UserCheck, 
-  Shield, 
-  Menu, 
+import { calculateLevel } from '../utils/gamification';
+import {
+  Code2,
+  Flame,
+  Sparkles,
+  UserCheck,
+  Shield,
+  Menu,
   X,
   ChevronDown,
   BookOpen,
@@ -24,10 +22,12 @@ import {
   TerminalSquare,
   Search,
   LogOut,
-  LogIn
+  LogIn,
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
 import { BrandLogo } from './BrandLogo';
+import { ThemeToggle } from './ThemeToggle';
+import { LanguageToggle } from './LanguageToggle';
 
 interface NavbarProps {
   onOpenAuthModal: () => void;
@@ -35,57 +35,57 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPalette }) => {
-  const { 
-    currentUser, 
+  const {
+    currentUser,
     isAuthenticated,
-    allUsers, 
-    switchUser, 
     logout,
-    theme, 
-    toggleTheme, 
-    activeTab, 
     setActiveTab,
     livesInfo,
     setIsLivesModalOpen,
     setIsSubModalOpen,
     isSoundMuted,
-    toggleSound
+    toggleSound,
+    language,
+    allModules,
+    allProjects,
   } = useApp();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const levelInfo = calculateLevel(currentUser.xp);
+  const isEn = language === 'en';
+  const levelInfo = calculateLevel(currentUser.xp, language);
   const isPro = currentUser.isPro;
   const currentLives = isPro ? 5 : (livesInfo.currentLives ?? currentUser.lives ?? 5);
   const shortDisplayName = currentUser.name.replace(/\s*\(.*?\)\s*/g, '').trim();
 
   return (
     <header className="relative z-40 w-full border-b border-slate-800 bg-slate-950/95 transition-colors">
-      <div className="flex h-16 w-full items-center justify-between gap-2 sm:gap-4 px-4 sm:px-6">
-        
+      <div className="flex h-16 w-full items-center justify-between gap-1 sm:gap-4 px-2.5 sm:px-6">
         {/* Brand Logo */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <button 
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
+          <button
             type="button"
             onClick={() => setActiveTab('dashboard')}
             className="flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-0.5 sm:p-1"
           >
-            <BrandLogo />
+            <BrandLogo compact />
           </button>
         </div>
 
-        {/* Center Quick Search & 2xl Quick Shortcuts */}
+        {/* Center Quick Search & Quick Shortcuts */}
         <div className="hidden md:flex flex-1 max-w-md lg:max-w-lg items-center justify-center gap-2 min-w-0">
           {onOpenCommandPalette && (
             <button
               type="button"
               onClick={onOpenCommandPalette}
-              aria-label="Szukaj w akademii (Ctrl+K)"
+              aria-label={isEn ? 'Search Academy (Ctrl+K)' : 'Szukaj w akademii (Ctrl+K)'}
               className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/90 hover:bg-slate-800 px-3 py-1.5 text-xs text-slate-300 transition-colors min-w-0"
             >
               <span className="flex items-center gap-2 truncate">
                 <Search className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
-                <span className="truncate text-slate-400">Szukaj lekcji, znacznika lub tematu...</span>
+                <span className="truncate text-slate-400">
+                  {isEn ? 'Search lessons, tags, or topics...' : 'Szukaj lekcji, znacznika lub tematu...'}
+                </span>
               </span>
               <kbd className="hidden sm:inline-block rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 border border-slate-700 shrink-0">
                 Ctrl+K
@@ -95,13 +95,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
         </div>
 
         {/* User stats & Profile widget */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {onOpenCommandPalette && (
             <button
               type="button"
               onClick={onOpenCommandPalette}
-              aria-label="Szukaj w akademii (Ctrl+K)"
-              className="md:hidden flex items-center justify-center rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 p-2 text-xs text-slate-300 transition-colors shrink-0"
+              aria-label={isEn ? 'Search Academy (Ctrl+K)' : 'Szukaj w akademii (Ctrl+K)'}
+              className="md:hidden flex items-center justify-center rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800 p-1.5 sm:p-2 text-xs text-slate-300 transition-colors shrink-0"
             >
               <Search className="h-4 w-4 text-indigo-400" />
             </button>
@@ -109,12 +109,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
 
           {/* Google Play Store / APK Release Center Button (visible on wide screens; also in left Sidebar) */}
           <PWAInstallButton className="hidden 2xl:inline-flex" />
-          
+
           {/* Hearts / Lives indicator */}
           <button
             type="button"
             onClick={() => setIsLivesModalOpen(true)}
-            title={isPro ? "Nielimitowane życia (PRO)" : `Masz ${currentLives}/5 serc. Kliknij, aby sprawdzić odnowienie lub uzupełnić serca.`}
+            title={
+              isPro
+                ? isEn
+                  ? 'Unlimited lives (PRO)'
+                  : 'Nielimitowane życia (PRO)'
+                : isEn
+                ? `You have ${currentLives}/5 hearts. Click to check refill or restore hearts.`
+                : `Masz ${currentLives}/5 serc. Kliknij, aby sprawdzić odnowienie lub uzupełnić serca.`
+            }
             className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${
               isPro
                 ? 'bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:border-amber-400'
@@ -132,17 +140,25 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
           </button>
 
           {/* Streak indicator */}
-          <div 
-            title={`Twoja seria nauki: ${currentUser.streakDays} dni z rzędu!`}
-            className="flex items-center gap-1 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2 py-1 text-xs font-semibold text-amber-400 whitespace-nowrap shrink-0"
+          <div
+            title={
+              isEn
+                ? `Your learning streak: ${currentUser.streakDays} days in a row!`
+                : `Twoja seria nauki: ${currentUser.streakDays} dni z rzędu!`
+            }
+            className="hidden sm:flex items-center gap-1 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2 py-1 text-xs font-semibold text-amber-400 whitespace-nowrap shrink-0"
           >
             <Flame className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
             <span>{currentUser.streakDays}d</span>
           </div>
 
           {/* XP & Level Indicator */}
-          <div 
-            title={`Poziom ${levelInfo.level}: ${levelInfo.title} (${currentUser.xp} XP)`}
+          <div
+            title={
+              isEn
+                ? `Level ${levelInfo.level}: ${levelInfo.title} (${currentUser.xp} XP)`
+                : `Poziom ${levelInfo.level}: ${levelInfo.title} (${currentUser.xp} XP)`
+            }
             className="hidden sm:flex items-center gap-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 text-xs whitespace-nowrap shrink-0"
           >
             <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
@@ -153,53 +169,66 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
           <button
             type="button"
             onClick={toggleSound}
-            title={isSoundMuted ? 'Włącz efekty dźwiękowe (SFX)' : 'Wycisz efekty dźwiękowe (SFX)'}
-            aria-label={isSoundMuted ? 'Włącz dźwięki' : 'Wycisz dźwięki'}
+            title={
+              isSoundMuted
+                ? isEn
+                  ? 'Enable sound effects (SFX)'
+                  : 'Włącz efekty dźwiękowe (SFX)'
+                : isEn
+                ? 'Mute sound effects (SFX)'
+                : 'Wycisz efekty dźwiękowe (SFX)'
+            }
+            aria-label={
+              isSoundMuted
+                ? isEn
+                  ? 'Unmute sounds'
+                  : 'Włącz dźwięki'
+                : isEn
+                ? 'Mute sounds'
+                : 'Wycisz dźwięki'
+            }
             className="hidden sm:inline-flex rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors shrink-0"
           >
             {isSoundMuted ? <VolumeX className="h-4 w-4 text-slate-500" /> : <Volume2 className="h-4 w-4 text-cyan-400" />}
           </button>
 
-          {/* Theme Toggle (desktop / tablet) */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Włącz jasny motyw' : 'Włącz ciemny motyw'}
-            className="hidden sm:inline-flex rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors shrink-0"
-          >
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
+          {/* Language Switcher (PL / EN) */}
+          <LanguageToggle variant="compact" className="hidden sm:inline-flex" />
+
+          {/* Global 3-Mode Theme Toggle (Dark / Light / System) */}
+          <ThemeToggle variant="compact" className="hidden sm:inline-flex" />
 
           {/* Quick Login Button when logged out */}
           {!isAuthenticated && (
             <button
               type="button"
               onClick={onOpenAuthModal}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 px-2.5 py-1.5 text-xs font-bold text-white shadow-sm transition-colors shrink-0"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 px-2 sm:px-2.5 py-1.5 text-xs font-bold text-white shadow-sm transition-colors shrink-0 whitespace-nowrap"
             >
-              <LogIn className="h-3.5 w-3.5" />
-              <span>Zaloguj się</span>
+              <LogIn className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden sm:inline">{isEn ? 'Sign in' : 'Zaloguj się'}</span>
+              <span className="sm:hidden">{isEn ? 'Sign in' : 'Zaloguj'}</span>
             </button>
           )}
 
           {/* Profile Switcher Dropdown */}
-          <div className="relative shrink-0">
+          <div className={`relative shrink-0 ${!isAuthenticated ? 'hidden sm:block' : ''}`}>
             <button
               type="button"
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-              className="flex items-center gap-1.5 sm:gap-2 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 sm:py-1.5 text-left text-xs text-slate-200 hover:border-slate-600 transition-colors focus:outline-none"
+              className="flex items-center gap-1.5 sm:gap-2 rounded-lg border border-slate-700 bg-slate-900 px-1.5 sm:px-2 py-1 sm:py-1.5 text-left text-xs text-slate-200 hover:border-slate-600 transition-colors focus:outline-none"
             >
-              <img 
-                src={currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80'} 
+              <img
+                src={currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80'}
                 alt={currentUser.name}
-                className="h-6 w-6 rounded-md object-cover ring-1 ring-indigo-500/50 shrink-0" 
+                className="h-6 w-6 rounded-md object-cover ring-1 ring-indigo-500/50 shrink-0"
               />
               <span className="hidden md:inline font-medium max-w-[115px] xl:max-w-[140px] truncate">
                 {shortDisplayName}
               </span>
               {!isAuthenticated ? (
                 <span className="hidden xl:inline-block bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-amber-500/30">
-                  Gość
+                  {isEn ? 'Guest' : 'Gość'}
                 </span>
               ) : currentUser.role === 'admin' ? (
                 <span className="hidden xl:inline-block bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded text-[10px] font-semibold border border-rose-500/30">
@@ -210,17 +239,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
             </button>
 
             {userDropdownOpen && (
-              <div 
+              <div
                 className="absolute right-0 mt-2 w-64 rounded-xl border border-slate-800 bg-slate-900 p-2 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-100"
                 onClick={() => setUserDropdownOpen(false)}
               >
                 <div className="px-3 py-2 border-b border-slate-800 mb-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-semibold text-white truncate">{currentUser.name}</p>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold shrink-0 ${
-                      isAuthenticated ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
-                    }`}>
-                      {isAuthenticated ? 'Zalogowany' : 'Tryb Gościa'}
+                    <span
+                      className={`text-[9px] px-1.5 py-0.5 rounded font-bold shrink-0 ${
+                        isAuthenticated ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                      }`}
+                    >
+                      {isAuthenticated ? (isEn ? 'Signed in' : 'Zalogowany') : (isEn ? 'Guest Mode' : 'Tryb Gościa')}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-400 truncate">{currentUser.email}</p>
@@ -234,7 +265,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-indigo-300 hover:bg-slate-800 font-medium"
                   >
                     <UserCheck className="h-3.5 w-3.5" />
-                    <span>{isAuthenticated ? 'Ustawienia Konta i Profilu' : 'Zaloguj się / Załóż konto'}</span>
+                    <span>
+                      {isAuthenticated
+                        ? isEn
+                          ? 'Account & Profile Settings'
+                          : 'Ustawienia Konta i Profilu'
+                        : isEn
+                        ? 'Sign In / Create Account'
+                        : 'Zaloguj się / Załóż konto'}
+                    </span>
                   </button>
                   {currentUser.role === 'admin' && isAuthenticated && (
                     <button
@@ -243,7 +282,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-rose-300 hover:bg-slate-800 font-medium"
                     >
                       <Shield className="h-3.5 w-3.5" />
-                      <span>Panel Zarządzania Kursem</span>
+                      <span>{isEn ? 'Course Admin Panel' : 'Panel Zarządzania Kursem'}</span>
                     </button>
                   )}
                   {isAuthenticated && (
@@ -253,7 +292,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-rose-400 hover:bg-rose-950/40 font-semibold transition-colors"
                     >
                       <LogOut className="h-3.5 w-3.5" />
-                      <span>Wyloguj się z konta</span>
+                      <span>{isEn ? 'Sign Out' : 'Wyloguj się z konta'}</span>
                     </button>
                   )}
                 </div>
@@ -265,8 +304,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white shrink-0"
-            aria-label="Otwórz menu nawigacji"
+            className="lg:hidden rounded-lg p-1.5 sm:p-2 text-slate-400 hover:bg-slate-800 hover:text-white shrink-0"
+            aria-label={isEn ? 'Open navigation menu' : 'Otwórz menu nawigacji'}
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -276,24 +315,28 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
       {/* Mobile & Tablet Drawer Menu (shown below lg) */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-b border-slate-800 bg-slate-900 px-4 py-3 space-y-2 max-h-[85vh] overflow-y-auto">
-          
-          {/* Mobile Hearts & Pro Bar */}
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+          {/* Mobile Hearts, Streak & Plan Bar */}
+          <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-slate-800">
             <button
               type="button"
               onClick={() => {
                 setIsLivesModalOpen(true);
                 setMobileMenuOpen(false);
               }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
-                isPro 
-                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' 
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
+                isPro
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
                   : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
               }`}
             >
               <Heart className={`h-4 w-4 ${isPro ? 'fill-amber-400' : 'fill-rose-500'}`} />
-              <span>{isPro ? 'Serca: ∞ PRO' : `Serca: ${currentLives}/5`}</span>
+              <span>{isPro ? (isEn ? 'Hearts: ∞ PRO' : 'Serca: ∞ PRO') : `${isEn ? 'Hearts' : 'Serca'}: ${currentLives}/5`}</span>
             </button>
+
+            <div className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold shrink-0">
+              <Flame className="h-4 w-4 fill-amber-400 text-amber-400" />
+              <span>{isEn ? 'Streak' : 'Seria'}: {currentUser.streakDays}d</span>
+            </div>
 
             <button
               type="button"
@@ -304,29 +347,32 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
               className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold shrink-0"
             >
               <Crown className={`h-4 w-4 ${isPro ? 'text-amber-400 fill-amber-400' : 'text-emerald-400'}`} />
-              <span>{isPro ? 'PRO Aktywne' : 'Plan: Darmowy'}</span>
+              <span>{isPro ? (isEn ? 'PRO Active' : 'PRO Aktywne') : (isEn ? 'Plan: Free' : 'Plan: Darmowy')}</span>
             </button>
           </div>
 
-          {/* Quick Sound FX & Theme Toggles for Mobile */}
-          <div className="flex items-center gap-2 py-1.5 border-b border-slate-800">
+          {/* Quick Sound FX, Language & 3-Mode Theme Toggle for Mobile */}
+          <div className="space-y-2 py-1.5 border-b border-slate-800">
             <button
               type="button"
               onClick={toggleSound}
-              className="flex-1 flex items-center justify-center gap-2 py-2 px-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-semibold"
+              className="w-full flex items-center justify-center gap-2 py-2 px-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-semibold"
             >
               {isSoundMuted ? <VolumeX className="h-4 w-4 text-slate-500" /> : <Volume2 className="h-4 w-4 text-cyan-400 animate-pulse" />}
-              <span>{isSoundMuted ? 'Dźwięk: Wył.' : 'Dźwięk: Wł.'}</span>
+              <span>
+                {isSoundMuted
+                  ? isEn
+                    ? 'Sound: Muted'
+                    : 'Dźwięk: Wyłączony'
+                  : isEn
+                  ? 'Sound: On'
+                  : 'Dźwięk: Włączony'}
+              </span>
             </button>
 
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="flex-1 flex items-center justify-center gap-2 py-2 px-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-semibold"
-            >
-              {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-400" />}
-              <span>{theme === 'dark' ? 'Jasny motyw' : 'Ciemny motyw'}</span>
-            </button>
+            <LanguageToggle variant="labeled" />
+
+            <ThemeToggle variant="labeled" />
           </div>
 
           {/* Mobile Android / Play Store Install Action */}
@@ -338,105 +384,138 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
           <div className="pt-1 space-y-1">
             <button
               type="button"
-              onClick={() => { setActiveTab('dashboard'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                setActiveTab('dashboard');
+                setMobileMenuOpen(false);
+              }}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left text-slate-200 hover:bg-slate-800"
             >
               <BookOpen className="h-4 w-4 text-indigo-400" />
-              <span>Pulpit Kursanta</span>
+              <span>{isEn ? 'Student Dashboard' : 'Pulpit Kursanta'}</span>
             </button>
             <button
               type="button"
-              onClick={() => { setActiveTab('modules'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                setActiveTab('modules');
+                setMobileMenuOpen(false);
+              }}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left text-slate-200 hover:bg-slate-800"
             >
               <BookOpen className="h-4 w-4 text-cyan-400" />
-              <span>Moduły Kursu (15)</span>
+              <span>{isEn ? `Course Modules (${allModules.length})` : `Moduły Kursu (${allModules.length})`}</span>
             </button>
             <button
               type="button"
-              onClick={() => { setActiveTab('projects'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                setActiveTab('projects');
+                setMobileMenuOpen(false);
+              }}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left text-slate-200 hover:bg-slate-800"
             >
               <Trophy className="h-4 w-4 text-emerald-400" />
-              <span>Projekty Praktyczne (12)</span>
+              <span>{isEn ? `Hands-on Projects (${allProjects.length})` : `Projekty Praktyczne (${allProjects.length})`}</span>
             </button>
             <button
               type="button"
-              onClick={() => { setActiveTab('certificate'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                setActiveTab('certificate');
+                setMobileMenuOpen(false);
+              }}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left text-slate-200 hover:bg-slate-800"
             >
               <Award className="h-4 w-4 text-yellow-400" />
-              <span>Certyfikat Ukończenia</span>
+              <span>{isEn ? 'Completion Certificate' : 'Certyfikat Ukończenia'}</span>
             </button>
           </div>
 
           {/* Interactive Tools Group */}
           <div className="pt-2 border-t border-slate-800/80 space-y-1">
             <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Warsztat & Narzędzia
+              {isEn ? 'Workshop & Simulators' : 'Warsztat & Narzędzia'}
             </div>
             <button
               type="button"
-              onClick={() => { setActiveTab('terminal'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                setActiveTab('terminal');
+                setMobileMenuOpen(false);
+              }}
               className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-left text-slate-200 hover:bg-slate-800"
             >
               <div className="flex items-center gap-2.5">
                 <TerminalSquare className="h-4 w-4 text-emerald-400" />
-                <span>Terminal Bash & Git</span>
+                <span>{isEn ? 'Bash & Git Terminal' : 'Terminal Bash & Git'}</span>
               </div>
               <span className="text-[9px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-1.5 py-0.5 rounded font-bold">+XP</span>
             </button>
             <button
               type="button"
-              onClick={() => { setActiveTab('sql_studio'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                setActiveTab('sql_studio');
+                setMobileMenuOpen(false);
+              }}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left text-slate-200 hover:bg-slate-800"
             >
               <Database className="h-4 w-4 text-indigo-400" />
-              <span>Studio Bazy SQL</span>
+              <span>{isEn ? 'SQL Database Studio' : 'Studio Bazy SQL'}</span>
             </button>
             <button
               type="button"
-              onClick={() => { setActiveTab('interview'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                setActiveTab('interview');
+                setMobileMenuOpen(false);
+              }}
               className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-left text-slate-200 hover:bg-slate-800"
             >
               <div className="flex items-center gap-2.5">
                 <Award className="h-4 w-4 text-amber-400" />
-                <span>Live Coding (Egzamin)</span>
+                <span>{isEn ? 'Live Coding (Mock Exam)' : 'Live Coding (Egzamin)'}</span>
               </div>
               <span className="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold">Mock</span>
             </button>
             <button
               type="button"
-              onClick={() => { setActiveTab('editor'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                setActiveTab('editor');
+                setMobileMenuOpen(false);
+              }}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left text-slate-200 hover:bg-slate-800"
             >
               <Terminal className="h-4 w-4 text-amber-400" />
-              <span>Piaskownica Kodu</span>
+              <span>{isEn ? 'Code Sandbox' : 'Piaskownica Kodu'}</span>
             </button>
             <button
               type="button"
-              onClick={() => { setActiveTab('reviews'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                setActiveTab('reviews');
+                setMobileMenuOpen(false);
+              }}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left text-slate-200 hover:bg-slate-800"
             >
               <Sparkles className="h-4 w-4 text-rose-400" />
-              <span>Centrum Powtórek</span>
+              <span>{isEn ? 'Review Center' : 'Centrum Powtórek'}</span>
             </button>
             <button
               type="button"
-              onClick={() => { setActiveTab('deployment'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                setActiveTab('deployment');
+                setMobileMenuOpen(false);
+              }}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left text-slate-200 hover:bg-slate-800"
             >
               <Code2 className="h-4 w-4 text-blue-400" />
-              <span>Przewodnik Wdrożenia & DevOps</span>
+              <span>{isEn ? 'Deployment & DevOps Guide' : 'Przewodnik Wdrożenia & DevOps'}</span>
             </button>
             {currentUser.role === 'admin' && isAuthenticated && (
               <button
                 type="button"
-                onClick={() => { setActiveTab('admin'); setMobileMenuOpen(false); }}
+                onClick={() => {
+                  setActiveTab('admin');
+                  setMobileMenuOpen(false);
+                }}
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left text-rose-300 hover:bg-slate-800 font-semibold"
               >
                 <Shield className="h-4 w-4" />
-                <span>Panel Administratora</span>
+                <span>{isEn ? 'Admin Panel' : 'Panel Administratora'}</span>
               </button>
             )}
           </div>
@@ -452,7 +531,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
               className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-xs font-bold"
             >
               <UserCheck className="h-4 w-4" />
-              <span>{isAuthenticated ? 'Zarządzaj Kontem / Zmień Profil' : 'Zaloguj się / Załóż Konto'}</span>
+              <span>
+                {isAuthenticated
+                  ? isEn
+                    ? 'Manage Account / Switch Profile'
+                    : 'Zarządzaj Kontem / Zmień Profil'
+                  : isEn
+                  ? 'Sign In / Create Account'
+                  : 'Zaloguj się / Załóż Konto'}
+              </span>
             </button>
             {isAuthenticated && (
               <button
@@ -464,7 +551,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
                 className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-bold"
               >
                 <LogOut className="h-4 w-4" />
-                <span>Wyloguj się ({currentUser.name})</span>
+                <span>{isEn ? `Sign Out (${currentUser.name})` : `Wyloguj się (${currentUser.name})`}</span>
               </button>
             )}
           </div>

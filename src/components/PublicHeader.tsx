@@ -3,6 +3,8 @@ import { useApp } from '../context/AppContext';
 import { buildPublicPath } from '../utils/publicRoutes';
 import type { PublicTab } from '../utils/publicRoutes';
 import { BrandLogo } from './BrandLogo';
+import { ThemeToggle } from './ThemeToggle';
+import { LanguageToggle } from './LanguageToggle';
 
 interface PublicHeaderProps {
   onOpenAuthModal: () => void;
@@ -10,7 +12,8 @@ interface PublicHeaderProps {
 }
 
 export const PublicHeader: React.FC<PublicHeaderProps> = ({ onOpenAuthModal, activeTab }) => {
-  const { isAuthenticated, setActiveTab, allLessons } = useApp();
+  const { isAuthenticated, setActiveTab, allLessons, language } = useApp();
+  const isEn = language === 'en';
 
   const handleLinkClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -30,12 +33,19 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({ onOpenAuthModal, act
     }
   };
 
-  const navItems: { tab: PublicTab; label: string }[] = [
-    { tab: 'landing', label: 'Strona główna' },
-    { tab: 'knowledge_base', label: `Baza wiedzy (${allLessons.length} lekcji)` },
-    { tab: 'about', label: 'O Akademii' },
-    { tab: 'contact', label: 'Kontakt' },
-  ];
+  const navItems: { tab: PublicTab; label: string }[] = isEn
+    ? [
+        { tab: 'landing', label: 'Home' },
+        { tab: 'knowledge_base', label: `Knowledge Base (${allLessons.length} lessons)` },
+        { tab: 'about', label: 'About' },
+        { tab: 'contact', label: 'Contact' },
+      ]
+    : [
+        { tab: 'landing', label: 'Strona główna' },
+        { tab: 'knowledge_base', label: `Baza wiedzy (${allLessons.length} lekcji)` },
+        { tab: 'about', label: 'O Akademii' },
+        { tab: 'contact', label: 'Kontakt' },
+      ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#06080E]/90 backdrop-blur-xl">
@@ -43,14 +53,14 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({ onOpenAuthModal, act
         <a
           href="/"
           onClick={(e) => handleLinkClick(e, 'landing')}
-          aria-label="Full Stack Academy — Strona główna"
+          aria-label={isEn ? 'Full Stack Academy — Home' : 'Full Stack Academy — Strona główna'}
           className="whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-0.5 sm:p-1"
         >
-          <BrandLogo />
+          <BrandLogo compact />
         </a>
 
         <nav
-          aria-label="Nawigacja publiczna"
+          aria-label={isEn ? 'Public navigation' : 'Nawigacja publiczna'}
           className="hidden md:flex items-center gap-6 text-sm font-medium text-[#94A3B8]"
         >
           {navItems.map((item) => {
@@ -73,28 +83,30 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({ onOpenAuthModal, act
           })}
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <LanguageToggle variant="compact" />
+          <ThemeToggle variant="compact" />
           <a
             href="/baza-wiedzy"
             onClick={(e) => handleLinkClick(e, 'knowledge_base')}
-            className="md:hidden px-2.5 py-1.5 text-[11px] font-semibold text-[#CBD5E1] border border-white/15 rounded-lg hover:text-white whitespace-nowrap"
+            className="hidden sm:inline-flex md:hidden px-2 py-1.5 text-[11px] font-semibold text-[#CBD5E1] border border-white/15 rounded-lg hover:text-white whitespace-nowrap"
           >
-            Baza wiedzy
+            {isEn ? 'Docs' : 'Baza'}
           </a>
           <button
             type="button"
             onClick={handlePrimaryApp}
-            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-all whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-all whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
           >
             {isAuthenticated ? (
               <>
-                <span className="hidden sm:inline">Pulpit Kursanta →</span>
-                <span className="sm:hidden">Pulpit →</span>
+                <span className="hidden sm:inline">{isEn ? 'Dashboard →' : 'Pulpit Kursanta →'}</span>
+                <span className="sm:hidden">{isEn ? 'Dashboard →' : 'Pulpit →'}</span>
               </>
             ) : (
               <>
-                <span className="hidden sm:inline">Uruchom Aplikację →</span>
-                <span className="sm:hidden">Aplikacja →</span>
+                <span className="hidden sm:inline">{isEn ? 'Launch App →' : 'Uruchom Aplikację →'}</span>
+                <span className="sm:hidden">{isEn ? 'App →' : 'Aplikacja →'}</span>
               </>
             )}
           </button>

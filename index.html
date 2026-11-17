@@ -69,6 +69,27 @@
     <meta name="google-adsense-account" content="ca-pub-4030062340198648" />
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4030062340198648"
      crossorigin="anonymous"></script>
+
+    <!-- Synchronous pre-paint theme & language resolution -->
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem('fsda_theme_v5');
+          var sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var resolved = pref === 'light' || pref === 'dark' ? pref : (pref === 'system' ? (sysDark ? 'dark' : 'light') : 'dark');
+          var root = document.documentElement;
+          root.classList.remove('dark', 'light');
+          root.classList.add(resolved);
+          root.style.colorScheme = resolved;
+          var savedLang = (localStorage.getItem('fsda_language_v1') || '').trim().toLowerCase();
+          if (savedLang === 'en' || savedLang.indexOf('en-') === 0) {
+            root.lang = 'en';
+          } else {
+            root.lang = 'pl';
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body class="bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
     <div id="root">

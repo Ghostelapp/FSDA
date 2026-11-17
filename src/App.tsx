@@ -33,7 +33,8 @@ const FlashcardsCheatSheetView = React.lazy(() => import('./components/Flashcard
 const CareerBackupView = React.lazy(() => import('./components/CareerBackupView').then(({ CareerBackupView }) => ({ default: CareerBackupView })));
 
 const MainContent: React.FC = () => {
-  const { activeTab, selectedLessonId, allLessons, toast, dismissToast, setActiveTab, isAuthenticated, logout } = useApp();
+  const { activeTab, selectedLessonId, allLessons, toast, dismissToast, setActiveTab, isAuthenticated, logout, language } = useApp();
+  const isEn = language === 'en';
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
@@ -131,7 +132,7 @@ const MainContent: React.FC = () => {
             <React.Suspense
               fallback={(
                 <div className="flex min-h-[50vh] items-center justify-center text-sm text-slate-400" role="status">
-                  Ładowanie widoku...
+                  {isEn ? 'Loading view...' : 'Ładowanie widoku...'}
                 </div>
               )}
             >
@@ -188,7 +189,9 @@ const MainContent: React.FC = () => {
             <span className="font-bold text-slate-100">
               Full Stack Developer Academy
             </span>
-            <span className="text-slate-500">© 2026. Wszystkie prawa zastrzeżone.</span>
+            <span className="text-slate-500">
+              {isEn ? '© 2026. All rights reserved.' : '© 2026. Wszystkie prawa zastrzeżone.'}
+            </span>
           </div>
 
           <div className={`flex flex-wrap items-center justify-center gap-5 text-xs font-medium ${activeTab === 'landing' ? 'md:pr-28' : ''}`}>
@@ -203,7 +206,7 @@ const MainContent: React.FC = () => {
               }}
               className="hover:text-slate-100 transition-colors"
             >
-              Strona Główna
+              {isEn ? 'Home' : 'Strona Główna'}
             </a>
             <a
               href="/baza-wiedzy"
@@ -214,7 +217,7 @@ const MainContent: React.FC = () => {
               }}
               className="hover:text-slate-100 transition-colors"
             >
-              Baza Wiedzy (96 lekcji)
+              {isEn ? `Knowledge Base (${allLessons.length} lessons)` : `Baza Wiedzy (${allLessons.length} lekcji)`}
             </a>
             <a
               href="/o-nas"
@@ -225,7 +228,7 @@ const MainContent: React.FC = () => {
               }}
               className="hover:text-slate-100 transition-colors"
             >
-              O Akademii
+              {isEn ? 'About' : 'O Akademii'}
             </a>
             <a
               href="/kontakt"
@@ -236,7 +239,7 @@ const MainContent: React.FC = () => {
               }}
               className="hover:text-slate-100 transition-colors"
             >
-              Kontakt
+              {isEn ? 'Contact' : 'Kontakt'}
             </a>
             <a
               href="/regulamin"
@@ -247,7 +250,7 @@ const MainContent: React.FC = () => {
               }}
               className="hover:text-slate-100 transition-colors"
             >
-              Regulamin
+              {isEn ? 'Terms' : 'Regulamin'}
             </a>
             <a
               href="/polityka-prywatnosci"
@@ -258,21 +261,21 @@ const MainContent: React.FC = () => {
               }}
               className="hover:text-slate-100 transition-colors"
             >
-              Polityka Prywatności
+              {isEn ? 'Privacy Policy' : 'Polityka Prywatności'}
             </a>
             <button
               type="button"
               onClick={() => setActiveTab('dashboard')}
               className="hover:text-slate-100 transition-colors"
             >
-              Pulpit Kursanta
+              {isEn ? 'Student Dashboard' : 'Pulpit Kursanta'}
             </button>
             <button
               type="button"
               onClick={() => setIsAuthModalOpen(true)}
               className="hover:text-indigo-400 transition-colors"
             >
-              {isAuthenticated ? 'Konto / Zmień Profil' : 'Zaloguj się'}
+              {isAuthenticated ? (isEn ? 'Account / Profile' : 'Konto / Zmień Profil') : (isEn ? 'Sign In' : 'Zaloguj się')}
             </button>
             {isAuthenticated && (
               <button
@@ -280,7 +283,7 @@ const MainContent: React.FC = () => {
                 onClick={logout}
                 className="text-rose-500 hover:text-rose-400 transition-colors font-medium"
               >
-                Wyloguj się
+                {isEn ? 'Sign Out' : 'Wyloguj się'}
               </button>
             )}
           </div>

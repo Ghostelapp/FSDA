@@ -36,37 +36,68 @@ interface SidebarNavItem {
 }
 
 export const Sidebar: React.FC = () => {
-  const { activeTab, setActiveTab, currentUser, isAuthenticated, weakAreas, allLessons } = useApp();
+  const { activeTab, setActiveTab, currentUser, isAuthenticated, weakAreas, allLessons, allModules, allProjects, language } = useApp();
+  const isEn = language === 'en';
 
-  const primaryItems: SidebarNavItem[] = [
-    { id: 'landing', label: 'Strona Główna (Landing)', icon: Sparkles },
-    { id: 'dashboard', label: 'Pulpit Kursanta', icon: LayoutDashboard },
-    { id: 'modules', label: 'Ścieżka Kursu (15)', icon: Layers },
-    { id: 'projects', label: 'Projekty Praktyczne (12)', icon: FolderGit2 },
-    { id: 'leaderboard', label: 'Ligi XP & Wyzwanie Dnia', icon: Trophy },
-    { id: 'certificate', label: 'Certyfikat Ukończenia', icon: Award },
-  ];
+  const primaryItems: SidebarNavItem[] = isEn
+    ? [
+        { id: 'landing', label: 'Home Page (Landing)', icon: Sparkles },
+        { id: 'dashboard', label: 'Student Dashboard', icon: LayoutDashboard },
+        { id: 'modules', label: `Course Path (${allModules.length})`, icon: Layers },
+        { id: 'projects', label: `Hands-on Projects (${allProjects.length})`, icon: FolderGit2 },
+        { id: 'leaderboard', label: 'XP Leagues & Daily Challenge', icon: Trophy },
+        { id: 'certificate', label: 'Completion Certificate', icon: Award },
+      ]
+    : [
+        { id: 'landing', label: 'Strona Główna (Landing)', icon: Sparkles },
+        { id: 'dashboard', label: 'Pulpit Kursanta', icon: LayoutDashboard },
+        { id: 'modules', label: `Ścieżka Kursu (${allModules.length})`, icon: Layers },
+        { id: 'projects', label: `Projekty Praktyczne (${allProjects.length})`, icon: FolderGit2 },
+        { id: 'leaderboard', label: 'Ligi XP & Wyzwanie Dnia', icon: Trophy },
+        { id: 'certificate', label: 'Certyfikat Ukończenia', icon: Award },
+      ];
 
-  const toolsItems: SidebarNavItem[] = [
-    { id: 'api_studio', label: 'Studio REST API', icon: Send },
-    { id: 'event_loop', label: 'Wizualizator Event Loop', icon: Cpu },
-    { id: 'terminal', label: 'Terminal Bash / Git', icon: TerminalSquare },
-    { id: 'sql_studio', label: 'Studio Bazy SQL', icon: Database },
-    { id: 'interview', label: 'Live Coding (Egzamin)', icon: Briefcase },
-    { id: 'editor', label: 'Piaskownica Kodu', icon: Terminal },
-  ];
+  const toolsItems: SidebarNavItem[] = isEn
+    ? [
+        { id: 'api_studio', label: 'REST API Studio', icon: Send },
+        { id: 'event_loop', label: 'Event Loop Visualizer', icon: Cpu },
+        { id: 'terminal', label: 'Bash / Git Terminal', icon: TerminalSquare },
+        { id: 'sql_studio', label: 'SQL Database Studio', icon: Database },
+        { id: 'interview', label: 'Live Coding (Mock Exam)', icon: Briefcase },
+        { id: 'editor', label: 'Code Sandbox', icon: Terminal },
+      ]
+    : [
+        { id: 'api_studio', label: 'Studio REST API', icon: Send },
+        { id: 'event_loop', label: 'Wizualizator Event Loop', icon: Cpu },
+        { id: 'terminal', label: 'Terminal Bash / Git', icon: TerminalSquare },
+        { id: 'sql_studio', label: 'Studio Bazy SQL', icon: Database },
+        { id: 'interview', label: 'Live Coding (Egzamin)', icon: Briefcase },
+        { id: 'editor', label: 'Piaskownica Kodu', icon: Terminal },
+      ];
 
-  const extraItems: SidebarNavItem[] = [
-    { id: 'flashcards', label: 'Fiszki SM-2 & Ściągi', icon: Brain },
-    { id: 'career', label: 'Kreator CV & Backup', icon: FileText },
-    { 
-      id: 'reviews', 
-      label: 'Centrum Powtórek', 
-      icon: RotateCcw, 
-      count: weakAreas.length > 0 ? weakAreas.length : undefined 
-    },
-    { id: 'deployment', label: 'Przewodnik Wdrożenia', icon: BookMarked },
-  ];
+  const extraItems: SidebarNavItem[] = isEn
+    ? [
+        { id: 'flashcards', label: 'SM-2 Flashcards & Cheatsheets', icon: Brain },
+        { id: 'career', label: 'CV Builder & Backup', icon: FileText },
+        {
+          id: 'reviews',
+          label: 'Review Center',
+          icon: RotateCcw,
+          count: weakAreas.length > 0 ? weakAreas.length : undefined,
+        },
+        { id: 'deployment', label: 'Deployment Guide', icon: BookMarked },
+      ]
+    : [
+        { id: 'flashcards', label: 'Fiszki SM-2 & Ściągi', icon: Brain },
+        { id: 'career', label: 'Kreator CV & Backup', icon: FileText },
+        {
+          id: 'reviews',
+          label: 'Centrum Powtórek',
+          icon: RotateCcw,
+          count: weakAreas.length > 0 ? weakAreas.length : undefined,
+        },
+        { id: 'deployment', label: 'Przewodnik Wdrożenia', icon: BookMarked },
+      ];
 
   const weeklyPercent = Math.min(100, Math.round((currentUser.weeklySpentMinutes / (currentUser.weeklyGoalMinutes || 180)) * 100));
 
@@ -117,13 +148,13 @@ export const Sidebar: React.FC = () => {
   return (
     <aside className="hidden lg:flex w-60 xl:w-64 flex-col border-r border-slate-800 bg-slate-950/60 p-4 shrink-0 print:hidden">
       <div className="space-y-2">
-        {renderNavGroup('Ścieżka Nauki', primaryItems)}
-        {renderNavGroup('Warsztat & Symulatory', toolsItems)}
-        {renderNavGroup('Zasoby', extraItems)}
+        {renderNavGroup(isEn ? 'Learning Path' : 'Ścieżka Nauki', primaryItems)}
+        {renderNavGroup(isEn ? 'Workshop & Simulators' : 'Warsztat & Symulatory', toolsItems)}
+        {renderNavGroup(isEn ? 'Resources' : 'Zasoby', extraItems)}
 
         <div className="pt-3">
           <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Administracja
+            {isEn ? 'Administration' : 'Administracja'}
           </div>
           <button
             type="button"
@@ -142,7 +173,7 @@ export const Sidebar: React.FC = () => {
               ) : (
                 <Lock className="h-4 w-4 text-amber-400" />
               )}
-              <span>Panel Administratora</span>
+              <span>{isEn ? 'Admin Panel' : 'Panel Administratora'}</span>
             </div>
             <ChevronRight className="h-3.5 w-3.5 opacity-60" />
           </button>
@@ -156,20 +187,28 @@ export const Sidebar: React.FC = () => {
       {/* Current Curriculum Progress Quick Glance */}
       <div className="mt-6 rounded-xl border border-indigo-500/20 bg-indigo-950/20 p-3.5">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Postęp Kursu</span>
-          <span className="text-[11px] font-semibold text-slate-300">15 Modułów ({allLessons.length} lekcji)</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">
+            {isEn ? 'Course Progress' : 'Postęp Kursu'}
+          </span>
+          <span className="text-[11px] font-semibold text-slate-300">
+            {isEn
+              ? `${allModules.length} Modules (${allLessons.length} lessons)`
+              : `${allModules.length} Modułów (${allLessons.length} lekcji)`}
+          </span>
         </div>
-        <p className="text-xs font-semibold text-white truncate">Ścieżka Full Stack</p>
+        <p className="text-xs font-semibold text-white truncate">
+          {isEn ? 'Full Stack Path' : 'Ścieżka Full Stack'}
+        </p>
         <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400">
-          <span>Ukończono</span>
+          <span>{isEn ? 'Completed' : 'Ukończono'}</span>
           <span className="font-mono text-indigo-300 font-bold">
-            {currentUser.completedLessons.length} / {allLessons.length} lekcji
+            {currentUser.completedLessons.length} / {allLessons.length} {isEn ? 'lessons' : 'lekcji'}
           </span>
         </div>
         <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(100, Math.round((currentUser.completedLessons.length / (allLessons.length || 91)) * 100))}%` }}
+            style={{ width: `${Math.min(100, Math.round((currentUser.completedLessons.length / (allLessons.length || 96)) * 100))}%` }}
           />
         </div>
         <button
@@ -177,7 +216,7 @@ export const Sidebar: React.FC = () => {
           onClick={() => setActiveTab('modules')}
           className="mt-3 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-indigo-600/40 hover:bg-indigo-600 text-white text-[11px] font-semibold transition-colors"
         >
-          <span>Kontynuuj naukę</span>
+          <span>{isEn ? 'Continue learning' : 'Kontynuuj naukę'}</span>
           <ChevronRight className="h-3 w-3" />
         </button>
       </div>
@@ -187,7 +226,7 @@ export const Sidebar: React.FC = () => {
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5 text-slate-300 font-medium">
             <Clock className="h-3.5 w-3.5 text-amber-400" />
-            <span>Cel tygodniowy</span>
+            <span>{isEn ? 'Weekly goal' : 'Cel tygodniowy'}</span>
           </div>
           <span className="font-mono text-[11px] font-semibold text-slate-400">
             {currentUser.weeklySpentMinutes} / {currentUser.weeklyGoalMinutes} min
@@ -200,7 +239,13 @@ export const Sidebar: React.FC = () => {
           />
         </div>
         <p className="mt-1.5 text-[10px] text-slate-400 text-center">
-          {weeklyPercent >= 100 ? 'Cel zrealizowany! Wspaniała robota.' : `Pozostało ${Math.max(0, currentUser.weeklyGoalMinutes - currentUser.weeklySpentMinutes)} min do osiągnięcia celu`}
+          {weeklyPercent >= 100
+            ? isEn
+              ? 'Goal achieved! Amazing work.'
+              : 'Cel zrealizowany! Wspaniała robota.'
+            : isEn
+            ? `${Math.max(0, currentUser.weeklyGoalMinutes - currentUser.weeklySpentMinutes)} min left to reach your goal`
+            : `Pozostało ${Math.max(0, currentUser.weeklyGoalMinutes - currentUser.weeklySpentMinutes)} min do osiągnięcia celu`}
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import { DailyReminderSettings } from '../types';
+import { AppLanguage } from './i18n';
 
 export const DEFAULT_REMINDER_SETTINGS: DailyReminderSettings = {
   enabled: true,
@@ -79,9 +80,10 @@ export function getMsUntilNextReminder(
 /**
  * Formats milliseconds into a human-friendly Polish countdown string (e.g., "2 godz. 15 min").
  */
-export function formatDurationUntilReminder(ms: number | null): string {
+export function formatDurationUntilReminder(ms: number | null, language: AppLanguage = 'pl'): string {
+  const isEn = language === 'en';
   if (ms === null || ms <= 0) {
-    return 'Wkrótce';
+    return isEn ? 'Soon' : 'Wkrótce';
   }
 
   const totalMinutes = Math.ceil(ms / 60000);
@@ -90,9 +92,12 @@ export function formatDurationUntilReminder(ms: number | null): string {
   const minutes = totalMinutes % 60;
 
   if (days > 0) {
-    return `${days} d ${hours} godz.`;
+    return isEn ? `${days} d ${hours} hr` : `${days} d ${hours} godz.`;
   }
   if (hours > 0) {
+    if (isEn) {
+      return minutes > 0 ? `${hours} hr ${minutes} min` : `${hours} hr`;
+    }
     return minutes > 0 ? `${hours} godz. ${minutes} min` : `${hours} godz.`;
   }
   return `${minutes} min`;
@@ -141,21 +146,37 @@ export function buildDailyGoalNotificationPayload(params: {
   nextLessonId?: string;
   nextLessonTitle?: string;
   isTest?: boolean;
+  language?: AppLanguage;
 }): NotificationPayload {
+  const isEn = params.language === 'en';
   const remainingMinutes = Math.max(0, params.dailyGoalMinutes - params.todayMinutes);
   const goalMet = remainingMinutes === 0;
 
-  const title = params.isTest
+  const title = isEn
+    ? params.isTest
+      ? `Full Stack Academy — Test Notification (${params.streakDays}-day streak)`
+      : goalMet
+      ? `Daily Goal Completed! (${params.todayMinutes}/${params.dailyGoalMinutes} min)`
+      : `Study Reminder: ${remainingMinutes} min left for today's goal!`
+    : params.isTest
     ? `Full Stack Academy — Test Powiadomienia (${params.streakDays} dni serii)`
     : goalMet
     ? `Cel dzienny zrealizowany! (${params.todayMinutes}/${params.dailyGoalMinutes} min)`
     : `Przypomnienie o nauce: brakuje ${remainingMinutes} min do celu dnia!`;
 
-  const lessonHint = params.nextLessonTitle
+  const lessonHint = isEn
+    ? params.nextLessonTitle
+      ? ` Next lesson: "${params.nextLessonTitle}".`
+      : ' Complete a quick exercise or quiz to keep your streak alive.'
+    : params.nextLessonTitle
     ? ` Następna lekcja: „${params.nextLessonTitle}”.`
     : ' Rozwiąż krótkie ćwiczenie lub quiz, aby utrzymać serię.';
 
-  const body = goalMet
+  const body = isEn
+    ? goalMet
+      ? `Great job, ${params.userName}! Your daily goal (${params.dailyGoalMinutes} min) is complete today and your ${params.streakDays}-day streak is safe.`
+      : `Hi ${params.userName}! You've logged ${params.todayMinutes}/${params.dailyGoalMinutes} min today. Protect your ${params.streakDays}-day streak!${lessonHint}`
+    : goalMet
     ? `Świetna robota, ${params.userName}! Twój dzienny cel (${params.dailyGoalMinutes} min) został dziś osiągnięty, a seria ${params.streakDays} dni jest bezpieczna.`
     : `Cześć ${params.userName}! Masz dziś ${params.todayMinutes}/${params.dailyGoalMinutes} min nauki. Chroń swoją serię ${params.streakDays} dni!${lessonHint}`;
 
@@ -174,8 +195,8 @@ export function buildDailyGoalNotificationPayload(params: {
         timestamp: Date.now(),
       },
       actions: [
-        { action: 'start-lesson', title: 'Kontynuuj naukę' },
-        { action: 'dismiss', title: 'Później' },
+        { action: 'start-lesson', title: isEn ? 'Continue Learning' : 'Kontynuuj naukę' },
+        { action: 'dismiss', title: isEn ? 'Later' : 'Później' },
       ],
     },
   };

@@ -1,11 +1,19 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { MODULES_DATA } from '../data/modulesData';
 import {
-  CAREER_TRACKS,
   CareerTrackId,
   calculateStudyPlanEstimate,
+  getLocalizedCareerTracks,
 } from '../utils/landingCalculator';
+import { formatCategoryLabel } from '../utils/i18n';
+import {
+  getLandingAnalogies,
+  getLandingFaqItems,
+  getLandingFlashcards,
+  getLandingPlaygroundSamples,
+  getLandingShowcaseProjects,
+  getTechRibbonItems,
+} from '../locales/landingEn';
 import {
   ArrowRight,
   Play,
@@ -27,76 +35,11 @@ import {
 import heroDarkStudioImage from '../assets/images/dark_studio_coding_1794680584416.jpg';
 import portfolioDeskImage from '../assets/images/dark_portfolio_desk_1794680585081.jpg';
 import { BrandLogo } from './BrandLogo';
+import { ThemeToggle } from './ThemeToggle';
+import { LanguageToggle } from './LanguageToggle';
 
 const HERO_DARK_STUDIO_IMAGE = heroDarkStudioImage;
 const PORTFOLIO_DESK_IMAGE = portfolioDeskImage;
-
-const TECH_RIBBON_ITEMS = [
-  'HTML5 Semantyka',
-  'CSS Grid & Flexbox',
-  'Tailwind CSS',
-  'JavaScript ES2025',
-  'TypeScript 5',
-  'React 19',
-  'Next.js App Router',
-  'Node.js & Express',
-  'PostgreSQL & SQL',
-  'Prisma ORM',
-  'REST API & JWT',
-  'WebSockets Real-Time',
-  'Docker Multi-Stage',
-  'Git & GitHub Actions',
-  'Playwright E2E',
-];
-
-const ANALOGY_EXAMPLES = [
-  {
-    id: 'api',
-    term: 'REST API & Endpointy',
-    jargon: 'Bezstanowy interfejs komunikacji klient-serwer oparty o metody HTTP (GET, POST, PUT, DELETE) oraz wymianę JSON.',
-    analogyTitle: 'Kelner w restauracji',
-    analogyText: 'Ty (przeglądarka) nie wchodzisz sam do kuchni (bazy danych). Składasz zamówienie u kelnera (API), a on przynosi gotowe danie (dane JSON) na Twój stolik.',
-  },
-  {
-    id: 'middleware',
-    term: 'Middleware & Auth',
-    jargon: 'Funkcja pośrednicząca w potoku żądań Express przechwytująca obiekt Request przed wykonaniem kontrolera docelowego.',
-    analogyTitle: 'Bramkarz na koncercie',
-    analogyText: 'Zanim wejdziesz na strefę VIP (panel kursanta), ochroniarz przy wejściu sprawdza Twój bilet (token JWT). Bez ważnego biletu grzecznie zawraca Cię na start.',
-  },
-  {
-    id: 'sql',
-    term: 'Relacje SQL (JOIN)',
-    jargon: 'Łączenie znormalizowanych tabel za pomocą klucza obcego (Foreign Key) oraz operacji iloczynu relacyjnego.',
-    analogyTitle: 'Księga zamówień i kartoteka klientów',
-    analogyText: 'Zamiast przepisywać adres klienta przy każdym paragonie, zapisujesz tylko jego numer ID. Gdy potrzebujesz adresu do wysyłki, łączysz obie kartki po tym numerze.',
-  },
-  {
-    id: 'docker',
-    term: 'Konteneryzacja Docker',
-    jargon: 'Izolacja procesu aplikacyjnego i wszystkich jego zależności systemowych w lekkim obrazie przestrzeni użytkownika.',
-    analogyTitle: 'Kontener morski ze sprzętem',
-    analogyText: 'Pakujesz swój projekt razem z odpowiednią wersją Node.js i ustawieniami do jednego szczelnego pudła. Działa dokładnie tak samo na Twoim laptopie i serwerze produkcyjnym.',
-  },
-];
-
-const FLASHCARD_PREVIEW = [
-  {
-    category: 'JavaScript & React',
-    question: 'Dlaczego w React używamy klucza key podczas renderowania listy elementów?',
-    answer: 'Pozwala to silnikowi React dokładnie rozpoznać, który element został dodany, przesunięty lub usunięty — bez zbędnego przerysowywania całej listy w DOM.',
-  },
-  {
-    category: 'Backend & Bezpieczeństwo',
-    question: 'Po co zapisujemy token odświeżający w ciasteczku z flagą HttpOnly?',
-    answer: 'Flaga HttpOnly blokuje dostęp skryptów JavaScript (document.cookie) do tokenu, co chroni sesję użytkownika nawet w przypadku ataku XSS.',
-  },
-  {
-    category: 'Bazy Danych SQL',
-    question: 'Czym różni się LEFT JOIN od INNER JOIN w zapytaniu SELECT?',
-    answer: 'INNER JOIN zwraca wyłącznie pasujące rekordy z obu tabel, a LEFT JOIN zachowuje wszystkie wiersze z lewej tabeli, nawet jeśli nie mają jeszcze dopasowania po prawej.',
-  },
-];
 
 interface EditorialImageProps {
   src: string;
@@ -204,293 +147,24 @@ const RevealBlock: React.FC<RevealBlockProps> = ({ children, className = '', del
   );
 };
 
-interface PlaygroundSample {
-  id: 'html' | 'css' | 'js' | 'sql';
-  label: string;
-  lessonRef: string;
-  taskTitle: string;
-  analogy: string;
-  beginnerHint: string;
-  starterCode: string;
-  solutionCode: string;
-  checkRule: (code: string) => boolean;
-  ruleLabel: string;
-}
-
-const PLAYGROUND_SAMPLES: PlaygroundSample[] = [
-  {
-    id: 'html',
-    label: '01. HTML',
-    lessonRef: 'html-1',
-    taskTitle: 'Dopisz nagłówek <h1> oraz przycisk <button> w karcie profilu',
-    analogy: 'HTML to szkielet strony — każdy znacznik mówi przeglądarce, czym jest dany element.',
-    beginnerHint:
-      'Wpisz wewnątrz <h1>Maja Kowalska</h1>, a pod akapitem <p> dodaj <button>Zobacz Portfolio</button>.',
-    starterCode: `<div class="card">
-  <p class="kicker">Inżynier IT</p>
-  <h1></h1>
-  <p class="bio">React & TypeScript</p>
-</div>`,
-    solutionCode: `<div class="card">
-  <p class="kicker">Inżynier IT</p>
-  <h1>Maja Kowalska</h1>
-  <p class="bio">React & TypeScript</p>
-  <button>Portfolio</button>
-</div>`,
-    checkRule: (code: string) =>
-      /<h1>\s*[^<\s][^<]*<\/h1>/i.test(code) && /<button[^>]*>[\s\S]*?<\/button>/i.test(code),
-    ruleLabel: 'Dodano <h1> i przycisk <button>',
-  },
-  {
-    id: 'css',
-    label: '02. CSS',
-    lessonRef: 'css-1',
-    taskTitle: 'Włącz układ Flexbox (display: flex) i odstęp gap: 16px',
-    analogy: 'Flexbox działa jak inteligentna półka, która równo układa elementy obok siebie.',
-    beginnerHint: 'Zamień display: block na display: flex; oraz dodaj w nowej linii gap: 16px;',
-    starterCode: `.pricing-row {
-  display: block;
-  padding: 16px;
-  background: #0f172a;
-  border-radius: 12px;
-}`,
-    solutionCode: `.pricing-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-}`,
-    checkRule: (code: string) => /display\s*:\s*flex/i.test(code) && /gap\s*:\s*\d+/i.test(code),
-    ruleLabel: 'Zadeklarowano display: flex oraz odstęp gap',
-  },
-  {
-    id: 'js',
-    label: '03. JS',
-    lessonRef: 'js-1',
-    taskTitle: 'Oblicz sumę punktów XP po ukończeniu lekcji i zwróć wynik',
-    analogy: 'Funkcja to przepis: podajesz dane wejściowe, a return oddaje gotowy rezultat.',
-    beginnerHint: 'Zamiast return 0; wpisz return aktualneXP + bonusZaLekcje;',
-    starterCode: `function obliczNoweXP(aktualneXP, bonusZaLekcje) {
-  return 0;
-}
-
-const wynik = obliczNoweXP(1250, 150);`,
-    solutionCode: `function obliczNoweXP(aktualneXP, bonusZaLekcje) {
-  return aktualneXP + bonusZaLekcje;
-}
-
-const wynik = obliczNoweXP(1250, 150);`,
-    checkRule: (code: string) =>
-      /return\s+aktualneXP\s*\+\s*bonusZaLekcje/i.test(code),
-    ruleLabel: 'Funkcja zwraca sumę aktualneXP + bonusZaLekcje',
-  },
-  {
-    id: 'sql',
-    label: '04. SQL',
-    lessonRef: 'db-1',
-    taskTitle: 'Pobierz kursantów z poziomem powyżej 5 posortowanych malejąco po XP',
-    analogy: 'Zapytanie SELECT działa jak filtr tabeli — wybierasz kolumny, warunek i kolejność.',
-    beginnerHint: 'Dopisz warunek WHERE level > 5 oraz sortowanie ORDER BY xp DESC;',
-    starterCode: `SELECT imie, rola, xp, level
-FROM kursanci
--- Dopisz WHERE level > 5 i ORDER BY xp DESC;`,
-    solutionCode: `SELECT imie, rola, xp, level
-FROM kursanci
-WHERE level > 5
-ORDER BY xp DESC;`,
-    checkRule: (code: string) =>
-      /WHERE\s+level\s*>\s*5/i.test(code) && /ORDER\s+BY\s+xp\s+DESC/i.test(code),
-    ruleLabel: 'Filtr WHERE level > 5 i sortowanie ORDER BY xp DESC',
-  },
-];
-
-interface PortfolioShowcaseProject {
-  id: string;
-  projectRef: string;
-  index: string;
-  title: string;
-  category: string;
-  difficulty: string;
-  estimatedHours: number;
-  summary: string;
-  stack: string;
-  architectureLayers: { layer: string; detail: string }[];
-  acceptanceCriteria: string[];
-}
-
-const PORTFOLIO_SHOWCASE_PROJECTS: PortfolioShowcaseProject[] = [
-  {
-    id: 'fintech',
-    projectRef: 'proj-1',
-    index: '01',
-    title: 'System Bankowości i Budżetu FinTech (SPA)',
-    category: 'Frontend & TypeScript',
-    difficulty: 'Poziom Junior',
-    estimatedHours: 14,
-    summary:
-      'Interaktywny panel finansowy z kategoryzacją transakcji, wielowalutowym przelicznikiem kursów w czasie rzeczywistym, wykresami przepływów oraz trwałym zapisem stanu.',
-    stack: 'React 19 · TypeScript · Tailwind CSS · LocalStorage & REST API',
-    architectureLayers: [
-      {
-        layer: 'Warstwa Prezentacji',
-        detail: 'Komponenty funkcyjne React z tabelarycznym formatowaniem kwot (tabular-nums) i responsywnym układem Grid.',
-      },
-      {
-        layer: 'Logika Stanu',
-        detail: 'Silnie typowane interfejsy TypeScript oraz niestandardowe hooki obliczające bilans przychodów i wydatków.',
-      },
-      {
-        layer: 'Walidacja Danych',
-        detail: 'Ochrona przed ujemnymi kwotami, pustymi tytułami i błędami zaokrągleń zmiennoprzecinkowych.',
-      },
-    ],
-    acceptanceCriteria: [
-      'Dodawanie i filtrowanie transakcji bez przeładowania strony',
-      'Automatyczne przeliczanie salda w PLN / EUR / USD',
-      '100% pokrycia typami TypeScript bez użycia any',
-    ],
-  },
-  {
-    id: 'ecommerce',
-    projectRef: 'proj-2',
-    index: '02',
-    title: 'Silnik E-Commerce REST API z Autoryzacją JWT',
-    category: 'Backend & Bazy Danych',
-    difficulty: 'Poziom Junior / Regular',
-    estimatedHours: 22,
-    summary:
-      'Kompletny serwer sklepu internetowego obsługujący koszyk, stany magazynowe, transakcje ACID w PostgreSQL oraz bezpieczne logowanie z tokenami JWT i Refresh Token.',
-    stack: 'Node.js · Express · PostgreSQL · Prisma ORM · Zod · JWT',
-    architectureLayers: [
-      {
-        layer: 'Warstwa API & Middleware',
-        detail: 'Endpointy RESTful zabezpieczone walidacją schematów Zod oraz kontrolą uprawnień RBAC.',
-      },
-      {
-        layer: 'Baza Relacyjna SQL',
-        detail: 'Relacje 1:N oraz N:M pomiędzy użytkownikami, zamówieniami i produktami z transakcjami bazodanowymi.',
-      },
-      {
-        layer: 'Bezpieczeństwo OWASP',
-        detail: 'Haszowanie haseł algorytmem bcrypt, ciasteczka HttpOnly i ochrona przed SQL Injection.',
-      },
-    ],
-    acceptanceCriteria: [
-      'Atomowa rezerwacja towaru w magazynie podczas składania zamówienia',
-      'Obsługa błędów HTTP 400 / 401 / 403 / 404 w ujednoliconym formacie JSON',
-      'Zestaw testów integracyjnych dla ścieżki zakupowej',
-    ],
-  },
-  {
-    id: 'kanban',
-    projectRef: 'proj-3',
-    index: '03',
-    title: 'Zespołowa Tablica Inżynierska Real-Time',
-    category: 'Full Stack & WebSockets',
-    difficulty: 'Poziom Regular',
-    estimatedHours: 26,
-    summary:
-      'Aplikacja do zarządzania zadaniami zespołowymi z natychmiastową synchronizacją zmian pomiędzy wieloma otwartymi oknami przeglądarki przez WebSockets.',
-    stack: 'Next.js · TypeScript · Node.js · WebSockets · Redis Cache',
-    architectureLayers: [
-      {
-        layer: 'Synchronizacja na Żywo',
-        detail: 'Dwukierunkowy kanał zdarzeń przesyłający przesunięcia kart i komentarze poniżej 50 ms.',
-      },
-      {
-        layer: 'Optymistyczny UI',
-        detail: 'Natychmiastowa reakcja interfejsu z automatycznym wycofaniem zmiany w razie utraty połączenia.',
-      },
-      {
-        layer: 'Warstwa Cache',
-        detail: 'Buforowanie aktywnych tablic i sesji użytkowników dla minimalnego obciążenia bazy SQL.',
-      },
-    ],
-    acceptanceCriteria: [
-      'Przeciąganie zadań pomiędzy kolumnami To Do / In Progress / Done',
-      'Współbieżna edycja tablicy przez kilku członków zespołu',
-      'Pełna dostępność klawiaturowa (WCAG AA) i obsługa urządzeń mobilnych',
-    ],
-  },
-  {
-    id: 'devops',
-    projectRef: 'proj-4',
-    index: '04',
-    title: 'Wdrożenie Produkcyjne z Docker, Nginx i CI/CD',
-    category: 'DevOps & Cloud',
-    difficulty: 'Poziom Produkcyjny',
-    estimatedHours: 18,
-    summary:
-      'Zautomatyzowany potok wydawniczy budujący wielostopniowy obraz Docker, uruchamiający testy jednostkowe i E2E w GitHub Actions oraz wystawiający aplikację za Nginx z SSL.',
-    stack: 'Docker · GitHub Actions · Linux VPS · Nginx · Playwright E2E',
-    architectureLayers: [
-      {
-        layer: 'Konteneryzacja',
-        detail: 'Wielostopniowy Dockerfile (Multi-stage build) redukujący rozmiar obrazu produkcyjnego o ponad 75%.',
-      },
-      {
-        layer: 'Potok Quality Gate',
-        detail: 'Automatyczna blokada wdrożenia w przypadku błędu kompilacji TypeScript lub nieudanego testu.',
-      },
-      {
-        layer: 'Reverse Proxy & Bezpieczeństwo',
-        detail: 'Konfiguracja Nginx z certyfikatem TLS Let’s Encrypt i nagłówkami bezpieczeństwa HSTS / CSP.',
-      },
-    ],
-    acceptanceCriteria: [
-      'Bezprzestojowe przebudowanie i uruchomienie kontenerów aplikacyjnych',
-      'Automatyczne testy akceptacyjne Playwright przed publikacją',
-      'Publiczny adres HTTPS gotowy do wpisania w CV i pokazania rekruterowi',
-    ],
-  },
-];
-
-interface FaqItem {
-  id: string;
-  question: string;
-  answer: string;
-}
-
-const FAQ_ITEMS: FaqItem[] = [
-  {
-    id: 'faq-1',
-    question: 'Nigdy wcześniej nie programowałem. Czy poradzę sobie od pierwszego modułu?',
-    answer:
-      'Tak. Moduł 01 (Podstawy HTML5) jest ułożony specjalnie dla osób startujących całkowicie od zera. Każde pojęcie wyjaśniamy najpierw prostą analogią z codziennego życia i krótkim słowniczkiem, a w edytorze otrzymujesz gotowy w 80% szkielet kodu, w którym dopisujesz brakujące linijki.',
-  },
-  {
-    id: 'faq-2',
-    question: 'Czym ta platforma różni się od zwykłych kursów wideo?',
-    answer:
-      'W kursach wideo spędzasz dziesiątki godzin na biernym oglądaniu, po czym zostajesz przed pustym edytorem. Tutaj od pierwszej minuty piszesz kod w przeglądarce, trenujesz w 6 symulatorach (Terminal Bash/Git, Studio SQL, Klient REST API, Event Loop) i widzisz natychmiastowe sprawdzenie kroków.',
-  },
-  {
-    id: 'faq-3',
-    question: 'Czy muszę instalować specjalne programy na komputerze?',
-    answer:
-      'Nie. Cały edytor kodu, podgląd strony na żywo, baza SQL oraz symulator terminala działają od razu w przeglądarce na komputerze, tablecie i telefonie. W dalszych modułach przeprowadzimy Cię też krok po kroku przez instalację VS Code, Gita i Dockera.',
-  },
-  {
-    id: 'faq-4',
-    question: 'Czy platforma jest naprawdę w 100% darmowa i jak jest utrzymywana?',
-    answer:
-      'Tak. Wszystkie 15 modułów, 96 lekcji, 6 symulatorów, 12 projektów z pełnym kodem, synchronizacja GitHub, Kreator CV ATS oraz certyfikat ukończenia są dostępne za 0 zł. Utrzymujemy serwis dzięki reklamom Google AdSense, a opcjonalny płatny pakiet PRO (bez reklam i z nielimitowanymi sercami) planujemy dodać w kolejnym etapie.',
-  },
-  {
-    id: 'faq-5',
-    question: 'Czy postępy z komputera synchronizują się z telefonem?',
-    answer:
-      'Tak. Po zalogowaniu (np. jednym kliknięciem przez Google) ukończone lekcje, napisany kod, seria dni nauki i powtórki fiszek SM-2 zapisują się w chmurze i są natychmiast dostępne na każdym urządzeniu.',
-  },
-];
-
 interface LandingPageViewProps {
   onOpenAuthModal: () => void;
 }
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModal }) => {
-  const { isAuthenticated, currentUser, setActiveTab, allLessons } = useApp();
+  const { isAuthenticated, currentUser, setActiveTab, allModules, allLessons, language } = useApp();
+  const isEn = language === 'en';
+
+  const techRibbonItems = useMemo(() => getTechRibbonItems(language), [language]);
+  const analogyExamples = useMemo(() => getLandingAnalogies(language), [language]);
+  const flashcardPreview = useMemo(() => getLandingFlashcards(language), [language]);
+  const playgroundSamples = useMemo(() => getLandingPlaygroundSamples(language), [language]);
+  const showcaseProjects = useMemo(() => getLandingShowcaseProjects(language), [language]);
+  const faqItems = useMemo(
+    () => getLandingFaqItems(language, allLessons.length),
+    [language, allLessons.length]
+  );
+  const careerTracks = useMemo(() => getLocalizedCareerTracks(language), [language]);
 
   // Scroll progress bar (GPU scaleX transform) & Back-to-Top visibility
   const [scrollProgress, setScrollProgress] = useState<number>(0);
@@ -562,17 +236,21 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
   const [scanTrigger, setScanTrigger] = useState<number>(0);
 
   const activeSample = useMemo(
-    () => PLAYGROUND_SAMPLES.find((s) => s.id === selectedSampleId) || PLAYGROUND_SAMPLES[0],
-    [selectedSampleId]
+    () => playgroundSamples.find((s) => s.id === selectedSampleId) || playgroundSamples[0],
+    [playgroundSamples, selectedSampleId]
   );
-  const [codeBySample, setCodeBySample] = useState<Record<string, string>>({
-    html: PLAYGROUND_SAMPLES[0].solutionCode,
-    css: PLAYGROUND_SAMPLES[1].solutionCode,
-    js: PLAYGROUND_SAMPLES[2].solutionCode,
-    sql: PLAYGROUND_SAMPLES[3].solutionCode,
-  });
+  const [editedSamples, setEditedSamples] = useState<Record<string, string>>({});
 
-  const currentCode = codeBySample[selectedSampleId] ?? activeSample.starterCode;
+  // Clear untouched language defaults automatically if user switches language
+  const prevLanguageRef = useRef(language);
+  useEffect(() => {
+    if (prevLanguageRef.current !== language) {
+      prevLanguageRef.current = language;
+      setEditedSamples({});
+    }
+  }, [language]);
+
+  const currentCode = editedSamples[selectedSampleId] ?? activeSample.solutionCode;
   const codeLines = currentCode.split('\n');
   const isRulePassed = activeSample.checkRule(currentCode);
 
@@ -594,14 +272,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
   const [expandedModuleId, setExpandedModuleId] = useState<number>(1);
 
   // Interactive Portfolio Showcase state
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(
-    PORTFOLIO_SHOWCASE_PROJECTS[0].id
-  );
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('fintech');
   const activePortfolioProject = useMemo(
-    () =>
-      PORTFOLIO_SHOWCASE_PROJECTS.find((p) => p.id === selectedProjectId) ||
-      PORTFOLIO_SHOWCASE_PROJECTS[0],
-    [selectedProjectId]
+    () => showcaseProjects.find((p) => p.id === selectedProjectId) || showcaseProjects[0],
+    [showcaseProjects, selectedProjectId]
   );
 
   // Interactive Study Path Calculator & Lead Capture Form state
@@ -627,25 +301,25 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
   ];
 
   const filteredModules = useMemo(() => {
-    if (selectedCategory === 'Wszystkie') return MODULES_DATA;
-    return MODULES_DATA.filter((m) => m.category === selectedCategory);
-  }, [selectedCategory]);
+    if (selectedCategory === 'Wszystkie') return allModules;
+    return allModules.filter((m) => m.category === selectedCategory);
+  }, [allModules, selectedCategory]);
 
   const totalCurriculumHours = useMemo(
-    () => MODULES_DATA.reduce((sum, m) => sum + m.durationHours, 0),
-    []
+    () => allModules.reduce((sum, m) => sum + m.durationHours, 0),
+    [allModules]
   );
 
   const studyPlanEstimate = useMemo(
-    () => calculateStudyPlanEstimate(totalCurriculumHours, weeklyHours, selectedTrackId),
-    [totalCurriculumHours, weeklyHours, selectedTrackId]
+    () => calculateStudyPlanEstimate(totalCurriculumHours, weeklyHours, selectedTrackId, language),
+    [totalCurriculumHours, weeklyHours, selectedTrackId, language]
   );
 
-  const activeTrackSpec = CAREER_TRACKS[selectedTrackId];
+  const activeTrackSpec = careerTracks[selectedTrackId];
 
   const activeModule = useMemo(
-    () => MODULES_DATA.find((m) => m.id === expandedModuleId) || filteredModules[0] || MODULES_DATA[0],
-    [expandedModuleId, filteredModules]
+    () => allModules.find((m) => m.id === expandedModuleId) || filteredModules[0] || allModules[0],
+    [allModules, expandedModuleId, filteredModules]
   );
 
   const handlePrimaryAction = () => {
@@ -683,11 +357,19 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
     const trimmedEmail = leadEmail.trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!leadName.trim() || leadName.trim().length < 2) {
-      setFormError('Podaj swoje imię (minimum 2 znaki), aby wygenerować harmonogram.');
+      setFormError(
+        isEn
+          ? 'Enter your name (minimum 2 characters) to generate your schedule.'
+          : 'Podaj swoje imię (minimum 2 znaki), aby wygenerować harmonogram.'
+      );
       return;
     }
     if (!emailRegex.test(trimmedEmail)) {
-      setFormError('Podaj poprawny adres e-mail (np. jan.kowalski@domena.pl).');
+      setFormError(
+        isEn
+          ? 'Enter a valid email address (e.g., alex.morgan@example.com).'
+          : 'Podaj poprawny adres e-mail (np. jan.kowalski@domena.pl).'
+      );
       return;
     }
 
@@ -711,8 +393,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
     return scaleByTrack[selectedTrackId];
   }, [selectedTrackId]);
 
-  const activeAnalogy = ANALOGY_EXAMPLES[activeAnalogyIndex];
-  const activeFlashcard = FLASHCARD_PREVIEW[flashcardIndex];
+  const activeAnalogy = analogyExamples[activeAnalogyIndex];
+  const activeFlashcard = flashcardPreview[flashcardIndex];
 
   return (
     <div className="min-h-screen bg-[#06080E] text-[#F8FAFC] selection:bg-indigo-600 selection:text-white">
@@ -720,21 +402,26 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
           TOP BAR CONTRACT (Strict 3-Zone Dark Obsidian Glass Header + Scroll Progress)
       ===================================================================== */}
       <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#06080E]/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 sm:gap-6 lg:gap-8 px-4 sm:px-8 py-3 sm:py-3.5">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-6 lg:gap-8 px-3 sm:px-8 py-3 sm:py-3.5">
           <a
             href="#top"
             onClick={(e) => {
               e.preventDefault();
               smoothScrollToTop();
             }}
-            aria-label="Full Stack Academy — Powrót na górę strony"
+            aria-label={isEn ? 'Full Stack Academy — Back to top' : 'Full Stack Academy — Powrót na górę strony'}
             className="whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg p-0.5 sm:p-1"
           >
-            <BrandLogo />
+            <span className="sm:hidden">
+              <BrandLogo compact />
+            </span>
+            <span className="hidden sm:inline">
+              <BrandLogo />
+            </span>
           </a>
 
           <nav
-            aria-label="Nawigacja strony głównej"
+            aria-label={isEn ? 'Landing navigation' : 'Nawigacja strony głównej'}
             className="hidden md:flex items-center gap-5 lg:gap-7 text-sm font-medium text-[#94A3B8]"
           >
             <button
@@ -742,35 +429,35 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               onClick={() => scrollToSection('metoda-nauki')}
               className="hover:text-[#F8FAFC] hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
             >
-              Metoda nauki
+              {isEn ? 'Method' : 'Metoda nauki'}
             </button>
             <button
               type="button"
               onClick={() => scrollToSection('program-kursu')}
               className="hover:text-[#F8FAFC] hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
             >
-              Program
+              {isEn ? 'Curriculum' : 'Program'}
             </button>
             <button
               type="button"
               onClick={() => scrollToSection('projekty-portfolio')}
               className="hover:text-[#F8FAFC] hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
             >
-              Projekty
+              {isEn ? 'Projects' : 'Projekty'}
             </button>
             <button
               type="button"
               onClick={() => scrollToSection('kalkulator-sciezki')}
               className="hover:text-[#F8FAFC] hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
             >
-              Kalkulator
+              {isEn ? 'Calculator' : 'Kalkulator'}
             </button>
             <button
               type="button"
               onClick={() => scrollToSection('plany-dostepu')}
               className="hover:text-[#F8FAFC] hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
             >
-              Darmowy dostęp
+              {isEn ? 'Free Access' : 'Darmowy dostęp'}
             </button>
             <a
               href="/baza-wiedzy"
@@ -781,18 +468,30 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               }}
               className="text-indigo-300 hover:text-white hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
             >
-              Baza wiedzy
+              {isEn ? 'Knowledge Base' : 'Baza wiedzy'}
             </a>
           </nav>
 
-          <div className="flex items-center shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <LanguageToggle variant="compact" />
+            <ThemeToggle variant="compact" />
             <button
               type="button"
               onClick={handlePrimaryAction}
               data-testid="landing-top-cta"
-              className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 active:scale-[0.98] transition-all whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 active:scale-[0.98] transition-all whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
             >
-              {isAuthenticated ? 'Pulpit Kursanta →' : 'Rozpocznij za darmo →'}
+              {isAuthenticated ? (
+                <>
+                  <span className="hidden sm:inline">{isEn ? 'Dashboard →' : 'Pulpit Kursanta →'}</span>
+                  <span className="sm:hidden">{isEn ? 'Dashboard →' : 'Pulpit →'}</span>
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">{isEn ? 'Start Free →' : 'Rozpocznij za darmo →'}</span>
+                  <span className="sm:hidden">{isEn ? 'Start →' : 'Start 0 zł →'}</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -834,11 +533,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   className="animate-fsda-fade-up flex flex-wrap items-center gap-2 text-xs font-medium text-[#94A3B8]"
                   style={{ animationDelay: '0ms' }}
                 >
-                  <span className="font-semibold text-indigo-400">Polska Akademia Kodowania</span>
+                  <span className="font-semibold text-indigo-400">
+                    {isEn ? 'Full Stack Coding Academy' : 'Polska Akademia Kodowania'}
+                  </span>
                   <span aria-hidden="true">·</span>
-                  <span>Start od zera za 0 zł</span>
+                  <span>{isEn ? 'Zero to Hero for 0 PLN' : 'Start od zera za 0 zł'}</span>
                   <span aria-hidden="true">·</span>
-                  <span>Bez instalacji</span>
+                  <span>{isEn ? 'No setup needed' : 'Bez instalacji'}</span>
                 </div>
 
                 <h1
@@ -849,16 +550,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   }}
                   className="animate-fsda-fade-up font-display font-extrabold tracking-tight text-[#F8FAFC] leading-[1.06]"
                 >
-                  Zacznij pisać kod dziś. Zostań Full Stack Developerem.
+                  {isEn
+                    ? 'Start writing code today. Become a Full Stack Developer.'
+                    : 'Zacznij pisać kod dziś. Zostań Full Stack Developerem.'}
                 </h1>
 
                 <p
                   className="animate-fsda-fade-up text-base text-[#CBD5E1] leading-relaxed tracking-[0.01em]"
                   style={{ animationDelay: '140ms' }}
                 >
-                  Praktyczny warsztat inżynierski zamiast wielogodzinnych wykładów wideo. Każdą
-                  lekcję zaczynasz od analogii z życia i gotowego w 80% kodu, który uruchamiasz
-                  od razu w przeglądarce.
+                  {isEn
+                    ? 'Hands-on engineering workshops instead of endless passive video lectures. Every lesson opens with an everyday life analogy and an 80% pre-built scaffold ready to run straight in your browser.'
+                    : 'Praktyczny warsztat inżynierski zamiast wielogodzinnych wykładów wideo. Każdą lekcję zaczynasz od analogii z życia i gotowego w 80% kodu, który uruchamiasz od razu w przeglądarce.'}
                 </p>
 
                 <div
@@ -867,15 +570,27 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 >
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>Łagodny próg wejścia — zero żargonu na starcie, słowniczek w każdej lekcji</span>
+                    <span>
+                      {isEn
+                        ? 'Gentle onboarding — zero jargon upfront and a plain-language glossary inside every lesson'
+                        : 'Łagodny próg wejścia — zero żargonu na starcie, słowniczek w każdej lekcji'}
+                    </span>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>6 symulatorów (Terminal Bash &amp; Git, SQL JOIN, REST API, Event Loop JS)</span>
+                    <span>
+                      {isEn
+                        ? '6 interactive simulators (Bash & Git Terminal, SQL JOIN Studio, REST API, JS Event Loop)'
+                        : '6 symulatorów (Terminal Bash & Git, SQL JOIN, REST API, Event Loop JS)'}
+                    </span>
                   </div>
                   <div className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>12 aplikacji biznesowych z kryteriami akceptacyjnymi gotowych do GitHuba</span>
+                    <span>
+                      {isEn
+                        ? '12 commercial applications with acceptance checklists ready for your GitHub portfolio'
+                        : '12 aplikacji biznesowych z kryteriami akceptacyjnymi gotowych do GitHuba'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -893,7 +608,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   >
                     <span>
                       {isAuthenticated
-                        ? `Przejdź do nauki (${currentUser.name.split(' ')[0]})`
+                        ? isEn
+                          ? `Continue learning (${currentUser.name.split(' ')[0]})`
+                          : `Przejdź do nauki (${currentUser.name.split(' ')[0]})`
+                        : isEn
+                        ? 'Launch Learning App'
                         : 'Uruchom Aplikację do nauki'}
                     </span>
                     <ArrowRight className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-1" />
@@ -904,7 +623,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     onClick={() => scrollToSection('program-kursu')}
                     className="px-5 py-3.5 text-sm font-semibold text-[#CBD5E1] hover:text-[#F8FAFC] bg-[#0B101B] border border-white/15 hover:border-white/30 rounded-xl transition-all whitespace-nowrap shrink-0"
                   >
-                    Zobacz 15 modułów
+                    {isEn ? `Explore ${allModules.length} modules` : `Zobacz ${allModules.length} modułów`}
                   </button>
                 </div>
 
@@ -921,10 +640,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     }}
                     className="font-medium text-indigo-400 hover:text-indigo-300 underline underline-offset-4"
                   >
-                    Aplikacja: app.fsda-phi.vercel.app
+                    {isEn ? 'App: app.fsda-phi.vercel.app' : 'Aplikacja: app.fsda-phi.vercel.app'}
                   </a>
                   <span aria-hidden="true">·</span>
-                  <span>Bez karty płatniczej</span>
+                  <span>{isEn ? 'No credit card required' : 'Bez karty płatniczej'}</span>
                 </div>
               </div>
             </div>
@@ -934,11 +653,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               className="animate-fsda-fade-up lg:col-span-7 flex flex-col"
               style={{ animationDelay: '150ms' }}
             >
-              <div className="flex-1 flex flex-col rounded-2xl border border-white/10 bg-[#0B101B] text-[#E2E8F0] overflow-hidden shadow-2xl">
+              <div className="fsda-keep-dark flex-1 flex flex-col rounded-2xl border border-white/10 bg-[#0B101B] text-[#E2E8F0] overflow-hidden shadow-2xl">
                 {/* Single-Row Top IDE Controls */}
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] bg-[#070A12] px-4 py-2.5">
                   <div className="flex items-center gap-1 p-1 bg-[#111827] rounded-lg border border-white/[0.06]">
-                    {PLAYGROUND_SAMPLES.map((sample) => (
+                    {playgroundSamples.map((sample) => (
                       <button
                         key={sample.id}
                         type="button"
@@ -969,27 +688,27 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                       }`}
                     >
                       <HelpCircle className="h-3 w-3 shrink-0" />
-                      <span>Podpowiedź</span>
+                      <span>{isEn ? 'Hint' : 'Podpowiedź'}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        setCodeBySample((prev) => ({
+                        setEditedSamples((prev) => ({
                           ...prev,
                           [selectedSampleId]: activeSample.starterCode,
                         }));
                         setScanTrigger((n) => n + 1);
                       }}
                       className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#CBD5E1] hover:text-white border border-white/10 rounded-md transition-colors whitespace-nowrap shrink-0"
-                      title="Przywróć szablon początkowy 80%"
+                      title={isEn ? 'Restore 80% starter scaffold' : 'Przywróć szablon początkowy 80%'}
                     >
                       <RotateCcw className="h-3 w-3 shrink-0" />
-                      <span>Szablon 80%</span>
+                      <span>{isEn ? '80% Scaffold' : 'Szablon 80%'}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        setCodeBySample((prev) => ({
+                        setEditedSamples((prev) => ({
                           ...prev,
                           [selectedSampleId]: activeSample.solutionCode,
                         }));
@@ -998,7 +717,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                       className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-500/40 rounded-md transition-colors whitespace-nowrap shrink-0"
                     >
                       <Play className="h-3 w-3 shrink-0" />
-                      <span>Wzorzec</span>
+                      <span>{isEn ? 'Solution' : 'Wzorzec'}</span>
                     </button>
                   </div>
                 </div>
@@ -1006,14 +725,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 {/* Task & Analogy Header */}
                 <div className="border-b border-white/[0.08] bg-[#0F1624] px-4 py-3 space-y-1">
                   <p className="text-xs font-semibold text-[#F8FAFC]">
-                    Zadanie próbne: {activeSample.taskTitle}
+                    {isEn ? 'Sample challenge:' : 'Zadanie próbne:'} {activeSample.taskTitle}
                   </p>
                   <p className="text-xs text-[#94A3B8]">
-                    Analogia: {activeSample.analogy}
+                    {isEn ? 'Analogy:' : 'Analogia:'} {activeSample.analogy}
                   </p>
                   {showBeginnerHint && (
                     <p className="animate-fsda-card-enter text-xs text-amber-300 pt-1.5 mt-1 border-t border-white/[0.08]">
-                      Wskazówka: {activeSample.beginnerHint}
+                      {isEn ? 'Tip:' : 'Wskazówka:'} {activeSample.beginnerHint}
                     </p>
                   )}
                 </div>
@@ -1023,8 +742,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   {/* Code Editor Pane with Line Numbers */}
                   <div className="flex flex-col p-4 bg-[#0B101B]">
                     <div className="flex items-center justify-between text-[11px] text-[#94A3B8] mb-2">
-                      <span>Edytor kodu (możesz pisać)</span>
-                      <span className="font-mono tabular-nums">{codeLines.length} linii</span>
+                      <span>{isEn ? 'Code editor (editable)' : 'Edytor kodu (możesz pisać)'}</span>
+                      <span className="font-mono tabular-nums">
+                        {codeLines.length} {isEn ? 'lines' : 'linii'}
+                      </span>
                     </div>
                     <div className="flex flex-1 rounded-xl border border-white/[0.08] bg-[#060911] overflow-hidden">
                       <div
@@ -1038,12 +759,12 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                       <textarea
                         value={currentCode}
                         onChange={(e) =>
-                          setCodeBySample((prev) => ({
+                          setEditedSamples((prev) => ({
                             ...prev,
                             [selectedSampleId]: e.target.value,
                           }))
                         }
-                        aria-label="Interaktywny edytor kodu na stronie głównej"
+                        aria-label={isEn ? 'Interactive homepage code editor' : 'Interaktywny edytor kodu na stronie głównej'}
                         spellCheck={false}
                         wrap="off"
                         rows={7}
@@ -1056,13 +777,19 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   <div className="flex flex-col justify-between p-4 bg-[#0E1523]">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between gap-2 text-[11px] text-[#94A3B8]">
-                        <span>Wynik na żywo</span>
+                        <span>{isEn ? 'Live output' : 'Wynik na żywo'}</span>
                         <span
                           className={`font-mono tabular-nums font-semibold whitespace-nowrap shrink-0 transition-colors duration-200 ${
                             isRulePassed ? 'text-emerald-400' : 'text-[#CBD5E1]'
                           }`}
                         >
-                          {isRulePassed ? 'Zaliczono (+150 XP)' : 'W trakcie edycji'}
+                          {isRulePassed
+                            ? isEn
+                              ? 'Passed (+150 XP)'
+                              : 'Zaliczono (+150 XP)'
+                            : isEn
+                            ? 'Editing...'
+                            : 'W trakcie edycji'}
                         </span>
                       </div>
 
@@ -1078,17 +805,17 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
 
                         {selectedSampleId === 'html' && (
                           <div className="relative space-y-2">
-                            <p className="text-[11px] text-indigo-400 font-medium">Inżynier IT</p>
+                            <p className="text-[11px] text-indigo-400 font-medium">
+                              {isEn ? 'Software Engineer' : 'Inżynier IT'}
+                            </p>
                             <p className="text-base font-bold text-[#F8FAFC]">
                               {(currentCode.match(/<h1>([\s\S]*?)<\/h1>/i)?.[1] || '').trim() ||
-                                'Brak tekstu w <h1>...'}
+                                (isEn ? 'No text inside <h1>...' : 'Brak tekstu w <h1>...')}
                             </p>
-                            <p className="text-xs text-[#94A3B8]">
-                              React &amp; TypeScript
-                            </p>
+                            <p className="text-xs text-[#94A3B8]">React &amp; TypeScript</p>
                             {/<button[^>]*>([\s\S]*?)<\/button>/i.test(currentCode) && (
                               <span className="inline-block mt-1 px-3 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-md">
-                                {(currentCode.match(/<button[^>]*>([\s\S]*?)<\/button>/i)?.[1] || 'Przycisk').trim()}
+                                {(currentCode.match(/<button[^>]*>([\s\S]*?)<\/button>/i)?.[1] || (isEn ? 'Button' : 'Przycisk')).trim()}
                               </span>
                             )}
                           </div>
@@ -1103,13 +830,21 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                             }`}
                           >
                             <div>
-                              <p className="text-xs font-bold text-[#F8FAFC]">Pakiet Full Stack</p>
+                              <p className="text-xs font-bold text-[#F8FAFC]">
+                                {isEn ? 'Full Stack Bundle' : 'Pakiet Full Stack'}
+                              </p>
                               <p className="text-[11px] text-[#94A3B8]">
-                                {isRulePassed ? 'Układ Flexbox (Wiersz)' : 'Układ Block (Kolumna)'}
+                                {isRulePassed
+                                  ? isEn
+                                    ? 'Flexbox Layout (Row)'
+                                    : 'Układ Flexbox (Wiersz)'
+                                  : isEn
+                                  ? 'Block Layout (Column)'
+                                  : 'Układ Block (Kolumna)'}
                               </p>
                             </div>
                             <span className="inline-block px-2.5 py-1 text-xs font-mono tabular-nums font-semibold bg-indigo-600 text-white rounded whitespace-nowrap shrink-0">
-                              100% Gotowy
+                              {isEn ? '100% Ready' : '100% Gotowy'}
                             </span>
                           </div>
                         )}
@@ -1117,12 +852,19 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                         {selectedSampleId === 'js' && (
                           <div className="relative space-y-2 font-mono text-xs">
                             <div className="text-[#94A3B8]">
-                              Wejście: <span className="text-[#CBD5E1] tabular-nums">1250 XP + 150 XP</span>
+                              {isEn ? 'Input:' : 'Wejście:'}{' '}
+                              <span className="text-[#CBD5E1] tabular-nums">1250 XP + 150 XP</span>
                             </div>
                             <div className="text-sm font-bold text-[#F8FAFC] tabular-nums">
-                              Wynik:{' '}
+                              {isEn ? 'Result:' : 'Wynik:'}{' '}
                               <span className={isRulePassed ? 'text-emerald-400' : 'text-amber-400'}>
-                                {isRulePassed ? '1400 XP (Poprawnie)' : '0 XP (Uzupełnij return)'}
+                                {isRulePassed
+                                  ? isEn
+                                    ? '1400 XP (Passed)'
+                                    : '1400 XP (Poprawnie)'
+                                  : isEn
+                                  ? '0 XP (Complete return)'
+                                  : '0 XP (Uzupełnij return)'}
                               </span>
                             </div>
                           </div>
@@ -1131,8 +873,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                         {selectedSampleId === 'sql' && (
                           <div className="relative space-y-1.5 font-mono text-[11px]">
                             <div className="grid grid-cols-3 text-[#94A3B8] border-b border-white/[0.08] pb-1">
-                              <span>imie</span>
-                              <span>rola</span>
+                              <span>{isEn ? 'name' : 'imie'}</span>
+                              <span>{isEn ? 'role' : 'rola'}</span>
                               <span className="text-right">xp (level)</span>
                             </div>
                             {isRulePassed ? (
@@ -1150,7 +892,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                               </>
                             ) : (
                               <div className="text-amber-400 py-2">
-                                Dodaj WHERE level &gt; 5 oraz ORDER BY xp DESC.
+                                {isEn
+                                  ? 'Add WHERE level > 5 and ORDER BY xp DESC.'
+                                  : 'Dodaj WHERE level > 5 oraz ORDER BY xp DESC.'}
                               </div>
                             )}
                           </div>
@@ -1174,7 +918,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                         onClick={() => handleOpenLesson(activeSample.lessonRef)}
                         className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 whitespace-nowrap shrink-0 transition-colors"
                       >
-                        Otwórz lekcję →
+                        {isEn ? 'Open lesson →' : 'Otwórz lekcję →'}
                       </button>
                     </div>
                   </div>
@@ -1187,34 +931,42 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
           <div className="mt-14 pt-10 border-t border-white/[0.08] grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-0 lg:divide-x lg:divide-white/[0.08]">
             <div className="lg:pr-8">
               <p className="font-display text-2xl sm:text-3xl font-extrabold text-[#F8FAFC] tabular-nums">
-                {MODULES_DATA.length} modułów
+                {allModules.length} {isEn ? 'modules' : 'modułów'}
               </p>
               <p className="mt-1.5 text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-                Kompletna ścieżka od podstaw HTML5 i CSS przez React 19, Node.js i SQL aż po Docker.
+                {isEn
+                  ? 'Full learning roadmap from HTML5 and CSS through React 19, Node.js, and SQL up to Docker.'
+                  : 'Kompletna ścieżka od podstaw HTML5 i CSS przez React 19, Node.js i SQL aż po Docker.'}
               </p>
             </div>
             <div className="lg:px-8">
               <p className="font-display text-2xl sm:text-3xl font-extrabold text-[#F8FAFC] tabular-nums">
-                {allLessons.length} lekcji
+                {allLessons.length} {isEn ? 'lessons' : 'lekcji'}
               </p>
               <p className="mt-1.5 text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-                Prosta analogia, słowniczek bez żargonu, gotowy szablon 80% oraz quiz sprawdzający.
+                {isEn
+                  ? 'Everyday analogy, jargon-free glossary, 80% code scaffold, and knowledge check quiz.'
+                  : 'Prosta analogia, słowniczek bez żargonu, gotowy szablon 80% oraz quiz sprawdzający.'}
               </p>
             </div>
             <div className="lg:px-8">
               <p className="font-display text-2xl sm:text-3xl font-extrabold text-[#F8FAFC] tabular-nums">
-                12 projektów
+                12 {isEn ? 'projects' : 'projektów'}
               </p>
               <p className="mt-1.5 text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-                Realne aplikacje biznesowe z kryteriami akceptacyjnymi gotowe do pokazania rekruterowi.
+                {isEn
+                  ? 'Real commercial apps with acceptance checklists ready to showcase to recruiters.'
+                  : 'Realne aplikacje biznesowe z kryteriami akceptacyjnymi gotowe do pokazania rekruterowi.'}
               </p>
             </div>
             <div className="lg:pl-8">
               <p className="font-display text-2xl sm:text-3xl font-extrabold text-[#F8FAFC] tabular-nums">
-                6 symulatorów
+                6 {isEn ? 'simulators' : 'symulatorów'}
               </p>
               <p className="mt-1.5 text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-                Terminal Bash/Git, Studio SQL, Klient REST API, Event Loop JS i egzamin Live Coding.
+                {isEn
+                  ? 'Bash/Git Terminal, SQL Studio, REST API Client, JS Event Loop, and Live Coding prep.'
+                  : 'Terminal Bash/Git, Studio SQL, Klient REST API, Event Loop JS i egzamin Live Coding.'}
               </p>
             </div>
           </div>
@@ -1222,11 +974,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
 
         {/* Continuous Kinetic Technology Ribbon */}
         <div
-          aria-label="Technologie w programie akademii"
+          aria-label={isEn ? 'Technologies covered in the academy curriculum' : 'Technologie w programie akademii'}
           className="mt-12 border-t border-white/[0.06] bg-[#04060B] py-4 overflow-hidden select-none"
         >
           <div className="animate-fsda-marquee flex items-center gap-10 text-xs font-mono text-[#64748B] whitespace-nowrap">
-            {[...TECH_RIBBON_ITEMS, ...TECH_RIBBON_ITEMS].map((tech, idx) => (
+            {[...techRibbonItems, ...techRibbonItems].map((tech, idx) => (
               <span key={`${tech}-${idx}`} className="inline-flex items-center gap-10 shrink-0">
                 <span className="hover:text-[#CBD5E1] transition-colors">{tech}</span>
                 <span aria-hidden="true" className="text-indigo-500/40">/</span>
@@ -1237,7 +989,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
       </section>
 
       {/* =====================================================================
-          2. ASYMMETRIC INTERACTIVE BENTO STUDIO ("Metoda i Narzędzia")
+          2. ASYMMETRIC INTERACTIVE BENTO STUDIO ("Method & Tools")
              Breaks monotonous equal columns with dynamic col-spans & micro-interactions
       ===================================================================== */}
       <section id="metoda-nauki" className="bg-[#090D16] py-20 lg:py-24 border-b border-white/[0.08]">
@@ -1245,33 +997,42 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
           <RevealBlock className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div className="max-w-2xl space-y-3">
               <div className="flex items-center gap-2 text-xs font-medium text-[#94A3B8]">
-                <span className="font-semibold text-indigo-400">Metoda Rusztowania i Symulatory</span>
+                <span className="font-semibold text-indigo-400">
+                  {isEn ? 'Scaffolding Method & Simulators' : 'Metoda Rusztowania i Symulatory'}
+                </span>
                 <span aria-hidden="true">·</span>
-                <span>Zaprojektowane dla startujących od zera</span>
+                <span>{isEn ? 'Built for complete beginners' : 'Zaprojektowane dla startujących od zera'}</span>
               </div>
               <h2
                 style={{ textWrap: 'balance' }}
                 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-[#F8FAFC]"
               >
-                Nauka, w której nie patrzysz na pusty ekran.
+                {isEn
+                  ? 'Learning where you never stare at a blank screen.'
+                  : 'Nauka, w której nie patrzysz na pusty ekran.'}
               </h2>
             </div>
             <p className="text-sm text-[#94A3B8] max-w-md leading-relaxed">
-              Każda z {allLessons.length} lekcji łączy trzy elementy: analogię z życia, gotowy w 80% szkielet
-              kodu oraz wbudowany symulator do natychmiastowego uruchomienia.
+              {isEn
+                ? `Each of the ${allLessons.length} lessons combines three elements: a real-life analogy, an 80% ready code scaffold, and a built-in simulator for instant execution.`
+                : `Każda z ${allLessons.length} lekcji łączy trzy elementy: analogię z życia, gotowy w 80% szkielet kodu oraz wbudowany symulator do natychmiastowego uruchomienia.`}
             </p>
           </RevealBlock>
 
           {/* Row 1 of Asymmetric Bento: 7 cols Dark Studio Photo + Interactive Diff / 5 cols Pointer-Spotlight Simulators */}
           <RevealBlock delayMs={80} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             {/* Tile 1 (col-span-7): Moody Architectural Studio + Interactive 80% Scaffold Toggle */}
-            <div className="lg:col-span-7 rounded-2xl border border-white/[0.08] bg-[#0B101B] overflow-hidden flex flex-col justify-between">
+            <div className="fsda-keep-dark lg:col-span-7 rounded-2xl border border-white/[0.08] bg-[#0B101B] overflow-hidden flex flex-col justify-between">
               <div className="relative">
                 <EditorialImage
                   src={HERO_DARK_STUDIO_IMAGE}
-                  alt="Wieczorne biurko programisty w minimalistycznym studiu z laptopem prezentującym kod TypeScript i React"
+                  alt={
+                    isEn
+                      ? 'Evening developer desk in a minimalist studio with a laptop displaying TypeScript and React code'
+                      : 'Wieczorne biurko programisty w minimalistycznym studiu z laptopem prezentującym kod TypeScript i React'
+                  }
                   aspectClass="aspect-[16/9]"
-                  fallbackTitle="Środowisko Full Stack Academy"
+                  fallbackTitle={isEn ? 'Full Stack Academy Environment' : 'Środowisko Full Stack Academy'}
                 />
                 <div
                   aria-hidden="true"
@@ -1279,9 +1040,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 />
                 <div className="absolute bottom-4 left-5 right-5 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold text-indigo-300">01. Metodyka Rusztowania 80%</p>
+                    <p className="text-xs font-semibold text-indigo-300">
+                      {isEn ? '01. 80% Scaffolding Method' : '01. Metodyka Rusztowania 80%'}
+                    </p>
                     <h3 className="font-display text-xl sm:text-2xl font-extrabold text-[#F8FAFC] mt-0.5">
-                      Zawsze zaczynasz od działającej bazy
+                      {isEn ? 'You always start from a working base' : 'Zawsze zaczynasz od działającej bazy'}
                     </h3>
                   </div>
 
@@ -1296,7 +1059,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                           : 'text-[#94A3B8] hover:text-[#F8FAFC]'
                       }`}
                     >
-                      Szablon 80%
+                      {isEn ? '80% Template' : 'Szablon 80%'}
                     </button>
                     <button
                       type="button"
@@ -1307,7 +1070,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                           : 'text-[#94A3B8] hover:text-[#F8FAFC]'
                       }`}
                     >
-                      Po dopisaniu 2 linii
+                      {isEn ? 'After adding 1 line' : 'Po dopisaniu 2 linii'}
                     </button>
                   </div>
                 </div>
@@ -1315,27 +1078,45 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
 
               {/* Interactive Animated Scaffold Diff Strip */}
               <div
-                key={scaffoldStep}
+                key={`${scaffoldStep}-${language}`}
                 className="animate-fsda-card-enter p-5 border-t border-white/[0.08] bg-[#080C15] font-mono text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 {scaffoldStep === 'before' ? (
                   <>
                     <div className="space-y-1 text-[#94A3B8]">
-                      <div className="text-[#CBD5E1]">const kursant = await db.users.findFirst();</div>
-                      <div className="text-amber-300">// TODO: Zwróć dane JSON ze statusem 200</div>
+                      <div className="text-[#CBD5E1]">
+                        {isEn
+                          ? 'const student = await db.users.findFirst();'
+                          : 'const kursant = await db.users.findFirst();'}
+                      </div>
+                      <div className="text-amber-300">
+                        {isEn
+                          ? '// TODO: Return JSON payload with HTTP 200 status'
+                          : '// TODO: Zwróć dane JSON ze statusem 200'}
+                      </div>
                     </div>
                     <span className="text-[11px] font-sans font-semibold text-amber-300 whitespace-nowrap shrink-0">
-                      Szkielet gotowy — wpisujesz tylko 1 linię
+                      {isEn
+                        ? 'Scaffold ready — you write just 1 line'
+                        : 'Szkielet gotowy — wpisujesz tylko 1 linię'}
                     </span>
                   </>
                 ) : (
                   <>
                     <div className="space-y-1">
-                      <div className="text-[#94A3B8]">const kursant = await db.users.findFirst();</div>
-                      <div className="text-emerald-300">+ return res.status(200).json(kursant);</div>
+                      <div className="text-[#94A3B8]">
+                        {isEn
+                          ? 'const student = await db.users.findFirst();'
+                          : 'const kursant = await db.users.findFirst();'}
+                      </div>
+                      <div className="text-emerald-300">
+                        {isEn
+                          ? '+ return res.status(200).json(student);'
+                          : '+ return res.status(200).json(kursant);'}
+                      </div>
                     </div>
                     <span className="text-[11px] font-sans font-semibold text-emerald-400 whitespace-nowrap shrink-0">
-                      Test zaliczony — przechodzisz dalej
+                      {isEn ? 'Test passed — move forward' : 'Test zaliczony — przechodzisz dalej'}
                     </span>
                   </>
                 )}
@@ -1366,12 +1147,16 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               />
 
               <div className="relative space-y-2">
-                <p className="text-xs font-semibold text-indigo-400">02. Środowiska Praktyczne</p>
+                <p className="text-xs font-semibold text-indigo-400">
+                  {isEn ? '02. Hands-On Environments' : '02. Środowiska Praktyczne'}
+                </p>
                 <h3 className="font-display text-xl font-extrabold text-[#F8FAFC]">
-                  4 symulatory bez żadnej instalacji
+                  {isEn ? '4 simulators with zero setup' : '4 symulatory bez żadnej instalacji'}
                 </h3>
                 <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-                  Ćwiczysz prawdziwe zapytania bazodanowe, komendy Git, żądania HTTP oraz asynchroniczność JS bezpośrednio w karcie przeglądarki.
+                  {isEn
+                    ? 'Practice real database queries, Git commands, HTTP requests, and JS async flows directly inside your browser tab.'
+                    : 'Ćwiczysz prawdziwe zapytania bazodanowe, komendy Git, żądania HTTP oraz asynchroniczność JS bezpośrednio w karcie przeglądarki.'}
                 </p>
               </div>
 
@@ -1380,26 +1165,34 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   {
                     tab: 'sql_studio' as const,
                     icon: Database,
-                    title: 'Studio Bazy SQL (JOIN)',
-                    sub: 'Wizualne tabele relacyjne i live SELECT',
+                    title: isEn ? 'SQL Database Studio (JOIN)' : 'Studio Bazy SQL (JOIN)',
+                    sub: isEn
+                      ? 'Visual relational tables and live SELECT queries'
+                      : 'Wizualne tabele relacyjne i live SELECT',
                   },
                   {
                     tab: 'terminal' as const,
                     icon: Terminal,
-                    title: 'Terminal Bash & Git',
-                    sub: 'Bezpieczne ćwiczenia commit, branch i merge',
+                    title: isEn ? 'Bash & Git Terminal' : 'Terminal Bash & Git',
+                    sub: isEn
+                      ? 'Safe commit, branch, and merge practice'
+                      : 'Bezpieczne ćwiczenia commit, branch i merge',
                   },
                   {
                     tab: 'api_studio' as const,
                     icon: Send,
-                    title: 'Studio REST API & JSON',
-                    sub: 'Testowanie GET / POST z nagłówkami Auth',
+                    title: isEn ? 'REST API & JSON Studio' : 'Studio REST API & JSON',
+                    sub: isEn
+                      ? 'Test GET / POST requests with Auth headers'
+                      : 'Testowanie GET / POST z nagłówkami Auth',
                   },
                   {
                     tab: 'event_loop' as const,
                     icon: Cpu,
-                    title: 'Wizualizator Event Loop',
-                    sub: 'Animacja Call Stack, Microtasks i Callback Queue',
+                    title: isEn ? 'Event Loop Visualizer' : 'Wizualizator Event Loop',
+                    sub: isEn
+                      ? 'Animated Call Stack, Microtasks & Callback Queue'
+                      : 'Animacja Call Stack, Microtasks i Callback Queue',
                   },
                 ].map((sim) => {
                   const Icon = sim.icon;
@@ -1431,9 +1224,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
             <div className="md:col-span-5 rounded-2xl border border-white/[0.08] bg-[#0B101B] p-6 flex flex-col justify-between space-y-5">
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold text-indigo-400">03. Słownik Ludzkim Językiem</p>
+                  <p className="text-xs font-semibold text-indigo-400">
+                    {isEn ? '03. Plain-English Glossary' : '03. Słownik Ludzkim Językiem'}
+                  </p>
                   <div className="flex items-center gap-1">
-                    {ANALOGY_EXAMPLES.map((item, idx) => (
+                    {analogyExamples.map((item, idx) => (
                       <button
                         key={item.id}
                         type="button"
@@ -1454,14 +1249,17 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 </h3>
               </div>
 
-              <div key={activeAnalogy.id} className="animate-fsda-card-enter space-y-3">
+              <div key={`${activeAnalogy.id}-${language}`} className="animate-fsda-card-enter space-y-3">
                 <div className="text-xs text-[#94A3B8] leading-relaxed">
-                  <span className="font-semibold text-[#64748B]">Surowa definicja: </span>
+                  <span className="font-semibold text-[#64748B]">
+                    {isEn ? 'Raw definition: ' : 'Surowa definicja: '}
+                  </span>
                   {activeAnalogy.jargon}
                 </div>
                 <div className="pt-3 border-t border-white/[0.08]">
                   <p className="text-xs font-semibold text-emerald-400 mb-1">
-                    Nasza analogia: {activeAnalogy.analogyTitle}
+                    {isEn ? 'Our analogy: ' : 'Nasza analogia: '}
+                    {activeAnalogy.analogyTitle}
                   </p>
                   <p className="text-xs sm:text-sm text-[#CBD5E1] leading-relaxed">
                     {activeAnalogy.analogyText}
@@ -1473,17 +1271,19 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
             {/* Tile 4 (col-span-4): Interactive Click-to-Flip SM-2 Flashcard */}
             <div className="md:col-span-4 rounded-2xl border border-white/[0.08] bg-[#0B101B] p-6 flex flex-col justify-between space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold text-indigo-400">04. Fiszki SM-2 w drodze</p>
+                <p className="text-xs font-semibold text-indigo-400">
+                  {isEn ? '04. SM-2 Flashcards On the Go' : '04. Fiszki SM-2 w drodze'}
+                </p>
                 <button
                   type="button"
                   onClick={() => {
                     setFlashcardFlipped(false);
-                    setFlashcardIndex((prev) => (prev + 1) % FLASHCARD_PREVIEW.length);
+                    setFlashcardIndex((prev) => (prev + 1) % flashcardPreview.length);
                   }}
                   className="inline-flex items-center gap-1 text-[11px] text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
                 >
                   <RefreshCw className="h-3 w-3" />
-                  <span>Następna</span>
+                  <span>{isEn ? 'Next' : 'Następna'}</span>
                 </button>
               </div>
 
@@ -1495,24 +1295,38 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 <div className="flex items-center justify-between text-[11px] text-[#94A3B8]">
                   <span>{activeFlashcard.category}</span>
                   <span className="font-mono text-indigo-400">
-                    {flashcardFlipped ? 'Odpowiedź' : 'Pytanie · kliknij'}
+                    {flashcardFlipped
+                      ? isEn
+                        ? 'Answer'
+                        : 'Odpowiedź'
+                      : isEn
+                      ? 'Question · click'
+                      : 'Pytanie · kliknij'}
                   </span>
                 </div>
                 <p
-                  key={`${flashcardIndex}-${flashcardFlipped ? 'ans' : 'q'}`}
+                  key={`${flashcardIndex}-${flashcardFlipped ? 'ans' : 'q'}-${language}`}
                   className="animate-fsda-card-enter text-xs sm:text-sm font-medium text-[#F8FAFC] leading-relaxed my-3"
                 >
                   {flashcardFlipped ? activeFlashcard.answer : activeFlashcard.question}
                 </p>
                 <span className="text-[11px] font-semibold text-indigo-300">
-                  {flashcardFlipped ? '← Kliknij, aby wrócić do pytania' : 'Kliknij, aby obrócić kartę →'}
+                  {flashcardFlipped
+                    ? isEn
+                      ? '← Click to return to question'
+                      : '← Kliknij, aby wrócić do pytania'
+                    : isEn
+                    ? 'Click to flip card →'
+                    : 'Kliknij, aby obrócić kartę →'}
                 </span>
               </button>
             </div>
 
             {/* Tile 5 (col-span-3): Stress-Free Practice Metric Ring */}
             <div className="md:col-span-3 rounded-2xl border border-white/[0.08] bg-[#0B101B] p-6 flex flex-col justify-between space-y-4">
-              <p className="text-xs font-semibold text-indigo-400">05. Bez stresu o błędy</p>
+              <p className="text-xs font-semibold text-indigo-400">
+                {isEn ? '05. Error-Friendly Zone' : '05. Bez stresu o błędy'}
+              </p>
 
               <div className="flex items-center gap-4">
                 <svg className="h-16 w-16 shrink-0 -rotate-90" viewBox="0 0 64 64" aria-hidden="true">
@@ -1538,15 +1352,18 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 </svg>
                 <div>
                   <p className="font-display text-2xl font-extrabold text-[#F8FAFC] tabular-nums">
-                    0 kar
+                    {isEn ? '0 penalties' : '0 kar'}
                   </p>
-                  <p className="text-xs text-emerald-400 font-semibold">w edytorze lekcji</p>
+                  <p className="text-xs text-emerald-400 font-semibold">
+                    {isEn ? 'in the lesson editor' : 'w edytorze lekcji'}
+                  </p>
                 </div>
               </div>
 
               <p className="text-xs text-[#94A3B8] leading-relaxed">
-                Możesz testować, psuć i poprawiać swój kod dowolną liczbę razy. 5 serc energii
-                dotyczy wyłącznie quizów sprawdzających.
+                {isEn
+                  ? 'You can test, break, and fix your code as many times as you like. The 5 energy hearts apply only to checkpoint quizzes.'
+                  : 'Możesz testować, psuć i poprawiać swój kod dowolną liczbę razy. 5 serc energii dotyczy wyłącznie quizów sprawdzających.'}
               </p>
             </div>
           </RevealBlock>
@@ -1554,7 +1371,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
       </section>
 
       {/* =====================================================================
-          3. VERTICAL MILESTONE TIMELINE & STICKY DARK INSPECTOR ("Program")
+          3. VERTICAL MILESTONE TIMELINE & STICKY DARK INSPECTOR ("Curriculum")
              Breaks the boxed-list look with an architectural spine + live inspector
       ===================================================================== */}
       <section id="program-kursu" className="bg-[#06080E] py-20 lg:py-24 border-b border-white/[0.08]">
@@ -1562,15 +1379,23 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
           <RevealBlock className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div className="max-w-2xl space-y-3">
               <div className="flex items-center gap-2 text-xs font-medium text-[#94A3B8]">
-                <span className="font-semibold text-indigo-400">Kompletny Sylabus</span>
+                <span className="font-semibold text-indigo-400">
+                  {isEn ? 'Complete Syllabus' : 'Kompletny Sylabus'}
+                </span>
                 <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums">15 modułów · {allLessons.length} lekcji · {totalCurriculumHours}h materiału</span>
+                <span className="font-mono tabular-nums">
+                  {isEn
+                    ? `${allModules.length} modules · ${allLessons.length} lessons · ${totalCurriculumHours}h of content`
+                    : `${allModules.length} modułów · ${allLessons.length} lekcji · ${totalCurriculumHours}h materiału`}
+                </span>
               </div>
               <h2
                 style={{ textWrap: 'balance' }}
                 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-[#F8FAFC]"
               >
-                Przejrzysta ścieżka od pierwszego znacznika do chmury.
+                {isEn
+                  ? 'A clear path from your very first HTML tag to the cloud.'
+                  : 'Przejrzysta ścieżka od pierwszego znacznika do chmury.'}
               </h2>
             </div>
 
@@ -1584,8 +1409,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     setSelectedCategory(cat);
                     const firstInCat =
                       cat === 'Wszystkie'
-                        ? MODULES_DATA[0]
-                        : MODULES_DATA.find((m) => m.category === cat);
+                        ? allModules[0]
+                        : allModules.find((m) => m.category === cat);
                     if (firstInCat) setExpandedModuleId(firstInCat.id);
                   }}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 ${
@@ -1594,7 +1419,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                       : 'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/[0.04]'
                   }`}
                 >
-                  {cat}
+                  {formatCategoryLabel(cat, language)}
                 </button>
               ))}
             </div>
@@ -1628,12 +1453,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     <div className="space-y-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 text-xs text-[#94A3B8]">
                         <span className="font-mono tabular-nums font-bold text-indigo-400">
-                          Moduł {String(mod.id).padStart(2, '0')}
+                          {isEn ? 'Module' : 'Moduł'} {String(mod.id).padStart(2, '0')}
                         </span>
                         <span aria-hidden="true">·</span>
-                        <span>{mod.category}</span>
+                        <span>{mod.displayCategory}</span>
                         <span aria-hidden="true">·</span>
-                        <span className="font-mono tabular-nums">{mod.lessons.length} lekcji</span>
+                        <span className="font-mono tabular-nums">
+                          {mod.lessons.length} {isEn ? 'lessons' : 'lekcji'}
+                        </span>
                         <span aria-hidden="true">·</span>
                         <span className="font-mono tabular-nums">{mod.durationHours}h</span>
                       </div>
@@ -1653,13 +1480,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
 
             {/* Right 5 cols: Sticky Dark Module Inspector */}
             <div
-              key={activeModule.id}
+              key={`${activeModule.id}-${language}`}
               className="animate-fsda-card-enter lg:col-span-5 lg:sticky lg:top-24 rounded-2xl border border-white/10 bg-[#0B101B] p-6 sm:p-7 space-y-5"
             >
               <div className="space-y-2 border-b border-white/[0.08] pb-4">
                 <div className="flex items-center justify-between text-xs text-[#94A3B8]">
                   <span className="font-semibold text-indigo-400">
-                    Moduł {String(activeModule.id).padStart(2, '0')} · {activeModule.category}
+                    {isEn ? 'Module' : 'Moduł'} {String(activeModule.id).padStart(2, '0')} ·{' '}
+                    {activeModule.displayCategory}
                   </span>
                   <span className="font-mono tabular-nums font-semibold text-emerald-400">
                     +{activeModule.lessons.reduce((sum, l) => sum + l.xpReward, 0)} XP
@@ -1675,7 +1503,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
 
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-[#F8FAFC]">
-                  Lekcje w tym module ({activeModule.lessons.length}):
+                  {isEn
+                    ? `Lessons in this module (${activeModule.lessons.length}):`
+                    : `Lekcje w tym module (${activeModule.lessons.length}):`}
                 </p>
                 <div className="divide-y divide-white/[0.06] max-h-72 overflow-y-auto pr-1">
                   {activeModule.lessons.map((lesson, idx) => (
@@ -1713,14 +1543,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   }}
                   className="text-xs font-semibold text-indigo-300 hover:text-indigo-200 underline underline-offset-4 whitespace-nowrap"
                 >
-                  Czytaj za darmo bez logowania →
+                  {isEn ? 'Read free without signing up →' : 'Czytaj za darmo bez logowania →'}
                 </a>
                 <button
                   type="button"
                   onClick={() => handleOpenLesson(activeModule.lessons[0]?.id || 'html-7')}
                   className="px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors whitespace-nowrap shrink-0"
                 >
-                  Ćwicz w edytorze →
+                  {isEn ? 'Practice in editor →' : 'Ćwicz w edytorze →'}
                 </button>
               </div>
             </div>
@@ -1731,10 +1561,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               <div className="space-y-1.5">
                 <p className="text-xs font-semibold text-indigo-400">
-                  Otwarta Baza Wiedzy · Dostęp bez logowania
+                  {isEn
+                    ? 'Open Knowledge Base · Access without sign-in'
+                    : 'Otwarta Baza Wiedzy · Dostęp bez logowania'}
                 </p>
                 <h3 className="font-display text-xl sm:text-2xl font-extrabold text-[#F8FAFC]">
-                  Przeczytaj wybrane lekcje i poradniki od razu tutaj
+                  {isEn
+                    ? 'Read selected lessons and guides right here'
+                    : 'Przeczytaj wybrane lekcje i poradniki od razu tutaj'}
                 </h3>
               </div>
               <a
@@ -1746,7 +1580,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-indigo-300 hover:text-white border border-indigo-500/40 bg-indigo-950/40 rounded-xl transition-colors whitespace-nowrap shrink-0 self-start"
               >
-                <span>Wszystkie {allLessons.length} darmowych lekcji</span>
+                <span>
+                  {isEn
+                    ? `All ${allLessons.length} free lessons`
+                    : `Wszystkie ${allLessons.length} darmowych lekcji`}
+                </span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </a>
             </div>
@@ -1763,7 +1601,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
                         <span className="text-indigo-400 font-semibold font-sans">
-                          Moduł {String(lesson.moduleId).padStart(2, '0')}
+                          {isEn ? 'Module' : 'Moduł'} {String(lesson.moduleId).padStart(2, '0')}
                         </span>
                         <span>~{lesson.durationMinutes} min</span>
                       </div>
@@ -1794,7 +1632,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                       }}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 group-hover:text-indigo-300"
                     >
-                      <span>Czytaj artykuł i przykłady kodu</span>
+                      <span>
+                        {isEn ? 'Read article & code examples' : 'Czytaj artykuł i przykłady kodu'}
+                      </span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </a>
                   </article>
@@ -1814,20 +1654,26 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
               <div className="max-w-2xl space-y-3">
                 <div className="flex items-center gap-2 text-xs font-medium text-[#94A3B8]">
-                  <span className="font-semibold text-indigo-400">Portfolio Inżynierskie GitHub</span>
+                  <span className="font-semibold text-indigo-400">
+                    {isEn ? 'GitHub Engineering Portfolio' : 'Portfolio Inżynierskie GitHub'}
+                  </span>
                   <span aria-hidden="true">·</span>
-                  <span>12 aplikacji z kryteriami biznesowymi</span>
+                  <span>
+                    {isEn ? '12 apps with real business criteria' : '12 aplikacji z kryteriami biznesowymi'}
+                  </span>
                 </div>
                 <h2
                   style={{ textWrap: 'balance' }}
                   className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-[#F8FAFC]"
                 >
-                  Projekty, które realnie przekonują rekruterów.
+                  {isEn
+                    ? 'Projects that genuinely convince engineering recruiters.'
+                    : 'Projekty, które realnie przekonują rekruterów.'}
                 </h2>
               </div>
 
               <div className="flex flex-wrap items-center gap-1 p-1.5 rounded-xl border border-white/[0.08] bg-[#0B101B]">
-                {PORTFOLIO_SHOWCASE_PROJECTS.map((proj) => (
+                {showcaseProjects.map((proj) => (
                   <button
                     key={proj.id}
                     type="button"
@@ -1845,20 +1691,22 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
             </div>
 
             <div
-              key={activePortfolioProject.id}
+              key={`${activePortfolioProject.id}-${language}`}
               className="animate-fsda-card-enter rounded-2xl border border-white/10 bg-[#0B101B] p-6 sm:p-8 space-y-8"
             >
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-white/[0.08]">
                 <div className="space-y-2 max-w-3xl">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-[#94A3B8]">
                     <span className="font-semibold text-indigo-400">
-                      Projekt {activePortfolioProject.index} z 12
+                      {isEn
+                        ? `Project ${activePortfolioProject.index} of 12`
+                        : `Projekt ${activePortfolioProject.index} z 12`}
                     </span>
                     <span aria-hidden="true">·</span>
                     <span>{activePortfolioProject.difficulty}</span>
                     <span aria-hidden="true">·</span>
                     <span className="font-mono tabular-nums">
-                      ~{activePortfolioProject.estimatedHours}h praktyki
+                      ~{activePortfolioProject.estimatedHours}h {isEn ? 'practice' : 'praktyki'}
                     </span>
                   </div>
                   <h3 className="font-display text-2xl font-extrabold text-[#F8FAFC]">
@@ -1877,7 +1725,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   onClick={() => handleOpenProject(activePortfolioProject.projectRef)}
                   className="inline-flex items-center gap-2 px-5 py-3 text-xs sm:text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors whitespace-nowrap shrink-0 self-start lg:self-center"
                 >
-                  <span>Otwórz w Studio Projektów</span>
+                  <span>{isEn ? 'Open in Project Studio' : 'Otwórz w Studio Projektów'}</span>
                   <ArrowRight className="h-4 w-4 shrink-0" />
                 </button>
               </div>
@@ -1891,7 +1739,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                       className="rounded-xl border border-white/[0.08] bg-[#101726] p-4 space-y-2 hover:-translate-y-0.5 transition-transform duration-200"
                     >
                       <div className="flex items-center justify-between text-[11px] font-mono text-indigo-400">
-                        <span>Warstwa 0{idx + 1}</span>
+                        <span>{isEn ? `Layer 0${idx + 1}` : `Warstwa 0${idx + 1}`}</span>
                         <Layers className="h-3.5 w-3.5" />
                       </div>
                       <p className="text-xs font-bold text-[#F8FAFC]">{layer.layer}</p>
@@ -1903,7 +1751,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 <div className="lg:col-span-5 space-y-3">
                   <p className="text-xs font-semibold text-[#F8FAFC] flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                    <span>Kryteria zaliczenia w Studio Projektów:</span>
+                    <span>
+                      {isEn
+                        ? 'Acceptance criteria in Project Studio:'
+                        : 'Kryteria zaliczenia w Studio Projektów:'}
+                    </span>
                   </p>
                   <ul className="space-y-2.5 text-xs sm:text-sm text-[#CBD5E1]">
                     {activePortfolioProject.acceptanceCriteria.map((criterion, idx) => (
@@ -1930,25 +1782,30 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
             <div className="lg:col-span-7 space-y-6">
               <div className="space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-medium text-[#94A3B8]">
-                  <span className="font-semibold text-indigo-400">Kalkulator Ścieżki Nauki</span>
+                  <span className="font-semibold text-indigo-400">
+                    {isEn ? 'Study Path Calculator' : 'Kalkulator Ścieżki Nauki'}
+                  </span>
                   <span aria-hidden="true">·</span>
-                  <span>Dane rynkowe Polska 2026</span>
+                  <span>{isEn ? 'EU & Poland market data 2026' : 'Dane rynkowe Polska 2026'}</span>
                 </div>
                 <h2
                   style={{ textWrap: 'balance' }}
                   className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-[#F8FAFC]"
                 >
-                  Policz, kiedy skończysz program w swoim tempie.
+                  {isEn
+                    ? 'Calculate when you will finish the program at your own pace.'
+                    : 'Policz, kiedy skończysz program w swoim tempie.'}
                 </h2>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Wybierz specjalizację oraz liczbę godzin w tygodniu, aby zobaczyć dokładne
-                  kamienie milowe i porównanie rynkowych widełek wynagrodzeń.
+                  {isEn
+                    ? 'Pick a specialization and weekly study hours to see exact milestones and compare market compensation ranges.'
+                    : 'Wybierz specjalizację oraz liczbę godzin w tygodniu, aby zobaczyć dokładne kamienie milowe i porównanie rynkowych widełek wynagrodzeń.'}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {(Object.keys(CAREER_TRACKS) as CareerTrackId[]).map((trackKey) => {
-                  const spec = CAREER_TRACKS[trackKey];
+                {(Object.keys(careerTracks) as CareerTrackId[]).map((trackKey) => {
+                  const spec = careerTracks[trackKey];
                   const isSelected = selectedTrackId === trackKey;
                   return (
                     <button
@@ -1976,10 +1833,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               <div className="space-y-5 rounded-2xl border border-white/10 bg-[#0B101B] p-6">
                 <div className="flex items-center justify-between text-xs">
                   <label htmlFor="weekly-hours-range" className="font-semibold text-[#CBD5E1]">
-                    Twój czas na naukę w tygodniu:
+                    {isEn ? 'Your weekly study time:' : 'Twój czas na naukę w tygodniu:'}
                   </label>
                   <span className="font-mono tabular-nums text-base font-extrabold text-indigo-400">
-                    {weeklyHours} godz. / tydzień
+                    {isEn ? `${weeklyHours} hrs / week` : `${weeklyHours} godz. / tydzień`}
                   </span>
                 </div>
                 <input
@@ -1993,26 +1850,34 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   className="w-full accent-indigo-500 cursor-pointer"
                 />
                 <div className="flex justify-between text-[11px] font-mono tabular-nums text-[#64748B]">
-                  <span>3h (Spokojnie)</span>
-                  <span>10h (Optymalnie)</span>
-                  <span>25h (Intensywnie)</span>
+                  <span>{isEn ? '3h (Steady)' : '3h (Spokojnie)'}</span>
+                  <span>{isEn ? '10h (Optimal)' : '10h (Optymalnie)'}</span>
+                  <span>{isEn ? '25h (Intensive)' : '25h (Intensywnie)'}</span>
                 </div>
 
                 <div className="pt-4 border-t border-white/[0.08] grid grid-cols-2 sm:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-[11px] text-[#94A3B8]">Czas do certyfikatu</p>
+                    <p className="text-[11px] text-[#94A3B8]">
+                      {isEn ? 'Time to certificate' : 'Czas do certyfikatu'}
+                    </p>
                     <p className="text-base sm:text-lg font-extrabold text-[#F8FAFC] font-mono tabular-nums">
-                      ~{studyPlanEstimate.estimatedWeeks} tyg. ({studyPlanEstimate.estimatedMonths} mies.)
+                      {isEn
+                        ? `~${studyPlanEstimate.estimatedWeeks} wks (${studyPlanEstimate.estimatedMonths} mos)`
+                        : `~${studyPlanEstimate.estimatedWeeks} tyg. (${studyPlanEstimate.estimatedMonths} mies.)`}
                     </p>
                   </div>
                   <div>
-                    <p className="text-[11px] text-[#94A3B8]">Dzienna dawka nauki</p>
+                    <p className="text-[11px] text-[#94A3B8]">
+                      {isEn ? 'Daily study dose' : 'Dzienna dawka nauki'}
+                    </p>
                     <p className="text-base sm:text-lg font-extrabold text-emerald-400 font-mono tabular-nums">
-                      ~{studyPlanEstimate.dailyMinutes} min / dzień
+                      ~{studyPlanEstimate.dailyMinutes} {isEn ? 'min / day' : 'min / dzień'}
                     </p>
                   </div>
                   <div className="col-span-2 sm:col-span-1">
-                    <p className="text-[11px] text-[#94A3B8]">Widełki Mid / Regular</p>
+                    <p className="text-[11px] text-[#94A3B8]">
+                      {isEn ? 'Mid / Regular range' : 'Widełki Mid / Regular'}
+                    </p>
                     <p className="text-base sm:text-lg font-extrabold text-indigo-400 font-mono tabular-nums">
                       {activeTrackSpec.midSalaryRangePln}
                     </p>
@@ -2023,7 +1888,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 <div className="pt-4 border-t border-white/[0.08] space-y-2.5 text-xs">
                   <div className="space-y-1">
                     <div className="flex justify-between font-mono tabular-nums text-[11px] text-[#94A3B8]">
-                      <span>Poziom Junior</span>
+                      <span>{isEn ? 'Junior Level' : 'Poziom Junior'}</span>
                       <span className="text-emerald-400">{activeTrackSpec.juniorSalaryRangePln}</span>
                     </div>
                     <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
@@ -2035,7 +1900,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   </div>
                   <div className="space-y-1">
                     <div className="flex justify-between font-mono tabular-nums text-[11px] text-[#94A3B8]">
-                      <span>Poziom Mid / Regular</span>
+                      <span>{isEn ? 'Mid / Regular Level' : 'Poziom Mid / Regular'}</span>
                       <span className="text-indigo-400">{activeTrackSpec.midSalaryRangePln}</span>
                     </div>
                     <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
@@ -2049,7 +1914,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
 
                 <div className="pt-4 border-t border-white/[0.08] space-y-3">
                   <p className="text-xs font-semibold text-[#F8FAFC]">
-                    Kamienie milowe ({activeTrackSpec.title}):
+                    {isEn ? `Milestones (${activeTrackSpec.title}):` : `Kamienie milowe (${activeTrackSpec.title}):`}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {studyPlanEstimate.milestones.map((ms) => (
@@ -2059,7 +1924,9 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                       >
                         <div className="flex items-center justify-between text-[11px] font-mono tabular-nums">
                           <span className="text-indigo-400 font-semibold">{ms.phase}</span>
-                          <span className="text-[#94A3B8]">Tydzień {ms.weekTarget}</span>
+                          <span className="text-[#94A3B8]">
+                            {isEn ? `Week ${ms.weekTarget}` : `Tydzień ${ms.weekTarget}`}
+                          </span>
                         </div>
                         <p className="text-xs font-bold text-[#F8FAFC]">{ms.title}</p>
                         <p className="text-[11px] text-[#94A3B8] leading-snug">{ms.deliverable}</p>
@@ -2081,17 +1948,29 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     <CheckCircle2 className="h-7 w-7 text-emerald-400 shrink-0" />
                     <div>
                       <h3 className="font-display text-lg font-bold text-[#F8FAFC]">
-                        Plan nauki dla {leadName} został przygotowany
+                        {isEn
+                          ? `Study plan prepared for ${leadName}`
+                          : `Plan nauki dla ${leadName} został przygotowany`}
                       </h3>
                       <p className="text-xs text-[#94A3B8]">
-                        {leadEmail} · {activeTrackSpec.roleLabel} ({weeklyHours}h / tydz.)
+                        {leadEmail} · {activeTrackSpec.roleLabel} (
+                        {isEn ? `${weeklyHours}h / wk` : `${weeklyHours}h / tydz.`})
                       </p>
                     </div>
                   </div>
 
                   <p className="text-sm text-[#CBD5E1] leading-relaxed">
-                    Rekomendowany start to <strong>Moduł 01: Podstawy HTML5</strong> (Lekcja 1:
-                    Pierwsze znaczniki HTML). Możesz od razu uruchomić interaktywną aplikację.
+                    {isEn ? (
+                      <>
+                        Recommended start: <strong>Module 01: HTML5 Foundations</strong> (Lesson 1:
+                        First HTML Tags). You can launch the interactive workspace right away.
+                      </>
+                    ) : (
+                      <>
+                        Rekomendowany start to <strong>Moduł 01: Podstawy HTML5</strong> (Lekcja 1:
+                        Pierwsze znaczniki HTML). Możesz od razu uruchomić interaktywną aplikację.
+                      </>
+                    )}
                   </p>
 
                   <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -2100,14 +1979,20 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                       onClick={handlePrimaryAction}
                       className="px-5 py-3 text-xs sm:text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors whitespace-nowrap"
                     >
-                      {isAuthenticated ? 'Otwórz Pulpit Kursanta' : 'Utwórz darmowe konto i zacznij'}
+                      {isAuthenticated
+                        ? isEn
+                          ? 'Open Student Dashboard'
+                          : 'Otwórz Pulpit Kursanta'
+                        : isEn
+                        ? 'Create free account & start'
+                        : 'Utwórz darmowe konto i zacznij'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setFormSubmitted(false)}
                       className="px-4 py-3 text-xs font-semibold text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
                     >
-                      Zmień parametry
+                      {isEn ? 'Change parameters' : 'Zmień parametry'}
                     </button>
                   </div>
                 </div>
@@ -2119,50 +2004,52 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 >
                   <div className="space-y-1">
                     <h3 className="font-display text-xl font-bold text-[#F8FAFC]">
-                      Odbierz indywidualny plan nauki
+                      {isEn ? 'Get your personalized study plan' : 'Odbierz indywidualny plan nauki'}
                     </h3>
                     <p className="text-xs text-[#94A3B8]">
-                      Dopasujemy harmonogram pod ścieżkę: {activeTrackSpec.roleLabel}.
+                      {isEn
+                        ? `We will tailor the schedule for track: ${activeTrackSpec.roleLabel}.`
+                        : `Dopasujemy harmonogram pod ścieżkę: ${activeTrackSpec.roleLabel}.`}
                     </p>
                   </div>
 
                   <div className="space-y-1.5">
                     <label htmlFor="lead-name" className="block text-xs font-semibold text-[#CBD5E1]">
-                      Twoje imię
+                      {isEn ? 'Your first name' : 'Twoje imię'}
                     </label>
                     <input
                       id="lead-name"
                       type="text"
                       value={leadName}
                       onChange={(e) => setLeadName(e.target.value)}
-                      placeholder="np. Aleksander"
+                      placeholder={isEn ? 'e.g. Alex' : 'np. Aleksander'}
                       className="w-full rounded-xl border border-white/15 bg-[#060911] px-3.5 py-2.5 text-sm text-[#F8FAFC] placeholder:text-[#475569] focus:border-indigo-500 focus:outline-none transition-colors"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <label htmlFor="lead-email" className="block text-xs font-semibold text-[#CBD5E1]">
-                      Adres e-mail
+                      {isEn ? 'Email address' : 'Adres e-mail'}
                     </label>
                     <input
                       id="lead-email"
                       type="email"
                       value={leadEmail}
                       onChange={(e) => setLeadEmail(e.target.value)}
-                      placeholder="np. aleksander@domena.pl"
+                      placeholder={isEn ? 'e.g. alex@example.com' : 'np. aleksander@domena.pl'}
                       className="w-full rounded-xl border border-white/15 bg-[#060911] px-3.5 py-2.5 text-sm text-[#F8FAFC] placeholder:text-[#475569] focus:border-indigo-500 focus:outline-none transition-colors"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <span className="block text-xs font-semibold text-[#CBD5E1]">
-                      Główny cel nauki
+                      {isEn ? 'Primary learning goal' : 'Główny cel nauki'}
                     </span>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { id: 'job', label: 'Praca w IT' },
-                        { id: 'projects', label: 'Własne aplikacje' },
-                        { id: 'upskill', label: 'Awans' },
+                        { id: 'job', label: isEn ? 'Tech job' : 'Praca w IT' },
+                        { id: 'projects', label: isEn ? 'Own apps' : 'Własne aplikacje' },
+                        { id: 'upskill', label: isEn ? 'Promotion' : 'Awans' },
                       ].map((goal) => (
                         <button
                           key={goal.id}
@@ -2190,7 +2077,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     type="submit"
                     className="w-full py-3.5 px-6 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors whitespace-nowrap"
                   >
-                    Wygeneruj indywidualny plan nauki
+                    {isEn ? 'Generate personalized study plan' : 'Wygeneruj indywidualny plan nauki'}
                   </button>
                 </form>
               )}
@@ -2207,67 +2094,97 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
           <RevealBlock className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
             <div className="space-y-2.5">
               <div className="flex items-center gap-2 text-xs font-medium text-[#94A3B8]">
-                <span className="font-semibold text-emerald-400">100% Edycja Otwarta na Start</span>
+                <span className="font-semibold text-emerald-400">
+                  {isEn ? '100% Open Edition at Launch' : '100% Edycja Otwarta na Start'}
+                </span>
                 <span aria-hidden="true">·</span>
-                <span>Zero ukrytych opłat, finansowanie przez Google AdSense</span>
+                <span>
+                  {isEn
+                    ? 'Zero hidden fees, supported by Google AdSense'
+                    : 'Zero ukrytych opłat, finansowanie przez Google AdSense'}
+                </span>
               </div>
               <h2
                 style={{ textWrap: 'balance' }}
                 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-[#F8FAFC]"
               >
-                Pełny dostęp za darmo. Opcjonalny plan PRO wkrótce.
+                {isEn
+                  ? 'Full access for free. Optional PRO plan coming soon.'
+                  : 'Pełny dostęp za darmo. Opcjonalny plan PRO wkrótce.'}
               </h2>
             </div>
 
             <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-semibold text-emerald-300 shrink-0 self-start">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>Bez karty płatniczej</span>
+              <span>{isEn ? 'No credit card required' : 'Bez karty płatniczej'}</span>
             </div>
           </RevealBlock>
 
           <RevealBlock delayMs={80} className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-            {/* Edycja Otwarta — 100% Za Darmo */}
+            {/* Open Edition — 100% Free */}
             <div className="rounded-2xl border border-emerald-500/60 bg-[#0D1526] p-6 sm:p-8 flex flex-col justify-between space-y-6">
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold text-emerald-400">Dostępny Od Zaraz</p>
+                    <p className="text-xs font-semibold text-emerald-400">
+                      {isEn ? 'Available Immediately' : 'Dostępny Od Zaraz'}
+                    </p>
                     <h3 className="font-display text-xl font-bold text-[#F8FAFC] mt-1">
-                      Edycja Otwarta (Pełny Kurs)
+                      {isEn ? 'Open Edition (Full Course)' : 'Edycja Otwarta (Pełny Kurs)'}
                     </h3>
                   </div>
                   <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 whitespace-nowrap shrink-0">
-                    Aktywny
+                    {isEn ? 'Active' : 'Aktywny'}
                   </span>
                 </div>
 
                 <div className="flex items-baseline gap-2">
                   <span className="font-display text-4xl font-extrabold text-[#F8FAFC] tabular-nums">
-                    0 zł
+                    {isEn ? '0 PLN' : '0 zł'}
                   </span>
-                  <span className="text-xs text-[#94A3B8]">/ pełny dostęp (z reklamami AdSense)</span>
+                  <span className="text-xs text-[#94A3B8]">
+                    {isEn ? '/ full access (with AdSense ads)' : '/ pełny dostęp (z reklamami AdSense)'}
+                  </span>
                 </div>
 
                 <p className="text-sm text-[#CBD5E1] leading-relaxed">
-                  Kompletna ścieżka Full Stack bez paywalla: wszystkie lekcje, 6 symulatorów, 12 projektów z pełnym kodem, integracja GitHub oraz narzędzia rekrutacyjne za darmo.
+                  {isEn
+                    ? 'The complete Full Stack track with zero paywalls: all lessons, 6 simulators, 12 projects with complete source code, GitHub integration, and career tools for free.'
+                    : 'Kompletna ścieżka Full Stack bez paywalla: wszystkie lekcje, 6 symulatorów, 12 projektów z pełnym kodem, integracja GitHub oraz narzędzia rekrutacyjne za darmo.'}
                 </p>
 
                 <ul className="space-y-2.5 pt-3 border-t border-white/[0.08] text-xs sm:text-sm text-[#CBD5E1]">
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>Wszystkie 15 modułów i {allLessons.length} interaktywnych lekcji</span>
+                    <span>
+                      {isEn
+                        ? `All ${allModules.length} modules and ${allLessons.length} interactive lessons`
+                        : `Wszystkie ${allModules.length} modułów i ${allLessons.length} interaktywnych lekcji`}
+                    </span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>12 projektów komercyjnych + przesyłanie z GitHuba i 6 symulatorów</span>
+                    <span>
+                      {isEn
+                        ? '12 commercial projects + GitHub submission & 6 simulators'
+                        : '12 projektów komercyjnych + przesyłanie z GitHuba i 6 symulatorów'}
+                    </span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>Symulator Live Coding, Kreator CV ATS, Fiszki SM-2 i Certyfikat</span>
+                    <span>
+                      {isEn
+                        ? 'Live Coding Simulator, ATS CV Builder, SM-2 Flashcards & Certificate'
+                        : 'Symulator Live Coding, Kreator CV ATS, Fiszki SM-2 i Certyfikat'}
+                    </span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>5 odnawiających się serc w quizach (odnowa co 15 min + powtórki)</span>
+                    <span>
+                      {isEn
+                        ? '5 auto-refilling quiz hearts (15-min recharge + smart reviews)'
+                        : '5 odnawiających się serc w quizach (odnowa co 15 min + powtórki)'}
+                    </span>
                   </li>
                 </ul>
               </div>
@@ -2277,51 +2194,77 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 onClick={handlePrimaryAction}
                 className="w-full py-3.5 px-5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors whitespace-nowrap"
               >
-                {isAuthenticated ? 'Przejdź do Pulpitu Kursanta' : 'Załóż darmowe konto (0 zł)'}
+                {isAuthenticated
+                  ? isEn
+                    ? 'Go to Student Dashboard'
+                    : 'Przejdź do Pulpitu Kursanta'
+                  : isEn
+                  ? 'Create free account (0 PLN)'
+                  : 'Załóż darmowe konto (0 zł)'}
               </button>
             </div>
 
-            {/* Plan PRO — W przygotowaniu */}
+            {/* Plan PRO — Coming Soon */}
             <div className="rounded-2xl border border-white/10 bg-[#0B101B] p-6 sm:p-8 flex flex-col justify-between space-y-6">
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold text-indigo-300">Kolejny Etap Rozwoju</p>
+                    <p className="text-xs font-semibold text-indigo-300">
+                      {isEn ? 'Next Roadmap Stage' : 'Kolejny Etap Rozwoju'}
+                    </p>
                     <h3 className="font-display text-xl font-bold text-[#F8FAFC] mt-1">
-                      Full Stack PRO (Bez Reklam)
+                      {isEn ? 'Full Stack PRO (Ad-Free)' : 'Full Stack PRO (Bez Reklam)'}
                     </h3>
                   </div>
                   <span className="px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/15 text-[11px] font-semibold text-[#CBD5E1] whitespace-nowrap shrink-0">
-                    Wkrótce
+                    {isEn ? 'Coming Soon' : 'Wkrótce'}
                   </span>
                 </div>
 
                 <div className="flex items-baseline gap-2">
                   <span className="font-display text-3xl sm:text-4xl font-extrabold text-[#CBD5E1]">
-                    W przygotowaniu
+                    {isEn ? 'In Development' : 'W przygotowaniu'}
                   </span>
                 </div>
 
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Opcjonalny pakiet dla kursantów, którzy w przyszłości zechcą wesprzeć rozwój platformy i uczyć się bez reklam Google AdSense oraz bez odnawiania serc.
+                  {isEn
+                    ? 'An optional tier for students who wish to support platform growth in the future and learn without Google AdSense ads or heart cooldowns.'
+                    : 'Opcjonalny pakiet dla kursantów, którzy w przyszłości zechcą wesprzeć rozwój platformy i uczyć się bez reklam Google AdSense oraz bez odnawiania serc.'}
                 </p>
 
                 <ul className="space-y-2.5 pt-3 border-t border-white/[0.08] text-xs sm:text-sm text-[#94A3B8]">
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-indigo-400/80 shrink-0 mt-0.5" />
-                    <span>0% reklam Google AdSense w całym panelu kursanta</span>
+                    <span>
+                      {isEn
+                        ? '0% Google AdSense ads across the entire student workspace'
+                        : '0% reklam Google AdSense w całym panelu kursanta'}
+                    </span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-indigo-400/80 shrink-0 mt-0.5" />
-                    <span>Nielimitowane serca energii podczas quizów i powtórek</span>
+                    <span>
+                      {isEn
+                        ? 'Unlimited energy hearts during checkpoint quizzes and reviews'
+                        : 'Nielimitowane serca energii podczas quizów i powtórek'}
+                    </span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-indigo-400/80 shrink-0 mt-0.5" />
-                    <span>Automatyczna ochrona passy nauki (Auto-Streak Freeze)</span>
+                    <span>
+                      {isEn
+                        ? 'Automatic learning streak protection (Auto-Streak Freeze)'
+                        : 'Automatyczna ochrona passy nauki (Auto-Streak Freeze)'}
+                    </span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-indigo-400/80 shrink-0 mt-0.5" />
-                    <span>Brak płatności teraz — wszystkie funkcje są już odblokowane za darmo</span>
+                    <span>
+                      {isEn
+                        ? 'No payments right now — every single feature is already unlocked for free'
+                        : 'Brak płatności teraz — wszystkie funkcje są już odblokowane za darmo'}
+                    </span>
                   </li>
                 </ul>
               </div>
@@ -2331,7 +2274,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 onClick={handlePrimaryAction}
                 className="w-full py-3.5 px-5 text-sm font-bold text-[#F8FAFC] bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 rounded-xl transition-colors whitespace-nowrap"
               >
-                {isAuthenticated ? 'Uczysz się już w Darmowej Edycji' : 'Zacznij teraz w Darmowej Edycji'}
+                {isAuthenticated
+                  ? isEn
+                    ? 'You are learning in the Free Edition'
+                    : 'Uczysz się już w Darmowej Edycji'
+                  : isEn
+                  ? 'Start now in the Free Edition'
+                  : 'Zacznij teraz w Darmowej Edycji'}
               </button>
             </div>
           </RevealBlock>
@@ -2347,20 +2296,24 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
             <div className="lg:col-span-7 space-y-8">
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-xs font-medium text-[#94A3B8]">
-                  <span className="font-semibold text-indigo-400">Najczęściej Zadawane Pytania</span>
+                  <span className="font-semibold text-indigo-400">
+                    {isEn ? 'Frequently Asked Questions' : 'Najczęściej Zadawane Pytania'}
+                  </span>
                   <span aria-hidden="true">·</span>
-                  <span>Wszystko przed pierwszym logowaniem</span>
+                  <span>{isEn ? 'Everything before your first sign-in' : 'Wszystko przed pierwszym logowaniem'}</span>
                 </div>
                 <h2
                   style={{ textWrap: 'balance' }}
                   className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-[#F8FAFC]"
                 >
-                  Odpowiedzi dla osób zaczynających od zera.
+                  {isEn
+                    ? 'Answers for people starting from scratch.'
+                    : 'Odpowiedzi dla osób zaczynających od zera.'}
                 </h2>
               </div>
 
               <div className="space-y-3">
-                {FAQ_ITEMS.map((item, idx) => {
+                {faqItems.map((item, idx) => {
                   const isOpen = openFaqId === item.id;
                   return (
                     <div
@@ -2402,9 +2355,15 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               <div className="relative">
                 <EditorialImage
                   src={PORTFOLIO_DESK_IMAGE}
-                  alt="Ciemne biurko inżyniera z laptopem prezentującym ukończony dashboard aplikacji i klawiaturą mechaniczną"
+                  alt={
+                    isEn
+                      ? 'Dark engineer desk with a laptop showing a finished application dashboard and mechanical keyboard'
+                      : 'Ciemne biurko inżyniera z laptopem prezentującym ukończony dashboard aplikacji i klawiaturą mechaniczną'
+                  }
                   aspectClass="aspect-[4/3]"
-                  fallbackTitle="Twoje portfolio i certyfikat Full Stack"
+                  fallbackTitle={
+                    isEn ? 'Your Full Stack portfolio & certificate' : 'Twoje portfolio i certyfikat Full Stack'
+                  }
                 />
                 <div
                   aria-hidden="true"
@@ -2413,11 +2372,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
               </div>
               <div className="p-6 sm:p-7 space-y-4">
                 <h3 className="font-display text-xl font-extrabold text-[#F8FAFC]">
-                  Gotowy napisać swoją pierwszą linijkę kodu?
+                  {isEn
+                    ? 'Ready to write your first line of code?'
+                    : 'Gotowy napisać swoją pierwszą linijkę kodu?'}
                 </h3>
                 <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  Moduł 01 zajmuje około 15 minut na pierwszą lekcję i nie wymaga żadnej instalacji.
-                  Uruchom aplikację i sprawdź w praktyce.
+                  {isEn
+                    ? 'Module 01 takes around 15 minutes for the first lesson and requires zero local setup. Launch the platform and try it hands-on.'
+                    : 'Moduł 01 zajmuje około 15 minut na pierwszą lekcję i nie wymaga żadnej instalacji. Uruchom aplikację i sprawdź w praktyce.'}
                 </p>
                 <button
                   type="button"
@@ -2425,7 +2387,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   className="group w-full inline-flex items-center justify-center gap-2 py-3.5 px-5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all whitespace-nowrap"
                 >
                   <span>
-                    {isAuthenticated ? 'Przejdź do Pulpitu Kursanta' : 'Zacznij pierwszą lekcję za darmo'}
+                    {isAuthenticated
+                      ? isEn
+                        ? 'Go to Student Dashboard'
+                        : 'Przejdź do Pulpitu Kursanta'
+                      : isEn
+                      ? 'Start your first free lesson'
+                      : 'Zacznij pierwszą lekcję za darmo'}
                   </span>
                   <ArrowRight className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-1" />
                 </button>
@@ -2440,10 +2408,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
         type="button"
         onClick={smoothScrollToTop}
         data-testid="landing-scroll-to-top"
-        aria-label="Przewiń płynnie do góry strony"
+        aria-label={isEn ? 'Scroll smoothly to the top' : 'Przewiń płynnie do góry strony'}
         aria-hidden={!showScrollTop}
         tabIndex={showScrollTop ? 0 : -1}
-        title="Przewiń do góry"
+        title={isEn ? 'Scroll to top' : 'Przewiń do góry'}
         className={`fixed bottom-5 right-5 z-40 inline-flex h-11 items-center gap-2 rounded-xl border border-white/15 bg-[#0B101B]/90 px-3.5 text-xs font-semibold text-[#F8FAFC] backdrop-blur-md shadow-xl transition-all duration-200 hover:border-indigo-500/70 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
           showScrollTop
             ? 'opacity-100 translate-y-0 pointer-events-auto'
@@ -2451,7 +2419,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
         }`}
       >
         <ArrowUp className="h-4 w-4 text-indigo-400 shrink-0" />
-        <span className="hidden sm:inline whitespace-nowrap">Do góry</span>
+        <span className="hidden sm:inline whitespace-nowrap">{isEn ? 'To top' : 'Do góry'}</span>
       </button>
     </div>
   );

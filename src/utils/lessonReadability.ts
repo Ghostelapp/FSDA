@@ -1,4 +1,6 @@
 import { Lesson } from '../types';
+import { AppLanguage } from './i18n';
+import { CURATED_BEGINNER_AIDS_EN } from '../locales/curriculumEn';
 
 export type InlineToken =
   | { type: 'text'; content: string }
@@ -26,6 +28,7 @@ export interface TheoryTopicSection {
 
 export interface BeginnerLessonAid {
   difficultyLabel: 'Start od Zera' | 'Podstawy' | 'Średniozaawansowany' | 'Zaawansowany';
+  displayDifficultyLabel: string;
   difficultySummary: string;
   analogyTitle: string;
   analogyText: string;
@@ -610,7 +613,7 @@ export function detectPrimaryExerciseTab(
   return 'html';
 }
 
-export function getBeginnerLessonAid(lesson: Lesson): BeginnerLessonAid {
+export function getBeginnerLessonAid(lesson: Lesson, language: AppLanguage = 'pl'): BeginnerLessonAid {
   const isVeryFirstSteps =
     lesson.moduleId === 1 ||
     lesson.id.startsWith('html-') ||
@@ -629,8 +632,27 @@ export function getBeginnerLessonAid(lesson: Lesson): BeginnerLessonAid {
     ? 'Średniozaawansowany'
     : 'Zaawansowany';
 
+  const displayDifficultyLabel =
+    language === 'en'
+      ? difficultyLabel === 'Start od Zera'
+        ? 'From Scratch'
+        : difficultyLabel === 'Podstawy'
+        ? 'Foundations'
+        : difficultyLabel === 'Średniozaawansowany'
+        ? 'Intermediate'
+        : 'Advanced'
+      : difficultyLabel;
+
   const difficultySummary =
-    difficultyLabel === 'Start od Zera'
+    language === 'en'
+      ? difficultyLabel === 'Start od Zera'
+        ? 'Built for complete beginners starting from zero. Nothing needs to be memorized — lean on step-by-step hints anytime.'
+        : difficultyLabel === 'Podstawy'
+        ? 'Gentle introduction to core foundations. Every snippet can be copied or previewed with built-in hints.'
+        : difficultyLabel === 'Średniozaawansowany'
+        ? 'Combining previous building blocks into real components. Toggle hints or solution code whenever needed.'
+        : 'Commercial production standard preparing you for engineering teams and technical interviews.'
+      : difficultyLabel === 'Start od Zera'
       ? 'Lekcja stworzona dla osób zaczynających całkowicie od zera. Nie musisz nic pamiętać na pamięć — korzystaj z gotowych podpowiedzi krok po kroku.'
       : difficultyLabel === 'Podstawy'
       ? 'Łagodne wprowadzenie do praktycznych fundamentów. Każdy fragment kodu możesz skopiować lub podejrzeć w podpowiedziach.'
@@ -638,50 +660,76 @@ export function getBeginnerLessonAid(lesson: Lesson): BeginnerLessonAid {
       ? 'Łączymy poznane wcześniej klocki w prawdziwe komponenty. W razie trudności włącz podpowiedź lub wzorzec rozwiązania.'
       : 'Poziom komercyjny przygotowujący do pracy zespołowej i rozmów rekrutacyjnych.';
 
-  const curated = CURATED_BEGINNER_AIDS[lesson.id];
+  const curated = language === 'en' ? CURATED_BEGINNER_AIDS_EN[lesson.id] : CURATED_BEGINNER_AIDS[lesson.id];
 
-  let defaultAnalogyTitle = 'Jak zrozumieć ten temat na chłopski rozum?';
+  let defaultAnalogyTitle =
+    language === 'en'
+      ? 'How to Understand This Topic in Plain English?'
+      : 'Jak zrozumieć ten temat na chłopski rozum?';
   let defaultAnalogyText =
-    'Nie próbuj uczyć się kodu na pamięć! Programiści w codziennej pracy rozumieją ogólną zasadę działania i zaglądają do przykładów. Przeczytaj najpierw prosty przykład poniżej, a potem zmień w nim jedną rzecz w edytorze.';
+    language === 'en'
+      ? 'Never force yourself to memorize syntax! Professional developers grasp the underlying concept first and check examples as needed. Read the sample below, then tweak one value inside the editor.'
+      : 'Nie próbuj uczyć się kodu na pamięć! Programiści w codziennej pracy rozumieją ogólną zasadę działania i zaglądają do przykładów. Przeczytaj najpierw prosty przykład poniżej, a potem zmień w nim jedną rzecz w edytorze.';
 
   if (!curated) {
     if (lesson.id.startsWith('html-')) {
-      defaultAnalogyTitle = 'HTML jak klocki LEGO z etykietami';
+      defaultAnalogyTitle = language === 'en' ? 'HTML Works Like Labeled LEGO Bricks' : 'HTML jak klocki LEGO z etykietami';
       defaultAnalogyText =
-        'Każdy element na stronie to osobny klocek HTML z otwarciem (np. <znacznik>) i zamknięciem (</znacznik>). Przeglądarka układa te klocki od góry do dołu dokładnie w takiej kolejności, w jakiej je wpiszesz.';
+        language === 'en'
+          ? 'Every element on screen is an HTML brick with an opening tag (e.g. <tag>) and closing tag (</tag>). The browser stacks those bricks top to bottom in the exact order you write them.'
+          : 'Każdy element na stronie to osobny klocek HTML z otwarciem (np. <znacznik>) i zamknięciem (</znacznik>). Przeglądarka układa te klocki od góry do dołu dokładnie w takiej kolejności, w jakiej je wpiszesz.';
     } else if (lesson.id.startsWith('css-')) {
-      defaultAnalogyTitle = 'CSS to stylista wnętrz Twojej strony';
+      defaultAnalogyTitle = language === 'en' ? 'CSS Is the Interior Designer for Your Page' : 'CSS to stylista wnętrz Twojej strony';
       defaultAnalogyText =
-        'W CSS najpierw wskazujesz palcem element, który chcesz upiększyć (tzw. selektor, np. h1 albo .karta), a potem w nawiasach klamrowych { } wpisujesz cechy wyglądu: kolor tekstu (color), tło (background) lub odstępy (padding).';
+        language === 'en'
+          ? 'In CSS you first point at the element to style (a selector like h1 or .card), then inside curly braces { } specify appearance rules: text color, backdrop, or padding spacing.'
+          : 'W CSS najpierw wskazujesz palcem element, który chcesz upiększyć (tzw. selektor, np. h1 albo .karta), a potem w nawiasach klamrowych { } wpisujesz cechy wyglądu: kolor tekstu (color), tło (background) lub odstępy (padding).';
     } else if (lesson.id.startsWith('js-')) {
-      defaultAnalogyTitle = 'JavaScript to mózg i refleks strony';
+      defaultAnalogyTitle = language === 'en' ? 'JavaScript Is the Brain and Reflexes of Your Site' : 'JavaScript to mózg i refleks strony';
       defaultAnalogyText =
-        'HTML i CSS tworzą statyczny obrazek. Dopiero JavaScript sprawia, że po kliknięciu przycisku przelicza się koszyk, otwiera okienko lub sprawdza formularz.';
+        language === 'en'
+          ? 'HTML and CSS paint a static picture. JavaScript makes clicking buttons recalculate totals, open modals, or validate live form inputs.'
+          : 'HTML i CSS tworzą statyczny obrazek. Dopiero JavaScript sprawia, że po kliknięciu przycisku przelicza się koszyk, otwiera okienko lub sprawdza formularz.';
     }
   }
 
   const defaultGlossary: GlossaryItem[] = lesson.objectives.slice(0, 3).map((obj, idx) => ({
-    term: `Kluczowy koncept #${idx + 1}`,
+    term: language === 'en' ? `Key Concept #${idx + 1}` : `Kluczowy koncept #${idx + 1}`,
     simpleDefinition: obj,
   }));
 
   const targetTab = detectPrimaryExerciseTab(lesson.interactiveExercise);
   const tabLabel =
-    targetTab === 'js'
+    language === 'en'
+      ? targetTab === 'js'
+        ? 'script.js tab (JavaScript)'
+        : targetTab === 'css'
+        ? 'style.css tab (Stylesheet)'
+        : 'index.html tab (HTML Markup)'
+      : targetTab === 'js'
       ? 'zakładce script.js (JavaScript)'
       : targetTab === 'css'
       ? 'zakładce style.css (Arkusz stylów)'
       : 'zakładce index.html (Kod HTML)';
 
-  const exerciseWalkthrough = [
-    `Krok 1 (Gdzie pisać?): Edytor otworzył się automatycznie na ${tabLabel}. Zadanie: ${lesson.interactiveExercise.task}`,
-    ...(lesson.interactiveExercise.hints.length > 0
-      ? lesson.interactiveExercise.hints.map((h, i) => `Krok ${i + 2} (Wskazówka): ${h}`)
-      : []),
-  ];
+  const exerciseWalkthrough =
+    language === 'en'
+      ? [
+          `Step 1 (Where to type?): Editor opened automatically on the ${tabLabel}. Task: ${lesson.interactiveExercise.task}`,
+          ...(lesson.interactiveExercise.hints.length > 0
+            ? lesson.interactiveExercise.hints.map((h, i) => `Step ${i + 2} (Hint): ${h}`)
+            : []),
+        ]
+      : [
+          `Krok 1 (Gdzie pisać?): Edytor otworzył się automatycznie na ${tabLabel}. Zadanie: ${lesson.interactiveExercise.task}`,
+          ...(lesson.interactiveExercise.hints.length > 0
+            ? lesson.interactiveExercise.hints.map((h, i) => `Krok ${i + 2} (Wskazówka): ${h}`)
+            : []),
+        ];
 
   return {
     difficultyLabel,
+    displayDifficultyLabel,
     difficultySummary,
     analogyTitle: curated?.analogyTitle || defaultAnalogyTitle,
     analogyText: curated?.analogyText || defaultAnalogyText,

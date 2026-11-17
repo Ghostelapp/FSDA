@@ -1,4 +1,5 @@
 import { Module } from '../types';
+import { AppLanguage, getIntlLocale } from './i18n';
 
 export interface DayProgressPoint {
   dayIndex: number;
@@ -44,6 +45,7 @@ export function generateProgressTimelineData(params: {
   completedLessons: number;
   daysCount?: number;
   endDate?: Date;
+  language?: AppLanguage;
 }): DayProgressPoint[] {
   const {
     completedModules,
@@ -51,6 +53,7 @@ export function generateProgressTimelineData(params: {
     completedLessons,
     daysCount = 30,
     endDate = new Date(),
+    language = 'pl',
   } = params;
 
   const points: DayProgressPoint[] = [];
@@ -91,12 +94,14 @@ export function generateProgressTimelineData(params: {
       }
     }
 
-    const displayDate = d.toLocaleDateString('pl-PL', {
+    const intlLocale = getIntlLocale(language);
+
+    const displayDate = d.toLocaleDateString(intlLocale, {
       day: '2-digit',
       month: '2-digit',
     });
 
-    const fullDate = d.toLocaleDateString('pl-PL', {
+    const fullDate = d.toLocaleDateString(intlLocale, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',

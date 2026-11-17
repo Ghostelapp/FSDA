@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 // Mini practice questions to earn 1 heart
-const PRACTICE_QUESTIONS = [
+const PRACTICE_QUESTIONS_PL = [
   {
     q: 'Jaki znacznik HTML reprezentuje najważniejszy nagłówek pierwszego poziomu?',
     options: ['<h1>', '<header>', '<head>', '<title>'],
@@ -48,6 +48,39 @@ const PRACTICE_QUESTIONS = [
   },
 ];
 
+const PRACTICE_QUESTIONS_EN = [
+  {
+    q: 'Which HTML tag represents the primary top-level heading?',
+    options: ['<h1>', '<header>', '<head>', '<title>'],
+    correct: 0,
+    tip: '<h1> is the main top-level heading in document structure.',
+  },
+  {
+    q: 'Which CSS property sets a flexible container layout (Flexbox)?',
+    options: ['display: flex;', 'flex-direction: row;', 'align-items: center;', 'position: flex;'],
+    correct: 0,
+    tip: 'display: flex enables Flexbox on the container element.',
+  },
+  {
+    q: 'What does the === operator mean in JavaScript?',
+    options: ['Value assignment', 'Strict value and type equality', 'Comparison with type coercion', 'Object cloning'],
+    correct: 1,
+    tip: 'The strict equality operator === checks both value and type.',
+  },
+  {
+    q: 'In HTTP, status code 200 means:',
+    options: ['Not Found', 'Internal Server Error', 'OK (request succeeded)', 'Unauthorized'],
+    correct: 2,
+    tip: 'Status 200 OK indicates the request was processed successfully.',
+  },
+  {
+    q: 'Which Git command fetches remote changes and merges them into your local branch?',
+    options: ['git push', 'git pull', 'git fetch', 'git commit'],
+    correct: 1,
+    tip: 'git pull runs fetch and merge in one step.',
+  },
+];
+
 export const LivesModal: React.FC = () => {
   const { 
     currentUser, 
@@ -58,8 +91,11 @@ export const LivesModal: React.FC = () => {
     earnPracticeLife,
     buyHeart,
     buyRefill,
-    buyFreeze
+    buyFreeze,
+    language,
   } = useApp();
+  const isEn = language === 'en';
+  const practiceQuestions = isEn ? PRACTICE_QUESTIONS_EN : PRACTICE_QUESTIONS_PL;
 
   const [activeTab, setActiveTab] = useState<'overview' | 'practice' | 'shop'>('overview');
   
@@ -80,7 +116,7 @@ export const LivesModal: React.FC = () => {
     if (selectedPracticeOption === null) return;
     setIsAnswerRevealed(true);
 
-    const question = PRACTICE_QUESTIONS[currentPracticeIndex];
+    const question = practiceQuestions[currentPracticeIndex];
     if (selectedPracticeOption === question.correct) {
       const nextAnswers = [...practiceAnswers, selectedPracticeOption];
       setTimeout(() => {
@@ -124,17 +160,27 @@ export const LivesModal: React.FC = () => {
 
           <div className="flex items-center gap-2 text-rose-400 text-xs font-bold uppercase tracking-wider">
             <Heart className="h-4 w-4 fill-rose-500 text-rose-500" />
-            <span>Stan Energii i Życia w Nauce</span>
+            <span>{isEn ? 'Learning Energy & Lives' : 'Stan Energii i Życia w Nauce'}</span>
           </div>
 
           <h2 className="mt-1 text-xl sm:text-2xl font-black text-white">
-            {currentUser.isPro ? 'Nielimitowane Życia PRO' : 'Twoje Serca Nauki'}
+            {currentUser.isPro
+              ? isEn
+                ? 'Unlimited PRO Lives'
+                : 'Nielimitowane Życia PRO'
+              : isEn
+                ? 'Your Learning Hearts'
+                : 'Twoje Serca Nauki'}
           </h2>
 
           <p className="mt-1 text-xs text-slate-400 leading-relaxed">
-            {currentUser.isPro 
-              ? 'Posiadasz aktywną subskrypcję PRO. Masz nielimitowaną liczbę podejść do quizów i wyzwań programistycznych.'
-              : 'Serca chronią Twój proces nauki i motywują do przemyślanych odpowiedzi. Tracisz serce tylko przy błędzie w quizie lub niezaliczonych testach kodu.'}
+            {currentUser.isPro
+              ? isEn
+                ? 'You have an active PRO subscription with unlimited attempts for quizzes and coding challenges.'
+                : 'Posiadasz aktywną subskrypcję PRO. Masz nielimitowaną liczbę podejść do quizów i wyzwań programistycznych.'
+              : isEn
+                ? 'Hearts protect your learning flow and encourage thoughtful answers. You only lose a heart on a quiz mistake or failed code test.'
+                : 'Serca chronią Twój proces nauki i motywują do przemyślanych odpowiedzi. Tracisz serce tylko przy błędzie w quizie lub niezaliczonych testach kodu.'}
           </p>
 
           {/* Heart Slots Visualizer */}
@@ -143,7 +189,7 @@ export const LivesModal: React.FC = () => {
               {currentUser.isPro ? (
                 <div className="flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-purple-500/20 border border-amber-500/40 text-amber-300 font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/10">
                   <Crown className="h-4 w-4 text-amber-400" />
-                  <span>∞ Nielimitowane podejścia</span>
+                  <span>{isEn ? '∞ Unlimited attempts' : '∞ Nielimitowane podejścia'}</span>
                   <Sparkles className="h-4 w-4 text-purple-400" />
                 </div>
               ) : (
@@ -175,12 +221,15 @@ export const LivesModal: React.FC = () => {
                 {isFull ? (
                   <span className="text-emerald-400 flex items-center gap-1.5">
                     <CheckCircle2 className="h-4 w-4" />
-                    Pełna energia (5/5) — możesz swobodnie rozwiązywać zadania!
+                    {isEn
+                      ? 'Full energy (5/5) — solve challenges freely!'
+                      : 'Pełna energia (5/5) — możesz swobodnie rozwiązywać zadania!'}
                   </span>
                 ) : (
                   <span className="text-amber-300 flex items-center gap-1.5 font-mono">
                     <Clock className="h-4 w-4 text-amber-400 animate-spin" />
-                    Kolejne serce za: <strong className="text-white font-bold">{formatCountdown(livesInfo.secondsToNextHeart || 0)}</strong>
+                    {isEn ? 'Next heart in:' : 'Kolejne serce za:'}{' '}
+                    <strong className="text-white font-bold">{formatCountdown(livesInfo.secondsToNextHeart || 0)}</strong>
                   </span>
                 )}
               </div>
@@ -197,7 +246,7 @@ export const LivesModal: React.FC = () => {
                   activeTab === 'overview' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Opcje
+                {isEn ? 'Options' : 'Opcje'}
               </button>
               <button
                 type="button"
@@ -207,7 +256,7 @@ export const LivesModal: React.FC = () => {
                 }`}
               >
                 <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                <span>Powtórka (+1 ❤️)</span>
+                <span>{isEn ? 'Review (+1 ❤️)' : 'Powtórka (+1 ❤️)'}</span>
               </button>
               <button
                 type="button"
@@ -217,7 +266,7 @@ export const LivesModal: React.FC = () => {
                 }`}
               >
                 <ShoppingBag className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                <span>Sklep XP</span>
+                <span>{isEn ? 'XP Shop' : 'Sklep XP'}</span>
               </button>
             </div>
           )}
@@ -233,28 +282,46 @@ export const LivesModal: React.FC = () => {
                 <Crown className="h-8 w-8" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">Twój profil posiada status PRO</h3>
+                <h3 className="text-lg font-bold text-white">
+                  {isEn ? 'Your profile has PRO status' : 'Twój profil posiada status PRO'}
+                </h3>
                 <p className="text-xs text-slate-300 mt-1 max-w-sm mx-auto">
-                  Uczysz się bez żadnych przerw na odnowienie żyć i bez reklam Google AdSense.
+                  {isEn
+                    ? 'Learn with zero recharge waits and zero Google AdSense ads.'
+                    : 'Uczysz się bez żadnych przerw na odnowienie żyć i bez reklam Google AdSense.'}
                 </p>
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 text-left space-y-2 text-xs">
                 <div className="flex items-center gap-2 text-slate-200">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>Nielimitowane serca w quizach i weryfikacji kodu</span>
+                  <span>
+                    {isEn
+                      ? 'Unlimited hearts in quizzes and code verification'
+                      : 'Nielimitowane serca w quizach i weryfikacji kodu'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-200">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>0% reklam Google AdSense w całej Akademii</span>
+                  <span>
+                    {isEn ? '0% Google AdSense ads across the Academy' : '0% reklam Google AdSense w całej Akademii'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-200">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>Tarcze serii nauki aktywne ({currentUser.streakFreezes ?? 1} w zapasie)</span>
+                  <span>
+                    {isEn
+                      ? `Active streak shields (${currentUser.streakFreezes ?? 1} in reserve)`
+                      : `Tarcze serii nauki aktywne (${currentUser.streakFreezes ?? 1} w zapasie)`}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-200">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>Certyfikat Full Stack z weryfikacją portfolio projektów</span>
+                  <span>
+                    {isEn
+                      ? 'Full Stack Certificate with project portfolio verification'
+                      : 'Certyfikat Full Stack z weryfikacją portfolio projektów'}
+                  </span>
                 </div>
               </div>
 
@@ -267,7 +334,7 @@ export const LivesModal: React.FC = () => {
                   }}
                   className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition-colors"
                 >
-                  Zarządzaj subskrypcją PRO
+                  {isEn ? 'Manage PRO subscription' : 'Zarządzaj subskrypcją PRO'}
                 </button>
               </div>
             </div>
@@ -275,7 +342,7 @@ export const LivesModal: React.FC = () => {
             /* Free user overview */
             <div className="space-y-4">
               <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Jak odzyskać serca za darmo:
+                {isEn ? 'How to recover hearts for free:' : 'Jak odzyskać serca za darmo:'}
               </div>
 
               {/* Way 1: Practice */}
@@ -285,9 +352,13 @@ export const LivesModal: React.FC = () => {
                     <BookOpen className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">1. Szybka powtórka wiedzy (+1 ❤️)</h4>
+                    <h4 className="text-xs font-bold text-white">
+                      {isEn ? '1. Quick knowledge drill (+1 ❤️)' : '1. Szybka powtórka wiedzy (+1 ❤️)'}
+                    </h4>
                     <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                      Odpowiedz na 3 szybkie pytania teoretyczne. Nie tracisz serc w powtórkach, a zyskujesz serce natychmiast!
+                      {isEn
+                        ? 'Answer 3 quick theory questions. You never lose hearts in drills and earn 1 heart immediately!'
+                        : 'Odpowiedz na 3 szybkie pytania teoretyczne. Nie tracisz serc w powtórkach, a zyskujesz serce natychmiast!'}
                     </p>
                   </div>
                 </div>
@@ -309,9 +380,13 @@ export const LivesModal: React.FC = () => {
                   <Clock className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">2. Czasowa automatyczna regeneracja</h4>
+                  <h4 className="text-xs font-bold text-white">
+                    {isEn ? '2. Automatic timed regeneration' : '2. Czasowa automatyczna regeneracja'}
+                  </h4>
                   <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                    Każde serce odnawia się samoczynnie co 15 minut. Możesz w tym czasie czytać teorię, przeglądać kod wzorcowy lub piaskownicę.
+                    {isEn
+                      ? 'Each heart recharges automatically every 15 minutes. Meanwhile you can read theory, browse reference code or open the sandbox.'
+                      : 'Każde serce odnawia się samoczynnie co 15 minut. Możesz w tym czasie czytać teorię, przeglądać kod wzorcowy lub piaskownicę.'}
                   </p>
                 </div>
               </div>
@@ -323,9 +398,13 @@ export const LivesModal: React.FC = () => {
                     <Zap className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">3. Sklep Programisty (Wymiana XP)</h4>
+                    <h4 className="text-xs font-bold text-white">
+                      {isEn ? '3. Developer Shop (XP Exchange)' : '3. Sklep Programisty (Wymiana XP)'}
+                    </h4>
                     <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
-                      Wykorzystaj zdobyte punkty doświadczenia (masz {currentUser.xp} XP), aby natychmiast dokupić serca lub tarczę serii.
+                      {isEn
+                        ? `Spend earned experience points (you have ${currentUser.xp} XP) to buy hearts or a streak shield right away.`
+                        : `Wykorzystaj zdobyte punkty doświadczenia (masz ${currentUser.xp} XP), aby natychmiast dokupić serca lub tarczę serii.`}
                     </p>
                   </div>
                 </div>
@@ -334,7 +413,7 @@ export const LivesModal: React.FC = () => {
                   onClick={() => setActiveTab('shop')}
                   className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold shrink-0 transition-colors"
                 >
-                  Sklep
+                  {isEn ? 'Shop' : 'Sklep'}
                 </button>
               </div>
 
@@ -343,10 +422,12 @@ export const LivesModal: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5 text-emerald-300 text-xs font-bold">
                     <Sparkles className="h-4 w-4" />
-                    <span>Edycja Otwarta za 0 zł (PRO wkrótce)</span>
+                    <span>{isEn ? 'Open Edition for $0 (PRO soon)' : 'Edycja Otwarta za 0 zł (PRO wkrótce)'}</span>
                   </div>
                   <p className="text-[11px] text-slate-300">
-                    Wszystkie moduły i projekty są obecnie w 100% darmowe dzięki Google AdSense. Plan PRO bez reklam pojawi się wkrótce.
+                    {isEn
+                      ? 'All modules and projects are currently 100% free thanks to Google AdSense. Ad-free PRO plan coming soon.'
+                      : 'Wszystkie moduły i projekty są obecnie w 100% darmowe dzięki Google AdSense. Plan PRO bez reklam pojawi się wkrótce.'}
                   </p>
                 </div>
                 <button
@@ -357,7 +438,7 @@ export const LivesModal: React.FC = () => {
                   }}
                   className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shrink-0 transition-all"
                 >
-                  Więcej
+                  {isEn ? 'More' : 'Więcej'}
                 </button>
               </div>
             </div>
@@ -369,26 +450,30 @@ export const LivesModal: React.FC = () => {
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
                     <CheckCircle2 className="h-6 w-6" />
                   </div>
-                  <h3 className="text-base font-bold text-white">Świetna robota! +1 Serce dodane</h3>
+                  <h3 className="text-base font-bold text-white">
+                    {isEn ? 'Great job! +1 Heart added' : 'Świetna robota! +1 Serce dodane'}
+                  </h3>
                   <p className="text-xs text-slate-300">
-                    Ukończyłeś szybką powtórkę. Twoja energia do nauki została uzupełniona.
+                    {isEn
+                      ? 'You completed the quick drill. Your learning energy has been topped up.'
+                      : 'Ukończyłeś szybką powtórkę. Twoja energia do nauki została uzupełniona.'}
                   </p>
                   <button
                     type="button"
                     onClick={() => setActiveTab('overview')}
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
                   >
-                    Wróć do podsumowania
+                    {isEn ? 'Back to overview' : 'Wróć do podsumowania'}
                   </button>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-indigo-400">
-                      Pytanie {currentPracticeIndex + 1} z 3
+                      {isEn ? `Question ${currentPracticeIndex + 1} of 3` : `Pytanie ${currentPracticeIndex + 1} z 3`}
                     </span>
                     <span className="text-slate-400">
-                      Zaliczenie nagradza +1 ❤️
+                      {isEn ? 'Passing rewards +1 ❤️' : 'Zaliczenie nagradza +1 ❤️'}
                     </span>
                   </div>
 
@@ -407,15 +492,15 @@ export const LivesModal: React.FC = () => {
                   {/* Question */}
                   <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
                     <p className="text-sm font-bold text-white leading-relaxed">
-                      {PRACTICE_QUESTIONS[currentPracticeIndex].q}
+                      {practiceQuestions[currentPracticeIndex].q}
                     </p>
                   </div>
 
                   {/* Options */}
                   <div className="space-y-2">
-                    {PRACTICE_QUESTIONS[currentPracticeIndex].options.map((opt, oIdx) => {
+                    {practiceQuestions[currentPracticeIndex].options.map((opt, oIdx) => {
                       const isSelected = selectedPracticeOption === oIdx;
-                      const isCorrect = oIdx === PRACTICE_QUESTIONS[currentPracticeIndex].correct;
+                      const isCorrect = oIdx === practiceQuestions[currentPracticeIndex].correct;
                       
                       let style = 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700';
                       if (isSelected) style = 'bg-indigo-600/20 border-indigo-500 text-indigo-200';
@@ -446,11 +531,11 @@ export const LivesModal: React.FC = () => {
                       onClick={handlePracticeSubmit}
                       className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs transition-colors"
                     >
-                      Sprawdź odpowiedź
+                      {isEn ? 'Check answer' : 'Sprawdź odpowiedź'}
                     </button>
                   ) : (
                     <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300">
-                      💡 {PRACTICE_QUESTIONS[currentPracticeIndex].tip}
+                      💡 {practiceQuestions[currentPracticeIndex].tip}
                     </div>
                   )}
                 </div>
@@ -460,7 +545,7 @@ export const LivesModal: React.FC = () => {
             /* Developer Shop (XP Exchange) */
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs">
-                <span className="text-slate-400">Twój stan konta XP:</span>
+                <span className="text-slate-400">{isEn ? 'Your XP balance:' : 'Twój stan konta XP:'}</span>
                 <span className="font-bold text-amber-400 flex items-center gap-1">
                   <Sparkles className="h-3.5 w-3.5" />
                   {currentUser.xp} XP
@@ -474,8 +559,10 @@ export const LivesModal: React.FC = () => {
                     <Heart className="h-5 w-5 fill-rose-500" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">1 Serce Energii</h4>
-                    <p className="text-[11px] text-slate-400">+1 punkt do puli żyć</p>
+                    <h4 className="text-xs font-bold text-white">{isEn ? '1 Energy Heart' : '1 Serce Energii'}</h4>
+                    <p className="text-[11px] text-slate-400">
+                      {isEn ? '+1 point to your lives pool' : '+1 punkt do puli żyć'}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -495,8 +582,12 @@ export const LivesModal: React.FC = () => {
                     <Zap className="h-5 w-5 fill-amber-400" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">Pełny Pakiet Serc (5/5)</h4>
-                    <p className="text-[11px] text-slate-400">Maksymalne uzupełnienie energii</p>
+                    <h4 className="text-xs font-bold text-white">
+                      {isEn ? 'Full Heart Refill (5/5)' : 'Pełny Pakiet Serc (5/5)'}
+                    </h4>
+                    <p className="text-[11px] text-slate-400">
+                      {isEn ? 'Maximum energy restoration' : 'Maksymalne uzupełnienie energii'}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -517,12 +608,18 @@ export const LivesModal: React.FC = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-bold text-white">Tarcza Serii (Streak Freeze)</h4>
+                      <h4 className="text-xs font-bold text-white">
+                        {isEn ? 'Streak Freeze Shield' : 'Tarcza Serii (Streak Freeze)'}
+                      </h4>
                       <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded font-mono">
-                        posiadasz: {currentUser.streakFreezes ?? 1}
+                        {isEn ? 'owned:' : 'posiadasz:'} {currentUser.streakFreezes ?? 1}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400">Chroni serię dni nauki przed zresetowaniem</p>
+                    <p className="text-[11px] text-slate-400">
+                      {isEn
+                        ? 'Protects your daily learning streak from resetting'
+                        : 'Chroni serię dni nauki przed zresetowaniem'}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -549,7 +646,7 @@ export const LivesModal: React.FC = () => {
             onClick={() => setIsLivesModalOpen(false)}
             className="px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
           >
-            Zamknij
+            {isEn ? 'Close' : 'Zamknij'}
           </button>
         </div>
 

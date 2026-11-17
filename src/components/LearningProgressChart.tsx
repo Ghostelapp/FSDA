@@ -20,7 +20,9 @@ import {
   CheckCircle2,
   Sparkles
 } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 import { User, Module } from '../types';
+import { formatDaysLabel } from '../utils/i18n';
 import { 
   calculateCompletedModulesCount, 
   generateProgressTimelineData, 
@@ -37,6 +39,8 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
   currentUser,
   modules,
 }) => {
+  const { language, allLessons, allProjects } = useApp();
+  const isEn = language === 'en';
   const [timeRange, setTimeRange] = useState<'30' | '14' | '7'>('30');
   const [chartMode, setChartMode] = useState<'modules' | 'detailed'>('modules');
 
@@ -56,8 +60,9 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
       totalModules: totalModulesCount,
       completedLessons: currentCompletedLessonsCount,
       daysCount: 30,
+      language,
     });
-  }, [currentCompletedModulesCount, currentCompletedLessonsCount, totalModulesCount]);
+  }, [currentCompletedModulesCount, currentCompletedLessonsCount, totalModulesCount, language]);
 
   // Filter based on selected time range
   const filteredData = useMemo(() => {
@@ -87,14 +92,16 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
               <Calendar className="h-3.5 w-3.5 text-indigo-400" />
               {data.fullDate}
             </span>
-            <span className="text-[10px] text-slate-400 font-mono">Dzień {data.dayIndex}/30</span>
+            <span className="text-[10px] text-slate-400 font-mono">
+              {isEn ? `Day ${data.dayIndex}/30` : `Dzień ${data.dayIndex}/30`}
+            </span>
           </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-slate-400 flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-cyan-400 inline-block" />
-                Ukończone moduły:
+                {isEn ? 'Completed modules:' : 'Ukończone moduły:'}
               </span>
               <span className="font-bold text-cyan-300 font-mono">
                 {data.completedModules} <span className="text-slate-500 font-normal">/ {data.totalModules}</span>
@@ -104,25 +111,25 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-slate-400 flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-indigo-500 inline-block" />
-                Cel programu:
+                {isEn ? 'Program target:' : 'Cel programu:'}
               </span>
               <span className="font-bold text-indigo-300 font-mono">
-                {data.totalModules} modułów
+                {data.totalModules} {isEn ? 'modules' : 'modułów'}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-slate-400 flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 inline-block" />
-                Zaliczone lekcje:
+                {isEn ? 'Completed lessons:' : 'Zaliczone lekcje:'}
               </span>
               <span className="font-bold text-emerald-400 font-mono">
-                {data.completedLessons} lekcji
+                {data.completedLessons} {isEn ? 'lessons' : 'lekcji'}
               </span>
             </div>
 
             <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-              <span className="text-slate-400">Postęp programu:</span>
+              <span className="text-slate-400">{isEn ? 'Program progress:' : 'Postęp programu:'}</span>
               <span className="font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400 font-mono">
                 {data.progressPercent}%
               </span>
@@ -141,15 +148,17 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 uppercase tracking-wider">
             <TrendingUp className="h-4 w-4" />
-            <span>Wizualizacja Postępów w Nauce</span>
+            <span>{isEn ? 'Learning Progress Visualization' : 'Wizualizacja Postępów w Nauce'}</span>
             <span>•</span>
-            <span>Ostatnie 30 dni</span>
+            <span>{isEn ? 'Last 30 days' : 'Ostatnie 30 dni'}</span>
           </div>
           <h2 className="mt-1 text-lg sm:text-2xl font-bold text-white flex items-center gap-2">
-            <span>Ukończone Moduły vs Cel Programu</span>
+            <span>{isEn ? 'Completed Modules vs Program Target' : 'Ukończone Moduły vs Cel Programu'}</span>
           </h2>
           <p className="mt-1 text-xs sm:text-sm text-slate-300">
-            Śledź swoje tempo przechodzenia kolejnych modułów technologicznych w relacji do całego 15-modułowego programu nauczania.
+            {isEn
+              ? `Track your pace across the ${totalModulesCount}-module full-stack curriculum.`
+              : `Śledź swoje tempo przechodzenia kolejnych modułów technologicznych w relacji do całego ${totalModulesCount}-modułowego programu nauczania.`}
           </p>
         </div>
 
@@ -166,7 +175,7 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Moduły
+              {isEn ? 'Modules' : 'Moduły'}
             </button>
             <button
               type="button"
@@ -177,7 +186,7 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Szczegółowy
+              {isEn ? 'Detailed' : 'Szczegółowy'}
             </button>
           </div>
 
@@ -205,7 +214,9 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-2xl border border-slate-800/90 bg-slate-950/70 p-3.5 sm:p-4">
           <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-            <span className="font-medium truncate">Ukończone moduły</span>
+            <span className="font-medium truncate">
+              {isEn ? 'Completed modules' : 'Ukończone moduły'}
+            </span>
             <BookCheck className="h-4 w-4 text-cyan-400 shrink-0" />
           </div>
           <div className="flex items-baseline gap-1.5">
@@ -213,55 +224,65 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
             <span className="text-xs text-slate-400 font-mono">/ {stats.totalModules}</span>
           </div>
           <p className="text-[11px] text-cyan-400 mt-1 font-medium truncate">
-            {stats.completionPercent}% programu zrealizowane
+            {stats.completionPercent}% {isEn ? 'curriculum completed' : 'programu zrealizowane'}
           </p>
         </div>
 
         <div className="rounded-2xl border border-slate-800/90 bg-slate-950/70 p-3.5 sm:p-4">
           <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-            <span className="font-medium truncate">Pozostało modułów</span>
+            <span className="font-medium truncate">
+              {isEn ? 'Remaining modules' : 'Pozostało modułów'}
+            </span>
             <Target className="h-4 w-4 text-indigo-400 shrink-0" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-xl sm:text-2xl font-black text-indigo-200 font-mono">
               {stats.remainingModules}
             </span>
-            <span className="text-xs text-slate-400 font-mono">modułów</span>
+            <span className="text-xs text-slate-400 font-mono">{isEn ? 'modules' : 'modułów'}</span>
           </div>
           <p className="text-[11px] text-indigo-300 mt-1 font-medium truncate">
-            Cel: Pełny Full Stack
+            {isEn ? 'Goal: Complete Full Stack' : 'Cel: Pełny Full Stack'}
           </p>
         </div>
 
         <div className="rounded-2xl border border-slate-800/90 bg-slate-950/70 p-3.5 sm:p-4">
           <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-            <span className="font-medium truncate">Przyrost ({timeRange}d)</span>
+            <span className="font-medium truncate">
+              {isEn ? `Growth (${timeRange}d)` : `Przyrost (${timeRange}d)`}
+            </span>
             <TrendingUp className="h-4 w-4 text-emerald-400 shrink-0" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-xl sm:text-2xl font-black text-emerald-400 font-mono">
               +{stats.modulesDelta}
             </span>
-            <span className="text-xs text-slate-400 font-mono">modułów</span>
+            <span className="text-xs text-slate-400 font-mono">{isEn ? 'modules' : 'modułów'}</span>
           </div>
           <p className="text-[11px] text-slate-400 mt-1 truncate">
-            oraz +{stats.lessonsDelta} lekcji
+            {isEn ? `and +${stats.lessonsDelta} lessons` : `oraz +${stats.lessonsDelta} lekcji`}
           </p>
         </div>
 
         <div className="rounded-2xl border border-slate-800/90 bg-slate-950/70 p-3.5 sm:p-4">
           <div className="flex items-center justify-between text-slate-400 text-xs mb-1">
-            <span className="font-medium truncate">Aktywne lekcje</span>
+            <span className="font-medium truncate">
+              {isEn ? 'Completed lessons' : 'Aktywne lekcje'}
+            </span>
             <Sparkles className="h-4 w-4 text-amber-400 shrink-0" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-xl sm:text-2xl font-black text-amber-300 font-mono">
               {stats.currentCompletedLessons}
             </span>
-            <span className="text-xs text-slate-400 font-mono">ukończonych</span>
+            <span className="text-xs text-slate-400 font-mono">
+              {isEn ? 'done' : 'ukończonych'}
+            </span>
           </div>
           <p className="text-[11px] text-amber-400/90 mt-1 font-medium truncate">
-            Seria: {currentUser.streakDays} dni nauki
+            {isEn
+              ? `Streak: ${formatDaysLabel(currentUser.streakDays, language)}`
+              : `Seria: ${formatDaysLabel(currentUser.streakDays, language)} nauki`}
           </p>
         </div>
       </div>
@@ -273,23 +294,35 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="h-3 w-3 rounded-md bg-gradient-to-r from-cyan-500 to-indigo-500 border border-cyan-400/50 shadow-sm shadow-cyan-500/30" />
-              <span className="text-slate-200 font-medium">Ukończone moduły (aktualnie: {stats.currentCompletedModules})</span>
+              <span className="text-slate-200 font-medium">
+                {isEn
+                  ? `Completed modules (current: ${stats.currentCompletedModules})`
+                  : `Ukończone moduły (aktualnie: ${stats.currentCompletedModules})`}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="h-0.5 w-4 bg-indigo-400/80 border-t-2 border-dashed border-indigo-400" />
-              <span className="text-slate-400">Cel programu ({stats.totalModules} modułów)</span>
+              <span className="text-slate-400">
+                {isEn
+                  ? `Program goal (${stats.totalModules} modules)`
+                  : `Cel programu (${stats.totalModules} modułów)`}
+              </span>
             </div>
             {chartMode === 'detailed' && (
               <div className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                <span className="text-emerald-400 font-medium">Zaliczone lekcje</span>
+                <span className="text-emerald-400 font-medium">
+                  {isEn ? 'Completed lessons' : 'Zaliczone lekcje'}
+                </span>
               </div>
             )}
           </div>
 
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-400">
             <Info className="h-3.5 w-3.5 text-indigo-400" />
-            <span>Najedź na punkt, aby zobaczyć szczegóły dnia</span>
+            <span>
+              {isEn ? 'Hover a point to view daily details' : 'Najedź na punkt, aby zobaczyć szczegóły dnia'}
+            </span>
           </div>
         </div>
 
@@ -348,7 +381,9 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
                 strokeDasharray="4 4"
                 strokeWidth={1.5}
                 label={{
-                  value: `Cel: ${stats.totalModules} modułów`,
+                  value: isEn
+                    ? `Goal: ${stats.totalModules} modules`
+                    : `Cel: ${stats.totalModules} modułów`,
                   position: 'insideTopRight',
                   fill: '#818cf8',
                   fontSize: 10,
@@ -361,7 +396,7 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
                 <Area
                   type="monotone"
                   dataKey="completedLessons"
-                  name="Ukończone lekcje"
+                  name={isEn ? 'Completed lessons' : 'Ukończone lekcje'}
                   stroke="#10b981"
                   strokeWidth={2}
                   fillOpacity={1}
@@ -373,7 +408,7 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
               <Line
                 type="stepAfter"
                 dataKey="totalModules"
-                name="Wszystkie moduły"
+                name={isEn ? 'Total modules' : 'Wszystkie moduły'}
                 stroke="#475569"
                 strokeDasharray="5 5"
                 strokeWidth={1.5}
@@ -385,7 +420,7 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
               <Area
                 type="monotone"
                 dataKey="completedModules"
-                name="Ukończone moduły"
+                name={isEn ? 'Completed modules' : 'Ukończone moduły'}
                 stroke="#22d3ee"
                 strokeWidth={3}
                 fillOpacity={1}
@@ -404,7 +439,9 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
 
         {/* Mobile touch hint */}
         <p className="mt-2 text-center text-[10px] text-slate-500 sm:hidden">
-          Dotknij wykresu, aby sprawdzić dane dla wybranego dnia
+          {isEn
+            ? 'Tap the chart to inspect data for a selected day'
+            : 'Dotknij wykresu, aby sprawdzić dane dla wybranego dnia'}
         </p>
       </div>
 
@@ -413,13 +450,17 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2 text-slate-300">
             <Layers className="h-4 w-4 text-cyan-400" />
-            <span className="font-semibold">Kamienie milowe programu:</span>
+            <span className="font-semibold">
+              {isEn ? 'Curriculum milestones:' : 'Kamienie milowe programu:'}
+            </span>
             <span className="text-slate-400">
-              {stats.currentCompletedModules} z {stats.totalModules} modułów ukończonych
+              {isEn
+                ? `${stats.currentCompletedModules} of ${stats.totalModules} modules completed`
+                : `${stats.currentCompletedModules} z ${stats.totalModules} modułów ukończonych`}
             </span>
           </div>
           <span className="font-mono text-cyan-400 font-bold self-end sm:self-auto">
-            {stats.completionPercent}% zrealizowano
+            {stats.completionPercent}% {isEn ? 'complete' : 'zrealizowano'}
           </span>
         </div>
 
@@ -431,7 +472,7 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
             return (
               <div
                 key={idx}
-                title={`Moduł ${idx + 1}`}
+                title={`${isEn ? 'Module' : 'Moduł'} ${idx + 1}`}
                 className={`h-full rounded-full transition-all duration-300 ${
                   isCompleted
                     ? 'bg-gradient-to-r from-cyan-400 to-indigo-500 shadow-sm shadow-cyan-500/30'
@@ -448,11 +489,15 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
             <span>
-              Wykres aktualizuje się w czasie rzeczywistym po ukończeniu lekcji i modułów w kursie.
+              {isEn
+                ? 'The chart updates in real time as you complete lessons and modules.'
+                : 'Wykres aktualizuje się w czasie rzeczywistym po ukończeniu lekcji i modułów w kursie.'}
             </span>
           </div>
           <span className="text-slate-500">
-            Pełny kurs: 15 modułów • 75+ lekcji • 12 projektów
+            {isEn
+              ? `Full course: ${totalModulesCount} modules • ${allLessons.length} lessons • ${allProjects.length} projects`
+              : `Pełny kurs: ${totalModulesCount} modułów • ${allLessons.length} lekcji • ${allProjects.length} projektów`}
           </span>
         </div>
       </div>

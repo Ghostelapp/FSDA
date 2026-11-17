@@ -135,6 +135,15 @@ export interface TestRule {
   check: (html: string, css: string, js: string) => boolean;
 }
 
+export interface ExerciseRule {
+  id: string;
+  description: string;
+  // Serialized rule check type for robust execution
+  ruleType: 'html_contains' | 'html_tag_exists' | 'html_attr_exists' | 'css_contains' | 'js_contains';
+  target: string;
+  param?: string;
+}
+
 export interface InteractiveExercise {
   id: string;
   title: string;
@@ -151,14 +160,7 @@ export interface InteractiveExercise {
     js: string;
   };
   hints: string[];
-  rules: {
-    id: string;
-    description: string;
-    // Serialized rule check type for robust execution
-    ruleType: 'html_contains' | 'html_tag_exists' | 'html_attr_exists' | 'css_contains' | 'js_contains';
-    target: string;
-    param?: string;
-  }[];
+  rules: ExerciseRule[];
 }
 
 export interface CommonMistake {
@@ -218,6 +220,7 @@ export interface Module {
   id: number;
   title: string;
   category: 'Podstawy' | 'Frontend' | 'Backend' | 'Bazy danych' | 'DevOps & Bezpieczeństwo' | 'Kariera';
+  displayCategory?: string;
   description: string;
   badgeName: string;
   badgeIcon: string;
@@ -260,7 +263,9 @@ export interface Project {
   number: number;
   title: string;
   category: string;
+  displayCategory?: string;
   difficulty: 'Początkujący' | 'Średniozaawansowany' | 'Zaawansowany' | 'Ekspert';
+  displayDifficulty?: string;
   estimatedHours: number;
   xpReward: number;
   description: string;
@@ -293,6 +298,7 @@ export interface Announcement {
   content: string;
   date: string;
   category: 'Kurs' | 'Wydarzenie' | 'Aktualizacja' | 'Porada';
+  displayCategory?: string;
   author: string;
 }
 

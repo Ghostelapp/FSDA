@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { PROJECTS_DATA } from '../data/projectsData';
-import { Project } from '../types';
 import { CodeEditor } from './CodeEditor';
 import { CodeBlock } from './CodeBlock';
 import { RichInlineText } from './RichInlineText';
@@ -15,7 +13,6 @@ import {
   Sparkles,
   Clock,
   CheckCircle2,
-  ArrowRight,
   Layers,
   FileCode,
   CheckSquare,
@@ -38,17 +35,21 @@ import {
 export const ProjectsView: React.FC = () => {
   const {
     currentUser,
+    allProjects,
     completeProject,
     selectedProjectId,
     saveCodeSnippet,
     awardCustomXp,
     isSyncingGithub,
     submitProjectFromGithub,
+    language,
   } = useApp();
+  const isEn = language === 'en';
 
-  // Active selected project
-  const initialProject = PROJECTS_DATA.find((p) => p.id === selectedProjectId) || PROJECTS_DATA[0];
-  const [activeProject, setActiveProject] = useState<Project>(initialProject);
+  // Active selected project tracked by ID so toggling language refreshes localized copy immediately
+  const [activeProjectId, setActiveProjectId] = useState<string>(
+    selectedProjectId || allProjects[0]?.id || 'proj-1'
+  );
   const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
   const [projectValidation, setProjectValidation] = useState<ValidationSummary | null>(null);
   const [repoInput, setRepoInput] = useState<string>('');
@@ -58,14 +59,16 @@ export const ProjectsView: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
-    const found = PROJECTS_DATA.find((p) => p.id === selectedProjectId);
-    if (found) {
-      setActiveProject(found);
+    if (selectedProjectId && allProjects.some((p) => p.id === selectedProjectId)) {
+      setActiveProjectId(selectedProjectId);
     }
-  }, [selectedProjectId]);
+  }, [selectedProjectId, allProjects]);
+
+  const activeProject =
+    allProjects.find((p) => p.id === activeProjectId) || allProjects[0];
 
   const ghIntegration = currentUser.githubIntegration;
-  const ghPresentation = getGithubSyncStatusPresentation(ghIntegration);
+  const ghPresentation = getGithubSyncStatusPresentation(ghIntegration, language);
   const syncedRepos = ghIntegration?.repos || [];
   const activeSubmission = ghIntegration?.projectSubmissions?.[activeProject.id];
 
@@ -91,7 +94,7 @@ export const ProjectsView: React.FC = () => {
   const totalSourceLines = sourceFiles.reduce((sum, f) => sum + f.code.split('\n').length, 0);
 
   const isCompleted = currentUser.completedProjects.includes(activeProject.id);
-  const projectExercise = getProjectInteractiveExercise(activeProject);
+  const projectExercise = getProjectInteractiveExercise(activeProject, language);
   const hasClaimedProjectVerify = Boolean(
     currentUser.claimedRewards?.includes(`project-verify-${activeProject.id}`)
   );
@@ -103,7 +106,9 @@ export const ProjectsView: React.FC = () => {
     if (!repoInput.trim()) {
       setGithubSubmitFeedback({
         ok: false,
-        message: 'Wybierz repozytorium z listy lub wklej adres repozytorium (np. nazwa/projekt).',
+        message: isEn
+          ? 'Pick a repository from the list or paste a repository slug (e.g. username/project).'
+          : 'Wybierz repozytorium z listy lub wklej adres repozytorium (np. nazwa/projekt).',
       });
       return;
     }
@@ -119,7 +124,11 @@ export const ProjectsView: React.FC = () => {
     } else {
       setGithubSubmitFeedback({
         ok: false,
-        message: res.error || 'Nie udało się zweryfikować repozytorium GitHub.',
+        message:
+          res.error ||
+          (isEn
+            ? 'Failed to verify GitHub repository.'
+            : 'Nie udało się zweryfikować repozytorium GitHub.'),
       });
     }
   };
@@ -149,14 +158,15 @@ export const ProjectsView: React.FC = () => {
       <div>
         <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 uppercase tracking-wider">
           <FolderGit2 className="h-4 w-4" />
-          <span>Ścieżka Projektowa Portfolio</span>
+          <span>{isEn ? 'Portfolio Project Track' : 'Ścieżka Projektowa Portfolio'}</span>
         </div>
         <h1 className="mt-2 text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-          12 Realnych Projektów Komercyjnych
+          {isEn ? '12 Real Commercial Projects' : '12 Realnych Projektów Komercyjnych'}
         </h1>
         <p className="mt-3 text-sm sm:text-base text-slate-300 max-w-3xl leading-relaxed">
-          Klucz do zatrudnienia to działający kod. Każdy z poniższych projektów rozwiązuje realne problemy biznesowe,
-          posiada architekturę plików, etapy realizacji, kryteria akceptacyjne oraz instrukcję wdrożenia na produkcję.
+          {isEn
+            ? 'Shipping working software gets you hired. Each project solves realistic business problems and includes full file architecture, delivery stages, acceptance tests, and production deploy instructions.'
+            : 'Klucz do zatrudnienia to działający kod. Każdy z poniższych projektów rozwiązuje realne problemy biznesowe, posiada architekturę plików, etapy realizacji, kryteria akceptacyjne oraz instrukcję wdrożenia na produkcję.'}
         </p>
       </div>
 
@@ -166,17 +176,17 @@ export const ProjectsView: React.FC = () => {
         {/* LEFT COLUMN: Project Picker List */}
         <div className="lg:col-span-4 space-y-3">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-400 px-1">
-            Wybierz projekt ({PROJECTS_DATA.length}):
+            {isEn ? `Select a project (${allProjects.length}):` : `Wybierz projekt (${allProjects.length}):`}
           </div>
           <div className="space-y-2 max-h-[750px] overflow-y-auto pr-1">
-            {PROJECTS_DATA.map((proj) => {
+            {allProjects.map((proj) => {
               const isDone = currentUser.completedProjects.includes(proj.id);
               const isSelected = activeProject.id === proj.id;
 
               return (
                 <div
                   key={proj.id}
-                  onClick={() => setActiveProject(proj)}
+                  onClick={() => setActiveProjectId(proj.id)}
                   className={`p-3.5 rounded-2xl border transition-all cursor-pointer text-left ${
                     isSelected
                       ? 'border-indigo-500 bg-indigo-950/40 shadow-md ring-1 ring-indigo-500/50'
@@ -185,10 +195,10 @@ export const ProjectsView: React.FC = () => {
                 >
                   <div className="flex items-center justify-between gap-2 mb-1.5">
                     <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-mono">
-                      #{proj.number} {proj.category}
+                      #{proj.number} {proj.displayCategory}
                     </span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${difficultyColors[proj.difficulty]}`}>
-                      {proj.difficulty}
+                      {proj.displayDifficulty}
                     </span>
                   </div>
 
@@ -207,7 +217,11 @@ export const ProjectsView: React.FC = () => {
                     <div className="flex items-center gap-1.5">
                       {ghIntegration?.projectSubmissions?.[proj.id] && (
                         <span
-                          title={`Przesłano z GitHub: ${ghIntegration.projectSubmissions[proj.id].repoFullName}`}
+                          title={
+                            isEn
+                              ? `Submitted from GitHub: ${ghIntegration.projectSubmissions[proj.id].repoFullName}`
+                              : `Przesłano z GitHub: ${ghIntegration.projectSubmissions[proj.id].repoFullName}`
+                          }
                           className="inline-flex items-center gap-1 text-cyan-300 font-semibold font-sans"
                         >
                           <Github className="h-3 w-3" />
@@ -217,7 +231,7 @@ export const ProjectsView: React.FC = () => {
                       {isDone && (
                         <span className="flex items-center gap-1 text-emerald-400 font-semibold font-sans">
                           <CheckCircle2 className="h-3.5 w-3.5" />
-                          Zaliczony
+                          {isEn ? 'Completed' : 'Zaliczony'}
                         </span>
                       )}
                     </div>
@@ -236,9 +250,11 @@ export const ProjectsView: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-800 pb-5">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold text-indigo-400">Projekt #{activeProject.number}</span>
+                  <span className="text-xs font-mono font-bold text-indigo-400">
+                    {isEn ? `Project #${activeProject.number}` : `Projekt #${activeProject.number}`}
+                  </span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${difficultyColors[activeProject.difficulty]}`}>
-                    {activeProject.difficulty}
+                    {activeProject.displayDifficulty}
                   </span>
                 </div>
                 <h2 className="text-xl sm:text-2xl font-extrabold text-white">{activeProject.title}</h2>
@@ -253,14 +269,16 @@ export const ProjectsView: React.FC = () => {
                   +{activeProject.xpReward} XP
                 </span>
                 <span className="block text-[11px] text-slate-400 mt-1 font-mono">
-                  Czas realizacji: ~{activeProject.estimatedHours}h
+                  {isEn ? `Est. build time: ~${activeProject.estimatedHours}h` : `Czas realizacji: ~${activeProject.estimatedHours}h`}
                 </span>
               </div>
             </div>
 
             {/* Tech Stack Tags */}
             <div className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Wykorzystywane technologie:</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                {isEn ? 'Tech stack:' : 'Wykorzystywane technologie:'}
+              </span>
               <div className="flex flex-wrap gap-2">
                 {activeProject.technologies.map((t, i) => (
                   <span key={i} className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-200">
@@ -274,7 +292,9 @@ export const ProjectsView: React.FC = () => {
             <div className="space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <CheckSquare className="h-4 w-4 text-indigo-400" />
-                <span>Wymagania techniczne i biznesowe:</span>
+                <span>
+                  {isEn ? 'Technical & business requirements:' : 'Wymagania techniczne i biznesowe:'}
+                </span>
               </h3>
               <ul className="space-y-2 text-xs text-slate-300">
                 {activeProject.requirements.map((req, i) => (
@@ -290,7 +310,9 @@ export const ProjectsView: React.FC = () => {
             <div className="space-y-2">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <FileCode className="h-4 w-4 text-cyan-400" />
-                <span>Wzorcowa architektura plików projektu:</span>
+                <span>
+                  {isEn ? 'Reference project file structure:' : 'Wzorcowa architektura plików projektu:'}
+                </span>
               </h3>
               <div className="rounded-xl bg-slate-950 p-4 font-mono text-xs border border-slate-800 overflow-x-auto leading-relaxed">
                 {activeProject.fileStructure.map((line, i) => {
@@ -325,15 +347,21 @@ export const ProjectsView: React.FC = () => {
                   <div>
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
                       <Code2 className="h-4 w-4 text-cyan-400" />
-                      <span>Pełny kod źródłowy projektu ({sourceFiles.length} plików · {totalSourceLines} linii kodu)</span>
+                      <span>
+                        {isEn
+                          ? `Full project source code (${sourceFiles.length} files · ${totalSourceLines} lines of code)`
+                          : `Pełny kod źródłowy projektu (${sourceFiles.length} plików · ${totalSourceLines} linii kodu)`}
+                      </span>
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Kompletna, działająca implementacja wszystkich modułów projektu — przeglądaj pliki, analizuj architekturę i kopiuj gotowy kod.
+                      {isEn
+                        ? 'Complete, working implementation of all project modules — inspect files, study architecture, and copy production-ready code.'
+                        : 'Kompletna, działająca implementacja wszystkich modułów projektu — przeglądaj pliki, analizuj architekturę i kopiuj gotowy kod.'}
                     </p>
                   </div>
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
                     <FolderOpen className="h-3.5 w-3.5" />
-                    <span>Eksplorator Plików</span>
+                    <span>{isEn ? 'File Explorer' : 'Eksplorator Plików'}</span>
                   </span>
                 </div>
 
@@ -378,7 +406,7 @@ export const ProjectsView: React.FC = () => {
                   code={activeSourceFile.code}
                   language={activeSourceFile.language}
                   title={activeSourceFile.path}
-                  badge="Pełny kod"
+                  badge={isEn ? 'Full code' : 'Pełny kod'}
                   badgeColor="indigo"
                   maxHeightClass="max-h-[520px]"
                 />
@@ -390,10 +418,16 @@ export const ProjectsView: React.FC = () => {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                   <Layers className="h-4 w-4 text-amber-400" />
-                  <span>Etapy realizacji (weryfikowane automatycznie w kodzie):</span>
+                  <span>
+                    {isEn
+                      ? 'Delivery milestones (auto-verified in code):'
+                      : 'Etapy realizacji (weryfikowane automatycznie w kodzie):'}
+                  </span>
                 </h3>
                 <span className="text-[11px] font-mono text-slate-400">
-                  Status etapów zależy od wyników testów w edytorze poniżej
+                  {isEn
+                    ? 'Stage status tracks test results in the editor below'
+                    : 'Status etapów zależy od wyników testów w edytorze poniżej'}
                 </span>
               </div>
               <div className="space-y-3">
@@ -432,12 +466,12 @@ export const ProjectsView: React.FC = () => {
                           {isStageVerified ? (
                             <>
                               <Check className="h-3 w-3 text-emerald-400" />
-                              <span>Zweryfikowano w kodzie</span>
+                              <span>{isEn ? 'Verified in code' : 'Zweryfikowano w kodzie'}</span>
                             </>
                           ) : (
                             <>
                               <Lock className="h-3 w-3 text-amber-400" />
-                              <span>Wymaga testu kodu</span>
+                              <span>{isEn ? 'Requires code test' : 'Wymaga testu kodu'}</span>
                             </>
                           )}
                         </span>
@@ -467,11 +501,15 @@ export const ProjectsView: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Github className="h-4 w-4 text-cyan-400" />
                     <h3 className="text-sm font-bold text-white">
-                      Prześlij postęp projektu bezpośrednio z repozytorium GitHub
+                      {isEn
+                        ? 'Submit project progress directly from a GitHub repository'
+                        : 'Prześlij postęp projektu bezpośrednio z repozytorium GitHub'}
                     </h3>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Wskaż własne repozytorium GitHub zawierające kod projektu #{activeProject.number}. Akademia pobierze ostatni commit, sprawdzi strukturę plików i zapisze postęp w Twoim profilu.
+                    {isEn
+                      ? `Select your GitHub repository containing project #${activeProject.number}. The Academy will inspect the latest commit, check file structure, and record progress to your profile.`
+                      : `Wskaż własne repozytorium GitHub zawierające kod projektu #${activeProject.number}. Akademia pobierze ostatni commit, sprawdzi strukturę plików i zapisze postęp w Twoim profilu.`}
                   </p>
                 </div>
 
@@ -504,7 +542,13 @@ export const ProjectsView: React.FC = () => {
                     onClick={() => window.dispatchEvent(new CustomEvent('akademia:open-auth-modal'))}
                     className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-indigo-300 transition-colors cursor-pointer"
                   >
-                    {ghIntegration?.username ? 'Ustawienia Sync' : 'Połącz konto GitHub'}
+                    {ghIntegration?.username
+                      ? isEn
+                        ? 'Sync Settings'
+                        : 'Ustawienia Sync'
+                      : isEn
+                      ? 'Connect GitHub'
+                      : 'Połącz konto GitHub'}
                   </button>
                 </div>
               </div>
@@ -512,7 +556,9 @@ export const ProjectsView: React.FC = () => {
               {syncedRepos.length > 0 && (
                 <div className="space-y-1">
                   <label htmlFor="github-repo-select" className="text-[11px] font-semibold text-slate-300 block">
-                    Wybierz z zsynchronizowanych repozytoriów (@{ghIntegration?.username}):
+                    {isEn
+                      ? `Choose from synced repositories (@${ghIntegration?.username}):`
+                      : `Wybierz z zsynchronizowanych repozytoriów (@${ghIntegration?.username}):`}
                   </label>
                   <select
                     id="github-repo-select"
@@ -522,7 +568,11 @@ export const ProjectsView: React.FC = () => {
                     }}
                     className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   >
-                    <option value="">-- Wybierz repozytorium z konta lub wpisz własny adres poniżej --</option>
+                    <option value="">
+                      {isEn
+                        ? '-- Pick an account repository or enter a custom URL below --'
+                        : '-- Wybierz repozytorium z konta lub wpisz własny adres poniżej --'}
+                    </option>
                     {syncedRepos.map((repo) => (
                       <option key={repo.id} value={repo.fullName}>
                         {repo.fullName} ({repo.language || repo.defaultBranch})
@@ -535,14 +585,20 @@ export const ProjectsView: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-2.5">
                 <div className="flex-1 space-y-1">
                   <label htmlFor="github-repo-url-input" className="text-[11px] font-semibold text-slate-300 block">
-                    Repozytorium GitHub (właściciel/nazwa lub pełny URL):
+                    {isEn
+                      ? 'GitHub Repository (owner/repo or full URL):'
+                      : 'Repozytorium GitHub (właściciel/nazwa lub pełny URL):'}
                   </label>
                   <input
                     id="github-repo-url-input"
                     type="text"
                     value={repoInput}
                     onChange={(e) => setRepoInput(e.target.value)}
-                    placeholder="np. jan-kowalski/moje-portfolio lub https://github.com/jan-kowalski/moje-portfolio"
+                    placeholder={
+                      isEn
+                        ? 'e.g. jane-doe/my-portfolio or https://github.com/jane-doe/my-portfolio'
+                        : 'np. jan-kowalski/moje-portfolio lub https://github.com/jan-kowalski/moje-portfolio'
+                    }
                     className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono"
                   />
                 </div>
@@ -559,7 +615,13 @@ export const ProjectsView: React.FC = () => {
                       <UploadCloud className="h-4 w-4" />
                     )}
                     <span>
-                      {isSyncingGithub ? 'Weryfikacja codebase...' : 'Wyślij postęp z GitHub'}
+                      {isSyncingGithub
+                        ? isEn
+                          ? 'Verifying codebase...'
+                          : 'Weryfikacja codebase...'
+                        : isEn
+                        ? 'Submit from GitHub'
+                        : 'Wyślij postęp z GitHub'}
                     </span>
                   </button>
                 </div>
@@ -608,19 +670,27 @@ export const ProjectsView: React.FC = () => {
                       }`}
                     >
                       {activeSubmission.status === 'verified'
-                        ? 'Zweryfikowano z GitHub (100%)'
+                        ? isEn
+                          ? 'Verified from GitHub (100%)'
+                          : 'Zweryfikowano z GitHub (100%)'
+                        : isEn
+                        ? `Submitted from GitHub (${activeSubmission.checksPassed}/${activeSubmission.checksTotal} checks)`
                         : `Przesłano z GitHub (${activeSubmission.checksPassed}/${activeSubmission.checksTotal} testów)`}
                     </span>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400 font-mono">
-                    <span>Gałąź: {activeSubmission.branch}</span>
+                    <span>{isEn ? `Branch: ${activeSubmission.branch}` : `Gałąź: ${activeSubmission.branch}`}</span>
                     <span>Commit: {activeSubmission.commitSha.slice(0, 7)}</span>
-                    <span>Wysłano: {formatGithubSyncTimestamp(activeSubmission.submittedAt)}</span>
+                    <span>
+                      {isEn ? 'Submitted:' : 'Wysłano:'}{' '}
+                      {formatGithubSyncTimestamp(activeSubmission.submittedAt, language)}
+                    </span>
                   </div>
 
                   <p className="text-xs text-slate-300">
-                    Ostatni commit: <span className="text-white font-medium">{activeSubmission.commitMessage}</span>
+                    {isEn ? 'Latest commit:' : 'Ostatni commit:'}{' '}
+                    <span className="text-white font-medium">{activeSubmission.commitMessage}</span>
                   </p>
 
                   {activeSubmission.matchedFiles.length > 0 && (
@@ -645,10 +715,16 @@ export const ProjectsView: React.FC = () => {
                 <div>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <Terminal className="h-4 w-4 text-indigo-400" />
-                    <span>Interaktywny Weryfikator Kodu Projektu #{activeProject.number}</span>
+                    <span>
+                      {isEn
+                        ? `Interactive Code Verifier — Project #${activeProject.number}`
+                        : `Interaktywny Weryfikator Kodu Projektu #${activeProject.number}`}
+                    </span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Napisz kod spełniający wymagania etapów i kliknij &quot;Sprawdź kod&quot;, aby automatycznie odblokować zaliczenie projektu.
+                    {isEn
+                      ? 'Write code meeting the milestone requirements and click "Check code" to automatically unlock project completion.'
+                      : 'Napisz kod spełniający wymagania etapów i kliknij "Sprawdź kod", aby automatycznie odblokować zaliczenie projektu.'}
                   </p>
                 </div>
                 <span
@@ -659,9 +735,15 @@ export const ProjectsView: React.FC = () => {
                   }`}
                 >
                   {isProjectVerified
-                    ? '100% testów projektu zaliczone'
+                    ? isEn
+                      ? '100% project tests passed'
+                      : '100% testów projektu zaliczone'
                     : projectValidation
-                    ? `Zaliczono ${projectValidation.passedCount}/${projectValidation.totalCount} testów`
+                    ? isEn
+                      ? `Passed ${projectValidation.passedCount}/${projectValidation.totalCount} tests`
+                      : `Zaliczono ${projectValidation.passedCount}/${projectValidation.totalCount} testów`
+                    : isEn
+                    ? 'Tests not run yet'
                     : 'Testy nieuruchomione'}
                 </span>
               </div>
@@ -673,7 +755,9 @@ export const ProjectsView: React.FC = () => {
                 onSuccess={(code) => {
                   awardCustomXp(
                     50,
-                    `Zweryfikowano kod projektu: ${activeProject.title}`,
+                    isEn
+                      ? `Verified project code: ${activeProject.title}`
+                      : `Zweryfikowano kod projektu: ${activeProject.title}`,
                     `project-verify-${activeProject.id}`
                   );
                   completeProject(activeProject.id, activeProject.xpReward, code);
@@ -687,7 +771,11 @@ export const ProjectsView: React.FC = () => {
             <div className="space-y-2">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                <span>Testy akceptacyjne (Definition of Done):</span>
+                <span>
+                  {isEn
+                    ? 'Acceptance Tests (Definition of Done):'
+                    : 'Testy akceptacyjne (Definition of Done):'}
+                </span>
               </h3>
               <ul className="space-y-1.5 text-xs text-slate-300">
                 {activeProject.acceptanceTests.map((t, idx) => (
@@ -707,7 +795,9 @@ export const ProjectsView: React.FC = () => {
             <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-3">
               <div className="flex items-center gap-2 text-cyan-400">
                 <Cloud className="h-4 w-4" />
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">Instrukcja wdrożenia na produkcję:</h3>
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                  {isEn ? 'Production Deployment Instructions:' : 'Instrukcja wdrożenia na produkcję:'}
+                </h3>
               </div>
               <div className="space-y-1.5 text-xs font-mono bg-slate-900/90 p-3.5 rounded-xl border border-slate-800/80">
                 {activeProject.deployInstructions.map((inst, i) => (
@@ -734,9 +824,15 @@ export const ProjectsView: React.FC = () => {
             <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-800">
               <div className="text-xs text-slate-400">
                 {isCompleted
-                  ? 'Gratulacje! Ten projekt został pomyślnie zweryfikowany i dodany do Twojego portfolio.'
+                  ? isEn
+                    ? 'Congratulations! This project has been verified and added to your portfolio.'
+                    : 'Gratulacje! Ten projekt został pomyślnie zweryfikowany i dodany do Twojego portfolio.'
                   : isProjectVerified
-                  ? 'Wszystkie testy automatyczne projektu zostały zaliczone! Możesz zatwierdzić projekt.'
+                  ? isEn
+                    ? 'All automated project tests passed! You can now mark the project complete.'
+                    : 'Wszystkie testy automatyczne projektu zostały zaliczone! Możesz zatwierdzić projekt.'
+                  : isEn
+                  ? 'Write code in the verifier above and pass 100% of tests to unlock completion.'
                   : 'Aby odblokować zaliczenie projektu, napisz kod w weryfikatorze powyżej i zalicz 100% testów.'}
               </div>
 
@@ -759,9 +855,15 @@ export const ProjectsView: React.FC = () => {
                 )}
                 <span>
                   {isCompleted
-                    ? 'Projekt zweryfikowany i zaliczony'
+                    ? isEn
+                      ? 'Project verified & completed'
+                      : 'Projekt zweryfikowany i zaliczony'
                     : isProjectVerified
-                    ? `Zatwierdź ukończenie projektu (+${activeProject.xpReward} XP)`
+                    ? isEn
+                      ? `Complete project (+${activeProject.xpReward} XP)`
+                      : `Zatwierdź ukończenie projektu (+${activeProject.xpReward} XP)`
+                    : isEn
+                    ? `Locked — pass project code tests (+${activeProject.xpReward} XP)`
                     : `Zablokowane — zalicz testy kodu projektu (+${activeProject.xpReward} XP)`}
                 </span>
               </button>

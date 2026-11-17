@@ -1,4 +1,5 @@
 import { User } from '../types';
+import type { AppLanguage } from './i18n';
 
 // ============================================================================
 // 1. REST API / POSTMAN SIMULATOR ENGINE
@@ -76,6 +77,53 @@ export const API_MISSIONS: ApiMission[] = [
   },
 ];
 
+export const API_MISSIONS_EN: ApiMission[] = [
+  {
+    id: 'api-mission-1',
+    title: 'Fetch Student List (GET)',
+    description: 'Send a GET request to /api/users to retrieve the user directory as JSON.',
+    method: 'GET',
+    endpointPattern: '/api/users',
+    expectedStatus: 200,
+    xpReward: 40,
+    hint: 'Select GET, enter path /api/users, and click Send Request.',
+  },
+  {
+    id: 'api-mission-2',
+    title: 'Create New Task (POST + JSON)',
+    description: 'Send a POST request to /api/tasks with valid JSON containing a "title" field.',
+    method: 'POST',
+    endpointPattern: '/api/tasks',
+    expectedStatus: 201,
+    xpReward: 60,
+    hint: 'Choose POST, path /api/tasks, and paste JSON Body e.g. {"title": "Learn REST API", "priority": "high"}.',
+  },
+  {
+    id: 'api-mission-3',
+    title: 'Authorized Profile Access (Bearer Token)',
+    description: 'Send a GET request to protected /api/profile with header Authorization: Bearer fsda-secret-token-2026.',
+    method: 'GET',
+    endpointPattern: '/api/profile',
+    expectedStatus: 200,
+    xpReward: 75,
+    hint: 'Add Authorization header set to Bearer fsda-secret-token-2026 and send GET to /api/profile.',
+  },
+  {
+    id: 'api-mission-4',
+    title: 'Delete Task Record (DELETE)',
+    description: 'Send a DELETE request to /api/tasks/101 to delete task ID 101.',
+    method: 'DELETE',
+    endpointPattern: '/api/tasks/101',
+    expectedStatus: 200,
+    xpReward: 50,
+    hint: 'Select DELETE method and enter endpoint /api/tasks/101.',
+  },
+];
+
+export function getLocalizedApiMissions(language: AppLanguage = 'pl'): ApiMission[] {
+  return language === 'en' ? API_MISSIONS_EN : API_MISSIONS;
+}
+
 const MOCK_USERS_DB = [
   { id: 1, name: 'Zordon Admin', role: 'admin', stack: ['React', 'Node.js', 'PostgreSQL'] },
   { id: 2, name: 'Marta Kowalska', role: 'student', stack: ['HTML5', 'CSS3', 'TypeScript'] },
@@ -88,7 +136,11 @@ const MOCK_TASKS_DB = [
   { id: 103, title: 'Napisać testy jednostkowe dla koszyka', completed: false, priority: 'medium' },
 ];
 
-export function executeSimulatedRequest(req: ApiRequestInput): ApiResponseOutput {
+export function executeSimulatedRequest(
+  req: ApiRequestInput,
+  language: AppLanguage = 'pl'
+): ApiResponseOutput {
+  const isEn = language === 'en';
   const cleanEndpoint = req.endpoint.trim().replace(/^https?:\/\/[^/]+/i, '') || '/';
   const [pathOnly, queryString] = cleanEndpoint.split('?');
   const normalizedHeaders: Record<string, string> = {};
@@ -113,7 +165,9 @@ export function executeSimulatedRequest(req: ApiRequestInput): ApiResponseOutput
         ok: false,
         data: {
           error: 'Bad Request',
-          message: 'Ciało żądania (Body JSON) nie może być puste dla metod POST oraz PUT.',
+          message: isEn
+            ? 'Request Body JSON cannot be empty for POST and PUT requests.'
+            : 'Ciało żądania (Body JSON) nie może być puste dla metod POST oraz PUT.',
         },
       };
     }
@@ -128,7 +182,9 @@ export function executeSimulatedRequest(req: ApiRequestInput): ApiResponseOutput
         ok: false,
         data: {
           error: 'Invalid JSON',
-          message: 'Przesłany payload nie jest poprawnym formatem JSON. Sprawdź cudzysłowy i przecinki.',
+          message: isEn
+            ? 'Sent payload is not valid JSON. Check quotes and trailing commas.'
+            : 'Przesłany payload nie jest poprawnym formatem JSON. Sprawdź cudzysłowy i przecinki.',
         },
       };
     }
@@ -179,7 +235,9 @@ export function executeSimulatedRequest(req: ApiRequestInput): ApiResponseOutput
         ok: false,
         data: {
           error: 'Validation Error',
-          message: 'Pole "title" (string) jest wymagane przy tworzeniu nowego zadania.',
+          message: isEn
+            ? 'Field "title" (string) is required when creating a new task.'
+            : 'Pole "title" (string) jest wymagane przy tworzeniu nowego zadania.',
         },
       };
     }
@@ -197,7 +255,7 @@ export function executeSimulatedRequest(req: ApiRequestInput): ApiResponseOutput
       headers: baseResponseHeaders,
       ok: true,
       data: {
-        message: 'Zadanie zostało pomyślnie utworzone.',
+        message: isEn ? 'Task created successfully.' : 'Zadanie zostało pomyślnie utworzone.',
         task: createdTask,
       },
     };
@@ -217,7 +275,7 @@ export function executeSimulatedRequest(req: ApiRequestInput): ApiResponseOutput
         data: {
           deleted: true,
           taskId,
-          message: `Rekord zadania #${taskId} został usunięty.`,
+          message: isEn ? `Task record #${taskId} has been deleted.` : `Rekord zadania #${taskId} został usunięty.`,
         },
       };
     }
@@ -249,7 +307,9 @@ export function executeSimulatedRequest(req: ApiRequestInput): ApiResponseOutput
         ok: false,
         data: {
           error: 'Unauthorized',
-          message: 'Brak poprawnego nagłówka Authorization: Bearer <token>. Użyj np. Bearer fsda-secret-token-2026.',
+          message: isEn
+            ? 'Missing valid Authorization: Bearer <token> header. Try e.g. Bearer fsda-secret-token-2026.'
+            : 'Brak poprawnego nagłówka Authorization: Bearer <token>. Użyj np. Bearer fsda-secret-token-2026.',
         },
       };
     }
@@ -295,7 +355,9 @@ export function executeSimulatedRequest(req: ApiRequestInput): ApiResponseOutput
     ok: false,
     data: {
       error: 'Not Found',
-      message: `Nie znaleziono zasobu dla ${req.method} ${pathOnly}. Dostępne endpointy: /api/users, /api/tasks, /api/tasks/101, /api/profile, /api/health.`,
+      message: isEn
+        ? `No handler found for ${req.method} ${pathOnly}. Available endpoints: /api/users, /api/tasks, /api/tasks/101, /api/profile, /api/health.`
+        : `Nie znaleziono zasobu dla ${req.method} ${pathOnly}. Dostępne endpointy: /api/users, /api/tasks, /api/tasks/101, /api/profile, /api/health.`,
     },
   };
 }
@@ -504,6 +566,186 @@ export const EVENT_LOOP_SCENARIOS: EventLoopScenario[] = [
   },
 ];
 
+export const EVENT_LOOP_SCENARIOS_EN: (EventLoopScenario & { displayDifficulty: string })[] = [
+  {
+    id: 'promise-vs-timeout',
+    title: 'Promise.then() vs setTimeout(..., 0)',
+    difficulty: 'Rekrutacyjny',
+    displayDifficulty: 'Interview Prep',
+    description:
+      'Classic engineering interview question: why do Promises resolve before a 0 ms setTimeout?',
+    codeLines: [
+      "console.log('1. Script start');",
+      "setTimeout(() => console.log('2. setTimeout callback'), 0);",
+      "Promise.resolve().then(() => console.log('3. Promise microtask'));",
+      "console.log('4. Script end');",
+    ],
+    steps: [
+      {
+        stepIndex: 0,
+        activeLine: 1,
+        phase: 'Call Stack',
+        explanation: 'Synchronous console.log("1. Script start") is pushed to the Call Stack and immediately logs to the console.',
+        callStack: ['main()', 'console.log("1. Script start")'],
+        webApis: [],
+        microtaskQueue: [],
+        macrotaskQueue: [],
+        consoleOutput: ['1. Script start'],
+      },
+      {
+        stepIndex: 1,
+        activeLine: 2,
+        phase: 'Web APIs',
+        explanation: 'setTimeout registers a 0 ms timer in browser Web APIs. Once elapsed, its callback is queued in the Macrotask Queue.',
+        callStack: ['main()', 'setTimeout(..., 0)'],
+        webApis: ['Timer (0ms) -> ready'],
+        microtaskQueue: [],
+        macrotaskQueue: ['() => console.log("2. setTimeout callback")'],
+        consoleOutput: ['1. Script start'],
+      },
+      {
+        stepIndex: 2,
+        activeLine: 3,
+        phase: 'Microtask Queue',
+        explanation: 'Promise.resolve().then(...) enqueues its reaction callback inside the high-priority Microtask Queue.',
+        callStack: ['main()', 'Promise.resolve().then(...)'],
+        webApis: [],
+        microtaskQueue: ['() => console.log("3. Promise microtask")'],
+        macrotaskQueue: ['() => console.log("2. setTimeout callback")'],
+        consoleOutput: ['1. Script start'],
+      },
+      {
+        stepIndex: 3,
+        activeLine: 4,
+        phase: 'Call Stack',
+        explanation: 'The final synchronous line runs: console.log("4. Script end"). main() finishes and pops off the stack.',
+        callStack: ['main()', 'console.log("4. Script end")'],
+        webApis: [],
+        microtaskQueue: ['() => console.log("3. Promise microtask")'],
+        macrotaskQueue: ['() => console.log("2. setTimeout callback")'],
+        consoleOutput: ['1. Script start', '4. Script end'],
+      },
+      {
+        stepIndex: 4,
+        activeLine: 3,
+        phase: 'Microtask Queue',
+        explanation: 'Call Stack is empty! The Event Loop drains the ENTIRE Microtask Queue before picking any task from Macrotask Queue.',
+        callStack: ['promiseCallback()', 'console.log("3. Promise microtask")'],
+        webApis: [],
+        microtaskQueue: [],
+        macrotaskQueue: ['() => console.log("2. setTimeout callback")'],
+        consoleOutput: ['1. Script start', '4. Script end', '3. Promise microtask'],
+      },
+      {
+        stepIndex: 5,
+        activeLine: 2,
+        phase: 'Macrotask Queue',
+        explanation: 'With Microtask Queue empty, the Event Loop dequeues the first Macrotask (setTimeout callback) onto the Call Stack.',
+        callStack: ['timeoutCallback()', 'console.log("2. setTimeout callback")'],
+        webApis: [],
+        microtaskQueue: [],
+        macrotaskQueue: [],
+        consoleOutput: [
+          '1. Script start',
+          '4. Script end',
+          '3. Promise microtask',
+          '2. setTimeout callback',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'async-await-flow',
+    title: 'async / await Execution Flow',
+    difficulty: 'Średniozaawansowany',
+    displayDifficulty: 'Intermediate',
+    description:
+      'Watch how the await keyword suspends an async function and schedules the continuation onto the Microtask Queue.',
+    codeLines: [
+      'async function fetchData() {',
+      "  console.log('A. Entered async fn');",
+      "  const result = await Promise.resolve('B. API Payload');",
+      '  console.log(result);',
+      '}',
+      'fetchData();',
+      "console.log('C. Code after fetchData() call');",
+    ],
+    steps: [
+      {
+        stepIndex: 0,
+        activeLine: 6,
+        phase: 'Call Stack',
+        explanation: 'fetchData() is invoked. An async function runs synchronously right up until the first await keyword.',
+        callStack: ['main()', 'fetchData()'],
+        webApis: [],
+        microtaskQueue: [],
+        macrotaskQueue: [],
+        consoleOutput: [],
+      },
+      {
+        stepIndex: 1,
+        activeLine: 2,
+        phase: 'Call Stack',
+        explanation: 'Inside fetchData(), console.log("A. Entered async fn") executes synchronously.',
+        callStack: ['main()', 'fetchData()', 'console.log("A. Entered async fn")'],
+        webApis: [],
+        microtaskQueue: [],
+        macrotaskQueue: [],
+        consoleOutput: ['A. Entered async fn'],
+      },
+      {
+        stepIndex: 2,
+        activeLine: 3,
+        phase: 'Microtask Queue',
+        explanation: 'Execution hits await! fetchData() suspends and pops off the Call Stack, scheduling its continuation into the Microtask Queue.',
+        callStack: ['main()'],
+        webApis: [],
+        microtaskQueue: ['Resume fetchData() -> console.log(result)'],
+        macrotaskQueue: [],
+        consoleOutput: ['A. Entered async fn'],
+      },
+      {
+        stepIndex: 3,
+        activeLine: 7,
+        phase: 'Call Stack',
+        explanation: 'The main thread is never blocked — line 7 executes immediately: console.log("C. Code after fetchData() call").',
+        callStack: ['main()', 'console.log("C. Code after fetchData()...")'],
+        webApis: [],
+        microtaskQueue: ['Resume fetchData() -> console.log(result)'],
+        macrotaskQueue: [],
+        consoleOutput: ['A. Entered async fn', 'C. Code after fetchData() call'],
+      },
+      {
+        stepIndex: 4,
+        activeLine: 4,
+        phase: 'Microtask Queue',
+        explanation: 'After synchronous code completes, the Event Loop resumes the suspended async frame from the Microtask Queue and prints "B. API Payload".',
+        callStack: ['fetchData() [resumed]', 'console.log("B. API Payload")'],
+        webApis: [],
+        microtaskQueue: [],
+        macrotaskQueue: [],
+        consoleOutput: [
+          'A. Entered async fn',
+          'C. Code after fetchData() call',
+          'B. API Payload',
+        ],
+      },
+    ],
+  },
+];
+
+export function getLocalizedEventLoopScenarios(
+  language: AppLanguage = 'pl'
+): (EventLoopScenario & { displayDifficulty: string })[] {
+  if (language === 'en') {
+    return EVENT_LOOP_SCENARIOS_EN;
+  }
+  return EVENT_LOOP_SCENARIOS.map((s) => ({
+    ...s,
+    displayDifficulty: s.difficulty,
+  }));
+}
+
 // ============================================================================
 // 3. WEEKLY LEADERBOARD & DAILY CODING CHALLENGE
 // ============================================================================
@@ -517,10 +759,15 @@ export interface LeaderboardEntry {
   weeklyXp: number;
   streakDays: number;
   league: 'Diamentowa' | 'Złota' | 'Srebrna' | 'Brązowa';
+  displayLeague?: string;
   isCurrentUser: boolean;
 }
 
-export function buildWeeklyLeaderboard(currentUser: User, allUsers: User[]): LeaderboardEntry[] {
+export function buildWeeklyLeaderboard(
+  currentUser: User,
+  allUsers: User[],
+  language: AppLanguage = 'pl'
+): LeaderboardEntry[] {
   const peerBots = [
     {
       id: 'peer-1',
@@ -603,10 +850,22 @@ export function buildWeeklyLeaderboard(currentUser: User, allUsers: User[]): Lea
         ? 'Srebrna'
         : 'Brązowa';
 
+    const displayLeague =
+      language === 'en'
+        ? league === 'Diamentowa'
+          ? 'Diamond'
+          : league === 'Złota'
+          ? 'Gold'
+          : league === 'Srebrna'
+          ? 'Silver'
+          : 'Bronze'
+        : league;
+
     return {
       ...entry,
       rank: idx + 1,
       league,
+      displayLeague,
     };
   });
 }
@@ -656,6 +915,41 @@ export const DAILY_CHALLENGES: DailyChallengeSpec[] = [
   },
 ];
 
+export const DAILY_CHALLENGES_EN: DailyChallengeSpec[] = [
+  {
+    id: 'challenge-anagram',
+    title: 'Check if Two Words Are Anagrams',
+    xpReward: 100,
+    description:
+      'Write a function czyAnagram(a, b) that returns true if both strings contain the exact same letters (ignoring case and spaces), or false otherwise.',
+    starterCode: `function czyAnagram(a, b) {\n  // Complete implementation:\n  // Normalize both strings (lowercase, strip spaces, sort chars) and compare\n  return false;\n}`,
+    solutionCode: `function czyAnagram(a, b) {\n  const norm = (str) => String(str).toLowerCase().replace(/\\s+/g, '').split('').sort().join('');\n  return norm(a) === norm(b);\n}`,
+    testCases: [
+      { inputDesc: 'czyAnagram("listen", "silent")', args: ['listen', 'silent'], expected: true },
+      { inputDesc: 'czyAnagram("React", "Caret")', args: ['React', 'Caret'], expected: true },
+      { inputDesc: 'czyAnagram("FullStack", "Frontend")', args: ['FullStack', 'Frontend'], expected: false },
+    ],
+  },
+  {
+    id: 'challenge-fizzbuzz-sum',
+    title: 'Sum of Multiples of 3 or 5',
+    xpReward: 100,
+    description:
+      'Write a function sumaPodzielnych(n) returning the sum of all positive integers strictly below n that are divisible by 3 or 5.',
+    starterCode: `function sumaPodzielnych(n) {\n  // Complete implementation:\n  // Sum positive integers below n divisible by 3 or 5\n  return 0;\n}`,
+    solutionCode: `function sumaPodzielnych(n) {\n  let suma = 0;\n  for (let i = 1; i < n; i++) {\n    if (i % 3 === 0 || i % 5 === 0) suma += i;\n  }\n  return suma;\n}`,
+    testCases: [
+      { inputDesc: 'sumaPodzielnych(10)', args: [10], expected: 23 },
+      { inputDesc: 'sumaPodzielnych(16)', args: [16], expected: 60 },
+      { inputDesc: 'sumaPodzielnych(4)', args: [4], expected: 3 },
+    ],
+  },
+];
+
+export function getLocalizedDailyChallenges(language: AppLanguage = 'pl'): DailyChallengeSpec[] {
+  return language === 'en' ? DAILY_CHALLENGES_EN : DAILY_CHALLENGES;
+}
+
 export interface ChallengeEvalResult {
   passedAll: boolean;
   results: {
@@ -669,8 +963,10 @@ export interface ChallengeEvalResult {
 
 export function evaluateDailyChallenge(
   challenge: DailyChallengeSpec,
-  userCode: string
+  userCode: string,
+  language: AppLanguage = 'pl'
 ): ChallengeEvalResult {
+  const isEn = language === 'en';
   try {
     const fnMatch = challenge.starterCode.match(/function\s+([a-zA-Z0-9_]+)/);
     const fnName = fnMatch ? fnMatch[1] : 'solve';
@@ -680,7 +976,9 @@ export function evaluateDailyChallenge(
       return {
         passedAll: false,
         results: [],
-        error: `Nie znaleziono funkcji o nazwie ${fnName}().`,
+        error: isEn
+          ? `Function ${fnName}() was not found.`
+          : `Nie znaleziono funkcji o nazwie ${fnName}().`,
       };
     }
 
@@ -703,7 +1001,7 @@ export function evaluateDailyChallenge(
     return {
       passedAll: false,
       results: [],
-      error: err instanceof Error ? err.message : 'Błąd wykonania kodu JS.',
+      error: err instanceof Error ? err.message : isEn ? 'JavaScript execution error.' : 'Błąd wykonania kodu JS.',
     };
   }
 }
@@ -827,6 +1125,55 @@ export const FLASHCARDS_DECK: FlashcardItem[] = [
   },
 ];
 
+export const FLASHCARDS_DECK_EN: FlashcardItem[] = [
+  {
+    id: 'fc-1',
+    category: 'JavaScript & TS',
+    question: 'What is the difference between == (loose equality) and === (strict equality) in JavaScript?',
+    answer: 'Operator === checks both value and type without implicit coercion, whereas == performs automatic type coercion before comparing.',
+    codeSnippet: "5 === '5' // false\n5 == '5'  // true",
+  },
+  {
+    id: 'fc-2',
+    category: 'React & Next.js',
+    question: 'Why should you never mutate state directly in React (e.g. state.push(x))?',
+    answer: 'React compares object references using Object.is to trigger re-renders. Mutating an array keeps its memory reference unchanged, so React may skip updating the UI.',
+    codeSnippet: 'setItems((prev) => [...prev, newItem]);',
+  },
+  {
+    id: 'fc-3',
+    category: 'Backend & SQL',
+    question: 'How does the WHERE clause differ from HAVING in SQL queries?',
+    answer: 'WHERE filters individual rows BEFORE grouping (GROUP BY), whereas HAVING filters grouped buckets AFTER aggregate functions (COUNT, SUM, AVG) run.',
+    codeSnippet: 'SELECT dept, COUNT(*) FROM users WHERE active = true GROUP BY dept HAVING COUNT(*) > 5;',
+  },
+  {
+    id: 'fc-4',
+    category: 'HTML & CSS',
+    question: 'How does box-sizing: border-box work in CSS?',
+    answer: 'It ensures declared width and height include content, padding, and border together rather than expanding the element outward.',
+    codeSnippet: '*, *::before, *::after {\n  box-sizing: border-box;\n}',
+  },
+  {
+    id: 'fc-5',
+    category: 'DevOps & Git',
+    question: 'What is the difference between git merge and git rebase?',
+    answer: 'git merge joins two branches with a new merge commit preserving branch topology. git rebase replays commits on top of another branch, creating a clean linear history.',
+    codeSnippet: 'git checkout feature\ngit rebase main',
+  },
+  {
+    id: 'fc-6',
+    category: 'JavaScript & TS',
+    question: 'What is a Closure in JavaScript?',
+    answer: 'A closure lets an inner function retain access to variables from its enclosing lexical scope even after the outer function has returned.',
+    codeSnippet: 'function counter() {\n  let n = 0;\n  return () => ++n;\n}',
+  },
+];
+
+export function getLocalizedFlashcardsDeck(language: AppLanguage = 'pl'): FlashcardItem[] {
+  return language === 'en' ? FLASHCARDS_DECK_EN : FLASHCARDS_DECK;
+}
+
 export interface CheatSheetSnippet {
   id: string;
   category: 'HTML5' | 'CSS Flexbox & Grid' | 'JavaScript ES6+' | 'React Hooks' | 'SQL & Bazy' | 'Git & Terminal';
@@ -880,6 +1227,55 @@ export const CHEAT_SHEETS_DATA: CheatSheetSnippet[] = [
   },
 ];
 
+export const CHEAT_SHEETS_DATA_EN: CheatSheetSnippet[] = [
+  {
+    id: 'cs-flex-center',
+    category: 'CSS Flexbox & Grid',
+    title: 'Perfect Vertical & Horizontal Centering',
+    summary: 'Cleanest pattern for centering child elements inside a container with Flexbox or CSS Grid.',
+    code: `.container-flex {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n\n.container-grid {\n  display: grid;\n  place-items: center;\n}`,
+  },
+  {
+    id: 'cs-grid-auto',
+    category: 'CSS Flexbox & Grid',
+    title: 'Responsive Card Grid Without Media Queries',
+    summary: 'Automatically wraps columns with a minimum card width of 260px.',
+    code: `.grid-cards {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));\n  gap: 1.5rem;\n}`,
+  },
+  {
+    id: 'cs-js-fetch',
+    category: 'JavaScript ES6+',
+    title: 'Safe Fetch API Requests with async/await',
+    summary: 'Production pattern checking HTTP status codes and parsing JSON cleanly.',
+    code: `async function fetchUsers() {\n  const res = await fetch('/api/users');\n  if (!res.ok) throw new Error(\`HTTP error: \${res.status}\`);\n  return await res.json();\n}`,
+  },
+  {
+    id: 'cs-react-effect',
+    category: 'React Hooks',
+    title: 'useEffect Cleanup with AbortController',
+    summary: 'Prevents memory leaks and stale race conditions across React renders.',
+    code: `useEffect(() => {\n  const controller = new AbortController();\n  fetch('/api/data', { signal: controller.signal })\n    .then((r) => r.json())\n    .then(setData)\n    .catch(() => {});\n  return () => controller.abort();\n}, []);`,
+  },
+  {
+    id: 'cs-sql-join',
+    category: 'SQL & Bazy',
+    title: 'INNER JOIN Tables and Aggregate Order Totals',
+    summary: 'Retrieve customers along with their order counts and total lifetime spend.',
+    code: `SELECT u.name, COUNT(o.id) AS orders_count, SUM(o.total) AS total_spent\nFROM users u\nINNER JOIN orders o ON o.user_id = u.id\nGROUP BY u.id, u.name\nORDER BY total_spent DESC;`,
+  },
+  {
+    id: 'cs-git-undo',
+    category: 'Git & Terminal',
+    title: 'Undo Last Commit While Keeping Staged Changes',
+    summary: 'Safely uncommit changes back into the Staging area without losing code.',
+    code: `git reset --soft HEAD~1\n# Or amend the last commit message:\ngit commit --amend -m "Updated commit message"`,
+  },
+];
+
+export function getLocalizedCheatSheets(language: AppLanguage = 'pl'): CheatSheetSnippet[] {
+  return language === 'en' ? CHEAT_SHEETS_DATA_EN : CHEAT_SHEETS_DATA;
+}
+
 export function filterCheatSheets(
   items: CheatSheetSnippet[],
   category: string,
@@ -887,7 +1283,7 @@ export function filterCheatSheets(
 ): CheatSheetSnippet[] {
   const q = searchQuery.trim().toLowerCase();
   return items.filter((item) => {
-    const matchesCategory = category === 'Wszystkie' || item.category === category;
+    const matchesCategory = category === 'Wszystkie' || category === 'All' || item.category === category;
     const matchesQuery =
       !q ||
       item.title.toLowerCase().includes(q) ||
@@ -904,17 +1300,61 @@ export function filterCheatSheets(
 export function generateGithubPortfolioMarkdown(
   user: User,
   completedModuleTitles: string[],
-  completedProjectTitles: string[]
+  completedProjectTitles: string[],
+  language: AppLanguage = 'pl'
 ): string {
-  const skills = [
-    'HTML5 & Semantyka',
-    'CSS3 / Tailwind CSS',
-    'JavaScript (ES6+) & TypeScript',
-    'React 19 & Hooks',
-    'Node.js & Express REST API',
-    'SQL & Relacyjne Bazy Danych',
-    'Git & DevOps Podstawy',
-  ];
+  const isEn = language === 'en';
+  const skills = isEn
+    ? [
+        'HTML5 & Semantics',
+        'CSS3 / Tailwind CSS',
+        'JavaScript (ES6+) & TypeScript',
+        'React 19 & Hooks',
+        'Node.js & Express REST API',
+        'SQL & Relational Databases',
+        'Git & DevOps Foundations',
+      ]
+    : [
+        'HTML5 & Semantyka',
+        'CSS3 / Tailwind CSS',
+        'JavaScript (ES6+) & TypeScript',
+        'React 19 & Hooks',
+        'Node.js & Express REST API',
+        'SQL & Relacyjne Bazy Danych',
+        'Git & DevOps Podstawy',
+      ];
+
+  if (isEn) {
+    return `# Hi! I'm ${user.name} 👋
+### Junior Full Stack Developer | Level ${user.level} (${user.xp} XP)
+
+${user.bio || 'Passionate about building modern web applications with React, TypeScript, and Node.js.'}
+
+---
+
+## 🛠 Tech Stack
+${skills.map((s) => `- **${s}**`).join('\n')}
+
+## 🏆 Completed Portfolio Projects (${completedProjectTitles.length})
+${
+  completedProjectTitles.length > 0
+    ? completedProjectTitles.map((t, i) => `${i + 1}. **${t}** — Complete Full Stack implementation`).join('\n')
+    : '- Currently working on first portfolio project'
+}
+
+## 📚 Completed Modules & Lessons (${user.completedLessons.length} lessons)
+${
+  completedModuleTitles.length > 0
+    ? completedModuleTitles.map((m) => `- [x] ${m}`).join('\n')
+    : `- Completed lessons: ${user.completedLessons.length}`
+}
+
+## 📊 Academy Stats
+- **Learning Streak:** ${user.streakDays} days in a row
+- **Unlocked Badges:** ${user.unlockedBadges.length}
+- **Contact:** ${user.email}
+`;
+  }
 
   return `# Cześć! Jestem ${user.name} 👋
 ### Junior Full Stack Developer | Poziom ${user.level} (${user.xp} XP)
@@ -953,16 +1393,30 @@ export interface BackupValidationResult {
   error?: string;
 }
 
-export function validateBackupPayload(rawJson: string): BackupValidationResult {
+export function validateBackupPayload(
+  rawJson: string,
+  language: AppLanguage = 'pl'
+): BackupValidationResult {
+  const isEn = language === 'en';
   if (!rawJson || !rawJson.trim()) {
-    return { valid: false, error: 'Wklej zawartość pliku JSON lub wgraj plik z dysku.' };
+    return {
+      valid: false,
+      error: isEn
+        ? 'Paste JSON backup contents or upload a .json file from disk.'
+        : 'Wklej zawartość pliku JSON lub wgraj plik z dysku.',
+    };
   }
 
   try {
     const parsed = JSON.parse(rawJson);
     const candidate = parsed?.user || parsed;
     if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
-      return { valid: false, error: 'Plik nie zawiera poprawnego obiektu profilu.' };
+      return {
+        valid: false,
+        error: isEn
+          ? 'File does not contain a valid user profile object.'
+          : 'Plik nie zawiera poprawnego obiektu profilu.',
+      };
     }
     if (
       typeof candidate.id !== 'string' ||
@@ -974,7 +1428,9 @@ export function validateBackupPayload(rawJson: string): BackupValidationResult {
     ) {
       return {
         valid: false,
-        error: 'Brakuje wymaganych lub poprawnych pól profilu (id, name min. 2 znaki, poprawny email).',
+        error: isEn
+          ? 'Missing or invalid profile fields (id, name min 2 chars, valid email).'
+          : 'Brakuje wymaganych lub poprawnych pól profilu (id, name min. 2 znaki, poprawny email).',
       };
     }
     if (
@@ -985,7 +1441,9 @@ export function validateBackupPayload(rawJson: string): BackupValidationResult {
     ) {
       return {
         valid: false,
-        error: 'Nieprawidłowa struktura postępów (xp musi być liczbą >= 0, a completedLessons tablicą).',
+        error: isEn
+          ? 'Invalid progress structure (xp must be a number >= 0, completedLessons must be an array).'
+          : 'Nieprawidłowa struktura postępów (xp musi być liczbą >= 0, a completedLessons tablicą).',
       };
     }
 
@@ -1064,13 +1522,18 @@ export function validateBackupPayload(rawJson: string): BackupValidationResult {
     ) {
       return {
         valid: false,
-        error: 'Nie można zaimportować tymczasowego profilu Gościa. Zaloguj się na konto kursanta.',
+        error: isEn
+          ? 'Cannot import the temporary Guest profile. Sign in with a registered student account.'
+          : 'Nie można zaimportować tymczasowego profilu Gościa. Zaloguj się na konto kursanta.',
       };
     }
 
     return { valid: true, user: normalizedUser };
   } catch {
-    return { valid: false, error: 'Plik nie jest poprawnym dokumentem JSON.' };
+    return {
+      valid: false,
+      error: isEn ? 'File is not a valid JSON document.' : 'Plik nie jest poprawnym dokumentem JSON.',
+    };
   }
 }
 
@@ -1103,14 +1566,18 @@ export interface CertificateVerificationResult {
 export function verifyCertificateCode(
   inputCode: string,
   allUsers: User[],
-  currentUser?: User
+  currentUser?: User,
+  language: AppLanguage = 'pl'
 ): CertificateVerificationResult {
+  const isEn = language === 'en';
   const clean = (inputCode || '').trim().toUpperCase();
   if (!clean) {
     return {
       valid: false,
       code: '',
-      message: 'Wprowadź kod identyfikacyjny certyfikatu (np. FSDA-2026-ADMIN-10X).',
+      message: isEn
+        ? 'Enter a certificate ID code (e.g. FSDA-2026-ADMIN-10X).'
+        : 'Wprowadź kod identyfikacyjny certyfikatu (np. FSDA-2026-ADMIN-10X).',
     };
   }
 
@@ -1118,8 +1585,9 @@ export function verifyCertificateCode(
     return {
       valid: false,
       code: clean,
-      message:
-        'Konto Gościa (Niezalogowany) nie posiada uprawnień do wystawienia certyfikatu. Zaloguj się na zweryfikowane konto kursanta.',
+      message: isEn
+        ? 'Guest (unauthenticated) accounts are not eligible for official certificate issuance. Sign in with a verified student account.'
+        : 'Konto Gościa (Niezalogowany) nie posiada uprawnień do wystawienia certyfikatu. Zaloguj się na zweryfikowane konto kursanta.',
     };
   }
 
@@ -1132,7 +1600,9 @@ export function verifyCertificateCode(
     return {
       valid: false,
       code: clean,
-      message: 'Nie znaleziono certyfikatu o podanym identyfikatorze w rejestrze Akademii.',
+      message: isEn
+        ? 'No certificate matching this identifier was found in the Academy registry.'
+        : 'Nie znaleziono certyfikatu o podanym identyfikatorze w rejestrze Akademii.',
     };
   }
 
@@ -1151,7 +1621,11 @@ export function verifyCertificateCode(
     completedProjectsCount: matchedUser.completedProjects.length,
     isOfficial,
     message: isOfficial
-      ? `Certyfikat autentyczny i oficjalnie zatwierdzony dla: ${matchedUser.name}.`
+      ? isEn
+        ? `Certificate verified authentic and officially issued for: ${matchedUser.name}.`
+        : `Certyfikat autentyczny i oficjalnie zatwierdzony dla: ${matchedUser.name}.`
+      : isEn
+      ? `Certificate assigned to: ${matchedUser.name} (status: final graduation requirements in progress).`
       : `Certyfikat przypisany do: ${matchedUser.name} (status: w trakcie realizacji wymagań końcowych).`,
   };
 }
@@ -1191,21 +1665,59 @@ export const SQL_MISSIONS: SqlMission[] = [
   },
 ];
 
-export function validateSqlQuerySyntax(rawQuery: string): { valid: boolean; cleanQuery: string; error?: string } {
+export const SQL_MISSIONS_EN: SqlMission[] = [
+  {
+    id: 'sql-join-orders',
+    title: 'Relational INNER JOIN',
+    description: 'Fetch paid orders along with user profiles by joining orders and users via INNER JOIN.',
+    xpReward: 50,
+    checkQuery: (sql, count) =>
+      /from\s+orders/i.test(sql) && /join\s+users/i.test(sql) && count > 0,
+  },
+  {
+    id: 'sql-filter-courses',
+    title: 'Filtering Course Catalog (WHERE)',
+    description: 'Query modules from courses carrying at least 700 XP (WHERE xp >= 700 or xp > 700).',
+    xpReward: 40,
+    checkQuery: (sql, count) =>
+      /from\s+courses/i.test(sql) && /where\s+.*xp\s*>=?\s*\d+/i.test(sql) && count > 0,
+  },
+  {
+    id: 'sql-high-quizzes',
+    title: 'Quiz Score Analysis',
+    description: 'Select results from quizzes ordered descending (ORDER BY ... DESC).',
+    xpReward: 45,
+    checkQuery: (sql, count) =>
+      /from\s+quizzes/i.test(sql) && /order\s+by\s+.*desc/i.test(sql) && count > 0,
+  },
+];
+
+export function getLocalizedSqlMissions(language: AppLanguage = 'pl'): SqlMission[] {
+  return language === 'en' ? SQL_MISSIONS_EN : SQL_MISSIONS;
+}
+
+export function validateSqlQuerySyntax(
+  rawQuery: string,
+  language: AppLanguage = 'pl'
+): { valid: boolean; cleanQuery: string; error?: string } {
+  const isEn = language === 'en';
   const clean = (rawQuery || '').trim().replace(/;+\s*$/, '');
   if (!clean) {
     return {
       valid: false,
       cleanQuery: '',
-      error: 'ERROR 42601: Zapytanie SQL nie może być puste. Wprowadź instrukcję SELECT ... FROM <tabela>.',
+      error: isEn
+        ? 'ERROR 42601: SQL query cannot be empty. Enter SELECT ... FROM <table>.'
+        : 'ERROR 42601: Zapytanie SQL nie może być puste. Wprowadź instrukcję SELECT ... FROM <tabela>.',
     };
   }
   if (!/^select\s+.+\s+from\s+(users|courses|orders|quizzes)\b/is.test(clean)) {
     return {
       valid: false,
       cleanQuery: clean,
-      error:
-        'ERROR 42601: Błąd składniowy SQL. Dozwolone są zapytania SELECT <kolumny> FROM <users | courses | orders | quizzes>.',
+      error: isEn
+        ? 'ERROR 42601: SQL syntax error. Supported statements: SELECT <columns> FROM <users | courses | orders | quizzes>.'
+        : 'ERROR 42601: Błąd składniowy SQL. Dozwolone są zapytania SELECT <kolumny> FROM <users | courses | orders | quizzes>.',
     };
   }
   return { valid: true, cleanQuery: clean };

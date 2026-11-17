@@ -1,5 +1,6 @@
 import React from 'react';
 import { Terminal, Code as CodeIcon } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 import { highlightCode, getLanguageDisplayName } from '../utils/syntaxHighlighter';
 import { CopyButton } from './CopyButton';
 
@@ -26,6 +27,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   badge,
   badgeColor = 'indigo',
 }) => {
+  const { language: appLanguage } = useApp();
   const highlightedHtml = highlightCode(code, language);
   const lines = code.split('\n');
 
@@ -58,7 +60,16 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
 
         <div className="flex items-center gap-2.5 shrink-0">
           <span className="text-[11px] font-mono text-slate-500 hidden sm:inline tabular-nums">
-            {lines.length} {lines.length === 1 ? 'linia' : lines.length < 5 ? 'linie' : 'linii'}
+            {lines.length}{' '}
+            {appLanguage === 'en'
+              ? lines.length === 1
+                ? 'line'
+                : 'lines'
+              : lines.length === 1
+              ? 'linia'
+              : lines.length < 5
+              ? 'linie'
+              : 'linii'}
           </span>
           <CopyButton text={code} />
         </div>

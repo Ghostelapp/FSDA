@@ -7,11 +7,11 @@ interface RichInlineTextProps {
 }
 
 const CATEGORY_BADGE_STYLES: Record<'html' | 'css' | 'cli' | 'js' | 'general', string> = {
-  html: 'border-orange-500/45 bg-orange-950/65 text-orange-200 font-semibold',
-  css: 'border-cyan-500/40 bg-cyan-950/60 text-cyan-200 font-medium',
-  js: 'border-amber-500/35 bg-amber-950/55 text-amber-200 font-medium',
-  cli: 'border-emerald-500/40 bg-emerald-950/60 text-emerald-200 font-medium',
-  general: 'border-sky-500/30 bg-slate-800/95 text-sky-200 font-medium',
+  html: 'fsda-token-html border-orange-500/45 bg-orange-950/65 text-orange-200 font-semibold',
+  css: 'fsda-token-css border-cyan-500/40 bg-cyan-950/60 text-cyan-200 font-medium',
+  js: 'fsda-token-js border-amber-500/35 bg-amber-950/55 text-amber-200 font-medium',
+  cli: 'fsda-token-cli border-emerald-500/40 bg-emerald-950/60 text-emerald-200 font-medium',
+  general: 'fsda-token-general border-sky-500/30 bg-slate-800/95 text-sky-200 font-medium',
 };
 
 export const renderInlineTokens = (tokens: InlineToken[]) => {

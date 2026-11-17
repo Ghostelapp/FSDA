@@ -1,4 +1,5 @@
 import { Lesson } from '../types';
+import { AppLanguage } from './i18n';
 
 export type PublicTab =
   | 'landing'
@@ -97,12 +98,74 @@ export function buildPublicPath(tab: string, lessonId?: string | null): string |
 
 export function getPublicRouteSeoMetadata(
   tab: PublicTab,
-  lesson?: Pick<Lesson, 'id' | 'title' | 'summary' | 'moduleTitle'> | null
+  lesson?: Pick<Lesson, 'id' | 'title' | 'summary' | 'moduleTitle'> | null,
+  language: AppLanguage = 'pl'
 ): {
   title: string;
   description: string;
   canonicalPath: string;
 } {
+  if (language === 'en') {
+    switch (tab) {
+      case 'knowledge_base':
+        return {
+          title: 'Open Knowledge Base — 96 Free Coding Lessons | Full Stack Academy',
+          description:
+            'Free open knowledge base of Full Stack Developer Academy: 15 modules and 96 lessons with code examples in HTML5, CSS, JavaScript, TypeScript, React, Node.js, SQL, and Docker without login.',
+          canonicalPath: '/baza-wiedzy',
+        };
+      case 'public_lesson':
+        if (lesson) {
+          return {
+            title: `${lesson.title} — Knowledge Base Lesson | Full Stack Academy`,
+            description: lesson.summary,
+            canonicalPath: `/baza-wiedzy/${encodeURIComponent(lesson.id)}`,
+          };
+        }
+        return {
+          title: 'Programming Lesson | Full Stack Academy',
+          description: 'Free programming lesson with step-by-step walkthrough, everyday analogy, and runnable examples.',
+          canonicalPath: '/baza-wiedzy',
+        };
+      case 'about':
+        return {
+          title: 'About the Academy & Methodology | Full Stack Developer Academy',
+          description:
+            'Explore the mission and teaching methodology of Full Stack Developer Academy: hands-on examples, plain-English explanations, and a complete 15-module curriculum.',
+          canonicalPath: '/o-nas',
+        };
+      case 'contact':
+        return {
+          title: 'Contact & Technical Support | Full Stack Developer Academy',
+          description:
+            'Get in touch with the Full Stack Developer Academy team regarding curriculum questions, technical support, or data privacy.',
+          canonicalPath: '/kontakt',
+        };
+      case 'terms':
+        return {
+          title: 'Terms of Service | Full Stack Developer Academy',
+          description:
+            'Rules governing the use of the open knowledge base and interactive Full Stack Developer Academy platform.',
+          canonicalPath: '/regulamin',
+        };
+      case 'privacy':
+        return {
+          title: 'Privacy Policy & Cookies (GDPR / AdSense) | Full Stack Academy',
+          description:
+            'Details on personal data processing, local progress persistence, Firebase authentication, and Google AdSense cookies.',
+          canonicalPath: '/polityka-prywatnosci',
+        };
+      case 'landing':
+      default:
+        return {
+          title: 'Full Stack Developer Academy — Interactive Coding Academy',
+          description:
+            'Interactive coding platform taking you from zero to Full Stack Developer with an in-browser code editor, commercial projects, and an open 96-lesson knowledge base.',
+          canonicalPath: '/',
+        };
+    }
+  }
+
   switch (tab) {
     case 'knowledge_base':
       return {

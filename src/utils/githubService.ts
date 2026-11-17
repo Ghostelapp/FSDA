@@ -10,6 +10,7 @@ import {
   validateExerciseCode,
   ValidationSummary,
 } from './codeRunner';
+import { AppLanguage, getIntlLocale } from './i18n';
 
 const GITHUB_API_BASE = 'https://api.github.com';
 const SESSION_TOKEN_KEY = 'fsda_github_pat_session';
@@ -124,12 +125,13 @@ export function parseGithubRepoIdentifier(rawInput: string): ParsedGithubRepo | 
   };
 }
 
-export function formatGithubSyncTimestamp(isoString?: string): string {
-  if (!isoString) return 'Nigdy nie synchronizowano';
+export function formatGithubSyncTimestamp(isoString?: string, language: AppLanguage = 'pl'): string {
+  const isEn = language === 'en';
+  if (!isoString) return isEn ? 'Never synced' : 'Nigdy nie synchronizowano';
   const date = new Date(isoString);
-  if (Number.isNaN(date.getTime())) return 'Nieznana data';
+  if (Number.isNaN(date.getTime())) return isEn ? 'Unknown date' : 'Nieznana data';
   try {
-    return new Intl.DateTimeFormat('pl-PL', {
+    return new Intl.DateTimeFormat(getIntlLocale(language), {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -142,18 +144,23 @@ export function formatGithubSyncTimestamp(isoString?: string): string {
   }
 }
 
-export function formatRelativeSyncTime(isoString?: string, nowMs: number = Date.now()): string {
-  if (!isoString) return 'brak synchronizacji';
+export function formatRelativeSyncTime(
+  isoString?: string,
+  nowMs: number = Date.now(),
+  language: AppLanguage = 'pl'
+): string {
+  const isEn = language === 'en';
+  if (!isoString) return isEn ? 'not synced' : 'brak synchronizacji';
   const ts = new Date(isoString).getTime();
-  if (Number.isNaN(ts)) return 'nieznany czas';
+  if (Number.isNaN(ts)) return isEn ? 'unknown time' : 'nieznany czas';
   const diffSec = Math.max(0, Math.floor((nowMs - ts) / 1000));
-  if (diffSec < 60) return 'przed chwilą';
+  if (diffSec < 60) return isEn ? 'just now' : 'przed chwilą';
   const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin} min temu`;
+  if (diffMin < 60) return isEn ? `${diffMin}m ago` : `${diffMin} min temu`;
   const diffHours = Math.floor(diffMin / 60);
-  if (diffHours < 24) return `${diffHours} godz. temu`;
+  if (diffHours < 24) return isEn ? `${diffHours}h ago` : `${diffHours} godz. temu`;
   const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} dni temu`;
+  return isEn ? `${diffDays}d ago` : `${diffDays} dni temu`;
 }
 
 export interface GithubStatusPresentation {
@@ -165,45 +172,57 @@ export interface GithubStatusPresentation {
 }
 
 export function getGithubSyncStatusPresentation(
-  integration?: GitHubIntegrationState
+  integration?: GitHubIntegrationState,
+  language: AppLanguage = 'pl'
 ): GithubStatusPresentation {
+  const isEn = language === 'en';
   const status: GitHubSyncStatus = integration?.status || 'disconnected';
   switch (status) {
     case 'synced':
       return {
         status: 'synced',
-        label: 'Połączono i zsynchronizowano',
-        shortLabel: 'Zsynchronizowano',
+        label: isEn ? 'Connected & synced' : 'Połączono i zsynchronizowano',
+        shortLabel: isEn ? 'Synced' : 'Zsynchronizowano',
         description: integration?.username
-          ? `Aktywne połączenie z @${integration.username} (${integration.reposCount ?? integration.repos?.length ?? 0} repozytoriów).`
+          ? isEn
+            ? `Active link with @${integration.username} (${integration.reposCount ?? integration.repos?.length ?? 0} repositories).`
+            : `Aktywne połączenie z @${integration.username} (${integration.reposCount ?? integration.repos?.length ?? 0} repozytoriów).`
+          : isEn
+          ? 'GitHub account is synced.'
           : 'Konto GitHub jest zsynchronizowane.',
         tone: 'emerald',
       };
     case 'syncing':
       return {
         status: 'syncing',
-        label: 'Synchronizowanie z GitHub...',
-        shortLabel: 'Synchronizacja...',
-        description: 'Trwa odświeżanie listy repozytoriów i metadanych z GitHub API.',
+        label: isEn ? 'Syncing with GitHub...' : 'Synchronizowanie z GitHub...',
+        shortLabel: isEn ? 'Syncing...' : 'Synchronizacja...',
+        description: isEn
+          ? 'Refreshing repositories and metadata from GitHub API.'
+          : 'Trwa odświeżanie listy repozytoriów i metadanych z GitHub API.',
         tone: 'indigo',
       };
     case 'error':
       return {
         status: 'error',
-        label: 'Błąd synchronizacji GitHub',
-        shortLabel: 'Błąd sync',
+        label: isEn ? 'GitHub Sync Error' : 'Błąd synchronizacji GitHub',
+        shortLabel: isEn ? 'Sync error' : 'Błąd sync',
         description:
           integration?.lastSyncError ||
-          'Nie udało się odświeżyć połączenia z GitHub. Użyj przycisku ponownej synchronizacji.',
+          (isEn
+            ? 'Failed to refresh GitHub connection. Use Re-sync to retry.'
+            : 'Nie udało się odświeżyć połączenia z GitHub. Użyj przycisku ponownej synchronizacji.'),
         tone: 'rose',
       };
     case 'disconnected':
     default:
       return {
         status: 'disconnected',
-        label: 'Konto GitHub niepołączone',
-        shortLabel: 'Niepołączono',
-        description: 'Połącz swoje konto GitHub, aby wysyłać postępy projektów bezpośrednio z własnego kodu.',
+        label: isEn ? 'GitHub Account Not Linked' : 'Konto GitHub niepołączone',
+        shortLabel: isEn ? 'Disconnected' : 'Niepołączono',
+        description: isEn
+          ? 'Connect your GitHub account to submit project progress directly from your codebase.'
+          : 'Połącz swoje konto GitHub, aby wysyłać postępy projektów bezpośrednio z własnego kodu.',
         tone: 'slate',
       };
   }
@@ -293,20 +312,31 @@ function buildGithubHeaders(token?: string): Record<string, string> {
   return headers;
 }
 
-function mapGithubHttpError(status: number, usernameOrRepo: string): string {
+function mapGithubHttpError(status: number, usernameOrRepo: string, language: AppLanguage = 'pl'): string {
+  const isEn = language === 'en';
   if (status === 401) {
-    return 'Token dostępu GitHub (PAT) jest nieprawidłowy lub wygasł.';
+    return isEn
+      ? 'GitHub access token (PAT) is invalid or expired.'
+      : 'Token dostępu GitHub (PAT) jest nieprawidłowy lub wygasł.';
   }
   if (status === 403 || status === 429) {
-    return 'Przekroczono limit zapytań GitHub API (60 req/h bez tokena). Odczekaj chwilę lub podaj opcjonalny Personal Access Token.';
+    return isEn
+      ? 'GitHub API rate limit reached (60 req/h without token). Wait a moment or provide an optional Personal Access Token.'
+      : 'Przekroczono limit zapytań GitHub API (60 req/h bez tokena). Odczekaj chwilę lub podaj opcjonalny Personal Access Token.';
   }
   if (status === 404) {
-    return `Nie znaleziono zasobu GitHub: "${usernameOrRepo}". Sprawdź nazwę użytkownika / repozytorium oraz widoczność.`;
+    return isEn
+      ? `GitHub resource not found: "${usernameOrRepo}". Check the username / repository name and visibility.`
+      : `Nie znaleziono zasobu GitHub: "${usernameOrRepo}". Sprawdź nazwę użytkownika / repozytorium oraz widoczność.`;
   }
   if (status === 409) {
-    return `Repozytorium "${usernameOrRepo}" jest puste (brak commitów na głównej gałęzi).`;
+    return isEn
+      ? `Repository "${usernameOrRepo}" is empty (no commits on default branch).`
+      : `Repozytorium "${usernameOrRepo}" jest puste (brak commitów na głównej gałęzi).`;
   }
-  return `Błąd komunikacji z GitHub API (HTTP ${status}).`;
+  return isEn
+    ? `GitHub API communication error (HTTP ${status}).`
+    : `Błąd komunikacji z GitHub API (HTTP ${status}).`;
 }
 
 export async function fetchGithubUserAndRepos(
@@ -315,13 +345,18 @@ export async function fetchGithubUserAndRepos(
     token?: string;
     previousIntegration?: GitHubIntegrationState;
     fetchFn?: typeof fetch;
+    language?: AppLanguage;
   }
 ): Promise<GithubSyncResult> {
+  const language: AppLanguage = options?.language || 'pl';
+  const isEn = language === 'en';
   const username = parseGithubUsername(usernameOrUrl);
   const nowIso = new Date().toISOString();
 
   if (!username) {
-    const errorMsg = 'Podaj poprawną nazwę użytkownika GitHub lub adres profilu (np. octocat lub https://github.com/octocat).';
+    const errorMsg = isEn
+      ? 'Enter a valid GitHub username or profile URL (e.g. octocat or https://github.com/octocat).'
+      : 'Podaj poprawną nazwę użytkownika GitHub lub adres profilu (np. octocat lub https://github.com/octocat).';
     return {
       ok: false,
       error: errorMsg,
@@ -340,7 +375,7 @@ export async function fetchGithubUserAndRepos(
   try {
     const userRes = await doFetch(`${GITHUB_API_BASE}/users/${encodeURIComponent(username)}`, { headers });
     if (!userRes.ok) {
-      const errText = mapGithubHttpError(userRes.status, username);
+      const errText = mapGithubHttpError(userRes.status, username, language);
       return {
         ok: false,
         error: errText,
@@ -366,7 +401,7 @@ export async function fetchGithubUserAndRepos(
       { headers }
     );
     if (!reposRes.ok) {
-      const errText = mapGithubHttpError(reposRes.status, `${userData.login}/repos`);
+      const errText = mapGithubHttpError(reposRes.status, `${userData.login}/repos`, language);
       return {
         ok: false,
         error: errText,
@@ -429,7 +464,11 @@ export async function fetchGithubUserAndRepos(
   } catch (err) {
     const msg =
       err instanceof Error && err.message
-        ? `Błąd sieci podczas synchronizacji z GitHub: ${err.message}`
+        ? isEn
+          ? `Network error while syncing with GitHub: ${err.message}`
+          : `Błąd sieci podczas synchronizacji z GitHub: ${err.message}`
+        : isEn
+        ? 'Failed to connect to GitHub API. Check your internet connection.'
         : 'Błąd połączenia z GitHub API. Sprawdź dostęp do internetu.';
     return {
       ok: false,
@@ -481,13 +520,18 @@ export async function submitProjectFromGithubRepo(
   options?: {
     token?: string;
     fetchFn?: typeof fetch;
+    language?: AppLanguage;
   }
 ): Promise<GithubProjectSubmitResult> {
+  const language: AppLanguage = options?.language || 'pl';
+  const isEn = language === 'en';
   const parsedRepo = parseGithubRepoIdentifier(repoIdentifier);
   if (!parsedRepo) {
     return {
       ok: false,
-      error: 'Podaj poprawny adres repozytorium GitHub (np. nazwa-konta/moj-projekt lub https://github.com/nazwa-konta/moj-projekt).',
+      error: isEn
+        ? 'Enter a valid GitHub repository address (e.g. account/my-project or https://github.com/account/my-project).'
+        : 'Podaj poprawny adres repozytorium GitHub (np. nazwa-konta/moj-projekt lub https://github.com/nazwa-konta/moj-projekt).',
     };
   }
 
@@ -500,7 +544,7 @@ export async function submitProjectFromGithubRepo(
       { headers }
     );
     if (!repoRes.ok) {
-      return { ok: false, error: mapGithubHttpError(repoRes.status, parsedRepo.fullName) };
+      return { ok: false, error: mapGithubHttpError(repoRes.status, parsedRepo.fullName, language) };
     }
 
     const repoData = (await repoRes.json()) as {
@@ -515,7 +559,7 @@ export async function submitProjectFromGithubRepo(
       { headers }
     );
     if (!commitsRes.ok) {
-      return { ok: false, error: mapGithubHttpError(commitsRes.status, repoData.full_name) };
+      return { ok: false, error: mapGithubHttpError(commitsRes.status, repoData.full_name, language) };
     }
 
     const commitsData = (await commitsRes.json()) as Array<{
@@ -529,7 +573,9 @@ export async function submitProjectFromGithubRepo(
     if (!latestCommit?.sha) {
       return {
         ok: false,
-        error: `Repozytorium "${repoData.full_name}" nie posiada jeszcze żadnego commita na gałęzi "${defaultBranch}".`,
+        error: isEn
+          ? `Repository "${repoData.full_name}" has no commits yet on branch "${defaultBranch}".`
+          : `Repozytorium "${repoData.full_name}" nie posiada jeszcze żadnego commita na gałęzi "${defaultBranch}".`,
       };
     }
 
@@ -557,7 +603,9 @@ export async function submitProjectFromGithubRepo(
     if (allRepoFiles.length === 0) {
       return {
         ok: false,
-        error: `Nie wykryto plików źródłowych w repozytorium "${repoData.full_name}" na gałęzi "${defaultBranch}".`,
+        error: isEn
+          ? `No source files detected in repository "${repoData.full_name}" on branch "${defaultBranch}".`
+          : `Nie wykryto plików źródłowych w repozytorium "${repoData.full_name}" na gałęzi "${defaultBranch}".`,
       };
     }
 
@@ -622,17 +670,23 @@ export async function submitProjectFromGithubRepo(
       js: jsParts.join('\n').slice(0, 80000),
     };
 
-    const projectExercise = getProjectInteractiveExercise(project);
-    const validationSummary = validateExerciseCode(projectExercise, extractedCode);
+    const projectExercise = getProjectInteractiveExercise(project, language);
+    const validationSummary = validateExerciseCode(projectExercise, extractedCode, language);
 
     const nowIso = new Date().toISOString();
     const shortSha = latestCommit.sha.slice(0, 7);
-    const commitMsg = (latestCommit.commit?.message || 'Commit w repozytorium').split('\n')[0].slice(0, 160);
+    const commitMsg = (latestCommit.commit?.message || (isEn ? 'Repository commit' : 'Commit w repozytorium'))
+      .split('\n')[0]
+      .slice(0, 160);
     const commitDate = latestCommit.commit?.author?.date || nowIso;
 
     const status: GitHubProjectSubmission['status'] = validationSummary.allPassed ? 'verified' : 'submitted';
     const summary = validationSummary.allPassed
-      ? `Kod z GitHub (${repoData.full_name} @ ${shortSha}) przeszedł 100% automatycznych testów projektu (${validationSummary.passedCount}/${validationSummary.totalCount}).`
+      ? isEn
+        ? `GitHub codebase (${repoData.full_name} @ ${shortSha}) passed 100% of automated project tests (${validationSummary.passedCount}/${validationSummary.totalCount}).`
+        : `Kod z GitHub (${repoData.full_name} @ ${shortSha}) przeszedł 100% automatycznych testów projektu (${validationSummary.passedCount}/${validationSummary.totalCount}).`
+      : isEn
+      ? `Submitted GitHub codebase (${repoData.full_name} @ ${shortSha}). Detected ${allRepoFiles.length} files (${validationSummary.passedCount}/${validationSummary.totalCount} code rules matched).`
       : `Przesłano codebase z GitHub (${repoData.full_name} @ ${shortSha}). Wykryto ${allRepoFiles.length} plików (${validationSummary.passedCount}/${validationSummary.totalCount} reguł kodu zsynchronizowanych).`;
 
     const submission: GitHubProjectSubmission = {
@@ -662,7 +716,11 @@ export async function submitProjectFromGithubRepo(
       ok: false,
       error:
         err instanceof Error && err.message
-          ? `Błąd podczas pobierania kodu projektu z GitHub: ${err.message}`
+          ? isEn
+            ? `Error while fetching project code from GitHub: ${err.message}`
+            : `Błąd podczas pobierania kodu projektu z GitHub: ${err.message}`
+          : isEn
+          ? 'Failed to fetch repository from GitHub.'
           : 'Nie udało się pobrać repozytorium z GitHub.',
     };
   }

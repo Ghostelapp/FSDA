@@ -1,4 +1,5 @@
 import { User, Lesson, ReviewItem } from '../types';
+import { AppLanguage, getLocalizedLevelTitle } from './i18n';
 
 export interface LevelInfo {
   level: number;
@@ -23,7 +24,7 @@ export const LEVEL_TIERS: { level: number; title: string; minXp: number }[] = [
   { level: 10, title: 'Samodzielny Junior Full Stack', minXp: 8000 },
 ];
 
-export function calculateLevel(xp: number): LevelInfo {
+export function calculateLevel(xp: number, language: AppLanguage = 'pl'): LevelInfo {
   const safeXp = Math.max(0, Math.floor(xp));
   let currentTierIndex = 0;
 
@@ -37,11 +38,12 @@ export function calculateLevel(xp: number): LevelInfo {
 
   const currentTier = LEVEL_TIERS[currentTierIndex];
   const nextTier = LEVEL_TIERS[currentTierIndex + 1];
+  const localizedTitle = getLocalizedLevelTitle(currentTier.level, currentTier.title, language);
 
   if (!nextTier) {
     return {
       level: currentTier.level,
-      title: currentTier.title,
+      title: localizedTitle,
       minXp: currentTier.minXp,
       maxXp: currentTier.minXp * 1.5,
       currentLevelXp: safeXp - currentTier.minXp,
@@ -56,7 +58,7 @@ export function calculateLevel(xp: number): LevelInfo {
 
   return {
     level: currentTier.level,
-    title: currentTier.title,
+    title: localizedTitle,
     minXp: currentTier.minXp,
     maxXp: nextTier.minXp,
     currentLevelXp,
@@ -126,7 +128,11 @@ export function checkBadgesToUnlock(user: User): string[] {
   return newlyUnlocked;
 }
 
-export function findWeakAreas(quizScores: Record<string, number>, allLessons: Lesson[]): ReviewItem[] {
+export function findWeakAreas(
+  quizScores: Record<string, number>,
+  allLessons: Lesson[],
+  language: AppLanguage = 'pl'
+): ReviewItem[] {
   const weakItems: ReviewItem[] = [];
 
   for (const lesson of allLessons) {
@@ -137,7 +143,7 @@ export function findWeakAreas(quizScores: Record<string, number>, allLessons: Le
         lessonTitle: lesson.title,
         moduleTitle: lesson.moduleTitle,
         quizScore: score,
-        lastAttempt: 'Niedawno',
+        lastAttempt: language === 'en' ? 'Recently' : 'Niedawno',
         keyTopics: lesson.objectives.slice(0, 3),
       });
     }
@@ -356,16 +362,30 @@ export function refillAllLives(user: User): User {
 /**
  * Buys 1 heart using XP.
  */
-export function buyHeartWithXP(user: User): { success: boolean; user: User; error?: string } {
+export function buyHeartWithXP(
+  user: User,
+  language: AppLanguage = 'pl'
+): { success: boolean; user: User; error?: string } {
   const maxLives = user.maxLives ?? MAX_FREE_LIVES;
   const currentLives = typeof user.lives === 'number' ? user.lives : maxLives;
 
   if (currentLives >= maxLives) {
-    return { success: false, user, error: 'Masz już pełną liczbę żyć (5/5)!' };
+    return {
+      success: false,
+      user,
+      error: language === 'en' ? 'You already have full lives (5/5)!' : 'Masz już pełną liczbę żyć (5/5)!',
+    };
   }
 
   if (user.xp < XP_COST_ONE_HEART) {
-    return { success: false, user, error: `Potrzebujesz ${XP_COST_ONE_HEART} XP. Masz obecnie ${user.xp} XP.` };
+    return {
+      success: false,
+      user,
+      error:
+        language === 'en'
+          ? `You need ${XP_COST_ONE_HEART} XP. You currently have ${user.xp} XP.`
+          : `Potrzebujesz ${XP_COST_ONE_HEART} XP. Masz obecnie ${user.xp} XP.`,
+    };
   }
 
   const newLives = Math.min(maxLives, currentLives + 1);
@@ -385,16 +405,30 @@ export function buyHeartWithXP(user: User): { success: boolean; user: User; erro
 /**
  * Buys a full refill (5/5) using XP.
  */
-export function buyFullRefillWithXP(user: User): { success: boolean; user: User; error?: string } {
+export function buyFullRefillWithXP(
+  user: User,
+  language: AppLanguage = 'pl'
+): { success: boolean; user: User; error?: string } {
   const maxLives = user.maxLives ?? MAX_FREE_LIVES;
   const currentLives = typeof user.lives === 'number' ? user.lives : maxLives;
 
   if (currentLives >= maxLives) {
-    return { success: false, user, error: 'Masz już pełną liczbę żyć (5/5)!' };
+    return {
+      success: false,
+      user,
+      error: language === 'en' ? 'You already have full lives (5/5)!' : 'Masz już pełną liczbę żyć (5/5)!',
+    };
   }
 
   if (user.xp < XP_COST_FULL_REFILL) {
-    return { success: false, user, error: `Potrzebujesz ${XP_COST_FULL_REFILL} XP. Masz obecnie ${user.xp} XP.` };
+    return {
+      success: false,
+      user,
+      error:
+        language === 'en'
+          ? `You need ${XP_COST_FULL_REFILL} XP. You currently have ${user.xp} XP.`
+          : `Potrzebujesz ${XP_COST_FULL_REFILL} XP. Masz obecnie ${user.xp} XP.`,
+    };
   }
 
   const newXp = user.xp - XP_COST_FULL_REFILL;
@@ -413,9 +447,19 @@ export function buyFullRefillWithXP(user: User): { success: boolean; user: User;
 /**
  * Buys a Streak Freeze shield using XP.
  */
-export function buyStreakFreezeWithXP(user: User): { success: boolean; user: User; error?: string } {
+export function buyStreakFreezeWithXP(
+  user: User,
+  language: AppLanguage = 'pl'
+): { success: boolean; user: User; error?: string } {
   if (user.xp < XP_COST_STREAK_FREEZE) {
-    return { success: false, user, error: `Potrzebujesz ${XP_COST_STREAK_FREEZE} XP. Masz obecnie ${user.xp} XP.` };
+    return {
+      success: false,
+      user,
+      error:
+        language === 'en'
+          ? `You need ${XP_COST_STREAK_FREEZE} XP. You currently have ${user.xp} XP.`
+          : `Potrzebujesz ${XP_COST_STREAK_FREEZE} XP. Masz obecnie ${user.xp} XP.`,
+    };
   }
 
   const newXp = user.xp - XP_COST_STREAK_FREEZE;

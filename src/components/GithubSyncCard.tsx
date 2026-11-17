@@ -27,6 +27,7 @@ interface GithubSyncCardProps {
 
 export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false }) => {
   const {
+    language,
     currentUser,
     isAuthenticated,
     isSyncingGithub,
@@ -34,10 +35,12 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
     refreshGithubSync,
     unlinkGithubAccount,
     setActiveTab,
+    allProjects,
   } = useApp();
+  const isEn = language === 'en';
 
   const gh = currentUser.githubIntegration;
-  const presentation = getGithubSyncStatusPresentation(gh);
+  const presentation = getGithubSyncStatusPresentation(gh, language);
   const [usernameInput, setUsernameInput] = useState(gh?.username || '');
   const [tokenInput, setTokenInput] = useState(() => getSessionGithubToken());
   const [showTokenField, setShowTokenField] = useState(false);
@@ -74,7 +77,11 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
   const handleConnect = async () => {
     setLocalError('');
     if (!usernameInput.trim()) {
-      setLocalError('Podaj nazwę użytkownika GitHub lub link do profilu.');
+      setLocalError(
+        isEn
+          ? 'Enter your GitHub username or profile link.'
+          : 'Podaj nazwę użytkownika GitHub lub link do profilu.'
+      );
       return;
     }
     const res = await linkGithubAccount(usernameInput.trim(), tokenInput);
@@ -114,10 +121,12 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
           </div>
           <div className="min-w-0">
             <h3 className="text-xs sm:text-sm font-bold text-white leading-tight">
-              Synchronizacja Konta GitHub
+              {isEn ? 'GitHub Account Sync' : 'Synchronizacja Konta GitHub'}
             </h3>
             <p className="text-[11px] text-slate-400 truncate">
-              Bezpośrednie przesyłanie postępów projektów z własnych repozytoriów
+              {isEn
+                ? 'Submit project progress directly from your own repositories'
+                : 'Bezpośrednie przesyłanie postępów projektów z własnych repozytoriów'}
             </p>
           </div>
         </div>
@@ -143,7 +152,7 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
               {gh.avatarUrl ? (
                 <img
                   src={gh.avatarUrl}
-                  alt={`Awatar GitHub ${gh.username}`}
+                  alt={isEn ? `GitHub avatar ${gh.username}` : `Awatar GitHub ${gh.username}`}
                   className="h-9 w-9 rounded-lg object-cover border border-slate-700 shrink-0"
                 />
               ) : (
@@ -166,10 +175,16 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-slate-400 mt-0.5">
                   <span className="inline-flex items-center gap-1">
                     <FolderGit2 className="h-3 w-3 text-cyan-400" />
-                    <span>{gh.reposCount ?? gh.repos?.length ?? 0} repozytoriów</span>
+                    <span>
+                      {gh.reposCount ?? gh.repos?.length ?? 0}{' '}
+                      {isEn ? 'repositories' : 'repozytoriów'}
+                    </span>
                   </span>
                   <span className="hidden sm:inline" aria-hidden="true">•</span>
-                  <span>Przesłanych projektów: {submissionsCount}/12</span>
+                  <span>
+                    {isEn ? 'Submitted projects:' : 'Przesłanych projektów:'} {submissionsCount}/
+                    {allProjects.length}
+                  </span>
                 </div>
               </div>
             </div>
@@ -180,21 +195,29 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
                 type="button"
                 onClick={() => void handleRefresh()}
                 disabled={isSyncingGithub}
-                aria-label="Odśwież połączenie GitHub"
+                aria-label={isEn ? 'Refresh GitHub connection' : 'Odśwież połączenie GitHub'}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-[11px] font-bold transition-colors cursor-pointer"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${isSyncingGithub ? 'animate-spin' : ''}`} />
-                <span>{isSyncingGithub ? 'Synchronizacja...' : 'Odśwież połączenie'}</span>
+                <span>
+                  {isSyncingGithub
+                    ? isEn
+                      ? 'Syncing...'
+                      : 'Synchronizacja...'
+                    : isEn
+                    ? 'Refresh connection'
+                    : 'Odśwież połączenie'}
+                </span>
               </button>
               <button
                 type="button"
                 onClick={handleUnlink}
                 disabled={isSyncingGithub}
-                aria-label="Rozłącz konto GitHub"
+                aria-label={isEn ? 'Disconnect GitHub account' : 'Rozłącz konto GitHub'}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 border border-slate-700 hover:border-rose-500/40 text-slate-300 hover:text-rose-300 text-[11px] font-semibold transition-colors cursor-pointer"
               >
                 <Unlink className="h-3.5 w-3.5" />
-                <span>Rozłącz</span>
+                <span>{isEn ? 'Disconnect' : 'Rozłącz'}</span>
               </button>
             </div>
           </div>
@@ -206,13 +229,15 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
           >
             <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-slate-300">
               <Clock className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-              <span className="text-slate-400">Ostatnia udana synchronizacja:</span>
+              <span className="text-slate-400">
+                {isEn ? 'Last successful sync:' : 'Ostatnia udana synchronizacja:'}
+              </span>
               <strong className="text-white font-mono">
-                {formatGithubSyncTimestamp(gh.lastSyncedAt)}
+                {formatGithubSyncTimestamp(gh.lastSyncedAt, language)}
               </strong>
               {gh.lastSyncedAt && (
                 <span className="text-emerald-400 font-medium">
-                  ({formatRelativeSyncTime(gh.lastSyncedAt)})
+                  ({formatRelativeSyncTime(gh.lastSyncedAt, Date.now(), language)})
                 </span>
               )}
             </div>
@@ -222,7 +247,15 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
               onClick={() => setShowAccountEditor((prev) => !prev)}
               className="text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold inline-flex items-center gap-1"
             >
-              <span>{showAccountEditor ? 'Ukryj konfigurację' : 'Zmień konto / Token'}</span>
+              <span>
+                {showAccountEditor
+                  ? isEn
+                    ? 'Hide settings'
+                    : 'Ukryj konfigurację'
+                  : isEn
+                  ? 'Change account / Token'
+                  : 'Zmień konto / Token'}
+              </span>
               {showAccountEditor ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </button>
           </div>
@@ -231,14 +264,16 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
           {reposPreview.length > 0 && (
             <div className="space-y-1.5 pt-1">
               <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                <span>Ostatnio zsynchronizowane repozytoria</span>
+                <span>
+                  {isEn ? 'Recently synced repositories' : 'Ostatnio zsynchronizowane repozytoria'}
+                </span>
                 {compact && (
                   <button
                     type="button"
                     onClick={() => setActiveTab('projects')}
                     className="text-cyan-400 hover:text-cyan-300 normal-case font-semibold"
                   >
-                    Prześlij kod projektu →
+                    {isEn ? 'Submit project code →' : 'Prześlij kod projektu →'}
                   </button>
                 )}
               </div>
@@ -280,13 +315,15 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
         <div className="space-y-2.5 pt-1">
           {!isAuthenticated && (
             <p className="text-[11px] text-amber-300 bg-amber-950/30 border border-amber-500/30 rounded-lg px-2.5 py-1.5">
-              Zaloguj się na konto w Akademii, aby trwale powiązać repozytoria GitHub ze swoim profilem.
+              {isEn
+                ? 'Sign in to your Academy account to permanently link GitHub repositories to your profile.'
+                : 'Zaloguj się na konto w Akademii, aby trwale powiązać repozytoria GitHub ze swoim profilem.'}
             </p>
           )}
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="flex-1 space-y-1">
               <label htmlFor="github-username-input" className="text-[11px] font-semibold text-slate-300 block">
-                Nazwa użytkownika GitHub lub link do profilu:
+                {isEn ? 'GitHub username or profile link:' : 'Nazwa użytkownika GitHub lub link do profilu:'}
               </label>
               <input
                 id="github-username-input"
@@ -299,7 +336,7 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
                     void handleConnect();
                   }
                 }}
-                placeholder="np. octocat lub https://github.com/nazwa"
+                placeholder={isEn ? 'e.g. octocat or https://github.com/username' : 'np. octocat lub https://github.com/nazwa'}
                 className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
@@ -315,7 +352,15 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
                 ) : (
                   <Link2 className="h-3.5 w-3.5" />
                 )}
-                <span>{isConnected ? 'Zapisz i odśwież' : 'Połącz GitHub'}</span>
+                <span>
+                  {isConnected
+                    ? isEn
+                      ? 'Save & refresh'
+                      : 'Zapisz i odśwież'
+                    : isEn
+                    ? 'Connect GitHub'
+                    : 'Połącz GitHub'}
+                </span>
               </button>
             </div>
           </div>
@@ -329,7 +374,11 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
               <KeyRound className="h-3 w-3 text-amber-400" />
               <span>
                 {showTokenField
-                  ? 'Ukryj opcjonalny Personal Access Token (PAT)'
+                  ? isEn
+                    ? 'Hide optional Personal Access Token (PAT)'
+                    : 'Ukryj opcjonalny Personal Access Token (PAT)'
+                  : isEn
+                  ? 'Optional: add GitHub Token (for private repos or higher API limits)'
                   : 'Opcjonalnie: dodaj GitHub Token (dla prywatnych repo lub wyższych limitów API)'}
               </span>
             </button>
@@ -341,11 +390,17 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
                   type="password"
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
-                  placeholder="github_pat_... lub ghp_... (przechowywane wyłącznie w sesji przeglądarki)"
+                  placeholder={
+                    isEn
+                      ? 'github_pat_... or ghp_... (stored in browser session only)'
+                      : 'github_pat_... lub ghp_... (przechowywane wyłącznie w sesji przeglądarki)'
+                  }
                   className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
                 />
                 <p className="text-[10px] text-slate-400">
-                  Token nigdy nie jest zapisywany w bazie Cloud Firestore ani eksportowany w kopiach zapasowych.
+                  {isEn
+                    ? 'The token is never saved to Cloud Firestore or exported in backups.'
+                    : 'Token nigdy nie jest zapisywany w bazie Cloud Firestore ani eksportowany w kopiach zapasowych.'}
                 </p>
               </div>
             )}

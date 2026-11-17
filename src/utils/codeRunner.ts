@@ -1,4 +1,5 @@
 import { InteractiveExercise, Project } from '../types';
+import type { AppLanguage } from './i18n';
 
 export interface RuleResult {
   id: string;
@@ -41,7 +42,9 @@ export function checkLessonCompletionEligibility(params: {
   isExercisePassed: boolean;
   quizScore?: number;
   requiredQuizScore?: number;
+  language?: AppLanguage;
 }): LessonCompletionCheck {
+  const isEn = params.language === 'en';
   const requiredQuizScore = params.requiredQuizScore ?? 80;
   const quizScore = params.quizScore ?? 0;
   const isExercisePassed = Boolean(params.isExercisePassed);
@@ -49,11 +52,17 @@ export function checkLessonCompletionEligibility(params: {
   const missingReasons: string[] = [];
 
   if (!isExercisePassed) {
-    missingReasons.push('Rozwiąż i zalicz ćwiczenie praktyczne w edytorze kodu (Sekcja 5 — 100% testów).');
+    missingReasons.push(
+      isEn
+        ? 'Complete and pass the interactive coding exercise in the editor (Section 5 — 100% of checks).'
+        : 'Rozwiąż i zalicz ćwiczenie praktyczne w edytorze kodu (Sekcja 5 — 100% testów).'
+    );
   }
   if (!isQuizPassed) {
     missingReasons.push(
-      `Zdaj test wiedzy (Quiz) z wynikiem co najmniej ${requiredQuizScore}% (Twój wynik: ${quizScore}%).`
+      isEn
+        ? `Pass the knowledge quiz with at least ${requiredQuizScore}% (your score: ${quizScore}%).`
+        : `Zdaj test wiedzy (Quiz) z wynikiem co najmniej ${requiredQuizScore}% (Twój wynik: ${quizScore}%).`
     );
   }
 
@@ -69,8 +78,10 @@ export function checkLessonCompletionEligibility(params: {
 
 export function validateExerciseCode(
   exercise: InteractiveExercise,
-  code: { html: string; css: string; js: string }
+  code: { html: string; css: string; js: string },
+  language: AppLanguage = 'pl'
 ): ValidationSummary {
+  const isEn = language === 'en';
   const cleanHtml = stripCodeComments(code.html, 'html');
   const cleanCss = stripCodeComments(code.css, 'css');
   const cleanJs = stripCodeComments(code.js, 'js');
@@ -89,7 +100,9 @@ export function validateExerciseCode(
         const targetClean = rule.target.toLowerCase();
         passed = normalizedHtml.includes(targetClean);
         if (!passed) {
-          message = `Brak oczekiwanego fragmentu: "${rule.target}"`;
+          message = isEn
+            ? `Missing expected snippet: "${rule.target}"`
+            : `Brak oczekiwanego fragmentu: "${rule.target}"`;
         }
         break;
       }
@@ -100,7 +113,9 @@ export function validateExerciseCode(
         const tagRegex = new RegExp(`<${tag}(\\s|>|/)`, 'i');
         passed = tagRegex.test(cleanHtml);
         if (!passed) {
-          message = `Brak wymaganego znacznika <${rule.target}> w strukturze HTML`;
+          message = isEn
+            ? `Missing required <${rule.target}> tag in HTML structure`
+            : `Brak wymaganego znacznika <${rule.target}> w strukturze HTML`;
         }
         break;
       }
@@ -112,13 +127,15 @@ export function validateExerciseCode(
           const regex = new RegExp(`${attrName}\\s*=\\s*["'][^"']*${attrVal}[^"']*["']`, 'i');
           passed = regex.test(cleanHtml);
           if (!passed) {
-            message = `Brak atrybutu ${attrName} zawierającego "${rule.param}"`;
+            message = isEn
+              ? `Missing attribute ${attrName} containing "${rule.param}"`
+              : `Brak atrybutu ${attrName} zawierającego "${rule.param}"`;
           }
         } else {
           const regex = new RegExp(`\\b${attrName}\\b`, 'i');
           passed = regex.test(cleanHtml);
           if (!passed) {
-            message = `Brak atrybutu ${attrName}`;
+            message = isEn ? `Missing attribute ${attrName}` : `Brak atrybutu ${attrName}`;
           }
         }
         break;
@@ -128,7 +145,9 @@ export function validateExerciseCode(
         const cssTarget = rule.target.toLowerCase();
         passed = normalizedCss.includes(cssTarget);
         if (!passed) {
-          message = `Reguła CSS powinna zawierać definicję: "${rule.target}"`;
+          message = isEn
+            ? `CSS stylesheet should include rule: "${rule.target}"`
+            : `Reguła CSS powinna zawierać definicję: "${rule.target}"`;
         }
         break;
       }
@@ -137,14 +156,16 @@ export function validateExerciseCode(
         const jsTarget = rule.target.toLowerCase();
         passed = normalizedJs.includes(jsTarget);
         if (!passed) {
-          message = `Kod JavaScript powinien zawierać: "${rule.target}"`;
+          message = isEn
+            ? `JavaScript code should include: "${rule.target}"`
+            : `Kod JavaScript powinien zawierać: "${rule.target}"`;
         }
         break;
       }
 
       default:
         passed = false;
-        message = 'Nieobsługiwany typ weryfikacji';
+        message = isEn ? 'Unsupported verification check' : 'Nieobsługiwany typ weryfikacji';
     }
 
     results.push({
@@ -471,39 +492,256 @@ const PROJECT_VERIFICATION_SPECS: Record<string, InteractiveExercise> = {
   },
 };
 
-export function getProjectInteractiveExercise(project: Project): InteractiveExercise {
+const PROJECT_VERIFICATION_EN: Record<
+  string,
+  {
+    title: string;
+    instructions: string;
+    task: string;
+    hints: string[];
+    rules: Record<string, string>;
+  }
+> = {
+  'proj-1': {
+    title: 'Project #1 Verification: Personal Developer Portfolio Website',
+    instructions: 'Build a semantic portfolio: add a <nav> bar, a <form> contact section with inputs, and define a Flexbox or Grid layout (display: flex or display: grid) in CSS.',
+    task: 'Complete HTML with <nav> and <form>, and add a display: flex rule in CSS.',
+    hints: [
+      'Stage 1: Inside index.html, add a <nav> tag inside <header>.',
+      'Stage 2: Add a contact <form> and <footer> section at the bottom of your HTML.',
+      'Stage 3: Add display: flex; inside styles.css.',
+    ],
+    rules: {
+      'p1-s1': 'Stage 1: Semantic navigation <nav> in HTML structure',
+      'p1-s2': 'Stage 2: Contact form <form> present in markup',
+      'p1-s3': 'Stage 3: Responsive Flexbox layout (display: flex) in CSS',
+    },
+  },
+  'proj-2': {
+    title: 'Project #2 Verification: Responsive SaaS Company Landing Page',
+    instructions: 'Build a SaaS landing page: create a Hero CTA button, a CSS Grid (display: grid) feature/pricing layout, and a native FAQ accordion with <details> and <summary>.',
+    task: 'Add a <details> + <summary> accordion in HTML and define display: grid in CSS.',
+    hints: [
+      'In index.html add a <details> element containing a <summary>Question</summary>.',
+      'In styles.css add display: grid; for .pricing.',
+    ],
+    rules: {
+      'p2-s1': 'Stage 1: Hero section with CTA <button>',
+      'p2-s2': 'Stage 2: Multi-column CSS Grid layout (display: grid)',
+      'p2-s3': 'Stage 3: Native FAQ accordion (<details>)',
+    },
+  },
+  'proj-3': {
+    title: 'Project #3 Verification: Developer Calculator & Base Converter',
+    instructions: 'Implement the calculator engine: HTML display, binary/hex numeral conversion with .toString(2), click handler with addEventListener, and persistent localStorage history.',
+    task: 'In app.js use .toString(2) for binary conversion, addEventListener, and localStorage to persist history.',
+    hints: [
+      'In app.js attach a click listener using addEventListener.',
+      'Call .toString(2) on a number to compute binary representation.',
+      'Call localStorage.setItem(...) to store calculation history.',
+    ],
+    rules: {
+      'p3-s1': 'Stage 1: Binary base conversion (.toString(2)) in JS',
+      'p3-s2': 'Stage 2: Interactive button listener (addEventListener)',
+      'p3-s3': 'Stage 3: Persist calculation history in localStorage',
+    },
+  },
+  'proj-4': {
+    title: 'Project #4 Verification: TaskFlow Kanban Board',
+    instructions: 'Build a Kanban board supporting drag and drop (draggable="true"), JS state management, and JSON.stringify serialization to localStorage.',
+    task: 'Add draggable="true" in HTML and serialize tasks via JSON.stringify and localStorage in JS.',
+    hints: [
+      'Add an HTML card with draggable="true".',
+      'In JS serialize via JSON.stringify(tasks) into localStorage.setItem(...).',
+    ],
+    rules: {
+      'p4-s1': 'Stage 1: Board state serialization (JSON.stringify)',
+      'p4-s2': 'Stage 2: Persistent storage in localStorage',
+      'p4-s3': 'Stage 3: HTML5 Drag & Drop task card (draggable="true")',
+    },
+  },
+  'proj-5': {
+    title: 'Project #5 Verification: WeatherSphere Forecast App',
+    instructions: 'Implement async forecast fetching: an async/await function calling fetch() wrapped inside a try/catch block for safe network error handling.',
+    task: 'Write an async function in app.js using fetch(), await, and try / catch error handling.',
+    hints: [
+      'Declare async function fetchWeather() { ... }',
+      'Wrap await fetch(...) inside try { ... } catch (err) { ... }.',
+    ],
+    rules: {
+      'p5-s1': 'Stage 1: Async function declaration (async / await)',
+      'p5-s2': 'Stage 2: HTTP requests with Fetch API (fetch())',
+      'p5-s3': 'Stage 3: Network error handling inside try / catch',
+    },
+  },
+  'proj-6': {
+    title: 'Project #6 Verification: PulseAnalytics Dashboard',
+    instructions: 'Implement executive analytics logic: a <table> of transactions in HTML, revenue summation via .reduce(), and record filtering via .filter() in JS.',
+    task: 'Add a <table> in HTML and aggregate KPI totals using .filter() and .reduce() in JS.',
+    hints: [
+      'Place a <table> element inside index.html.',
+      'Use transactions.filter(...) and .reduce(...) inside app.js.',
+    ],
+    rules: {
+      'p6-s1': 'Stage 1: Structured transaction <table> in dashboard markup',
+      'p6-s2': 'Stage 2: Transaction filtering via .filter()',
+      'p6-s3': 'Stage 3: KPI aggregation via .reduce()',
+    },
+  },
+  'proj-7': {
+    title: 'Project #7 Verification: SecureGate JWT & RBAC Auth',
+    instructions: 'Implement backend security foundations: bcrypt password hashing, JWT token creation/verification, and HttpOnly refresh cookie flags.',
+    task: 'In JS implement bcrypt password hashing, jwt handling, and httpOnly cookie flag configuration.',
+    hints: ['Include bcrypt, jwt, and httpOnly configuration inside app.js.'],
+    rules: {
+      'p7-s1': 'Stage 1: Password hashing with bcrypt',
+      'p7-s2': 'Stage 2: JWT access/refresh token logic (jwt)',
+      'p7-s3': 'Stage 3: Refresh token cookie protection with httpOnly',
+    },
+  },
+  'proj-8': {
+    title: 'Project #8 Verification: DevChronicle Tech Blog & CMS',
+    instructions: 'Build the article publishing workflow: semantic <article> markup in HTML, URL slug generation, and XSS sanitization via .replace() in JS.',
+    task: 'Add <article> in HTML, and implement slug formatting plus .replace() XSS sanitization in JS.',
+    hints: [
+      'Replace <div class="post"> with semantic <article> in HTML.',
+      'Define slug generation and sanitize strings using .replace(...) in JS.',
+    ],
+    rules: {
+      'p8-s1': 'Stage 1: Semantic <article> post wrapper in HTML',
+      'p8-s2': 'Stage 2: SEO-friendly URL slug helper (slug)',
+      'p8-s3': 'Stage 3: Input transformation & XSS neutralization via .replace()',
+    },
+  },
+  'proj-9': {
+    title: 'Project #9 Verification: CodeMarket E-Commerce & Stripe',
+    instructions: 'Implement cart checkout logic: compute cart total with .reduce(), create a PaymentIntent object, and handle Stripe webhook events.',
+    task: 'Complete cart calculation (.reduce), paymentIntent setup, and webhook handling in app.js.',
+    hints: [
+      'Sum cart items via cart.reduce((sum, item) => sum + item.price, 0).',
+      'Define paymentIntent and a handler function checking webhook events.',
+    ],
+    rules: {
+      'p9-s1': 'Stage 1: Cart subtotal aggregation with .reduce()',
+      'p9-s2': 'Stage 2: Stripe transaction initialization (paymentIntent)',
+      'p9-s3': 'Stage 3: Payment gateway webhook verification (webhook)',
+    },
+  },
+  'proj-10': {
+    title: 'Project #10 Verification: TeamSync Multi-Tenant B2B SaaS',
+    instructions: 'Implement Multi-Tenant data isolation: scope queries by organization tenantId, enforce RBAC role checks, and validate subscription seat limits.',
+    task: 'Add tenantId scoping, role verification, and seat limit enforcement in app.js.',
+    hints: ['Check matching tenantId, RBAC role permission, and plan seat limit in app.js.'],
+    rules: {
+      'p10-s1': 'Stage 1: Organization tenant isolation (tenantId)',
+      'p10-s2': 'Stage 2: Role-Based Access Control (role)',
+      'p10-s3': 'Stage 3: Subscription seat quota enforcement (limit)',
+    },
+  },
+  'proj-11': {
+    title: 'Project #11 Verification: CollabBoard Live Chat & Whiteboard',
+    instructions: 'Build real-time collaboration: add a <canvas> element in HTML, acquire getContext("2d") in JS, and wire WebSocket socket event emission.',
+    task: 'Add <canvas> in HTML, and invoke getContext("2d") plus socket messaging in JS.',
+    hints: [
+      'Place <canvas id="board"></canvas> inside index.html.',
+      'Acquire getContext("2d") and emit drawing events via socket in app.js.',
+    ],
+    rules: {
+      'p11-s1': 'Stage 1: Bidirectional WebSocket messaging (socket)',
+      'p11-s2': 'Stage 2: Shared HTML5 <canvas> element',
+      'p11-s3': 'Stage 3: 2D drawing engine context (getContext)',
+    },
+  },
+  'proj-12': {
+    title: 'Project #12 Verification: Capstone Full Stack Production App',
+    instructions: 'Configure production Capstone deployment architecture: semantic <main> shell, /api/health readiness endpoint, process.env config, and Docker runtime config.',
+    task: 'Add <main> in HTML and configure process.env, /api/health, and docker deployment settings in JS.',
+    hints: [
+      'Use semantic <main> inside index.html.',
+      'Reference process.env, /api/health, and docker runtime setup in JS.',
+    ],
+    rules: {
+      'p12-s1': 'Stage 1: Semantic <main> container in UI shell',
+      'p12-s2': 'Stage 2: Environment variable configuration (process.env)',
+      'p12-s3': 'Stage 3: Healthcheck diagnostic endpoint (/api/health)',
+      'p12-s4': 'Stage 4: Container deployment runtime spec (docker)',
+    },
+  },
+};
+
+export function getProjectInteractiveExercise(
+  project: Project,
+  language: AppLanguage = 'pl'
+): InteractiveExercise {
   const spec = PROJECT_VERIFICATION_SPECS[project.id];
   if (spec) {
+    if (language === 'en') {
+      const en = PROJECT_VERIFICATION_EN[project.id];
+      if (en) {
+        return {
+          ...spec,
+          title: en.title,
+          instructions: en.instructions,
+          task: en.task,
+          hints: en.hints,
+          rules: spec.rules.map((r) => ({
+            ...r,
+            description: en.rules[r.id] || r.description,
+          })),
+        };
+      }
+    }
     return spec;
   }
+
+  const isEn = language === 'en';
   return {
     id: `verify-${project.id}`,
-    title: `Weryfikacja Projektu: ${project.title}`,
+    title: isEn ? `Project Verification: ${project.title}` : `Weryfikacja Projektu: ${project.title}`,
     instructions: project.description,
-    task: 'Zaimplementuj wymagane komponenty i uruchom automatyczne testy akceptacyjne.',
+    task: isEn
+      ? 'Implement the required components and run automated acceptance checks.'
+      : 'Zaimplementuj wymagane komponenty i uruchom automatyczne testy akceptacyjne.',
     starterCode: project.starterCode || {
       html: `<div class="project-container">\n  <h1>${project.title}</h1>\n</div>`,
       css: `body { font-family: system-ui, sans-serif; }`,
-      js: `// Zaimplementuj logikę projektu`,
+      js: isEn ? `// Implement project logic` : `// Zaimplementuj logikę projektu`,
     },
     solutionCode: {
       html: `<main class="project-container">\n  <h1>${project.title}</h1>\n</main>`,
       css: `body { font-family: system-ui, sans-serif; display: flex; }`,
-      js: `console.log("Projekt zweryfikowany");`,
+      js: isEn ? `console.log("Project verified");` : `console.log("Projekt zweryfikowany");`,
     },
     hints: project.requirements.slice(0, 3),
     rules: [
-      { id: 'def-1', description: 'Semantyczny kontener <main> w HTML', ruleType: 'html_tag_exists', target: 'main' },
-      { id: 'def-2', description: 'Układ elastyczny w CSS (display: flex)', ruleType: 'css_contains', target: 'display: flex' },
+      {
+        id: 'def-1',
+        description: isEn ? 'Semantic <main> container in HTML' : 'Semantyczny kontener <main> w HTML',
+        ruleType: 'html_tag_exists',
+        target: 'main',
+      },
+      {
+        id: 'def-2',
+        description: isEn ? 'Flexbox layout in CSS (display: flex)' : 'Układ elastyczny w CSS (display: flex)',
+        ruleType: 'css_contains',
+        target: 'display: flex',
+      },
     ],
   };
 }
 
-
-export function generateSandboxDocument(html: string, css: string, js: string): string {
+export function generateSandboxDocument(
+  html: string,
+  css: string,
+  js: string,
+  language: AppLanguage = 'pl'
+): string {
+  const isEn = language === 'en';
+  const runtimeErrPrefix = isEn ? 'Runtime Error (line ' : 'Runtime Error (linia ';
+  const scriptErrPrefix = isEn ? 'Script execution error: ' : 'Błąd wykonania skryptu: ';
   // Wrap in a secure, self-reporting HTML document with script error and console interceptors
   return `<!DOCTYPE html>
-<html lang="pl">
+<html lang="${language}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -562,7 +800,7 @@ export function generateSandboxDocument(html: string, css: string, js: string): 
       };
 
       window.onerror = function(msg, url, lineNo, columnNo, error) {
-        sendToParent('error', 'Runtime Error (linia ' + lineNo + '): ' + msg);
+        sendToParent('error', '${runtimeErrPrefix}' + lineNo + '): ' + msg);
         return false;
       };
     })();
@@ -575,7 +813,7 @@ export function generateSandboxDocument(html: string, css: string, js: string): 
     try {
       ${js}
     } catch(err) {
-      console.error('Błąd wykonania skryptu: ' + (err.message || err));
+      console.error('${scriptErrPrefix}' + (err.message || err));
     }
   </script>
 </body>

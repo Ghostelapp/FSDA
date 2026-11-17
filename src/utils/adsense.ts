@@ -1,4 +1,5 @@
 import { AdPlacementKey, AdSenseConfig, User } from '../types';
+import { AppLanguage } from './i18n';
 
 declare global {
   interface Window {
@@ -101,6 +102,7 @@ export function checkRewardedAdEligibility(params: {
   config: AdSenseConfig;
   nowMs?: number;
   todayDateKey: string;
+  language?: AppLanguage;
 }): {
   allowed: boolean;
   secondsRemaining: number;
@@ -108,7 +110,8 @@ export function checkRewardedAdEligibility(params: {
   remainingToday: number;
   reason?: string;
 } {
-  const { user, config, nowMs = Date.now(), todayDateKey } = params;
+  const { user, config, nowMs = Date.now(), todayDateKey, language = 'pl' } = params;
+  const isEn = language === 'en';
 
   if (user.isPro) {
     return {
@@ -116,7 +119,9 @@ export function checkRewardedAdEligibility(params: {
       secondsRemaining: 0,
       watchedToday: 0,
       remainingToday: 0,
-      reason: 'Konto PRO posiada nielimitowane serca bez konieczności oglądania reklam.',
+      reason: isEn
+        ? 'PRO accounts already have unlimited hearts without watching ads.'
+        : 'Konto PRO posiada nielimitowane serca bez konieczności oglądania reklam.',
     };
   }
 
@@ -126,7 +131,9 @@ export function checkRewardedAdEligibility(params: {
       secondsRemaining: 0,
       watchedToday: 0,
       remainingToday: 0,
-      reason: 'Reklamy z nagrodą (Rewarded Ads) są obecnie wyłączone.',
+      reason: isEn
+        ? 'Rewarded Ads are currently disabled.'
+        : 'Reklamy z nagrodą (Rewarded Ads) są obecnie wyłączone.',
     };
   }
 
@@ -141,7 +148,9 @@ export function checkRewardedAdEligibility(params: {
       secondsRemaining: 0,
       watchedToday,
       remainingToday: 0,
-      reason: `Wykorzystano dzienny limit reklam z nagrodą (${maxDaily}/${maxDaily}). Odblokuj PRO lub wróć jutro!`,
+      reason: isEn
+        ? `Daily rewarded ad limit reached (${maxDaily}/${maxDaily}). Unlock PRO or come back tomorrow!`
+        : `Wykorzystano dzienny limit reklam z nagrodą (${maxDaily}/${maxDaily}). Odblokuj PRO lub wróć jutro!`,
     };
   }
 
@@ -155,7 +164,9 @@ export function checkRewardedAdEligibility(params: {
         secondsRemaining,
         watchedToday,
         remainingToday,
-        reason: `Odczekaj jeszcze ${secondsRemaining}s przed kolejną reklamą z nagrodą.`,
+        reason: isEn
+          ? `Please wait ${secondsRemaining}s before the next rewarded ad.`
+          : `Odczekaj jeszcze ${secondsRemaining}s przed kolejną reklamą z nagrodą.`,
       };
     }
   }

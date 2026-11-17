@@ -39,6 +39,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   savedCode,
   onSave,
 }) => {
+  const { currentUser, livesInfo, setIsLivesModalOpen, language } = useApp();
+  const isEn = language === 'en';
   const primaryTab = detectPrimaryExerciseTab(exercise);
   const [activeFileTab, setActiveFileTab] = useState<'html' | 'css' | 'js'>(() =>
     detectPrimaryExerciseTab(exercise)
@@ -100,21 +102,20 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
   const runCodeInSandbox = () => {
     if (iframeRef.current) {
-      const doc = generateSandboxDocument(code.html, code.css, code.js);
+      const doc = generateSandboxDocument(code.html, code.css, code.js, language);
       iframeRef.current.srcdoc = doc;
     }
   };
 
-  // Run on mount or when code changes
+  // Run on mount or when code/language changes
   useEffect(() => {
     runCodeInSandbox();
-  }, [code.html, code.css, code.js]);
+  }, [code.html, code.css, code.js, language]);
 
-  const { currentUser, livesInfo, setIsLivesModalOpen } = useApp();
   const currentLives = currentUser.isPro ? 5 : (livesInfo.currentLives ?? currentUser.lives ?? 5);
 
   // Live non-punitive checklist so students see progress as they type (like Mimo/Codecademy/freeCodeCamp)
-  const liveChecklist = validateExerciseCode(exercise, code);
+  const liveChecklist = validateExerciseCode(exercise, code, language);
 
   const handleRunAndValidate = () => {
     if (!currentUser.isPro && currentLives <= 0) {
@@ -124,7 +125,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
     setConsoleLogs([]);
     runCodeInSandbox();
-    const result = validateExerciseCode(exercise, code);
+    const result = validateExerciseCode(exercise, code, language);
     setValidationResult(result);
     if (onValidationChange) {
       onValidationChange(result);
@@ -237,14 +238,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       <div className="border-b border-slate-800/90 bg-slate-950 px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2.5 min-w-0">
           <span className="inline-flex items-center rounded-md bg-indigo-500/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-300 border border-indigo-500/25 shrink-0">
-            Warsztat Kodu
+            {isEn ? 'Code Workshop' : 'Warsztat Kodu'}
           </span>
           <h4 className="text-sm sm:text-base font-bold text-white">
             <RichInlineText text={exercise.title} />
           </h4>
           <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-2.5 py-1 text-xs font-mono text-emerald-300 border border-slate-800 shrink-0">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            Plik: {primaryTab === 'html' ? 'index.html' : primaryTab === 'css' ? 'styles.css' : 'app.js'}
+            {isEn ? 'File:' : 'Plik:'} {primaryTab === 'html' ? 'index.html' : primaryTab === 'css' ? 'styles.css' : 'app.js'}
           </span>
         </div>
 
@@ -261,7 +262,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               }`}
             >
               <Lightbulb className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-              <span className="tabular-nums">Podpowiedzi ({exercise.hints.length})</span>
+              <span className="tabular-nums">
+                {isEn ? `Hints (${exercise.hints.length})` : `Podpowiedzi (${exercise.hints.length})`}
+              </span>
             </button>
           )}
 
@@ -271,24 +274,28 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             onClick={() => setShowSolutionModal(true)}
             className="px-3 py-1.5 rounded-lg border border-slate-700/80 bg-slate-900 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors whitespace-nowrap shrink-0"
           >
-            Podgląd wzorca
+            {isEn ? 'View solution' : 'Podgląd wzorca'}
           </button>
 
           {/* Direct 1-click Insert Solution for Beginners */}
           <button
             type="button"
             onClick={handleApplySolution}
-            title="Wstaw gotowy, poprawny kod wzorcowy bezpośrednio do edytora"
+            title={
+              isEn
+                ? 'Insert the working reference solution directly into the editor'
+                : 'Wstaw gotowy, poprawny kod wzorcowy bezpośrednio do edytora'
+            }
             className="px-3 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 text-xs font-semibold text-indigo-300 hover:bg-indigo-500/20 hover:text-white transition-colors whitespace-nowrap shrink-0"
           >
-            Wstaw wzór rozwiązania
+            {isEn ? 'Insert solution template' : 'Wstaw wzór rozwiązania'}
           </button>
 
           {/* Reset Button */}
           <button
             type="button"
             onClick={handleReset}
-            title="Resetuj do kodu początkowego"
+            title={isEn ? 'Reset to starter code' : 'Resetuj do kodu początkowego'}
             className="p-1.5 rounded-lg border border-slate-700/80 bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors shrink-0"
           >
             <RotateCcw className="h-4 w-4" />
@@ -301,7 +308,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-950/60 whitespace-nowrap shrink-0 tabular-nums"
           >
             <Play className="h-3.5 w-3.5 fill-white shrink-0" />
-            <span>Sprawdź kod ({liveChecklist.passedCount}/{liveChecklist.totalCount})</span>
+            <span>
+              {isEn ? 'Check code' : 'Sprawdź kod'} ({liveChecklist.passedCount}/{liveChecklist.totalCount})
+            </span>
           </button>
         </div>
       </div>
@@ -314,7 +323,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           </span>
           <div className="space-y-1">
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Polecenie zadania
+              {isEn ? 'Task instructions' : 'Polecenie zadania'}
             </p>
             <p className="text-sm sm:text-[15px] text-slate-100 leading-relaxed max-w-[78ch]">
               <RichInlineText text={exercise.task} />
@@ -327,10 +336,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           <div className="pt-3 border-t border-slate-800/80">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Lista kontrolna na żywo (zalicza się automatycznie podczas pisania)
+                {isEn
+                  ? 'Live checklist (checks off automatically as you type)'
+                  : 'Lista kontrolna na żywo (zalicza się automatycznie podczas pisania)'}
               </span>
               <span className="text-xs font-mono font-semibold text-emerald-400 tabular-nums">
-                Ukończono: {liveChecklist.passedCount} z {liveChecklist.totalCount}
+                {isEn
+                  ? `Completed: ${liveChecklist.passedCount} of ${liveChecklist.totalCount}`
+                  : `Ukończono: ${liveChecklist.passedCount} z ${liveChecklist.totalCount}`}
               </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -366,7 +379,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
               <Lightbulb className="h-4 w-4" />
-              Podpowiedź {hintIndex + 1} z {exercise.hints.length}
+              {isEn
+                ? `Hint ${hintIndex + 1} of ${exercise.hints.length}`
+                : `Podpowiedź ${hintIndex + 1} z ${exercise.hints.length}`}
             </span>
             <div className="flex gap-2">
               <button
@@ -375,7 +390,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 onClick={() => setHintIndex((i) => Math.max(0, i - 1))}
                 className="px-2 py-0.5 rounded bg-slate-800 text-[11px] text-slate-300 disabled:opacity-40"
               >
-                Poprzednia
+                {isEn ? 'Previous' : 'Poprzednia'}
               </button>
               <button
                 type="button"
@@ -383,7 +398,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 onClick={() => setHintIndex((i) => Math.min(exercise.hints.length - 1, i + 1))}
                 className="px-2 py-0.5 rounded bg-slate-800 text-[11px] text-slate-300 disabled:opacity-40"
               >
-                Następna
+                {isEn ? 'Next' : 'Następna'}
               </button>
             </div>
           </div>
@@ -414,7 +429,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 <Code className="h-3.5 w-3.5 text-orange-400" />
                 <span>index.html</span>
                 {primaryTab === 'html' && (
-                  <span className="text-[10px] font-bold text-emerald-400">(Edytuj tutaj)</span>
+                  <span className="text-[10px] font-bold text-emerald-400">
+                    {isEn ? '(Edit here)' : '(Edytuj tutaj)'}
+                  </span>
                 )}
               </button>
               <button
@@ -429,7 +446,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 <Layers className="h-3.5 w-3.5 text-cyan-400" />
                 <span>styles.css</span>
                 {primaryTab === 'css' && (
-                  <span className="text-[10px] font-bold text-emerald-400">(Edytuj tutaj)</span>
+                  <span className="text-[10px] font-bold text-emerald-400">
+                    {isEn ? '(Edit here)' : '(Edytuj tutaj)'}
+                  </span>
                 )}
               </button>
               <button
@@ -444,7 +463,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 <TerminalIcon className="h-3.5 w-3.5 text-yellow-400" />
                 <span>app.js</span>
                 {primaryTab === 'js' && (
-                  <span className="text-[10px] font-bold text-emerald-400">(Edytuj tutaj)</span>
+                  <span className="text-[10px] font-bold text-emerald-400">
+                    {isEn ? '(Edit here)' : '(Edytuj tutaj)'}
+                  </span>
                 )}
               </button>
             </div>
@@ -454,7 +475,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               <button
                 type="button"
                 onClick={() => setSyntaxHighlightingEnabled(!syntaxHighlightingEnabled)}
-                title="Włącz/wyłącz kolorowanie składni w edytorze"
+                title={isEn ? 'Toggle editor syntax highlighting' : 'Włącz/wyłącz kolorowanie składni w edytorze'}
                 className={`hidden sm:flex items-center gap-1 text-[11px] px-2 py-1 rounded transition-colors border ${
                   syntaxHighlightingEnabled
                     ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30'
@@ -462,17 +483,21 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 }`}
               >
                 <Palette className="h-3 w-3 text-indigo-400" />
-                <span>{syntaxHighlightingEnabled ? 'Kolory włączone' : 'Tryb zwykły'}</span>
+                <span>
+                  {syntaxHighlightingEnabled
+                    ? isEn ? 'Colors on' : 'Kolory włączone'
+                    : isEn ? 'Plain mode' : 'Tryb zwykły'}
+                </span>
               </button>
 
               <button
                 type="button"
                 onClick={handleCopyCode}
-                title="Kopiuj kod do schowka"
+                title={isEn ? 'Copy code to clipboard' : 'Kopiuj kod do schowka'}
                 className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white px-2 py-1 rounded transition-colors"
               >
                 {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-                <span>{copied ? 'Skopiowano' : 'Kopiuj'}</span>
+                <span>{copied ? (isEn ? 'Copied' : 'Skopiowano') : (isEn ? 'Copy' : 'Kopiuj')}</span>
               </button>
             </div>
           </div>
@@ -524,7 +549,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                     ? 'text-transparent' 
                     : 'text-slate-200'
                 }`}
-                placeholder={`Wpisz kod dla ${activeFileTab.toUpperCase()}...`}
+                placeholder={isEn ? `Write code for ${activeFileTab.toUpperCase()}...` : `Wpisz kod dla ${activeFileTab.toUpperCase()}...`}
               />
             </div>
           </div>
@@ -541,7 +566,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             </div>
             <div className="flex items-center gap-3">
               <span>Ln {lineCount}, Col {charCount}</span>
-              <span className="hidden sm:inline text-emerald-400">● Gotowy</span>
+              <span className="hidden sm:inline text-emerald-400">● {isEn ? 'Ready' : 'Gotowy'}</span>
             </div>
           </div>
         </div>
@@ -561,7 +586,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 }`}
               >
                 <Eye className="h-3.5 w-3.5" />
-                <span>Podgląd na żywo</span>
+                <span>{isEn ? 'Live Preview' : 'Podgląd na żywo'}</span>
               </button>
               <button
                 type="button"
@@ -573,7 +598,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 }`}
               >
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                <span>Testy zadania</span>
+                <span>{isEn ? 'Task Tests' : 'Testy zadania'}</span>
                 {validationResult && (
                   <span className={`text-[10px] px-1.5 rounded-full font-bold ml-1 ${
                     validationResult.allPassed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
@@ -592,7 +617,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 }`}
               >
                 <TerminalIcon className="h-3.5 w-3.5 text-amber-400" />
-                <span>Konsola</span>
+                <span>{isEn ? 'Console' : 'Konsola'}</span>
                 {consoleLogs.length > 0 && (
                   <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 rounded-full font-mono">
                     {consoleLogs.length}
@@ -608,7 +633,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             <div className={`h-full w-full ${activeOutputTab === 'preview' ? 'block' : 'hidden'}`}>
               <iframe
                 ref={iframeRef}
-                title="Piaskownica Kodu"
+                title={isEn ? 'Code Sandbox' : 'Piaskownica Kodu'}
                 sandbox="allow-scripts allow-modals"
                 className="w-full h-full min-h-[360px] bg-white border-0"
               />
@@ -633,12 +658,18 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                         <div>
                           <p className="text-xs font-bold">
                             {validationResult.allPassed 
-                              ? 'Wszystkie testy zaliczone! Doskonała robota!' 
+                              ? isEn ? 'All checks passed! Great work!' : 'Wszystkie testy zaliczone! Doskonała robota!'
+                              : isEn
+                              ? `Passed ${validationResult.passedCount} of ${validationResult.totalCount} checks`
                               : `Zaliczono ${validationResult.passedCount} z ${validationResult.totalCount} testów`}
                           </p>
                           <p className="text-[11px] opacity-80 mt-0.5">
                             {validationResult.allPassed 
-                              ? 'Możesz przejść do podsumowania lub kolejnego etapu lekcji.' 
+                              ? isEn
+                                ? 'You can move on to the summary or the next step of this lesson.'
+                                : 'Możesz przejść do podsumowania lub kolejnego etapu lekcji.'
+                              : isEn
+                              ? 'Inspect the failing rules below and adjust your code.'
                               : 'Przejrzyj poniższe błędy i wprowadź wymagane poprawki w kodzie.'}
                           </p>
                         </div>
@@ -679,8 +710,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 ) : (
                   <div className="py-12 text-center text-slate-400">
                     <CheckCircle2 className="h-8 w-8 text-slate-600 mx-auto mb-2" />
-                    <p className="text-xs font-semibold text-slate-300">Testy nie zostały jeszcze uruchomione</p>
-                    <p className="text-[11px] text-slate-500 mt-1">Kliknij zielony przycisk "Sprawdź kod" u góry edytora.</p>
+                    <p className="text-xs font-semibold text-slate-300">
+                      {isEn ? 'Tests have not been run yet' : 'Testy nie zostały jeszcze uruchomione'}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      {isEn ? 'Click the green "Check code" button above the editor.' : 'Kliknij zielony przycisk "Sprawdź kod" u góry edytora.'}
+                    </p>
                   </div>
                 )}
               </div>
@@ -692,8 +727,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 {consoleLogs.length === 0 ? (
                   <div className="py-10 text-center text-slate-500">
                     <TerminalIcon className="h-6 w-6 text-slate-700 mx-auto mb-2" />
-                    <p className="text-xs">Brak wpisów w konsoli.</p>
-                    <p className="text-[10px] text-slate-600 mt-0.5">Wywołaj console.log() w pliku app.js aby zobaczyć logi.</p>
+                    <p className="text-xs">{isEn ? 'No console output yet.' : 'Brak wpisów w konsoli.'}</p>
+                    <p className="text-[10px] text-slate-600 mt-0.5">
+                      {isEn ? 'Call console.log() inside app.js to see logs here.' : 'Wywołaj console.log() w pliku app.js aby zobaczyć logi.'}
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-1.5">
@@ -745,21 +782,27 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           <div className="w-full max-w-2xl rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center gap-3 text-emerald-400">
               <CheckCircle2 className="h-6 w-6" />
-              <h3 className="text-base font-bold text-white">Podgląd wzorcowego rozwiązania i wskazówek</h3>
+              <h3 className="text-base font-bold text-white">
+                {isEn ? 'Reference Solution & Step Hints' : 'Podgląd wzorcowego rozwiązania i wskazówek'}
+              </h3>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Poniżej znajdziesz gotowy kod wzorcowy oraz listę kroków. Możesz przepisać brakującą linijkę samodzielnie albo kliknąć „Wstaw wzorzec do edytora”:
+              {isEn
+                ? 'Below you can review the working reference code and step hints. Type any missing lines yourself or click "Insert into editor":'
+                : 'Poniżej znajdziesz gotowy kod wzorcowy oraz listę kroków. Możesz przepisać brakującą linijkę samodzielnie albo kliknąć „Wstaw wzorzec do edytora”:'}
             </p>
             <CodeBlock 
               code={exercise.solutionCode[activeFileTab] || exercise.solutionCode.html}
               language={langForTab}
-              title={`Wzór kodu dla zakładki: ${activeFileTab.toUpperCase()}`}
-              badge="Wzór rozwiązania"
+              title={isEn ? `Solution snippet for tab: ${activeFileTab.toUpperCase()}` : `Wzór kodu dla zakładki: ${activeFileTab.toUpperCase()}`}
+              badge={isEn ? 'Reference solution' : 'Wzór rozwiązania'}
               badgeColor="emerald"
             />
             {exercise.hints && exercise.hints.length > 0 && (
               <div className="rounded-xl border border-amber-500/20 bg-amber-950/20 p-4 space-y-1.5">
-                <p className="text-xs font-bold text-amber-300">Wskazówki krok po kroku:</p>
+                <p className="text-xs font-bold text-amber-300">
+                  {isEn ? 'Step-by-step guidance:' : 'Wskazówki krok po kroku:'}
+                </p>
                 <ol className="list-decimal list-inside space-y-1 text-xs text-amber-100/90">
                   {exercise.hints.map((h, i) => (
                     <li key={i}>
@@ -775,14 +818,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 onClick={() => setShowSolutionModal(false)}
                 className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
               >
-                Wróć do pisania
+                {isEn ? 'Back to editor' : 'Wróć do pisania'}
               </button>
               <button
                 type="button"
                 onClick={handleApplySolution}
                 className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-900/40"
               >
-                Wstaw wzorzec do edytora
+                {isEn ? 'Insert into editor' : 'Wstaw wzorzec do edytora'}
               </button>
             </div>
           </div>
@@ -795,10 +838,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 text-amber-400">
               <RotateCcw className="h-5 w-5" />
-              <h3 className="text-base font-bold text-white">Przywrócić kod początkowy?</h3>
+              <h3 className="text-base font-bold text-white">
+                {isEn ? 'Restore starter code?' : 'Przywrócić kod początkowy?'}
+              </h3>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Wszystkie niezapisane zmiany w zakładkach HTML, CSS oraz JS dla tego ćwiczenia zostaną zastąpione kodem startowym.
+              {isEn
+                ? 'All unsaved edits across the HTML, CSS, and JS tabs for this exercise will be replaced with the starter template.'
+                : 'Wszystkie niezapisane zmiany w zakładkach HTML, CSS oraz JS dla tego ćwiczenia zostaną zastąpione kodem startowym.'}
             </p>
             <div className="flex justify-end gap-3 pt-2">
               <button
@@ -806,14 +853,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 onClick={() => setShowResetModal(false)}
                 className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 hover:bg-slate-800"
               >
-                Anuluj
+                {isEn ? 'Cancel' : 'Anuluj'}
               </button>
               <button
                 type="button"
                 onClick={confirmResetCode}
                 className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold"
               >
-                Zresetuj kod
+                {isEn ? 'Reset code' : 'Zresetuj kod'}
               </button>
             </div>
           </div>

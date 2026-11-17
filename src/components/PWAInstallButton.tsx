@@ -13,7 +13,8 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   className = '',
   variant = 'compact',
 }) => {
-  const { currentUser, isAuthenticated } = useApp();
+  const { currentUser, isAuthenticated, language } = useApp();
+  const isEn = language === 'en';
   const { isInstallable, isInstalled, install } = usePWAInstall();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -30,11 +31,11 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
       <button
         type="button"
         onClick={() => install()}
-        title="Zainstaluj aplikację na urządzeniu"
+        title={isEn ? 'Install app on your device' : 'Zainstaluj aplikację na urządzeniu'}
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-indigo-950/60 hover:bg-indigo-900/80 text-white text-xs font-bold transition-all ${className}`}
       >
         <Download className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
-        <span>Zainstaluj aplikację</span>
+        <span>{isEn ? 'Install app' : 'Zainstaluj aplikację'}</span>
       </button>
     );
   }
@@ -45,7 +46,11 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
       <button
         type="button"
         onClick={() => setIsModalOpen(true)}
-        title="Centrum Publikacji Google Play (Tylko Administrator)"
+        title={
+          isEn
+            ? 'Google Play Release Center (Admin Only)'
+            : 'Centrum Publikacji Google Play (Tylko Administrator)'
+        }
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/40 bg-gradient-to-r from-rose-950/70 to-indigo-950/70 hover:from-rose-900/80 hover:to-indigo-900/80 text-white text-xs font-bold transition-all shadow-sm shadow-rose-500/20 active:scale-95 ${className}`}
       >
         <ShieldCheck className="h-3.5 w-3.5 text-rose-400 shrink-0" />

@@ -5,6 +5,9 @@ import {
   UserStatus,
   Announcement,
   Lesson,
+  Module,
+  Project,
+  Badge,
   ReviewItem,
   DailyReminderSettings,
   SecurityAuditEvent,
@@ -13,8 +16,21 @@ import {
 } from '../types';
 import { MODULES_DATA } from '../data/modulesData';
 import { PROJECTS_DATA } from '../data/projectsData';
+import { BADGES_DATA } from '../data/badgesData';
 import { DEFAULT_ANNOUNCEMENTS } from '../data/defaultAnnouncements';
 import { soundManager } from '../utils/audioFx';
+import {
+  AppLanguage,
+  loadSavedLanguage,
+  saveLanguagePreference,
+  getOgLocale,
+} from '../utils/i18n';
+import {
+  localizeModule,
+  localizeProject,
+  localizeBadge,
+  localizeAnnouncement,
+} from '../locales/curriculumEn';
 import {
   fetchGithubUserAndRepos,
   submitProjectFromGithubRepo,
@@ -30,6 +46,14 @@ import {
   checkRewardedAdEligibility,
   ensureAdSenseScriptLoaded,
 } from '../utils/adsense';
+import {
+  getNextThemePreference,
+  parseThemePreference,
+  resolveTheme,
+  THEME_STORAGE_KEY,
+  type ResolvedTheme,
+  type ThemePreference,
+} from '../utils/theme';
 import {
   buildPublicPath,
   getPublicRouteSeoMetadata,
@@ -136,7 +160,14 @@ interface AppContextType {
   selectedLessonId: string | null;
   selectedProjectId: string | null;
   announcements: Announcement[];
-  theme: 'dark' | 'light';
+  localizedAnnouncements: Announcement[];
+  language: AppLanguage;
+  setLanguage: (lang: AppLanguage) => void;
+  allModules: Module[];
+  allProjects: Project[];
+  allBadges: Badge[];
+  theme: ResolvedTheme;
+  themePreference: ThemePreference;
   toast: { message: string; type: 'success' | 'info' | 'badge' | 'danger' } | null;
   livesInfo: LivesCalculationResult;
   isLivesModalOpen: boolean;
@@ -153,6 +184,7 @@ interface AppContextType {
   buyRefill: () => boolean;
   buyFreeze: () => boolean;
   togglePro: (enable: boolean, plan?: 'monthly' | 'yearly') => void;
+  setThemePreference: (preference: ThemePreference) => void;
   toggleTheme: () => void;
   setActiveTab: (tab: AppTab, lessonId?: string, projectId?: string) => void;
   loginUser: (email: string, password?: string) => { success: boolean; error?: string };
@@ -222,7 +254,7 @@ const STORAGE_KEY_USER = 'fsda_current_user_v7';
 const STORAGE_KEY_AUTH = 'fsda_is_authenticated_v7';
 const STORAGE_KEY_USERS = 'fsda_all_users_v7';
 const STORAGE_KEY_ANNOUNCEMENTS = 'fsda_announcements_v5';
-const STORAGE_KEY_THEME = 'fsda_theme_v5';
+const STORAGE_KEY_THEME = THEME_STORAGE_KEY;
 const STORAGE_KEY_REMINDERS = 'fsda_reminder_settings_v1';
 const STORAGE_KEY_SECURITY_LOGS = 'fsda_security_logs_v1';
 const STORAGE_KEY_ADSENSE_CONFIG = 'fsda_adsense_config_v1';
@@ -352,6 +384,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   });
 
+  const [language, setLanguageState] = useState<AppLanguage>(() => loadSavedLanguage());
+  const languageRef = useRef<AppLanguage>(language);
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
+
+  const setLanguage = useCallback((nextLang: AppLanguage) => {
+    setLanguageState(nextLang);
+    saveLanguagePreference(nextLang);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = nextLang;
+      const ogLocale = document.querySelector('meta[property="og:locale"]');
+      if (ogLocale) {
+        ogLocale.setAttribute('content', getOgLocale(nextLang));
+      }
+    }
+  }, []);
+
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
       const storedAuth = localStorage.getItem(STORAGE_KEY_AUTH);
@@ -374,16 +424,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   const [currentUser, setCurrentUser] = useState<User>(() => {
+    const initialLang = loadSavedLanguage();
     try {
       const storedAuth = localStorage.getItem(STORAGE_KEY_AUTH);
       if (storedAuth === null || JSON.parse(storedAuth) !== true) {
-        return createGuestUser();
+        return createGuestUser(initialLang);
       }
       const stored = localStorage.getItem(STORAGE_KEY_USER);
       if (stored) {
         const parsed: User = JSON.parse(stored);
         if (!parsed || !parsed.id || parsed.id === 'user-guest' || LEGACY_TEST_USER_IDS.has(parsed.id)) {
-          return createGuestUser();
+          return createGuestUser(initialLang);
         }
         // Never restore an admin session from localStorage without active verified Firebase OAuth
         const hasVerifiedFirebaseAdmin =
@@ -395,15 +446,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             (parsed.email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com') &&
           !hasVerifiedFirebaseAdmin
         ) {
-          return createGuestUser();
+          return createGuestUser(initialLang);
         }
         return parsed.role === 'admin' && !hasVerifiedFirebaseAdmin
           ? { ...parsed, role: 'student' }
           : parsed;
       }
-      return createGuestUser();
+      return createGuestUser(initialLang);
     } catch {
-      return createGuestUser();
+      return createGuestUser(initialLang);
     }
   });
 
@@ -416,14 +467,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   });
 
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+  const [themePreference, setThemePreferenceState] = useState<ThemePreference>(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY_THEME);
-      return (stored === 'light' || stored === 'dark') ? stored : 'dark';
+      return parseThemePreference(localStorage.getItem(STORAGE_KEY_THEME));
     } catch {
       return 'dark';
     }
   });
+
+  const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() => {
+    try {
+      return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true;
+    } catch {
+      return true;
+    }
+  });
+
+  const theme: ResolvedTheme = resolveTheme(themePreference, systemPrefersDark);
 
   const [activeTab, setActiveTabState] = useState<AppTab>(() => {
     try {
@@ -640,8 +700,61 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => clearInterval(interval);
   }, [currentUser]);
 
-  // Collect all lessons across all modules (stable reference)
-  const allLessons: Lesson[] = useMemo(() => MODULES_DATA.flatMap((m) => m.lessons), []);
+  // Localized curriculum & catalog selectors
+  const allModules: Module[] = useMemo(
+    () => MODULES_DATA.map((m) => localizeModule(m, language)),
+    [language]
+  );
+  const allLessons: Lesson[] = useMemo(
+    () => allModules.flatMap((m) => m.lessons),
+    [allModules]
+  );
+  const allProjects: Project[] = useMemo(
+    () => PROJECTS_DATA.map((p) => localizeProject(p, language)),
+    [language]
+  );
+  const allBadges: Badge[] = useMemo(
+    () => BADGES_DATA.map((b) => localizeBadge(b, language)),
+    [language]
+  );
+  const localizedAnnouncements: Announcement[] = useMemo(
+    () => announcements.map((a) => localizeAnnouncement(a, language)),
+    [announcements, language]
+  );
+  const localizedSecurityLogs: SecurityAuditEvent[] = useMemo(() => {
+    if (language !== 'en') return securityLogs;
+    return securityLogs.map((log) => {
+      if (log.id === 'sec-1') {
+        return {
+          ...log,
+          action: 'Blocked automated script (Anti-Bot Honeypot)',
+          details: 'Bot registration attempt detected (form filled in < 200ms). Account marked as BANNED.',
+        };
+      }
+      if (log.id === 'sec-2') {
+        return {
+          ...log,
+          action: 'ProtectedRoute blocked Guest access to protected area',
+          details: 'Signed-out user (Guest) attempted to view protected course content without signing in.',
+        };
+      }
+      if (log.id === 'sec-3') {
+        return {
+          ...log,
+          action: 'Rejected password login attempt on Administrator account',
+          details: 'Platform owner account requires Google Firebase OAuth authentication.',
+        };
+      }
+      return log;
+    });
+  }, [securityLogs, language]);
+  const localizedCurrentUser: User = useMemo(() => {
+    if (currentUser.id === 'user-guest') {
+      const template = createGuestUser(language);
+      return { ...currentUser, name: template.name, bio: template.bio };
+    }
+    return currentUser;
+  }, [currentUser, language]);
 
   // Sync to localStorage
   useEffect(() => {
@@ -811,23 +924,65 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [currentUser, firebaseUid, isCloudConnected]);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const syncMatches = (matches: boolean) => {
+      setSystemPrefersDark(matches);
+    };
+    const handleChange = (event: MediaQueryListEvent) => {
+      syncMatches(event.matches);
+    };
+    syncMatches(mediaQuery.matches);
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+    const legacyQuery = mediaQuery as MediaQueryList & {
+      addListener?: (cb: (event: MediaQueryListEvent) => void) => void;
+      removeListener?: (cb: (event: MediaQueryListEvent) => void) => void;
+    };
+    legacyQuery.addListener?.(handleChange);
+    return () => legacyQuery.removeListener?.(handleChange);
+  }, [themePreference]);
+
+  useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY_THEME, theme);
+      localStorage.setItem(STORAGE_KEY_THEME, themePreference);
+      const root = document.documentElement;
+      root.dataset.themePreference = themePreference;
+      root.style.colorScheme = theme;
       if (theme === 'light') {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.classList.add('light');
+        root.classList.remove('dark');
+        root.classList.add('light');
       } else {
-        document.documentElement.classList.remove('light');
-        document.documentElement.classList.add('dark');
+        root.classList.remove('light');
+        root.classList.add('dark');
+      }
+      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+      if (themeColorMeta) {
+        themeColorMeta.setAttribute('content', theme === 'light' ? '#f8fafc' : '#4f46e5');
       }
     } catch (e) {
       console.warn('Theme storage error', e);
     }
-  }, [theme]);
+  }, [theme, themePreference]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  };
+  const setThemePreference = useCallback((preference: ThemePreference) => {
+    if (preference === 'system' && typeof window !== 'undefined' && window.matchMedia) {
+      setSystemPrefersDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    setThemePreferenceState(preference);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setThemePreferenceState((prev) => {
+      const next = getNextThemePreference(prev);
+      if (next === 'system' && typeof window !== 'undefined' && window.matchMedia) {
+        setSystemPrefersDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
+      }
+      return next;
+    });
+  }, []);
 
   const showToast = (message: string, type: 'success' | 'info' | 'badge' | 'danger' = 'success') => {
     setToast({ message, type });
@@ -840,13 +995,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const syncLifeAction = (action: CloudLifeAction, targetUid?: string, proof?: Record<string, unknown>) => {
     if (!firebaseUid || !isCloudConnected) return;
+    const isEn = languageRef.current === 'en';
     void updateLivesInCloud(action, targetUid, proof).catch(() => {
-      showToast('Nie udało się potwierdzić zmiany serc w chmurze.', 'danger');
+      showToast(
+        isEn ? 'Failed to confirm heart update in the cloud.' : 'Nie udało się potwierdzić zmiany serc w chmurze.',
+        'danger'
+      );
     });
   };
 
   // Lives management actions
   const loseLife = (reason?: string): boolean => {
+    const isEn = languageRef.current === 'en';
     if (currentUser.isPro) {
       // PRO members have unlimited lives!
       return false;
@@ -854,7 +1014,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const currentLives = typeof currentUser.lives === 'number' ? currentUser.lives : 5;
     if (currentLives <= 0) {
-      showToast('Brak serc! Odnów serca w Sklepie lub wykonaj szybką powtórkę.', 'danger');
+      showToast(
+        isEn
+          ? 'No hearts left! Refill hearts in the Shop or complete a quick review.'
+          : 'Brak serc! Odnów serca w Sklepie lub wykonaj szybką powtórkę.',
+        'danger'
+      );
       setIsLivesModalOpen(true);
       return false;
     }
@@ -868,7 +1033,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const remaining = result.updatedUser.lives;
     soundManager.playHeartLost();
     showToast(
-      reason || `Tracisz 1 serce! Zostało: ${remaining}/5. Ucz się na błędach!`,
+      reason ||
+        (isEn
+          ? `Lost 1 heart! Remaining: ${remaining}/5. Learn from your mistakes!`
+          : `Tracisz 1 serce! Zostało: ${remaining}/5. Ucz się na błędach!`),
       remaining === 0 ? 'danger' : 'info'
     );
 
@@ -880,29 +1048,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const refillLives = () => {
-    const result = buyFullRefillWithXP(currentUser);
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
+    const result = buyFullRefillWithXP(currentUser, lang);
     if (!result.success) {
-      showToast(result.error || 'Nie można odnowić serc.', 'danger');
+      showToast(result.error || (isEn ? 'Unable to refill hearts.' : 'Nie można odnowić serc.'), 'danger');
       return;
     }
     setCurrentUser(result.user);
     setAllUsers((users) => users.map((u) => (u.id === result.user.id ? result.user : u)));
     setLivesInfo(calculateRegeneratedLives(result.user));
     syncLifeAction('buy-refill');
-    showToast('Wszystkie serca zostały odnowione (5/5)!', 'success');
+    showToast(isEn ? 'All hearts refilled (5/5)!' : 'Wszystkie serca zostały odnowione (5/5)!', 'success');
   };
 
   const earnPracticeLife = (answers: number[]) => {
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
     const todayKey = new Date().toISOString().slice(0, 10);
     if (currentUser.lastPracticeRewardDate === todayKey) {
-      showToast('Nagroda za szybką powtórkę została już odebrana dzisiaj.', 'info');
+      showToast(
+        isEn ? 'Quick review reward has already been claimed today.' : 'Nagroda za szybką powtórkę została już odebrana dzisiaj.',
+        'info'
+      );
       return;
     }
     const maxLives = currentUser.maxLives ?? 5;
     const currentLives = typeof currentUser.lives === 'number' ? currentUser.lives : maxLives;
     if (currentUser.isPro || currentLives >= maxLives) {
       const newXp = currentUser.xp + 15;
-      const levelInfo = calculateLevel(newXp);
+      const levelInfo = calculateLevel(newXp, lang);
       const updated: User = {
         ...currentUser,
         xp: newXp,
@@ -913,7 +1088,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
       syncLifeAction('practice', undefined, { answers });
       soundManager.playSuccess();
-      showToast('Masz już 5/5 serc — przyznano bonus +15 XP za szybką powtórkę!', 'success');
+      showToast(
+        isEn
+          ? 'You already have 5/5 hearts — awarded a +15 XP bonus for the quick review!'
+          : 'Masz już 5/5 serc — przyznano bonus +15 XP za szybką powtórkę!',
+        'success'
+      );
       return;
     }
 
@@ -923,12 +1103,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     syncLifeAction('practice', undefined, { answers });
     setLivesInfo(calculateRegeneratedLives(updated));
     soundManager.playSuccess();
-    showToast('+1 Serce zdobyte za aktywność w powtórkach!', 'success');
+    showToast(isEn ? '+1 Heart earned from quick review activity!' : '+1 Serce zdobyte za aktywność w powtórkach!', 'success');
   };
 
   const earnAdRewardLife = (): { success: boolean; message: string } => {
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
     if (firebaseUid && isCloudConnected) {
-      const message = 'Nagrody za reklamy są wyłączone do czasu wdrożenia weryfikacji potwierdzenia po stronie serwera.';
+      const message = isEn
+        ? 'Ad rewards are disabled until server-side verification is enabled.'
+        : 'Nagrody za reklamy są wyłączone do czasu wdrożenia weryfikacji potwierdzenia po stronie serwera.';
       showToast(message, 'info');
       return { success: false, message };
     }
@@ -940,10 +1124,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       config: adSenseConfig,
       nowMs,
       todayDateKey: todayKey,
+      language: lang,
     });
 
     if (!eligibility.allowed) {
-      const msg = eligibility.reason || 'Nie można teraz odebrać nagrody z reklamy.';
+      const msg =
+        eligibility.reason ||
+        (isEn ? 'Unable to claim ad reward right now.' : 'Nie można teraz odebrać nagrody z reklamy.');
       showToast(msg, 'danger');
       return { success: false, message: msg };
     }
@@ -954,7 +1141,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (currentLives >= maxLives) {
       const newXp = currentUser.xp + 20;
-      const levelInfo = calculateLevel(newXp);
+      const levelInfo = calculateLevel(newXp, lang);
       const updated: User = {
         ...currentUser,
         xp: newXp,
@@ -967,7 +1154,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setAllUsers((users) => users.map((u) => (u.id === updated.id ? updated : u)));
       syncLifeAction('ad-reward');
       soundManager.playSuccess();
-      const msg = 'Masz już 5/5 serc — przyznano bonus +20 XP za obejrzenie reklamy Google AdSense!';
+      const msg = isEn
+        ? 'You already have 5/5 hearts — awarded a +20 XP bonus for watching a Google AdSense ad!'
+        : 'Masz już 5/5 serc — przyznano bonus +20 XP za obejrzenie reklamy Google AdSense!';
       showToast(msg, 'success');
       return { success: true, message: msg };
     }
@@ -985,62 +1174,93 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     syncLifeAction('ad-reward');
     setLivesInfo(calculateRegeneratedLives(updated));
     soundManager.playSuccess();
-    const msg = `+1 Serce zdobyte dzięki reklamie Google AdSense! (${updated.lives}/${maxLives} ❤️)`;
+    const msg = isEn
+      ? `+1 Heart earned via Google AdSense! (${updated.lives}/${maxLives} ❤️)`
+      : `+1 Serce zdobyte dzięki reklamie Google AdSense! (${updated.lives}/${maxLives} ❤️)`;
     showToast(msg, 'success');
     return { success: true, message: msg };
   };
 
   const buyHeart = (): boolean => {
-    const res = buyHeartWithXP(currentUser);
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
+    const res = buyHeartWithXP(currentUser, lang);
     if (!res.success) {
-      showToast(res.error || 'Nie można kupić serca.', 'danger');
+      showToast(res.error || (isEn ? 'Unable to buy heart.' : 'Nie można kupić serca.'), 'danger');
       return false;
     }
     setCurrentUser(res.user);
     setAllUsers((users) => users.map((u) => (u.id === res.user.id ? res.user : u)));
     setLivesInfo(calculateRegeneratedLives(res.user));
     syncLifeAction('buy-heart');
-    showToast(`Zakupiono 1 serce za ${XP_COST_ONE_HEART} XP!`, 'success');
+    showToast(
+      isEn ? `Purchased 1 heart for ${XP_COST_ONE_HEART} XP!` : `Zakupiono 1 serce za ${XP_COST_ONE_HEART} XP!`,
+      'success'
+    );
     return true;
   };
 
   const buyRefill = (): boolean => {
-    const res = buyFullRefillWithXP(currentUser);
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
+    const res = buyFullRefillWithXP(currentUser, lang);
     if (!res.success) {
-      showToast(res.error || 'Nie można odnowić serc.', 'danger');
+      showToast(res.error || (isEn ? 'Unable to refill hearts.' : 'Nie można odnowić serc.'), 'danger');
       return false;
     }
     setCurrentUser(res.user);
     setAllUsers((users) => users.map((u) => (u.id === res.user.id ? res.user : u)));
     setLivesInfo(calculateRegeneratedLives(res.user));
     syncLifeAction('buy-refill');
-    showToast(`Odnawianie pełnego pakietu serc (5/5) za ${XP_COST_FULL_REFILL} XP!`, 'success');
+    showToast(
+      isEn
+        ? `Refilled full pack of hearts (5/5) for ${XP_COST_FULL_REFILL} XP!`
+        : `Odnawianie pełnego pakietu serc (5/5) za ${XP_COST_FULL_REFILL} XP!`,
+      'success'
+    );
     return true;
   };
 
   const buyFreeze = (): boolean => {
-    const res = buyStreakFreezeWithXP(currentUser);
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
+    const res = buyStreakFreezeWithXP(currentUser, lang);
     if (!res.success) {
-      showToast(res.error || 'Nie można kupić tarczy serii.', 'danger');
+      showToast(res.error || (isEn ? 'Unable to buy Streak Freeze.' : 'Nie można kupić tarczy serii.'), 'danger');
       return false;
     }
     setCurrentUser(res.user);
     setAllUsers((users) => users.map((u) => (u.id === res.user.id ? res.user : u)));
     syncLifeAction('buy-freeze');
-    showToast(`Kupiono Tarczę Serii za ${XP_COST_STREAK_FREEZE} XP! Twoja passa jest chroniona.`, 'badge');
+    showToast(
+      isEn
+        ? `Purchased Streak Freeze for ${XP_COST_STREAK_FREEZE} XP! Your streak is protected.`
+        : `Kupiono Tarczę Serii za ${XP_COST_STREAK_FREEZE} XP! Twoja passa jest chroniona.`,
+      'badge'
+    );
     return true;
   };
 
   const togglePro = (enable: boolean, plan: 'monthly' | 'yearly' = 'monthly') => {
+    const isEn = languageRef.current === 'en';
     if (!isAuthenticated || currentUser.id === 'user-guest') {
-      showToast('Zaloguj się lub utwórz konto, aby aktywować subskrypcję Full Stack PRO.', 'danger');
+      showToast(
+        isEn
+          ? 'Sign in or create an account to activate Full Stack PRO.'
+          : 'Zaloguj się lub utwórz konto, aby aktywować subskrypcję Full Stack PRO.',
+        'danger'
+      );
       window.dispatchEvent(new CustomEvent('akademia:open-auth-modal'));
       return;
     }
     if (currentUser.role !== 'admin') {
       showToast(
         enable
-          ? 'Subskrypcja PRO wymaga potwierdzenia płatności; płatności online nie są skonfigurowane.'
+          ? isEn
+            ? 'PRO subscription requires payment confirmation; online checkout is not configured yet.'
+            : 'Subskrypcja PRO wymaga potwierdzenia płatności; płatności online nie są skonfigurowane.'
+          : isEn
+          ? 'PRO status updates after payment cancellation confirmation.'
           : 'Status PRO zmienia się po potwierdzeniu anulowania płatności.',
         'danger'
       );
@@ -1052,9 +1272,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setLivesInfo(calculateRegeneratedLives(updated));
 
     if (enable) {
-      showToast('Subskrypcja Full Stack PRO aktywna! Nielimitowane życia i pełen dostęp.', 'badge');
+      showToast(
+        isEn
+          ? 'Full Stack PRO subscription active! Unlimited lives & full access.'
+          : 'Subskrypcja Full Stack PRO aktywna! Nielimitowane życia i pełen dostęp.',
+        'badge'
+      );
     } else {
-      showToast('Przełączono na plan bezpłatny z limitem 5 serc.', 'info');
+      showToast(
+        isEn ? 'Switched to Free plan with a 5-heart limit.' : 'Przełączono na plan bezpłatny z limitem 5 serc.',
+        'info'
+      );
     }
   };
 
@@ -1123,15 +1351,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Update <title>, <meta name="description">, og:title and canonical URL on public routes
+  // Update <html lang>, og:locale, <title>, <meta name="description">, og:title and canonical URL on route/language changes
   useEffect(() => {
-    if (typeof document === 'undefined' || !isPublicTab(activeTab)) return;
-    const flatLessons = MODULES_DATA.flatMap((m) => m.lessons);
+    if (typeof document === 'undefined') return;
+    document.documentElement.lang = language;
+    const ogLocale = document.querySelector('meta[property="og:locale"]');
+    if (ogLocale) ogLocale.setAttribute('content', getOgLocale(language));
+
+    if (!isPublicTab(activeTab)) {
+      document.title =
+        language === 'en'
+          ? 'Student Workspace | Full Stack Developer Academy'
+          : 'Pulpit Kursanta | Full Stack Developer Academy';
+      return;
+    }
+
     const activeLesson =
       activeTab === 'public_lesson'
-        ? flatLessons.find((l) => l.id === selectedLessonId) || flatLessons[0]
+        ? allLessons.find((l) => l.id === selectedLessonId) || allLessons[0]
         : null;
-    const seo = getPublicRouteSeoMetadata(activeTab, activeLesson);
+    const seo = getPublicRouteSeoMetadata(activeTab, activeLesson, language);
     document.title = seo.title;
 
     const descMeta = document.querySelector('meta[name="description"]');
@@ -1146,9 +1385,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const canonicalUrl = `${SITE_BASE_URL}${seo.canonicalPath}`;
     const canonicalLink = document.querySelector('link[rel="canonical"]');
     if (canonicalLink) canonicalLink.setAttribute('href', canonicalUrl);
-  }, [activeTab, selectedLessonId]);
+  }, [activeTab, selectedLessonId, language, allLessons]);
 
   const setActiveTab = (tab: AppTab, lessonId?: string, projectId?: string) => {
+    const isEn = languageRef.current === 'en';
     if (tab === 'admin' && (!isAuthenticated || currentUser.role !== 'admin')) {
       const isGuest = !isAuthenticated || currentUser.id === 'user-guest';
       appendSecurityLog({
@@ -1163,7 +1403,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
       showToast(
         isGuest
-          ? 'Dostęp zablokowany dla gości! Zaloguj się, aby uzyskać dostęp do chronionej sekcji.'
+          ? isEn
+            ? 'Guest access restricted! Sign in to access this protected area.'
+            : 'Dostęp zablokowany dla gości! Zaloguj się, aby uzyskać dostęp do chronionej sekcji.'
+          : isEn
+          ? 'Insufficient permissions! The Admin Panel is protected by ProtectedRoute.'
           : 'Brak uprawnień! Panel Administratora jest chroniony przez ProtectedRoute.',
         'danger'
       );
@@ -1198,15 +1442,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const loginUser = (email: string, password?: string): { success: boolean; error?: string } => {
-    const result = authenticateUserCredentials(allUsers, email, password);
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
+    const result = authenticateUserCredentials(allUsers, email, password, lang);
     if (!result.success || !result.user) {
       appendSecurityLog({
         type: 'auth_blocked',
         severity: (email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com' ? 'critical' : 'warning',
-        actorEmail: (email || 'nieznany').trim(),
+        actorEmail: (email || (isEn ? 'unknown' : 'nieznany')).trim(),
         actorRole: !isAuthenticated ? 'guest' : currentUser.role,
-        action: 'Nieudana próba logowania formularzem',
-        details: result.error || 'Błąd autoryzacji danych logowania.',
+        action: isEn ? 'Failed login attempt via form' : 'Nieudana próba logowania formularzem',
+        details: result.error || (isEn ? 'Credential authorization failed.' : 'Błąd autoryzacji danych logowania.'),
       });
       return { success: false, error: result.error };
     }
@@ -1217,8 +1463,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       severity: 'info',
       actorEmail: updatedUser.email,
       actorRole: updatedUser.role,
-      action: 'Pomyślne logowanie użytkownika',
-      details: `Zalogowano na konto kursanta: ${updatedUser.name}.`,
+      action: isEn ? 'Successful user login' : 'Pomyślne logowanie użytkownika',
+      details: isEn ? `Signed in as student: ${updatedUser.name}.` : `Zalogowano na konto kursanta: ${updatedUser.name}.`,
     });
     setCurrentUser(updatedUser);
     setIsAuthenticated(true);
@@ -1228,11 +1474,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setActiveTabState('dashboard');
     }
     soundManager.playSuccess();
-    showToast(`Witaj ponownie, ${updatedUser.name}! Zalogowano pomyślnie.`, 'success');
+    showToast(
+      isEn ? `Welcome back, ${updatedUser.name}! Signed in.` : `Witaj ponownie, ${updatedUser.name}! Zalogowano pomyślnie.`,
+      'success'
+    );
     return { success: true };
   };
 
   const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    const isEn = languageRef.current === 'en';
     try {
       setIsSyncingCloud(true);
       const fbUser = await signInWithGoogleFirebase();
@@ -1254,38 +1504,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
       soundManager.playLevelUp();
       showToast(
-        `Połączono z chmurą Firebase! Witaj, ${cloudProfile.name}. Postępy synchronizują się z Firestore.`,
+        isEn
+          ? `Connected to Firebase Cloud! Welcome, ${cloudProfile.name}. Progress syncs with Firestore.`
+          : `Połączono z chmurą Firebase! Witaj, ${cloudProfile.name}. Postępy synchronizują się z Firestore.`,
         'badge'
       );
       return { success: true };
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Nie udało się zalogować przez Google.';
+      const msg = err instanceof Error ? err.message : (isEn ? 'Failed to sign in with Google.' : 'Nie udało się zalogować przez Google.');
       const errCode = (err as { code?: string })?.code || '';
-      const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'aktualna-domena';
+      const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'current-domain';
 
       if (msg.includes('popup-closed-by-user') || errCode === 'auth/popup-closed-by-user') {
         return {
           success: false,
-          error: 'Okno logowania Google zostało zamknięte przed zakończeniem autoryzacji.',
+          error: isEn
+            ? 'The Google sign-in window was closed before completing authorization.'
+            : 'Okno logowania Google zostało zamknięte przed zakończeniem autoryzacji.',
         };
       }
 
       if (msg.includes('unauthorized-domain') || errCode === 'auth/unauthorized-domain') {
-        const domainError = `Domena "${currentHostname}" wymaga autoryzacji w Firebase Console (Authentication -> Settings -> Authorized domains -> Add domain). Możesz też od razu zalogować się lub założyć konto przez e-mail i hasło poniżej.`;
+        const domainError = isEn
+          ? `Domain "${currentHostname}" requires authorization in Firebase Console (Authentication -> Settings -> Authorized domains -> Add domain). You can also sign in or register with email & password below.`
+          : `Domena "${currentHostname}" wymaga autoryzacji w Firebase Console (Authentication -> Settings -> Authorized domains -> Add domain). Możesz też od razu zalogować się lub założyć konto przez e-mail i hasło poniżej.`;
         showToast(
-          `Domena ${currentHostname} nie jest jeszcze na liście Authorized domains w Firebase. Użyj logowania e-mail lub dodaj domenę w konsoli Firebase.`,
+          isEn
+            ? `Domain ${currentHostname} is not yet listed under Authorized domains in Firebase. Use email login or add the domain in Firebase Console.`
+            : `Domena ${currentHostname} nie jest jeszcze na liście Authorized domains w Firebase. Użyj logowania e-mail lub dodaj domenę w konsoli Firebase.`,
           'danger'
         );
         return {
           success: false,
-          error: `Błąd autoryzacji Firebase Google (auth/unauthorized-domain): ${domainError}`,
+          error: `Firebase Google Auth error (auth/unauthorized-domain): ${domainError}`,
         };
       }
 
-      showToast(`Błąd logowania Google: ${msg}`, 'danger');
+      showToast(isEn ? `Google sign-in error: ${msg}` : `Błąd logowania Google: ${msg}`, 'danger');
       return {
         success: false,
-        error: `Błąd autoryzacji Firebase Google: ${msg}`,
+        error: isEn ? `Firebase Google Auth error: ${msg}` : `Błąd autoryzacji Firebase Google: ${msg}`,
       };
     } finally {
       setIsSyncingCloud(false);
@@ -1293,8 +1551,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const syncNowToCloud = async (): Promise<boolean> => {
+    const isEn = languageRef.current === 'en';
     if (!firebaseUid || !isCloudConnected) {
-      showToast('Zaloguj się przez Google (Firebase Auth), aby włączyć synchronizację w chmurze.', 'info');
+      showToast(
+        isEn
+          ? 'Sign in with Google (Firebase Auth) to enable cloud synchronization.'
+          : 'Zaloguj się przez Google (Firebase Auth), aby włączyć synchronizację w chmurze.',
+        'info'
+      );
       return false;
     }
     setIsSyncingCloud(true);
@@ -1302,9 +1566,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsSyncingCloud(false);
     if (ok) {
       soundManager.playSuccess();
-      showToast('Profil, ustawienia i zapisany kod zostały zapisane w Cloud Firestore.', 'success');
+      showToast(
+        isEn
+          ? 'Profile, settings, and saved code synced to Cloud Firestore.'
+          : 'Profil, ustawienia i zapisany kod zostały zapisane w Cloud Firestore.',
+        'success'
+      );
     } else {
-      showToast('Nie udało się zsynchronizować profilu z bazą Firestore.', 'danger');
+      showToast(
+        isEn ? 'Failed to sync profile to Firestore.' : 'Nie udało się zsynchronizować profilu z bazą Firestore.',
+        'danger'
+      );
     }
     return ok;
   };
@@ -1318,7 +1590,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     antiBotScore?: number;
     bio?: string;
   }): { success: boolean; user?: User; error?: string } => {
-    const result = validateAndCreateUser(allUsers, params);
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
+    const result = validateAndCreateUser(allUsers, params, lang);
     if (!result.success || !result.user) {
       return { success: false, error: result.error };
     }
@@ -1333,7 +1607,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     soundManager.playLevelUp();
-    showToast(`Konto zostało pomyślnie utworzone i zweryfikowane anty-botem! Witaj, ${newUser.name}.`, 'success');
+    showToast(
+      isEn
+        ? `Account created and verified against bots! Welcome, ${newUser.name}.`
+        : `Konto zostało pomyślnie utworzone i zweryfikowane anty-botem! Witaj, ${newUser.name}.`,
+      'success'
+    );
     return { success: true, user: newUser };
   };
 
@@ -1343,17 +1622,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     password?: string;
     weeklyGoalMinutes?: number;
   }): { success: boolean; message: string } => {
+    const isEn = languageRef.current === 'en';
     if (!isAuthenticated || currentUser.id === 'user-guest') {
-      return { success: false, message: 'Zaloguj się na swoje konto, aby zapisać zmiany profilu.' };
+      return {
+        success: false,
+        message: isEn ? 'Sign in to your account to save profile changes.' : 'Zaloguj się na swoje konto, aby zapisać zmiany profilu.',
+      };
     }
 
     const cleanName = partial.name !== undefined ? partial.name.trim() : currentUser.name;
     if (cleanName.length < 2) {
-      return { success: false, message: 'Imię i nazwisko musi zawierać co najmniej 2 znaki.' };
+      return {
+        success: false,
+        message: isEn ? 'Full name must be at least 2 characters long.' : 'Imię i nazwisko musi zawierać co najmniej 2 znaki.',
+      };
     }
 
     if (partial.password !== undefined && partial.password.trim().length > 0 && partial.password.length < 6) {
-      return { success: false, message: 'Nowe hasło musi mieć co najmniej 6 znaków.' };
+      return {
+        success: false,
+        message: isEn ? 'New password must be at least 6 characters long.' : 'Nowe hasło musi mieć co najmniej 6 znaków.',
+      };
     }
 
     const updatedUser: User = {
@@ -1373,20 +1662,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(updatedUser);
     setAllUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
     soundManager.playSuccess();
-    showToast('Twój profil oraz ustawienia bezpieczeństwa zostały zaktualizowane.', 'success');
-    return { success: true, message: 'Zmiany w profilu zostały zapisane.' };
+    showToast(
+      isEn
+        ? 'Your profile and security settings have been updated.'
+        : 'Twój profil oraz ustawienia bezpieczeństwa zostały zaktualizowane.',
+      'success'
+    );
+    return {
+      success: true,
+      message: isEn ? 'Profile changes saved.' : 'Zmiany w profilu zostały zapisane.',
+    };
   };
 
   const deleteUser = (userId: string) => {
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
     if (!isAuthenticated || currentUser.role !== 'admin') {
-      showToast('Brak uprawnień administratora.', 'danger');
+      showToast(isEn ? 'Administrator permission required.' : 'Brak uprawnień administratora.', 'danger');
       return;
     }
     const userToDelete = allUsers.find((u) => u.id === userId);
     if (!userToDelete) return;
 
     if (userId === 'user-admin' || userToDelete.role === 'admin') {
-      showToast('Nie można usunąć głównego konta administratora.', 'danger');
+      showToast(
+        isEn ? 'Cannot delete the primary administrator account.' : 'Nie można usunąć głównego konta administratora.',
+        'danger'
+      );
       return;
     }
 
@@ -1395,18 +1697,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (currentUser.id === userId) {
       setIsAuthenticated(false);
-      setCurrentUser(createGuestUser());
+      setCurrentUser(createGuestUser(lang));
       if (activeTab === 'admin') {
         setActiveTabState('dashboard');
       }
     }
 
-    showToast(`Konto ${userToDelete.name} zostało usunięte z bazy danych.`, 'info');
+    showToast(
+      isEn ? `Account ${userToDelete.name} deleted.` : `Konto ${userToDelete.name} zostało usunięte z bazy danych.`,
+      'info'
+    );
   };
 
   const setUserStatus = (userId: string, status: UserStatus, reason?: string) => {
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
     if (!isAuthenticated || currentUser.role !== 'admin') {
-      showToast('Brak uprawnień administratora.', 'danger');
+      showToast(isEn ? 'Administrator permission required.' : 'Brak uprawnień administratora.', 'danger');
       return;
     }
     setAllUsers((prev) =>
@@ -1419,13 +1726,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
     if (firebaseUid && isCloudConnected) {
       void setUserStatusInCloud(userId, status).catch(() => {
-        showToast('Nie udało się zmienić statusu konta w chmurze.', 'danger');
+        showToast(isEn ? 'Failed to update account status in cloud.' : 'Nie udało się zmienić statusu konta w chmurze.', 'danger');
       });
     }
 
     if (currentUser.id === userId && status !== 'active') {
       setIsAuthenticated(false);
-      setCurrentUser(createGuestUser());
+      setCurrentUser(createGuestUser(lang));
       if (activeTab === 'admin') {
         setActiveTabState('dashboard');
       }
@@ -1433,20 +1740,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setCurrentUser((prev) => ({ ...prev, status, banReason: reason }));
     }
 
-    const actionText = status === 'active' ? 'odblokowane i aktywne' : status === 'suspended' ? 'zawieszone' : 'zablokowane';
-    showToast(`Status konta został zmieniony: ${actionText}.`, status === 'active' ? 'success' : 'danger');
+    const actionText = isEn
+      ? status === 'active'
+        ? 'unlocked and active'
+        : status === 'suspended'
+        ? 'suspended'
+        : 'banned'
+      : status === 'active'
+      ? 'odblokowane i aktywne'
+      : status === 'suspended'
+      ? 'zawieszone'
+      : 'zablokowane';
+    showToast(
+      isEn ? `Account status updated: ${actionText}.` : `Status konta został zmieniony: ${actionText}.`,
+      status === 'active' ? 'success' : 'danger'
+    );
   };
 
-  const resetUserPassword = (email: string, newPassword: string = 'noweHaslo2026!'): { success: boolean; message: string } => {
+  const resetUserPassword = (email: string, newPassword: string = 'newPassword2026!'): { success: boolean; message: string } => {
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
     const cleanEmail = (email || '').trim().toLowerCase();
     const found = allUsers.find((u) => u.email.trim().toLowerCase() === cleanEmail);
-    const resetCheck = canResetUserPassword(found);
+    const resetCheck = canResetUserPassword(found, lang);
     if (!resetCheck.allowed || !found) {
-      return { success: false, message: resetCheck.error || 'Nie znaleziono konta z podanym adresem e-mail.' };
+      return {
+        success: false,
+        message: resetCheck.error || (isEn ? 'No account found with that email address.' : 'Nie znaleziono konta z podanym adresem e-mail.'),
+      };
     }
 
     if (!newPassword || newPassword.length < 6) {
-      return { success: false, message: 'Nowe hasło musi mieć co najmniej 6 znaków.' };
+      return {
+        success: false,
+        message: isEn ? 'New password must be at least 6 characters long.' : 'Nowe hasło musi mieć co najmniej 6 znaków.',
+      };
     }
 
     setAllUsers((prev) =>
@@ -1455,13 +1783,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (currentUser.id === found.id) {
       setCurrentUser((prev) => ({ ...prev, password: newPassword }));
     }
-    showToast(`Hasło dla ${found.name} zostało zaktualizowane.`, 'badge');
-    return { success: true, message: `Nowe hasło dla konta ${found.email} zostało ustawione: ${newPassword}` };
+    showToast(
+      isEn ? `Password updated for ${found.name}.` : `Hasło dla ${found.name} zostało zaktualizowane.`,
+      'badge'
+    );
+    return {
+      success: true,
+      message: isEn
+        ? `New password set for ${found.email}: ${newPassword}`
+        : `Nowe hasło dla konta ${found.email} zostało ustawione: ${newPassword}`,
+    };
   };
 
   const verifyUserAntiBot = (userId: string) => {
+    const isEn = languageRef.current === 'en';
     if (!isAuthenticated || currentUser.role !== 'admin') {
-      showToast('Brak uprawnień administratora.', 'danger');
+      showToast(isEn ? 'Administrator permission required.' : 'Brak uprawnień administratora.', 'danger');
       return;
     }
     setAllUsers((prev) =>
@@ -1470,12 +1807,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (currentUser.id === userId) {
       setCurrentUser((prev) => ({ ...prev, antiBotVerified: true, antiBotScore: 100, status: 'active' }));
     }
-    showToast('Konto zostało zweryfikowane przez system anty-bot (100% human score).', 'success');
+    showToast(
+      isEn
+        ? 'Account verified by anti-bot guard (100% human score).'
+        : 'Konto zostało zweryfikowane przez system anty-bot (100% human score).',
+      'success'
+    );
   };
 
   const giveProByAdmin = (userId: string, isPro: boolean, plan: 'monthly' | 'yearly' = 'yearly') => {
+    const isEn = languageRef.current === 'en';
     if (!isAuthenticated || currentUser.role !== 'admin') {
-      showToast('Brak uprawnień administratora.', 'danger');
+      showToast(isEn ? 'Administrator permission required.' : 'Brak uprawnień administratora.', 'danger');
       return;
     }
     setAllUsers((prev) =>
@@ -1492,15 +1835,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
     if (firebaseUid && isCloudConnected) {
       void setUserProStatusInCloud(userId, isPro, plan).catch(() => {
-        showToast('Nie udało się zmienić uprawnień PRO w chmurze.', 'danger');
+        showToast(isEn ? 'Failed to update PRO status in cloud.' : 'Nie udało się zmienić uprawnień PRO w chmurze.', 'danger');
       });
     }
-    showToast(`Zaktualizowano uprawnienia PRO dla użytkownika.`, 'badge');
+    showToast(
+      isEn ? 'Updated user PRO subscription status.' : 'Zaktualizowano uprawnienia PRO dla użytkownika.',
+      'badge'
+    );
   };
 
   const refillUserLivesByAdmin = (userId: string) => {
+    const isEn = languageRef.current === 'en';
     if (!isAuthenticated || currentUser.role !== 'admin') {
-      showToast('Brak uprawnień administratora.', 'danger');
+      showToast(isEn ? 'Administrator permission required.' : 'Brak uprawnień administratora.', 'danger');
       return;
     }
     setAllUsers((prev) =>
@@ -1517,17 +1864,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
     if (firebaseUid && isCloudConnected) {
       void updateLivesInCloud('admin-refill', userId).catch(() => {
-        showToast('Nie udało się uzupełnić serc w chmurze.', 'danger');
+        showToast(isEn ? 'Failed to refill hearts in cloud.' : 'Nie udało się uzupełnić serc w chmurze.', 'danger');
       });
     }
-    showToast('Serca użytkownika zostały uzupełnione do maksimum (5/5).', 'success');
+    showToast(
+      isEn ? 'User hearts refilled to maximum (5/5).' : 'Serca użytkownika zostały uzupełnione do maksimum (5/5).',
+      'success'
+    );
   };
 
   const switchUser = (userId: string) => {
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
     const found = allUsers.find((u) => u.id === userId);
-    const check = canSwitchToUser(found, currentUser, isAuthenticated);
+    const check = canSwitchToUser(found, currentUser, isAuthenticated, lang);
     if (!check.allowed || !found) {
-      showToast(check.error || 'Nie można przełączyć na to konto.', 'danger');
+      showToast(check.error || (isEn ? 'Cannot switch to this account.' : 'Nie można przełączyć na to konto.'), 'danger');
       return;
     }
 
@@ -1542,25 +1894,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (updatedUser.role !== 'admin' && activeTab === 'admin') {
       setActiveTabState('dashboard');
     }
-    showToast(`Przełączono na profil: ${found.name} (${found.role === 'admin' ? 'Instruktor/Admin' : 'Kursant'})`, 'info');
+    const roleLabel = isEn
+      ? found.role === 'admin'
+        ? 'Instructor/Admin'
+        : 'Student'
+      : found.role === 'admin'
+      ? 'Instruktor/Admin'
+      : 'Kursant';
+    showToast(
+      isEn ? `Switched profile: ${found.name} (${roleLabel})` : `Przełączono na profil: ${found.name} (${roleLabel})`,
+      'info'
+    );
   };
 
   const logout = () => {
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
     const prevName = currentUser.name;
     void signOutFromFirebase();
     setFirebaseUid(null);
     setIsCloudConnected(false);
-    const guest = createGuestUser();
+    const guest = createGuestUser(lang);
     setIsAuthenticated(false);
     setCurrentUser(guest);
     setLivesInfo(calculateRegeneratedLives(guest));
     if (activeTab === 'admin') {
       setActiveTabState('dashboard');
     }
-    showToast(`Wylogowano z konta (${prevName}). Jesteś teraz w trybie gościa.`, 'info');
+    showToast(
+      isEn ? `Signed out (${prevName}). Now browsing in Guest mode.` : `Wylogowano z konta (${prevName}). Jesteś teraz w trybie gościa.`,
+      'info'
+    );
   };
 
   const completeLesson = (lessonId: string, xpReward: number, answers?: Record<string, number>) => {
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
     const lessonObj = allLessons.find((l) => l.id === lessonId);
     const lessonMinutes = lessonObj?.durationMinutes || 25;
 
@@ -1569,7 +1938,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const newCompleted = alreadyCompleted ? prev.completedLessons : [...prev.completedLessons, lessonId];
       const addedXp = alreadyCompleted ? 0 : xpReward;
       const newXp = prev.xp + addedXp;
-      const levelInfo = calculateLevel(newXp);
+      const levelInfo = calculateLevel(newXp, lang);
       const todayStr = new Date().toISOString().split('T')[0];
       const localTodayKey = formatLocalDateKey();
       const streakInfo = updateStreak(prev.lastActiveDate, prev.streakDays, todayStr);
@@ -1592,13 +1961,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (newBadges.length > 0) {
         updatedUser.unlockedBadges = [...(updatedUser.unlockedBadges || []), ...newBadges];
         soundManager.playBadgeUnlocked();
-        showToast(`Zdobyto nową odznakę! Sprawdź swój profil.`, 'badge');
+        showToast(
+          isEn ? 'New badge unlocked! Check your profile.' : 'Zdobyto nową odznakę! Sprawdź swój profil.',
+          'badge'
+        );
       } else if (levelInfo.level > prev.level) {
         soundManager.playLevelUp();
-        showToast(`Awans na Poziom ${levelInfo.level}: ${levelInfo.title}!`, 'success');
+        showToast(
+          isEn ? `Leveled up to Level ${levelInfo.level}: ${levelInfo.title}!` : `Awans na Poziom ${levelInfo.level}: ${levelInfo.title}!`,
+          'success'
+        );
       } else if (!alreadyCompleted) {
         soundManager.playSuccess();
-        showToast(`Gratulacje! Ukończono lekcję (+${xpReward} XP)`, 'success');
+        showToast(
+          isEn ? `Congrats! Lesson completed (+${xpReward} XP)` : `Gratulacje! Ukończono lekcję (+${xpReward} XP)`,
+          'success'
+        );
       }
 
       // Update in allUsers list
@@ -1607,12 +1985,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
     if (firebaseUid && isCloudConnected) {
       void completeLessonInCloud(lessonId, answers).catch(() => {
-        showToast('Nie udało się potwierdzić zaliczenia lekcji w chmurze.', 'danger');
+        showToast(
+          isEn ? 'Failed to confirm lesson completion in cloud.' : 'Nie udało się potwierdzić zaliczenia lekcji w chmurze.',
+          'danger'
+        );
       });
     }
   };
 
   const saveQuizScore = (lessonId: string, scorePercent: number, answers: Record<string, number>) => {
+    const isEn = languageRef.current === 'en';
     setCurrentUser((prev) => {
       const updatedScores = {
         ...prev.quizScores,
@@ -1628,7 +2010,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (newBadges.length > 0) {
         updatedUser.unlockedBadges = [...(updatedUser.unlockedBadges || []), ...newBadges];
         soundManager.playBadgeUnlocked();
-        showToast(`Zdobyto odznakę za test wiedzy!`, 'badge');
+        showToast(isEn ? 'Unlocked a knowledge quiz badge!' : 'Zdobyto odznakę za test wiedzy!', 'badge');
       } else if (scorePercent >= 80) {
         soundManager.playSuccess();
       }
@@ -1638,18 +2020,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
     if (firebaseUid && isCloudConnected) {
       void submitQuizAnswersToCloud(lessonId, answers).catch(() => {
-        showToast('Nie udało się zweryfikować odpowiedzi quizu w chmurze.', 'danger');
+        showToast(
+          isEn ? 'Failed to verify quiz answers in cloud.' : 'Nie udało się zweryfikować odpowiedzi quizu w chmurze.',
+          'danger'
+        );
       });
     }
   };
 
   const verifyLessonExercise = async (exerciseId: string, code: { html: string; css: string; js: string }) => {
+    const isEn = languageRef.current === 'en';
     if (!firebaseUid || !isCloudConnected) return true;
     try {
       await verifyLessonExerciseInCloud(exerciseId, code);
       return true;
     } catch {
-      showToast('Serwer nie potwierdził poprawności ćwiczenia.', 'danger');
+      showToast(isEn ? 'Server did not confirm exercise completion.' : 'Serwer nie potwierdził poprawności ćwiczenia.', 'danger');
       return false;
     }
   };
@@ -1669,12 +2055,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const completeProject = (projectId: string, xpReward: number, code?: { html: string; css: string; js: string }) => {
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
     setCurrentUser((prev) => {
       const alreadyCompleted = prev.completedProjects.includes(projectId);
       const newCompleted = alreadyCompleted ? prev.completedProjects : [...prev.completedProjects, projectId];
       const addedXp = alreadyCompleted ? 0 : xpReward;
       const newXp = prev.xp + addedXp;
-      const levelInfo = calculateLevel(newXp);
+      const levelInfo = calculateLevel(newXp, lang);
 
       const updatedUser: User = {
         ...prev,
@@ -1691,25 +2079,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         soundManager.playLevelUp();
       }
 
-      showToast(`Wspaniale! Projekt oddany i zaliczony (+${xpReward} XP)`, 'success');
+      showToast(
+        isEn ? `Awesome! Project submitted and passed (+${xpReward} XP)` : `Wspaniale! Projekt oddany i zaliczony (+${xpReward} XP)`,
+        'success'
+      );
       setAllUsers((users) => users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
       return updatedUser;
     });
     if (firebaseUid && isCloudConnected) {
       if (!code) {
-        showToast('Brakuje kodu projektu do weryfikacji serwerowej.', 'danger');
+        showToast(
+          isEn ? 'Missing project code for server verification.' : 'Brakuje kodu projektu do weryfikacji serwerowej.',
+          'danger'
+        );
         return;
       }
       void completeProjectInCloud(projectId, code).catch(() => {
-        showToast('Serwer nie potwierdził zaliczenia projektu.', 'danger');
+        showToast(
+          isEn ? 'Server did not confirm project completion.' : 'Serwer nie potwierdził zaliczenia projektu.',
+          'danger'
+        );
       });
     }
   };
 
   const linkGithubAccount = async (usernameOrUrl: string, token?: string): Promise<GithubSyncResult> => {
+    const isEn = languageRef.current === 'en';
     const nowIso = new Date().toISOString();
     if (!isAuthenticated || currentUser.id === 'user-guest') {
-      const errorMsg = 'Zaloguj się na swoje konto w Akademii, aby połączyć repozytoria GitHub.';
+      const errorMsg = isEn
+        ? 'Sign in to your Academy account to link GitHub repositories.'
+        : 'Zaloguj się na swoje konto w Akademii, aby połączyć repozytoria GitHub.';
       showToast(errorMsg, 'danger');
       return {
         ok: false,
@@ -1745,6 +2145,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const result = await fetchGithubUserAndRepos(usernameOrUrl, {
       token,
       previousIntegration: prevGithub,
+      language: languageRef.current,
     });
 
     setCurrentUser((prev) => {
@@ -1760,21 +2161,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (result.ok) {
       soundManager.playSuccess();
       showToast(
-        `Zsynchronizowano konto GitHub @${result.integration.username} (${result.integration.repos?.length ?? 0} repozytoriów).`,
+        isEn
+          ? `Synced GitHub account @${result.integration.username} (${result.integration.repos?.length ?? 0} repositories).`
+          : `Zsynchronizowano konto GitHub @${result.integration.username} (${result.integration.repos?.length ?? 0} repozytoriów).`,
         'success'
       );
     } else {
-      showToast(result.error || 'Błąd synchronizacji z GitHub.', 'danger');
+      showToast(result.error || (isEn ? 'GitHub synchronization error.' : 'Błąd synchronizacji z GitHub.'), 'danger');
     }
 
     return result;
   };
 
   const refreshGithubSync = async (token?: string): Promise<GithubSyncResult> => {
+    const isEn = languageRef.current === 'en';
     const existingUsername = currentUser.githubIntegration?.username;
     if (!existingUsername) {
       const nowIso = new Date().toISOString();
-      const errorMsg = 'Najpierw połącz swoje konto GitHub w ustawieniach profilu.';
+      const errorMsg = isEn
+        ? 'Link your GitHub account in profile settings first.'
+        : 'Najpierw połącz swoje konto GitHub w ustawieniach profilu.';
       showToast(errorMsg, 'info');
       return {
         ok: false,
@@ -1789,6 +2195,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const unlinkGithubAccount = () => {
+    const isEn = languageRef.current === 'en';
     clearSessionGithubToken();
     const nowIso = new Date().toISOString();
     setCurrentUser((prev) => {
@@ -1804,7 +2211,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setAllUsers((users) => users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
       return updatedUser;
     });
-    showToast('Odłączono konto GitHub od profilu Akademii.', 'info');
+    showToast(
+      isEn ? 'Unlinked GitHub account from Academy profile.' : 'Odłączono konto GitHub od profilu Akademii.',
+      'info'
+    );
   };
 
   const submitProjectFromGithub = async (
@@ -1812,15 +2222,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     repoIdentifier: string,
     token?: string
   ): Promise<GithubProjectSubmitResult> => {
+    const isEn = languageRef.current === 'en';
     if (!isAuthenticated || currentUser.id === 'user-guest') {
-      const errorMsg = 'Zaloguj się na konto kursanta, aby wysłać postęp projektu z GitHub.';
+      const errorMsg = isEn
+        ? 'Sign in to a student account to submit project progress from GitHub.'
+        : 'Zaloguj się na konto kursanta, aby wysłać postęp projektu z GitHub.';
       showToast(errorMsg, 'danger');
       return { ok: false, error: errorMsg };
     }
 
-    const project = PROJECTS_DATA.find((p) => p.id === projectId);
+    const project = allProjects.find((p) => p.id === projectId);
     if (!project) {
-      return { ok: false, error: 'Nie znaleziono wybranego projektu.' };
+      return { ok: false, error: isEn ? 'Selected project not found.' : 'Nie znaleziono wybranego projektu.' };
     }
 
     if (token !== undefined) {
@@ -1828,11 +2241,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     setIsSyncingGithub(true);
-    const result = await submitProjectFromGithubRepo(project, repoIdentifier, { token });
+    const result = await submitProjectFromGithubRepo(project, repoIdentifier, {
+      token,
+      language: languageRef.current,
+    });
     setIsSyncingGithub(false);
 
     if (!result.ok || !result.submission) {
-      showToast(result.error || 'Nie udało się wysłać repozytorium projektu.', 'danger');
+      showToast(
+        result.error || (isEn ? 'Failed to submit project repository.' : 'Nie udało się wysłać repozytorium projektu.'),
+        'danger'
+      );
       return result;
     }
 
@@ -1857,21 +2276,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
 
     if (result.extractedCode) {
-      const exercise = getProjectInteractiveExercise(project);
+      const exercise = getProjectInteractiveExercise(project, languageRef.current);
       saveCodeSnippet(exercise.id, result.extractedCode);
     }
 
     if (result.validationSummary?.allPassed) {
       awardCustomXp(
         50,
-        `Zweryfikowano kod projektu z GitHub: ${project.title}`,
+        isEn ? `Verified project code from GitHub: ${project.title}` : `Zweryfikowano kod projektu z GitHub: ${project.title}`,
         `project-verify-${project.id}`
       );
       completeProject(project.id, project.xpReward, result.extractedCode);
     } else {
       soundManager.playSuccess();
       showToast(
-        `Przesłano postęp projektu z GitHub (${submission.repoFullName} @ ${submission.commitSha.slice(0, 7)}).`,
+        isEn
+          ? `Submitted project progress from GitHub (${submission.repoFullName} @ ${submission.commitSha.slice(0, 7)}).`
+          : `Przesłano postęp projektu z GitHub (${submission.repoFullName} @ ${submission.commitSha.slice(0, 7)}).`,
         'success'
       );
     }
@@ -1880,8 +2301,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const addAnnouncement = (title: string, content: string, category: Announcement['category']) => {
+    const isEn = languageRef.current === 'en';
     if (!isAuthenticated || currentUser.role !== 'admin') {
-      showToast('Brak uprawnień administratora.', 'danger');
+      showToast(isEn ? 'Administrator permission required.' : 'Brak uprawnień administratora.', 'danger');
       return;
     }
     const newAnn: Announcement = {
@@ -1896,24 +2318,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (isCloudConnected && currentUser.role === 'admin') {
       void saveAnnouncementToCloud(newAnn);
     }
-    showToast('Opublikowano nowe ogłoszenie dla kursantów.', 'info');
+    showToast(isEn ? 'Published new announcement for students.' : 'Opublikowano nowe ogłoszenie dla kursantów.', 'info');
   };
 
   const deleteAnnouncement = (id: string) => {
+    const isEn = languageRef.current === 'en';
     if (!isAuthenticated || currentUser.role !== 'admin') {
-      showToast('Brak uprawnień administratora.', 'danger');
+      showToast(isEn ? 'Administrator permission required.' : 'Brak uprawnień administratora.', 'danger');
       return;
     }
     setAnnouncements((prev) => prev.filter((a) => a.id !== id));
     if (isCloudConnected && currentUser.role === 'admin') {
       void deleteAnnouncementFromCloud(id);
     }
-    showToast('Ogłoszenie zostało usunięte.', 'info');
+    showToast(isEn ? 'Announcement deleted.' : 'Ogłoszenie zostało usunięte.', 'info');
   };
 
   const updateUserByAdmin = (userId: string, partial: Partial<User>) => {
+    const isEn = languageRef.current === 'en';
     if (!isAuthenticated || currentUser.role !== 'admin') {
-      showToast('Brak uprawnień administratora.', 'danger');
+      showToast(isEn ? 'Administrator permission required.' : 'Brak uprawnień administratora.', 'danger');
       return;
     }
     setAllUsers((prev) =>
@@ -1928,7 +2352,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return u;
       })
     );
-    showToast('Zaktualizowano profil użytkownika w bazie danych.', 'success');
+    showToast(isEn ? 'Updated user profile in database.' : 'Zaktualizowano profil użytkownika w bazie danych.', 'success');
   };
 
   const awardCustomXp = useCallback((
@@ -1937,6 +2361,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     rewardId?: string,
     proof?: Record<string, unknown>
   ): boolean => {
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
     let wasGranted = true;
     setCurrentUser((prev) => {
       if (rewardId) {
@@ -1950,7 +2376,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       const newXp = prev.xp + xpAmount;
-      const levelInfo = calculateLevel(newXp);
+      const levelInfo = calculateLevel(newXp, lang);
       const updatedUser: User = {
         ...prev,
         xp: newXp,
@@ -1961,7 +2387,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
 
     if (!wasGranted) {
-      showToast(`Zadanie zostało już wcześniej zaliczone (punkty XP zostały już przyznane).`, 'info');
+      showToast(
+        isEn
+          ? 'Challenge already completed (XP reward was already claimed).'
+          : 'Zadanie zostało już wcześniej zaliczone (punkty XP zostały już przyznane).',
+        'info'
+      );
       return false;
     }
 
@@ -1969,14 +2400,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast(`${reason} (+${xpAmount} XP)`, 'success');
     if (firebaseUid && isCloudConnected && !rewardId?.startsWith('exercise-') && !rewardId?.startsWith('project-verify-')) {
       void claimActivityRewardInCloud(rewardId, proof).catch(() => {
-        showToast('Serwer nie potwierdził tej nagrody.', 'danger');
+        showToast(isEn ? 'Server did not confirm this reward.' : 'Serwer nie potwierdził tej nagrody.', 'danger');
       });
     }
     return true;
-  }, [firebaseUid, isCloudConnected, showToast]);
+  }, [firebaseUid, isCloudConnected]);
 
   const importUserBackup = useCallback(
     (restoredUser: User) => {
+      const isEn = languageRef.current === 'en';
       const safeUser = sanitizeImportedUser(restoredUser, currentUser, isAuthenticated);
       setCurrentUser(safeUser);
       setIsAuthenticated(true);
@@ -1988,14 +2420,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return [...prev, safeUser];
       });
       soundManager.playLevelUp();
-      showToast(`Przywrócono kopię zapasową profilu: ${safeUser.name}`, 'badge');
+      showToast(
+        isEn ? `Restored profile backup: ${safeUser.name}` : `Przywrócono kopię zapasową profilu: ${safeUser.name}`,
+        'badge'
+      );
     },
     [currentUser, isAuthenticated]
   );
 
   const weakAreas = useMemo(
-    () => findWeakAreas(currentUser.quizScores || {}, allLessons),
-    [currentUser.quizScores, allLessons]
+    () => findWeakAreas(currentUser.quizScores || {}, allLessons, language),
+    [currentUser.quizScores, allLessons, language]
   );
 
   const localTodayKey = formatLocalDateKey();
@@ -2027,18 +2462,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, []);
 
   const requestNotificationPermission = useCallback(async () => {
+    const isEn = languageRef.current === 'en';
     const perm = await requestBrowserNotificationPermission();
     setNotificationPermission(perm);
     if (perm === 'granted') {
-      showToast('Powiadomienia Push (Service Worker) zostały włączone!', 'success');
+      showToast(
+        isEn ? 'Push Notifications (Service Worker) enabled!' : 'Powiadomienia Push (Service Worker) zostały włączone!',
+        'success'
+      );
     } else if (perm === 'denied') {
-      showToast('Uprawnienia powiadomień przeglądarki są zablokowane — aktywne są przypomnienia w aplikacji.', 'info');
+      showToast(
+        isEn
+          ? 'Browser notifications are blocked — in-app study reminders remain active.'
+          : 'Uprawnienia powiadomień przeglądarki są zablokowane — aktywne są przypomnienia w aplikacji.',
+        'info'
+      );
     }
     return perm;
   }, []);
 
   const triggerGoalReminderNow = useCallback(
     async (isTest: boolean = false): Promise<boolean> => {
+      const lang = languageRef.current;
+      const isEn = lang === 'en';
       const nextLesson =
         allLessons.find((l) => !currentUser.completedLessons.includes(l.id)) || allLessons[0];
 
@@ -2050,13 +2496,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         nextLessonId: nextLesson?.id,
         nextLessonTitle: nextLesson?.title,
         isTest,
+        language: lang,
       });
 
       const swSent = await sendServiceWorkerNotification(payload);
       soundManager.playSuccess();
 
       const remaining = Math.max(0, dailyGoalMinutes - todaySpentMinutes);
-      const toastMsg = isTest
+      const toastMsg = isEn
+        ? isTest
+          ? swSent
+            ? `Service Worker notification sent: "${payload.title}"`
+            : `Daily goal reminder (${todaySpentMinutes}/${dailyGoalMinutes} min): Continue lesson "${nextLesson?.title || 'HTML'}"!`
+          : remaining > 0
+          ? `Daily goal reminder: ${remaining} min left today to keep your ${currentUser.streakDays}-day streak!`
+          : `Daily goal (${dailyGoalMinutes} min) completed! Great job!`
+        : isTest
         ? swSent
           ? `Wysłano powiadomienie Service Worker: „${payload.title}”`
           : `Przypomnienie o celu dnia (${todaySpentMinutes}/${dailyGoalMinutes} min): Kontynuuj lekcję „${nextLesson?.title || 'HTML'}”!`
@@ -2144,6 +2599,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             dailyGoalMinutes,
             nextLessonId: nextLesson?.id,
             nextLessonTitle: nextLesson?.title,
+            language,
           })
         : null;
 
@@ -2167,12 +2623,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     currentUser.completedLessons,
     currentUser.name,
     currentUser.streakDays,
+    language,
   ]);
 
   return (
     <AppContext.Provider
       value={{
-        currentUser,
+        currentUser: localizedCurrentUser,
         isAuthenticated,
         isCloudConnected,
         isSyncingCloud,
@@ -2181,8 +2638,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         activeTab,
         selectedLessonId,
         selectedProjectId,
-        announcements,
+        announcements: localizedAnnouncements,
+        localizedAnnouncements,
+        language,
+        setLanguage,
+        allModules,
+        allProjects,
+        allBadges,
         theme,
+        themePreference,
         toast,
         livesInfo,
         isLivesModalOpen,
@@ -2199,6 +2663,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         buyRefill,
         buyFreeze,
         togglePro,
+        setThemePreference,
         toggleTheme,
         setActiveTab,
         loginUser,
@@ -2242,7 +2707,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         triggerGoalReminderNow,
         awardCustomXp,
         importUserBackup,
-        securityLogs,
+        securityLogs: localizedSecurityLogs,
         clearSecurityLogs,
       }}
     >

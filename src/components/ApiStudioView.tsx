@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
   HttpMethod,
-  API_MISSIONS,
+  getLocalizedApiMissions,
   executeSimulatedRequest,
   checkApiMissionCompleted,
   ApiResponseOutput,
@@ -21,21 +21,32 @@ import {
   Trash2,
 } from 'lucide-react';
 
-const PRESET_ENDPOINTS: { label: string; method: HttpMethod; endpoint: string; body?: string; auth?: boolean }[] = [
-  { label: 'GET /api/users', method: 'GET', endpoint: '/api/users' },
-  {
-    label: 'POST /api/tasks',
-    method: 'POST',
-    endpoint: '/api/tasks',
-    body: JSON.stringify({ title: 'Zbudować REST API w Express', priority: 'high' }, null, 2),
-  },
-  { label: 'GET /api/profile (Bearer)', method: 'GET', endpoint: '/api/profile', auth: true },
-  { label: 'DELETE /api/tasks/101', method: 'DELETE', endpoint: '/api/tasks/101' },
-  { label: 'GET /api/health', method: 'GET', endpoint: '/api/health' },
-];
-
 export const ApiStudioView: React.FC = () => {
-  const { currentUser, awardCustomXp } = useApp();
+  const { currentUser, awardCustomXp, language } = useApp();
+  const isEn = language === 'en';
+
+  const missions = useMemo(() => getLocalizedApiMissions(language), [language]);
+
+  const presetEndpoints: { label: string; method: HttpMethod; endpoint: string; body?: string; auth?: boolean }[] = useMemo(
+    () => [
+      { label: 'GET /api/users', method: 'GET', endpoint: '/api/users' },
+      {
+        label: 'POST /api/tasks',
+        method: 'POST',
+        endpoint: '/api/tasks',
+        body: JSON.stringify(
+          { title: isEn ? 'Build REST API with Express' : 'Zbudować REST API w Express', priority: 'high' },
+          null,
+          2
+        ),
+      },
+      { label: 'GET /api/profile (Bearer)', method: 'GET', endpoint: '/api/profile', auth: true },
+      { label: 'DELETE /api/tasks/101', method: 'DELETE', endpoint: '/api/tasks/101' },
+      { label: 'GET /api/health', method: 'GET', endpoint: '/api/health' },
+    ],
+    [isEn]
+  );
+
   const [method, setMethod] = useState<HttpMethod>('GET');
   const [endpoint, setEndpoint] = useState<string>('/api/users');
   const [headers, setHeaders] = useState<{ key: string; value: string }[]>([
@@ -43,23 +54,34 @@ export const ApiStudioView: React.FC = () => {
     { key: 'Accept', value: 'application/json' },
   ]);
   const [bodyRaw, setBodyRaw] = useState<string>(
-    JSON.stringify({ title: 'Nauczyć się architektury REST API', priority: 'high' }, null, 2)
+    JSON.stringify({ title: isEn ? 'Learn REST API architecture' : 'Nauczyć się architektury REST API', priority: 'high' }, null, 2)
   );
   const [response, setResponse] = useState<ApiResponseOutput | null>(() =>
-    executeSimulatedRequest({
-      method: 'GET',
-      endpoint: '/api/users',
-      headers: { 'Content-Type': 'application/json' },
-      bodyRaw: '',
-    })
+    executeSimulatedRequest(
+      {
+        method: 'GET',
+        endpoint: '/api/users',
+        headers: { 'Content-Type': 'application/json' },
+        bodyRaw: '',
+      },
+      language
+    )
   );
   const [localCompletedMissions, setLocalCompletedMissions] = useState<string[]>([]);
   const [activeHintId, setActiveHintId] = useState<string | null>(null);
 
+  useEffect(() => {
+    const headerRecord: Record<string, string> = {};
+    headers.forEach((h) => {
+      if (h.key.trim()) headerRecord[h.key.trim()] = h.value;
+    });
+    setResponse(executeSimulatedRequest({ method, endpoint, headers: headerRecord, bodyRaw }, language));
+  }, [language]);
+
   const completedMissions = Array.from(
     new Set([
       ...localCompletedMissions,
-      ...API_MISSIONS.filter((m) => (currentUser.claimedRewards || []).includes(`api-${m.id}`)).map((m) => m.id),
+      ...missions.filter((m) => (currentUser.claimedRewards || []).includes(`api-${m.id}`)).map((m) => m.id),
     ])
   );
 
@@ -77,24 +99,29 @@ export const ApiStudioView: React.FC = () => {
       bodyRaw,
     };
 
-    const res = executeSimulatedRequest(req);
+    const res = executeSimulatedRequest(req, language);
     setResponse(res);
 
     // Check missions
-    API_MISSIONS.forEach((mission) => {
+    missions.forEach((mission) => {
       if (!completedMissions.includes(mission.id) && checkApiMissionCompleted(mission, req, res)) {
         setLocalCompletedMissions((prev) => [...prev, mission.id]);
-        awardCustomXp(mission.xpReward, `Ukończono misję API: ${mission.title}`, `api-${mission.id}`, {
-          method: req.method,
-          endpoint: req.endpoint,
-          headers: req.headers,
-          bodyRaw: req.bodyRaw,
-        });
+        awardCustomXp(
+          mission.xpReward,
+          isEn ? `Completed API mission: ${mission.title}` : `Ukończono misję API: ${mission.title}`,
+          `api-${mission.id}`,
+          {
+            method: req.method,
+            endpoint: req.endpoint,
+            headers: req.headers,
+            bodyRaw: req.bodyRaw,
+          }
+        );
       }
     });
   };
 
-  const applyPreset = (preset: (typeof PRESET_ENDPOINTS)[number]) => {
+  const applyPreset = (preset: (typeof presetEndpoints)[number]) => {
     setMethod(preset.method);
     setEndpoint(preset.endpoint);
     if (preset.body) {
@@ -121,17 +148,21 @@ export const ApiStudioView: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
         <div>
-          <p className="text-xs font-semibold text-cyan-400">Warsztat Backend & HTTP</p>
+          <p className="text-xs font-semibold text-cyan-400">
+            {isEn ? 'Backend & HTTP Workshop' : 'Warsztat Backend & HTTP'}
+          </p>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
-            Studio REST API & Klient HTTP
+            {isEn ? 'REST API Studio & HTTP Client' : 'Studio REST API & Klient HTTP'}
           </h1>
           <p className="text-sm text-slate-300 mt-1 max-w-2xl">
-            Testuj punkty końcowe (Endpoints), nagłówki autoryzacji JWT Bearer, kody statusu HTTP oraz ciała żądań JSON w bezpiecznym symulatorze.
+            {isEn
+              ? 'Test REST endpoints, JWT Bearer authorization headers, HTTP status codes, and JSON request bodies in a safe built-in simulator.'
+              : 'Testuj punkty końcowe (Endpoints), nagłówki autoryzacji JWT Bearer, kody statusu HTTP oraz ciała żądań JSON w bezpiecznym symulatorze.'}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {PRESET_ENDPOINTS.map((preset) => (
+          {presetEndpoints.map((preset) => (
             <button
               key={preset.label}
               type="button"
@@ -155,11 +186,11 @@ export const ApiStudioView: React.FC = () => {
           >
             <div className="flex flex-col sm:flex-row gap-3">
               <label htmlFor="http-method-select" className="sr-only">
-                Metoda HTTP
+                {isEn ? 'HTTP Method' : 'Metoda HTTP'}
               </label>
               <select
                 id="http-method-select"
-                aria-label="Metoda HTTP"
+                aria-label={isEn ? 'HTTP Method' : 'Metoda HTTP'}
                 value={method}
                 onChange={(e) => setMethod(e.target.value as HttpMethod)}
                 className="rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-mono font-bold text-cyan-300 focus:border-indigo-500 focus:outline-none"
@@ -171,7 +202,7 @@ export const ApiStudioView: React.FC = () => {
               </select>
 
               <label htmlFor="api-endpoint-input" className="sr-only">
-                Adres Endpointu URL
+                {isEn ? 'Endpoint URL' : 'Adres Endpointu URL'}
               </label>
               <input
                 id="api-endpoint-input"
@@ -187,7 +218,7 @@ export const ApiStudioView: React.FC = () => {
                 className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 text-xs font-bold text-white transition-colors shrink-0"
               >
                 <Send className="h-3.5 w-3.5" />
-                <span>Wyślij żądanie</span>
+                <span>{isEn ? 'Send request' : 'Wyślij żądanie'}</span>
               </button>
             </div>
 
@@ -196,7 +227,7 @@ export const ApiStudioView: React.FC = () => {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                   <KeyRound className="h-3.5 w-3.5 text-indigo-400" />
-                  <span>Nagłówki HTTP (Headers)</span>
+                  <span>{isEn ? 'HTTP Headers' : 'Nagłówki HTTP (Headers)'}</span>
                 </span>
                 <button
                   type="button"
@@ -204,7 +235,7 @@ export const ApiStudioView: React.FC = () => {
                   className="flex items-center gap-1 text-xs font-medium text-indigo-400 hover:text-indigo-300"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  <span>Dodaj nagłówek Bearer</span>
+                  <span>{isEn ? 'Add Bearer header' : 'Dodaj nagłówek Bearer'}</span>
                 </button>
               </div>
 
@@ -213,30 +244,30 @@ export const ApiStudioView: React.FC = () => {
                   <div key={idx} className="flex items-center gap-2">
                     <input
                       type="text"
-                      aria-label={`Klucz nagłówka ${idx + 1}`}
+                      aria-label={isEn ? `Header key ${idx + 1}` : `Klucz nagłówka ${idx + 1}`}
                       value={h.key}
                       onChange={(e) => {
                         const val = e.target.value;
                         setHeaders((prev) => prev.map((item, i) => (i === idx ? { ...item, key: val } : item)));
                       }}
-                      placeholder="Nagłówek (np. Authorization)"
+                      placeholder={isEn ? 'Header (e.g. Authorization)' : 'Nagłówek (np. Authorization)'}
                       className="w-1/3 rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs font-mono text-slate-200"
                     />
                     <input
                       type="text"
-                      aria-label={`Wartość nagłówka ${idx + 1}`}
+                      aria-label={isEn ? `Header value ${idx + 1}` : `Wartość nagłówka ${idx + 1}`}
                       value={h.value}
                       onChange={(e) => {
                         const val = e.target.value;
                         setHeaders((prev) => prev.map((item, i) => (i === idx ? { ...item, value: val } : item)));
                       }}
-                      placeholder="Wartość (np. Bearer token...)"
+                      placeholder={isEn ? 'Value (e.g. Bearer token...)' : 'Wartość (np. Bearer token...)'}
                       className="flex-1 rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs font-mono text-emerald-300"
                     />
                     <button
                       type="button"
                       onClick={() => removeHeaderRow(idx)}
-                      aria-label={`Usuń nagłówek ${idx + 1}`}
+                      aria-label={isEn ? `Remove header ${idx + 1}` : `Usuń nagłówek ${idx + 1}`}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -251,7 +282,7 @@ export const ApiStudioView: React.FC = () => {
               <div className="space-y-2 pt-2 border-t border-slate-800/80">
                 <label htmlFor="api-json-body" className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                   <FileJson className="h-3.5 w-3.5 text-amber-400" />
-                  <span>Ciało żądania (Request Body JSON)</span>
+                  <span>{isEn ? 'Request Body (JSON)' : 'Ciało żądania (Request Body JSON)'}</span>
                 </label>
                 <textarea
                   id="api-json-body"
@@ -270,7 +301,9 @@ export const ApiStudioView: React.FC = () => {
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
                   <Server className="h-4 w-4 text-cyan-400" />
-                  <h2 className="text-sm font-bold text-white">Odpowiedź Serwera (HTTP Response)</h2>
+                  <h2 className="text-sm font-bold text-white">
+                    {isEn ? 'HTTP Server Response' : 'Odpowiedź Serwera (HTTP Response)'}
+                  </h2>
                 </div>
 
                 <div className="flex items-center gap-4 text-xs font-mono tabular-nums">
@@ -292,7 +325,7 @@ export const ApiStudioView: React.FC = () => {
               <CodeBlock
                 code={JSON.stringify(response.data, null, 2)}
                 language="json"
-                title="Odpowiedź serwera (JSON)"
+                title={isEn ? 'Server response (JSON)' : 'Odpowiedź serwera (JSON)'}
                 maxHeightClass="max-h-96"
                 showLineNumbers={true}
               />
@@ -304,16 +337,20 @@ export const ApiStudioView: React.FC = () => {
         <div className="lg:col-span-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div>
-              <h2 className="text-base font-bold text-white">Misje Backend API</h2>
+              <h2 className="text-base font-bold text-white">
+                {isEn ? 'Backend API Missions' : 'Misje Backend API'}
+              </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Zrealizowano {completedMissions.length} z {API_MISSIONS.length} zadań
+                {isEn
+                  ? `Completed ${completedMissions.length} of ${missions.length} missions`
+                  : `Zrealizowano ${completedMissions.length} z ${missions.length} zadań`}
               </p>
             </div>
             <Sparkles className="h-5 w-5 text-indigo-400" />
           </div>
 
           <div className="space-y-3">
-            {API_MISSIONS.map((m) => {
+            {missions.map((m) => {
               const isDone = completedMissions.includes(m.id);
               const showHint = activeHintId === m.id;
               return (
@@ -351,7 +388,7 @@ export const ApiStudioView: React.FC = () => {
                       className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-medium"
                     >
                       <HelpCircle className="h-3 w-3" />
-                      <span>Podpowiedź</span>
+                      <span>{isEn ? 'Hint' : 'Podpowiedź'}</span>
                     </button>
                   </div>
 

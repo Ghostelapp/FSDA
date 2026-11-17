@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import {
+  getLocalizedAntiBotChallengeById,
   getRandomAntiBotChallenge,
   verifyAntiBotSubmission,
   AntiBotChallenge,
@@ -34,6 +35,7 @@ interface AuthModalProps {
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const {
+    language,
     currentUser,
     isAuthenticated,
     isCloudConnected,
@@ -46,6 +48,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     resetUserPassword,
     logout,
   } = useApp();
+  const isEn = language === 'en';
 
   const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'profile'>(() =>
     isAuthenticated ? 'profile' : 'login'
@@ -67,7 +70,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [profileWeeklyGoal, setProfileWeeklyGoal] = useState(180);
 
   // Anti-Bot Protection Fields
-  const [challenge, setChallenge] = useState<AntiBotChallenge>(() => getRandomAntiBotChallenge());
+  const [challenge, setChallenge] = useState<AntiBotChallenge>(() => getRandomAntiBotChallenge(language));
   const [antiBotAnswer, setAntiBotAnswer] = useState('');
   const [honeypotValue, setHoneypotValue] = useState('');
   const [sliderProgress, setSliderProgress] = useState(0);
@@ -89,7 +92,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       setFormOpenTime(Date.now());
-      setChallenge(getRandomAntiBotChallenge());
+      setChallenge(getRandomAntiBotChallenge(language));
       setAntiBotAnswer('');
       setSliderProgress(0);
       setIsHumanConfirmed(false);
@@ -100,14 +103,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setProfileNewPassword('');
       setProfileWeeklyGoal(currentUser.weeklyGoalMinutes || 180);
     }
-  }, [isOpen, mode, currentUser.name, currentUser.bio, currentUser.weeklyGoalMinutes]);
+  }, [isOpen, mode, currentUser.name, currentUser.bio, currentUser.weeklyGoalMinutes, language]);
 
   if (!isOpen) return null;
 
-  const passwordStrength = getPasswordStrength(password);
+  const activeChallenge = getLocalizedAntiBotChallengeById(challenge.id, language) || challenge;
+  const passwordStrength = getPasswordStrength(password, language);
 
   const handleRefreshChallenge = () => {
-    setChallenge(getRandomAntiBotChallenge());
+    setChallenge(getRandomAntiBotChallenge(language));
     setAntiBotAnswer('');
   };
 
@@ -127,7 +131,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setSuccessMessage('');
 
     if (!email.trim() || !password.trim()) {
-      setErrorMessage('Wprowadź adres e-mail oraz hasło dostępowe.');
+      setErrorMessage(
+        isEn
+          ? 'Enter both your email address and password.'
+          : 'Wprowadź adres e-mail oraz hasło dostępowe.'
+      );
       return;
     }
 
@@ -135,7 +143,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     if (res.success) {
       onClose();
     } else {
-      setErrorMessage(res.error || 'Błąd logowania.');
+      setErrorMessage(res.error || (isEn ? 'Sign-in error.' : 'Błąd logowania.'));
     }
   };
 
@@ -156,37 +164,56 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setSuccessMessage('');
 
     if (!name.trim() || !email.trim() || !password.trim()) {
-      setErrorMessage('Wypełnij wszystkie wymagane pola formularza.');
+      setErrorMessage(
+        isEn ? 'Fill in all required form fields.' : 'Wypełnij wszystkie wymagane pola formularza.'
+      );
       return;
     }
 
     if (name.trim().length < 2) {
-      setErrorMessage('Imię i nazwisko musi zawierać co najmniej 2 znaki.');
+      setErrorMessage(
+        isEn
+          ? 'Full name must be at least 2 characters long.'
+          : 'Imię i nazwisko musi zawierać co najmniej 2 znaki.'
+      );
       return;
     }
 
     if (!validateEmailFormat(email)) {
-      setErrorMessage('Podaj poprawny adres e-mail (np. imie@domena.pl).');
+      setErrorMessage(
+        isEn
+          ? 'Enter a valid email address (e.g., name@domain.com).'
+          : 'Podaj poprawny adres e-mail (np. imie@domena.pl).'
+      );
       return;
     }
 
     if (password.length < 6) {
-      setErrorMessage('Hasło musi mieć co najmniej 6 znaków.');
+      setErrorMessage(
+        isEn
+          ? 'Password must be at least 6 characters long.'
+          : 'Hasło musi mieć co najmniej 6 znaków.'
+      );
       return;
     }
 
     // Run Anti-Bot heuristic check
     const timeSpentMs = Date.now() - formOpenTime;
     const botCheck = verifyAntiBotSubmission({
-      challengeId: challenge.id,
+      challengeId: activeChallenge.id,
       userAnswer: antiBotAnswer,
       honeypotValue,
       sliderProgress,
       timeSpentMs,
+      language,
     });
 
     if (!botCheck.isHuman) {
-      setErrorMessage(`Ochrona Anty-Bot: ${botCheck.reason || 'Weryfikacja tożsamości nie powiodła się.'}`);
+      setErrorMessage(
+        isEn
+          ? `Anti-Bot Protection: ${botCheck.reason || 'Human verification failed.'}`
+          : `Ochrona Anty-Bot: ${botCheck.reason || 'Weryfikacja tożsamości nie powiodła się.'}`
+      );
       return;
     }
 
@@ -203,7 +230,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     if (res.success) {
       onClose();
     } else {
-      setErrorMessage(res.error || 'Nie udało się zarejestrować użytkownika.');
+      setErrorMessage(
+        res.error ||
+          (isEn ? 'Could not register the user account.' : 'Nie udało się zarejestrować użytkownika.')
+      );
     }
   };
 
@@ -213,18 +243,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     setSuccessMessage('');
 
     if (!email.trim()) {
-      setErrorMessage('Podaj adres e-mail powiązany z kontem.');
+      setErrorMessage(
+        isEn ? 'Enter the email address associated with your account.' : 'Podaj adres e-mail powiązany z kontem.'
+      );
       return;
     }
 
     if (!validateEmailFormat(email)) {
-      setErrorMessage('Podaj poprawny format adresu e-mail.');
+      setErrorMessage(
+        isEn ? 'Enter a valid email address format.' : 'Podaj poprawny format adresu e-mail.'
+      );
       return;
     }
 
     const targetPass = newResetPassword.trim() || 'akademia2026!';
     if (targetPass.length < 6) {
-      setErrorMessage('Nowe hasło musi zawierać co najmniej 6 znaków.');
+      setErrorMessage(
+        isEn
+          ? 'The new password must be at least 6 characters long.'
+          : 'Nowe hasło musi zawierać co najmniej 6 znaków.'
+      );
       return;
     }
 
@@ -263,7 +301,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const handleLogoutClick = () => {
     logout();
     setErrorMessage('');
-    setSuccessMessage('Wylogowano z konta. Możesz zalogować się na inne konto poniżej.');
+    setSuccessMessage(
+      isEn
+        ? 'Signed out of your account. You can sign in to another account below.'
+        : 'Wylogowano z konta. Możesz zalogować się na inne konto poniżej.'
+    );
     setMode('login');
   };
 
@@ -284,23 +326,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-white leading-tight">
-                {mode === 'login' && 'Logowanie do Akademii'}
-                {mode === 'register' && 'Rejestracja z Ochroną Anty-Bot'}
-                {mode === 'forgot' && 'Odzyskiwanie i Reset Hasła'}
-                {mode === 'profile' && 'Ustawienia Konta i Profilu'}
+                {mode === 'login' && (isEn ? 'Sign In to the Academy' : 'Logowanie do Akademii')}
+                {mode === 'register' &&
+                  (isEn ? 'Register with Anti-Bot Shield' : 'Rejestracja z Ochroną Anty-Bot')}
+                {mode === 'forgot' &&
+                  (isEn ? 'Account Recovery & Password Reset' : 'Odzyskiwanie i Reset Hasła')}
+                {mode === 'profile' &&
+                  (isEn ? 'Account & Profile Settings' : 'Ustawienia Konta i Profilu')}
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-400">
-                {mode === 'login' && 'Zaloguj się przez Chmurę Google Firebase lub adresem e-mail.'}
-                {mode === 'register' && 'Wypełnij dane i potwierdź tożsamość człowieka.'}
-                {mode === 'forgot' && 'Ustaw nowe hasło dostępowe dla swojego konta.'}
-                {mode === 'profile' && 'Zarządzaj swoimi danymi, hasłem i aktywną sesją.'}
+                {mode === 'login' &&
+                  (isEn
+                    ? 'Sign in with Google Firebase Cloud or your email address.'
+                    : 'Zaloguj się przez Chmurę Google Firebase lub adresem e-mail.')}
+                {mode === 'register' &&
+                  (isEn
+                    ? 'Fill in your details and verify that you are human.'
+                    : 'Wypełnij dane i potwierdź tożsamość człowieka.')}
+                {mode === 'forgot' &&
+                  (isEn
+                    ? 'Set a new access password for your account.'
+                    : 'Ustaw nowe hasło dostępowe dla swojego konta.')}
+                {mode === 'profile' &&
+                  (isEn
+                    ? 'Manage your profile details, password, and active session.'
+                    : 'Zarządzaj swoimi danymi, hasłem i aktywną sesją.')}
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Zamknij okno autoryzacji"
+            aria-label={isEn ? 'Close authentication dialog' : 'Zamknij okno autoryzacji'}
             className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <X className="h-5 w-5" />
@@ -316,9 +373,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               }`}
             />
             <span className="text-slate-400 truncate">
-              Sesja:{' '}
+              {isEn ? 'Session:' : 'Sesja:'}{' '}
               <strong className="text-white font-semibold">
-                {isAuthenticated ? currentUser.name : 'Gość (Niezalogowany)'}
+                {isAuthenticated
+                  ? currentUser.name
+                  : isEn
+                  ? 'Guest (Not signed in)'
+                  : 'Gość (Niezalogowany)'}
               </strong>
             </span>
             {isCloudConnected && (
@@ -335,11 +396,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   type="button"
                   onClick={() => void syncNowToCloud()}
                   disabled={isSyncingCloud}
-                  title="Wymuś natychmiastowy zapis postępów do Cloud Firestore"
+                  title={
+                    isEn
+                      ? 'Force immediate progress sync to Cloud Firestore'
+                      : 'Wymuś natychmiastowy zapis postępów do Cloud Firestore'
+                  }
                   className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold transition-colors"
                 >
                   <Cloud className="h-3 w-3" />
-                  <span className="hidden sm:inline">Zapisz w Chmurze</span>
+                  <span className="hidden sm:inline">
+                    {isEn ? 'Save to Cloud' : 'Zapisz w Chmurze'}
+                  </span>
                 </button>
               )}
               <button
@@ -356,7 +423,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 }`}
               >
                 <Settings className="h-3 w-3" />
-                <span>Profil</span>
+                <span>{isEn ? 'Profile' : 'Profil'}</span>
               </button>
               <button
                 type="button"
@@ -364,11 +431,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-[11px] font-semibold transition-colors"
               >
                 <LogOut className="h-3 w-3" />
-                <span>Wyloguj</span>
+                <span>{isEn ? 'Sign Out' : 'Wyloguj'}</span>
               </button>
             </div>
           ) : (
-            <span className="text-[11px] text-amber-400 font-medium shrink-0">Tryb Gościa</span>
+            <span className="text-[11px] text-amber-400 font-medium shrink-0">
+              {isEn ? 'Guest Mode' : 'Tryb Gościa'}
+            </span>
           )}
         </div>
 
@@ -386,7 +455,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 mode === 'login' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
-              Logowanie
+              {isEn ? 'Sign In' : 'Logowanie'}
             </button>
             <button
               type="button"
@@ -399,8 +468,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               }`}
             >
               <Bot className="h-3.5 w-3.5 shrink-0" />
-              <span className="hidden sm:inline">Rejestracja (Anty-Bot)</span>
-              <span className="sm:hidden">Rejestracja</span>
+              <span className="hidden sm:inline">
+                {isEn ? 'Register (Anti-Bot)' : 'Rejestracja (Anty-Bot)'}
+              </span>
+              <span className="sm:hidden">{isEn ? 'Register' : 'Rejestracja'}</span>
             </button>
             <button
               type="button"
@@ -412,7 +483,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 mode === 'forgot' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
-              Reset hasła
+              {isEn ? 'Reset password' : 'Reset hasła'}
             </button>
           </div>
 
@@ -422,10 +493,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-white">
                   <Cloud className="h-4 w-4 text-cyan-400" />
-                  <span>Chmura Firebase Auth & Cloud Firestore</span>
+                  <span>
+                    {isEn
+                      ? 'Firebase Auth & Cloud Firestore Sync'
+                      : 'Chmura Firebase Auth & Cloud Firestore'}
+                  </span>
                 </div>
                 <p className="text-[11px] text-slate-400">
-                  Zaloguj się kontem Google, aby synchronizować XP, odznaki, serca i kod w czasie rzeczywistym między urządzeniami.
+                  {isEn
+                    ? 'Sign in with Google to sync XP, badges, hearts, and code in real time across devices.'
+                    : 'Zaloguj się kontem Google, aby synchronizować XP, odznaki, serca i kod w czasie rzeczywistym między urządzeniami.'}
                 </p>
               </div>
               <button
@@ -435,7 +512,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold shadow-md transition-all cursor-pointer disabled:opacity-60"
               >
                 <Cloud className="h-4 w-4 text-indigo-600" />
-                <span>{isSyncingCloud ? 'Łączenie...' : 'Zaloguj przez Google'}</span>
+                <span>
+                  {isSyncingCloud
+                    ? isEn
+                      ? 'Connecting...'
+                      : 'Łączenie...'
+                    : isEn
+                    ? 'Sign in with Google'
+                    : 'Zaloguj przez Google'}
+                </span>
               </button>
             </div>
           )}
@@ -450,11 +535,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               {errorMessage.includes('unauthorized-domain') && (
                 <div className="rounded-xl bg-slate-950/90 border border-rose-500/30 p-3 space-y-2 text-[11px] text-slate-300">
                   <p className="font-bold text-amber-300">
-                    Jak odblokować logowanie Google dla tej domeny (1 minuta):
+                    {isEn
+                      ? 'How to authorize Google sign-in for this domain (1 min):'
+                      : 'Jak odblokować logowanie Google dla tej domeny (1 minuta):'}
                   </p>
                   <ol className="list-decimal list-inside space-y-1 text-slate-300">
                     <li>
-                      Otwórz{' '}
+                      {isEn ? 'Open ' : 'Otwórz '}
                       <a
                         href="https://console.firebase.google.com/project/gen-lang-client-0198524417/authentication/settings"
                         target="_blank"
@@ -465,7 +552,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                       </a>
                     </li>
                     <li>
-                      Kliknij <strong>Add domain</strong> i wklej aktualną domenę aplikacji:
+                      {isEn ? (
+                        <>
+                          Click <strong>Add domain</strong> and paste the current app hostname:
+                        </>
+                      ) : (
+                        <>
+                          Kliknij <strong>Add domain</strong> i wklej aktualną domenę aplikacji:
+                        </>
+                      )}
                     </li>
                   </ol>
                   <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 font-mono text-[11px] text-emerald-300">
@@ -478,17 +573,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                         const host = typeof window !== 'undefined' ? window.location.hostname : '';
                         if (host && navigator.clipboard) {
                           void navigator.clipboard.writeText(host);
-                          setSuccessMessage(`Skopiowano domenę: ${host}`);
+                          setSuccessMessage(isEn ? `Copied domain: ${host}` : `Skopiowano domenę: ${host}`);
                         }
                       }}
                       className="shrink-0 px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-sans font-semibold text-[10px]"
                     >
-                      Kopiuj domenę
+                      {isEn ? 'Copy domain' : 'Kopiuj domenę'}
                     </button>
                   </div>
                   <div className="pt-1 flex items-center justify-between gap-2 border-t border-slate-800">
                     <span className="text-slate-400">
-                      Nie chcesz czekać? Załóż darmowe konto e-mail poniżej:
+                      {isEn
+                        ? "Don't want to wait? Register a free email account below:"
+                        : 'Nie chcesz czekać? Załóż darmowe konto e-mail poniżej:'}
                     </span>
                     {mode !== 'register' && (
                       <button
@@ -499,7 +596,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                         }}
                         className="shrink-0 px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-300 font-semibold"
                       >
-                        Rejestracja e-mail →
+                        {isEn ? 'Email sign-up →' : 'Rejestracja e-mail →'}
                       </button>
                     )}
                   </div>
@@ -520,7 +617,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div className="space-y-1">
                 <label htmlFor="login-email" className="text-xs font-semibold text-slate-300 block">
-                  Adres E-mail:
+                  {isEn ? 'Email Address:' : 'Adres E-mail:'}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
@@ -530,7 +627,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="twoj@email.pl"
+                    placeholder={isEn ? 'you@example.com' : 'twoj@email.pl'}
                     className="w-full rounded-xl border border-slate-700 bg-slate-950 pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -539,7 +636,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <label htmlFor="login-pass" className="text-xs font-semibold text-slate-300 block">
-                    Hasło dostępowe:
+                    {isEn ? 'Password:' : 'Hasło dostępowe:'}
                   </label>
                   <button
                     type="button"
@@ -549,7 +646,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     }}
                     className="text-[11px] text-indigo-400 hover:text-indigo-300"
                   >
-                    Nie pamiętasz hasła?
+                    {isEn ? 'Forgot password?' : 'Nie pamiętasz hasła?'}
                   </button>
                 </div>
                 <div className="relative">
@@ -577,7 +674,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 type="submit"
                 className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2"
               >
-                <span>Zaloguj się</span>
+                <span>{isEn ? 'Sign In' : 'Zaloguj się'}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </form>
@@ -605,7 +702,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label htmlFor="reg-name" className="text-xs font-semibold text-slate-300 block">
-                    Imię i nazwisko:
+                    {isEn ? 'Full name:' : 'Imię i nazwisko:'}
                   </label>
                   <div className="relative">
                     <UserIcon className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
@@ -615,7 +712,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="np. Piotr Wiśniewski"
+                      placeholder={isEn ? 'e.g. Alex Morgan' : 'np. Piotr Wiśniewski'}
                       className="w-full rounded-xl border border-slate-700 bg-slate-950 pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
@@ -623,10 +720,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
                 <div className="space-y-1">
                   <span className="text-xs font-semibold text-slate-300 block">
-                    Typ rejestrowanego konta:
+                    {isEn ? 'Account type:' : 'Typ rejestrowanego konta:'}
                   </span>
                   <div className="w-full rounded-xl border border-slate-800 bg-slate-950/90 px-3 py-2 text-xs text-indigo-300 font-semibold flex items-center justify-between">
-                    <span>Kursant (Student)</span>
+                    <span>{isEn ? 'Student Account' : 'Kursant (Student)'}</span>
                     <span className="text-[10px] text-slate-500 font-normal">Standard</span>
                   </div>
                 </div>
@@ -634,7 +731,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
               <div className="space-y-1">
                 <label htmlFor="reg-email" className="text-xs font-semibold text-slate-300 block">
-                  Adres E-mail:
+                  {isEn ? 'Email Address:' : 'Adres E-mail:'}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
@@ -644,7 +741,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="twoj.email@domena.pl"
+                    placeholder={isEn ? 'your.email@domain.com' : 'twoj.email@domena.pl'}
                     className="w-full rounded-xl border border-slate-700 bg-slate-950 pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -652,7 +749,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
               <div className="space-y-1">
                 <label htmlFor="reg-pass" className="text-xs font-semibold text-slate-300 block">
-                  Hasło dostępowe:
+                  {isEn ? 'Password:' : 'Hasło dostępowe:'}
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
@@ -662,7 +759,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Minimum 6 znaków"
+                    placeholder={isEn ? 'Minimum 6 characters' : 'Minimum 6 znaków'}
                     className="w-full rounded-xl border border-slate-700 bg-slate-950 pl-9 pr-10 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <button
@@ -701,14 +798,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
               <div className="space-y-1">
                 <label htmlFor="reg-bio" className="text-xs font-semibold text-slate-300 block">
-                  Krótki opis / Cel nauki (opcjonalnie):
+                  {isEn ? 'Short bio / Learning goal (optional):' : 'Krótki opis / Cel nauki (opcjonalnie):'}
                 </label>
                 <input
                   id="reg-bio"
                   type="text"
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  placeholder="np. Chcę zostać Junior React & Node.js Developerem"
+                  placeholder={
+                    isEn
+                      ? 'e.g. Becoming a Junior React & Node.js Developer'
+                      : 'np. Chcę zostać Junior React & Node.js Developerem'
+                  }
                   className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -718,28 +819,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-300 uppercase tracking-wider">
                     <ShieldCheck className="h-4 w-4 text-cyan-400" />
-                    <span>Weryfikacja Anty-Botowa (Człowiek)</span>
+                    <span>
+                      {isEn ? 'Anti-Bot Verification (Human)' : 'Weryfikacja Anty-Botowa (Człowiek)'}
+                    </span>
                   </div>
                   <button
                     type="button"
                     onClick={handleRefreshChallenge}
-                    title="Zmień pytanie weryfikacyjne"
+                    title={isEn ? 'Change verification question' : 'Zmień pytanie weryfikacyjne'}
                     className="text-slate-400 hover:text-cyan-300 text-[11px] flex items-center gap-1"
                   >
                     <RefreshCw className="h-3 w-3" />
-                    <span>Inne pytanie</span>
+                    <span>{isEn ? 'Another question' : 'Inne pytanie'}</span>
                   </button>
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1">
-                  <div className="font-semibold text-slate-200">{challenge.question}</div>
-                  <div className="text-[10px] text-slate-500">Wskazówka: {challenge.hint}</div>
+                  <div className="font-semibold text-slate-200">{activeChallenge.question}</div>
+                  <div className="text-[10px] text-slate-500">
+                    {isEn ? 'Hint:' : 'Wskazówka:'} {activeChallenge.hint}
+                  </div>
                   <input
                     type="text"
                     required
                     value={antiBotAnswer}
                     onChange={(e) => setAntiBotAnswer(e.target.value)}
-                    placeholder="Twoja odpowiedź..."
+                    placeholder={isEn ? 'Your answer...' : 'Twoja odpowiedź...'}
                     className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-400"
                   />
                 </div>
@@ -749,7 +854,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-slate-300">
                       {isHumanConfirmed
-                        ? 'Zweryfikowano obecność człowieka'
+                        ? isEn
+                          ? 'Human presence verified'
+                          : 'Zweryfikowano obecność człowieka'
+                        : isEn
+                        ? 'Drag the slider to the right (min. 95%):'
                         : 'Przesuń suwak do prawej strony (min. 95%):'}
                     </span>
                     <span
@@ -766,7 +875,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     max="100"
                     value={sliderProgress}
                     onChange={handleSliderChange}
-                    aria-label="Suwak weryfikacji człowieka"
+                    aria-label={isEn ? 'Human verification slider' : 'Suwak weryfikacji człowieka'}
                     className="w-full accent-cyan-500 cursor-pointer h-2 bg-slate-950 rounded-lg"
                   />
                 </div>
@@ -777,7 +886,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2"
               >
                 <ShieldCheck className="h-4 w-4" />
-                <span>Zarejestruj zweryfikowane konto</span>
+                <span>{isEn ? 'Register Verified Account' : 'Zarejestruj zweryfikowane konto'}</span>
               </button>
             </form>
           )}
@@ -786,12 +895,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           {mode === 'forgot' && (
             <form onSubmit={handleForgotSubmit} className="space-y-4">
               <div className="p-4 rounded-2xl bg-indigo-950/20 border border-indigo-500/20 text-xs text-slate-300 leading-relaxed">
-                Podaj adres e-mail przypisany do Twojego konta oraz wpisz nowe hasło (lub użyj wygenerowanego). Po zatwierdzeniu zostaniesz przekierowany do logowania.
+                {isEn
+                  ? 'Enter the email address linked to your account and type a new password (or generate one). Once confirmed, you will be redirected to sign in.'
+                  : 'Podaj adres e-mail przypisany do Twojego konta oraz wpisz nowe hasło (lub użyj wygenerowanego). Po zatwierdzeniu zostaniesz przekierowany do logowania.'}
               </div>
 
               <div className="space-y-1">
                 <label htmlFor="forgot-email" className="text-xs font-semibold text-slate-300 block">
-                  Adres E-mail konta:
+                  {isEn ? 'Account Email:' : 'Adres E-mail konta:'}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
@@ -801,7 +912,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="twoj@email.pl"
+                    placeholder={isEn ? 'you@example.com' : 'twoj@email.pl'}
                     className="w-full rounded-xl border border-slate-700 bg-slate-950 pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -810,14 +921,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <label htmlFor="forgot-new-pass" className="text-xs font-semibold text-slate-300 block">
-                    Nowe hasło dostępowe (min. 6 znaków):
+                    {isEn ? 'New password (min. 6 characters):' : 'Nowe hasło dostępowe (min. 6 znaków):'}
                   </label>
                   <button
                     type="button"
                     onClick={() => setNewResetPassword(`FullStack${Math.floor(100 + Math.random() * 900)}!`)}
                     className="text-[11px] text-cyan-400 hover:text-cyan-300"
                   >
-                    Losuj silne hasło
+                    {isEn ? 'Generate strong password' : 'Losuj silne hasło'}
                   </button>
                 </div>
                 <div className="relative">
@@ -828,7 +939,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     required
                     value={newResetPassword}
                     onChange={(e) => setNewResetPassword(e.target.value)}
-                    placeholder="Minimum 6 znaków"
+                    placeholder={isEn ? 'Minimum 6 characters' : 'Minimum 6 znaków'}
                     className="w-full rounded-xl border border-slate-700 bg-slate-950 pl-9 pr-10 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <button
@@ -846,7 +957,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2"
               >
                 <KeyRound className="h-4 w-4" />
-                <span>Ustaw nowe hasło dostępowe</span>
+                <span>{isEn ? 'Set New Password' : 'Ustaw nowe hasło dostępowe'}</span>
               </button>
             </form>
           )}
@@ -868,8 +979,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     <p className="text-sm font-bold text-white truncate">{currentUser.name}</p>
                     <p className="text-xs text-slate-400 truncate">{currentUser.email}</p>
                     <p className="text-[11px] text-indigo-400 mt-0.5">
-                      Poziom {currentUser.level} • {currentUser.xp} XP •{' '}
-                      {currentUser.role === 'admin' ? 'Administrator' : 'Kursant'}
+                      {isEn ? 'Level' : 'Poziom'} {currentUser.level} • {currentUser.xp} XP •{' '}
+                      {currentUser.role === 'admin'
+                        ? isEn
+                          ? 'Administrator'
+                          : 'Administrator'
+                        : isEn
+                        ? 'Student'
+                        : 'Kursant'}
                     </p>
                   </div>
                 </div>
@@ -879,7 +996,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-bold shrink-0 transition-colors"
                 >
                   <LogOut className="h-3.5 w-3.5" />
-                  <span>Wyloguj się</span>
+                  <span>{isEn ? 'Sign Out' : 'Wyloguj się'}</span>
                 </button>
               </div>
 
@@ -889,7 +1006,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <form onSubmit={handleProfileSave} className="space-y-4 pt-1 border-t border-slate-800/80">
                 <div className="space-y-1">
                   <label htmlFor="prof-name" className="text-xs font-semibold text-slate-300 block">
-                    Imię i nazwisko (widoczne na certyfikacie):
+                    {isEn
+                      ? 'Full name (displayed on certificate):'
+                      : 'Imię i nazwisko (widoczne na certyfikacie):'}
                   </label>
                   <input
                     id="prof-name"
@@ -903,7 +1022,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
                 <div className="space-y-1">
                   <label htmlFor="prof-bio" className="text-xs font-semibold text-slate-300 block">
-                    Bio / Specjalizacja zawodowa (widoczne w CV):
+                    {isEn
+                      ? 'Bio / Career specialization (shown in CV):'
+                      : 'Bio / Specjalizacja zawodowa (widoczne w CV):'}
                   </label>
                   <textarea
                     id="prof-bio"
@@ -917,7 +1038,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label htmlFor="prof-goal" className="text-xs font-semibold text-slate-300 block">
-                      Tygodniowy cel nauki (minuty):
+                      {isEn ? 'Weekly study goal (minutes):' : 'Tygodniowy cel nauki (minuty):'}
                     </label>
                     <input
                       id="prof-goal"
@@ -933,14 +1054,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
                   <div className="space-y-1">
                     <label htmlFor="prof-pass" className="text-xs font-semibold text-slate-300 block">
-                      Zmień hasło (opcjonalnie):
+                      {isEn ? 'Change password (optional):' : 'Zmień hasło (opcjonalnie):'}
                     </label>
                     <input
                       id="prof-pass"
                       type={showPassword ? 'text' : 'password'}
                       value={profileNewPassword}
                       onChange={(e) => setProfileNewPassword(e.target.value)}
-                      placeholder="Pozostaw puste bez zmian"
+                      placeholder={isEn ? 'Leave blank to keep current' : 'Pozostaw puste bez zmian'}
                       className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
@@ -951,7 +1072,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"
                 >
                   <Save className="h-4 w-4" />
-                  <span>Zapisz zmiany w profilu</span>
+                  <span>{isEn ? 'Save profile changes' : 'Zapisz zmiany w profilu'}</span>
                 </button>
               </form>
             </div>
@@ -960,8 +1081,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
         {/* Modal Footer */}
         <div className="px-6 py-3 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-[11px] text-slate-500">
-          <span>Ochrona Anybot & Anti-Spam v2.4</span>
-          <span>Szyfrowanie sesji TLS</span>
+          <span>{isEn ? 'Anybot & Anti-Spam Shield v2.4' : 'Ochrona Anybot & Anti-Spam v2.4'}</span>
+          <span>{isEn ? 'TLS session encryption' : 'Szyfrowanie sesji TLS'}</span>
         </div>
       </div>
     </div>

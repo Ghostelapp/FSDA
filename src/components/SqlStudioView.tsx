@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { soundManager } from '../utils/audioFx';
-import { validateSqlQuerySyntax, SQL_MISSIONS } from '../utils/developerSimulators';
+import { validateSqlQuerySyntax, getLocalizedSqlMissions } from '../utils/developerSimulators';
 import { 
   Database, 
   Play, 
@@ -21,7 +21,9 @@ interface DbRow {
 }
 
 export const SqlStudioView: React.FC = () => {
-  const { allUsers, currentUser, awardCustomXp } = useApp();
+  const { allUsers, currentUser, awardCustomXp, language } = useApp();
+  const isEn = language === 'en';
+  const sqlMissions = getLocalizedSqlMissions(language);
 
   const [activeTab, setActiveTab] = useState<'editor' | 'erd'>('editor');
   const [queryInput, setQueryInput] = useState<string>(
@@ -45,13 +47,13 @@ export const SqlStudioView: React.FC = () => {
       is_pro: u.isPro,
     })),
     courses: [
-      { id: 'c-1', title: 'Fundamenty Programowania', category: 'Podstawy', xp: 500, lessons_count: 5 },
-      { id: 'c-2', title: 'HTML5 & Semantyka Web', category: 'Frontend', xp: 600, lessons_count: 5 },
-      { id: 'c-3', title: 'Nowoczesny CSS & Tailwind', category: 'Frontend', xp: 700, lessons_count: 6 },
+      { id: 'c-1', title: isEn ? 'Programming Foundations' : 'Fundamenty Programowania', category: isEn ? 'Foundations' : 'Podstawy', xp: 500, lessons_count: 5 },
+      { id: 'c-2', title: isEn ? 'HTML5 & Web Semantics' : 'HTML5 & Semantyka Web', category: 'Frontend', xp: 600, lessons_count: 5 },
+      { id: 'c-3', title: isEn ? 'Modern CSS & Tailwind' : 'Nowoczesny CSS & Tailwind', category: 'Frontend', xp: 700, lessons_count: 6 },
       { id: 'c-4', title: 'JavaScript & TypeScript', category: 'Frontend', xp: 950, lessons_count: 8 },
       { id: 'c-5', title: 'React SPA & Next.js', category: 'Frontend', xp: 1200, lessons_count: 10 },
       { id: 'c-6', title: 'Backend Node.js & Express', category: 'Backend', xp: 950, lessons_count: 7 },
-      { id: 'c-7', title: 'PostgreSQL & Prisma ORM', category: 'Bazy danych', xp: 850, lessons_count: 6 },
+      { id: 'c-7', title: 'PostgreSQL & Prisma ORM', category: isEn ? 'Databases' : 'Bazy danych', xp: 850, lessons_count: 6 },
       { id: 'c-8', title: 'DevOps, Docker & CI/CD', category: 'DevOps', xp: 900, lessons_count: 6 },
     ],
     orders: [
@@ -76,10 +78,10 @@ export const SqlStudioView: React.FC = () => {
   const handleRunQuery = () => {
     soundManager.playClick();
     const t0 = performance.now();
-    const syntax = validateSqlQuerySyntax(queryInput);
+    const syntax = validateSqlQuerySyntax(queryInput, language);
     if (!syntax.valid) {
       soundManager.playHeartLost();
-      setQueryError(syntax.error || 'Błąd składniowy zapytania SQL.');
+      setQueryError(syntax.error || (isEn ? 'SQL query syntax error.' : 'Błąd składniowy zapytania SQL.'));
       setResults([]);
       setExecutionStats(null);
       return;
@@ -98,7 +100,7 @@ export const SqlStudioView: React.FC = () => {
       } else if (/from\s+orders/i.test(clean) && /join\s+users/i.test(clean)) {
         // JOIN orders + users
         output = mockDb.orders.map((o) => {
-          const user = mockDb.users.find((u) => u.id === o.user_id) || { name: 'Anonim', email: 'brak' };
+          const user = mockDb.users.find((u) => u.id === o.user_id) || { name: isEn ? 'Anonymous' : 'Anonim', email: isEn ? 'none' : 'brak' };
           return {
             order_id: o.id,
             user_name: user.name,
@@ -149,15 +151,15 @@ export const SqlStudioView: React.FC = () => {
 
       // Check idempotent SQL Missions
       const claimed = currentUser.claimedRewards || [];
-      SQL_MISSIONS.forEach((m) => {
+      sqlMissions.forEach((m) => {
         const rewardKey = `sql-mission-${m.id}`;
         if (!claimed.includes(rewardKey) && m.checkQuery(clean, output.length)) {
-          awardCustomXp(m.xpReward, `Misja SQL: ${m.title}`, rewardKey, { query: clean });
+          awardCustomXp(m.xpReward, `${isEn ? 'SQL Mission' : 'Misja SQL'}: ${m.title}`, rewardKey, { query: clean });
         }
       });
     } catch (err: any) {
       soundManager.playHeartLost();
-      setQueryError(err.message || 'Błąd składniowy zapytania SQL.');
+      setQueryError(err.message || (isEn ? 'SQL query syntax error.' : 'Błąd składniowy zapytania SQL.'));
       setResults([]);
       setExecutionStats(null);
     }
@@ -165,19 +167,19 @@ export const SqlStudioView: React.FC = () => {
 
   const templates = [
     {
-      label: 'Relacja: Zamówienia i Kursanci (INNER JOIN)',
+      label: isEn ? 'Relation: Orders & Students (INNER JOIN)' : 'Relacja: Zamówienia i Kursanci (INNER JOIN)',
       query: `SELECT users.name, users.email, orders.amount, orders.status, orders.plan\nFROM orders\nINNER JOIN users ON orders.user_id = users.id\nWHERE orders.status = 'PAID'\nORDER BY orders.amount DESC;`,
     },
     {
-      label: 'Wszyscy Kursanci (SELECT * FROM users)',
+      label: isEn ? 'All Students (SELECT * FROM users)' : 'Wszyscy Kursanci (SELECT * FROM users)',
       query: `SELECT id, name, email, role, xp, is_pro\nFROM users\nORDER BY xp DESC;`,
     },
     {
-      label: 'Katalog Modułów (SELECT FROM courses)',
+      label: isEn ? 'Module Catalog (SELECT FROM courses)' : 'Katalog Modułów (SELECT FROM courses)',
       query: `SELECT title, category, xp, lessons_count\nFROM courses\nWHERE xp >= 700\nORDER BY xp DESC;`,
     },
     {
-      label: 'Wyniki Quizów (SELECT FROM quizzes)',
+      label: isEn ? 'Quiz Scores (SELECT FROM quizzes)' : 'Wyniki Quizów (SELECT FROM quizzes)',
       query: `SELECT lesson_id, score_percent, passed\nFROM quizzes\nWHERE score_percent >= 90\nORDER BY score_percent DESC;`,
     },
   ];
@@ -190,13 +192,15 @@ export const SqlStudioView: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1">
             <Database className="h-4 w-4" />
-            <span>Studio Bazy Danych PostgreSQL</span>
+            <span>{isEn ? 'PostgreSQL Database Studio' : 'Studio Bazy Danych PostgreSQL'}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Interaktywna Konsola SQL & Schemat ERD
+            {isEn ? 'Interactive SQL Console & ERD Schema' : 'Interaktywna Konsola SQL & Schemat ERD'}
           </h1>
           <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-            Testuj zapytania SQL w czasie rzeczywistym: złączenia relacji (INNER JOIN), filtrowanie (WHERE), agregacje i badaj schemat tabel bez instalacji lokalnego serwera.
+            {isEn
+              ? 'Test SQL queries in real time: relational joins (INNER JOIN), filtering (WHERE), aggregations, and schema inspection without installing a local database.'
+              : 'Testuj zapytania SQL w czasie rzeczywistym: złączenia relacji (INNER JOIN), filtrowanie (WHERE), agregacje i badaj schemat tabel bez instalacji lokalnego serwera.'}
           </p>
         </div>
 
@@ -209,7 +213,7 @@ export const SqlStudioView: React.FC = () => {
             }`}
           >
             <Table2 className="h-3.5 w-3.5" />
-            <span>Konsola SQL</span>
+            <span>{isEn ? 'SQL Console' : 'Konsola SQL'}</span>
           </button>
           <button
             type="button"
@@ -219,7 +223,7 @@ export const SqlStudioView: React.FC = () => {
             }`}
           >
             <Network className="h-3.5 w-3.5" />
-            <span>Diagram Relacji (ERD)</span>
+            <span>{isEn ? 'Entity Relationship Diagram (ERD)' : 'Diagram Relacji (ERD)'}</span>
           </button>
         </div>
       </div>
@@ -243,7 +247,7 @@ export const SqlStudioView: React.FC = () => {
                   className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md shadow-emerald-900/30"
                 >
                   <Play className="h-3.5 w-3.5 fill-white" />
-                  <span>Wykonaj Zapytanie (Run)</span>
+                  <span>{isEn ? 'Run Query' : 'Wykonaj Zapytanie (Run)'}</span>
                 </button>
               </div>
 
@@ -264,8 +268,8 @@ export const SqlStudioView: React.FC = () => {
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         <span>Status: 200 OK</span>
                       </span>
-                      <span>Zwrócono: <strong className="text-white">{executionStats.count}</strong> wierszy</span>
-                      <span>Czas: <strong className="text-cyan-300">{executionStats.timeMs}ms</strong></span>
+                      <span>{isEn ? 'Returned:' : 'Zwrócono:'} <strong className="text-white">{executionStats.count}</strong> {isEn ? 'rows' : 'wierszy'}</span>
+                      <span>{isEn ? 'Time:' : 'Czas:'} <strong className="text-cyan-300">{executionStats.timeMs}ms</strong></span>
                     </>
                   )}
                   {queryError && (
@@ -281,17 +285,19 @@ export const SqlStudioView: React.FC = () => {
               <div className="px-4 py-3 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
                   <Table2 className="h-4 w-4 text-indigo-400" />
-                  <span>Wyniki Zapytania</span>
+                  <span>{isEn ? 'Query Results' : 'Wyniki Zapytania'}</span>
                 </div>
                 <span className="text-[11px] text-slate-400 font-mono">
-                  {results.length} wierszy
+                  {results.length} {isEn ? 'rows' : 'wierszy'}
                 </span>
               </div>
 
               <div className="overflow-x-auto max-h-80">
                 {results.length === 0 ? (
                   <div className="p-8 text-center text-xs text-slate-400">
-                    Brak wyników do wyświetlenia. Zmodyfikuj kryteria lub wybierz gotowy szablon.
+                    {isEn
+                      ? 'No results to display. Modify your filter criteria or pick a preset query template.'
+                      : 'Brak wyników do wyświetlenia. Zmodyfikuj kryteria lub wybierz gotowy szablon.'}
                   </div>
                 ) : (
                   <table className="w-full text-left text-xs font-mono">
@@ -337,11 +343,11 @@ export const SqlStudioView: React.FC = () => {
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                  <span>Misje SQL (Jednorazowe XP)</span>
+                  <span>{isEn ? 'SQL Missions (One-Time XP)' : 'Misje SQL (Jednorazowe XP)'}</span>
                 </h3>
               </div>
               <div className="space-y-2 text-xs">
-                {SQL_MISSIONS.map((m) => {
+                {sqlMissions.map((m) => {
                   const done = Boolean(currentUser.claimedRewards?.includes(`sql-mission-${m.id}`));
                   return (
                     <div
@@ -355,7 +361,7 @@ export const SqlStudioView: React.FC = () => {
                       <div className="flex items-center justify-between font-bold">
                         <span>{m.title}</span>
                         <span className="font-mono text-[11px] text-amber-300">
-                          {done ? 'Zaliczono' : `+${m.xpReward} XP`}
+                          {done ? (isEn ? 'Passed' : 'Zaliczono') : `+${m.xpReward} XP`}
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400 mt-1">{m.description}</p>
@@ -368,7 +374,7 @@ export const SqlStudioView: React.FC = () => {
             <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
                 <Sparkles className="h-4 w-4 text-amber-400" />
-                <h3 className="text-sm font-bold text-white">Gotowe Szablony Zapytań</h3>
+                <h3 className="text-sm font-bold text-white">{isEn ? 'Preset Query Templates' : 'Gotowe Szablony Zapytań'}</h3>
               </div>
 
               <div className="space-y-2">
@@ -398,7 +404,7 @@ export const SqlStudioView: React.FC = () => {
             <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
               <h4 className="text-xs font-bold text-slate-300 flex items-center gap-2">
                 <Layers className="h-3.5 w-3.5 text-indigo-400" />
-                <span>Dostępne Tabele w Bazie:</span>
+                <span>{isEn ? 'Available Database Tables:' : 'Dostępne Tabele w Bazie:'}</span>
               </h4>
               <ul className="space-y-2 text-xs font-mono">
                 <li className="flex items-center justify-between text-slate-400">
@@ -430,10 +436,12 @@ export const SqlStudioView: React.FC = () => {
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Network className="h-5 w-5 text-indigo-400" />
-                <span>Diagram Encji i Relacji Bazy Danych (ERD)</span>
+                <span>{isEn ? 'Database Entity Relationship Diagram (ERD)' : 'Diagram Encji i Relacji Bazy Danych (ERD)'}</span>
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Relacje jeden-do-wielu (1:N) i integralność referencyjna w PostgreSQL / Prisma ORM.
+                {isEn
+                  ? 'One-to-many (1:N) relationships and referential integrity in PostgreSQL / Prisma ORM.'
+                  : 'Relacje jeden-do-wielu (1:N) i integralność referencyjna w PostgreSQL / Prisma ORM.'}
               </p>
             </div>
           </div>
@@ -444,7 +452,7 @@ export const SqlStudioView: React.FC = () => {
             <div className="rounded-xl border border-indigo-500/40 bg-slate-900 shadow-lg overflow-hidden font-mono text-xs">
               <div className="bg-indigo-950/80 px-4 py-2.5 font-bold text-indigo-200 border-b border-indigo-500/30 flex items-center justify-between">
                 <span>TABLE: users</span>
-                <span className="text-[10px] bg-indigo-500/20 px-1.5 py-0.5 rounded text-indigo-300">Główna</span>
+                <span className="text-[10px] bg-indigo-500/20 px-1.5 py-0.5 rounded text-indigo-300">{isEn ? 'Core' : 'Główna'}</span>
               </div>
               <div className="p-3 space-y-1.5 text-[11px]">
                 <div className="flex items-center justify-between text-amber-300 font-bold">
@@ -478,7 +486,7 @@ export const SqlStudioView: React.FC = () => {
             <div className="rounded-xl border border-emerald-500/40 bg-slate-900 shadow-lg overflow-hidden font-mono text-xs">
               <div className="bg-emerald-950/80 px-4 py-2.5 font-bold text-emerald-200 border-b border-emerald-500/30 flex items-center justify-between">
                 <span>TABLE: orders</span>
-                <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-300">Relacja 1:N</span>
+                <span className="text-[10px] bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-300">{isEn ? '1:N Relation' : 'Relacja 1:N'}</span>
               </div>
               <div className="p-3 space-y-1.5 text-[11px]">
                 <div className="flex items-center justify-between text-amber-300 font-bold">
@@ -512,7 +520,7 @@ export const SqlStudioView: React.FC = () => {
             <div className="rounded-xl border border-cyan-500/40 bg-slate-900 shadow-lg overflow-hidden font-mono text-xs">
               <div className="bg-cyan-950/80 px-4 py-2.5 font-bold text-cyan-200 border-b border-cyan-500/30 flex items-center justify-between">
                 <span>TABLE: quizzes</span>
-                <span className="text-[10px] bg-cyan-500/20 px-1.5 py-0.5 rounded text-cyan-300">Edukacja</span>
+                <span className="text-[10px] bg-cyan-500/20 px-1.5 py-0.5 rounded text-cyan-300">{isEn ? 'Learning' : 'Edukacja'}</span>
               </div>
               <div className="p-3 space-y-1.5 text-[11px]">
                 <div className="flex items-center justify-between text-amber-300 font-bold">

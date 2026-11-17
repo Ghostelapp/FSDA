@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { MODULES_DATA } from '../data/modulesData';
 import { useApp } from '../context/AppContext';
 import { PublicHeader } from './PublicHeader';
 import { RichInlineText } from './RichInlineText';
@@ -32,7 +31,8 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
   lessonId,
   onOpenAuthModal,
 }) => {
-  const { allLessons, setActiveTab, isAuthenticated } = useApp();
+  const { allLessons, allModules, setActiveTab, isAuthenticated, language } = useApp();
+  const isEn = language === 'en';
 
   const lesson = useMemo(
     () => allLessons.find((l) => l.id === lessonId) || allLessons[0],
@@ -50,14 +50,18 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
       : null;
 
   const moduleInfo = useMemo(
-    () => MODULES_DATA.find((m) => m.id === lesson.moduleId) || MODULES_DATA[0],
-    [lesson.moduleId]
+    () => allModules.find((m) => m.id === lesson.moduleId) || allModules[0],
+    [allModules, lesson.moduleId]
   );
 
-  const beginnerAid = useMemo(() => getBeginnerLessonAid(lesson), [lesson]);
+  const beginnerAid = useMemo(() => getBeginnerLessonAid(lesson, language), [lesson, language]);
   const theorySections = useMemo(
-    () => groupTheoryBlocksIntoSections(parseTheoryBlocks(lesson.theoryMarkdown)),
-    [lesson.theoryMarkdown]
+    () =>
+      groupTheoryBlocksIntoSections(
+        parseTheoryBlocks(lesson.theoryMarkdown),
+        isEn ? 'Key Concepts' : 'Kluczowe zagadnienia'
+      ),
+    [lesson.theoryMarkdown, isEn]
   );
   const readingMinutes = useMemo(() => estimateLessonReadingMinutes(lesson), [lesson]);
 
@@ -86,13 +90,16 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
 
       <article className="mx-auto max-w-4xl px-4 sm:px-8 py-10 sm:py-14 space-y-10">
         {/* Breadcrumbs */}
-        <nav aria-label="Ścieżka nawigacji" className="flex flex-wrap items-center gap-2 text-xs text-[#94A3B8]">
+        <nav
+          aria-label={isEn ? 'Breadcrumbs' : 'Ścieżka nawigacji'}
+          className="flex flex-wrap items-center gap-2 text-xs text-[#94A3B8]"
+        >
           <a
             href="/"
             onClick={(e) => navigatePublicLesson(e, 'landing')}
             className="hover:text-[#F8FAFC] transition-colors"
           >
-            Strona Główna
+            {isEn ? 'Home' : 'Strona Główna'}
           </a>
           <span aria-hidden="true">/</span>
           <a
@@ -100,11 +107,11 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
             onClick={(e) => navigatePublicLesson(e, 'knowledge_base')}
             className="hover:text-[#F8FAFC] transition-colors"
           >
-            Baza Wiedzy
+            {isEn ? 'Knowledge Base' : 'Baza Wiedzy'}
           </a>
           <span aria-hidden="true">/</span>
           <span className="text-indigo-300 font-medium">
-            Moduł {String(moduleInfo.id).padStart(2, '0')} · Lekcja {lesson.order}
+            {isEn ? 'Module' : 'Moduł'} {String(moduleInfo.id).padStart(2, '0')} · {isEn ? 'Lesson' : 'Lekcja'} {lesson.order}
           </span>
         </nav>
 
@@ -112,14 +119,14 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
         <header className="space-y-4 pb-8 border-b border-white/[0.08]">
           <div className="flex flex-wrap items-center gap-3 text-xs text-[#94A3B8]">
             <span className="px-2.5 py-1 rounded-md bg-indigo-500/15 border border-indigo-500/30 font-semibold text-indigo-300">
-              {moduleInfo.category} · {beginnerAid.difficultyLabel}
+              {moduleInfo.displayCategory} · {beginnerAid.displayDifficultyLabel}
             </span>
             <span className="inline-flex items-center gap-1.5 font-mono tabular-nums">
               <Clock className="h-3.5 w-3.5 text-indigo-400" />
-              Czas czytania: ~{readingMinutes} min
+              {isEn ? `Reading time: ~${readingMinutes} min` : `Czas czytania: ~${readingMinutes} min`}
             </span>
             <span className="font-mono tabular-nums">
-              +{lesson.xpReward} XP w aplikacji
+              {isEn ? `+${lesson.xpReward} XP in app` : `+${lesson.xpReward} XP w aplikacji`}
             </span>
           </div>
 
@@ -142,7 +149,7 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
         >
           <div className="flex items-center gap-2 text-xs font-semibold text-indigo-300">
             <Lightbulb className="h-4 w-4 text-amber-400 shrink-0" />
-            <span>Analogia z życia codziennego</span>
+            <span>{isEn ? 'Everyday life analogy' : 'Analogia z życia codziennego'}</span>
           </div>
           <h2 id="lesson-analogy-heading" className="text-base sm:text-lg font-bold text-[#F8FAFC]">
             <RichInlineText text={beginnerAid.analogyTitle} />
@@ -160,7 +167,7 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
               className="font-display text-lg sm:text-xl font-bold text-[#F8FAFC] flex items-center gap-2"
             >
               <BookOpen className="h-5 w-5 text-indigo-400" />
-              <span>Słowniczek pojęć w tej lekcji</span>
+              <span>{isEn ? 'Glossary of terms in this lesson' : 'Słowniczek pojęć w tej lekcji'}</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {beginnerAid.glossary.map((item, idx) => (
@@ -301,7 +308,7 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
               id="lesson-code-examples-heading"
               className="font-display text-xl sm:text-2xl font-extrabold text-[#F8FAFC]"
             >
-              Przykłady kodu z omówieniem
+              {isEn ? 'Annotated code examples' : 'Przykłady kodu z omówieniem'}
             </h2>
             <div className="space-y-6">
               {lesson.codeExamples.map((example, idx) => (
@@ -337,7 +344,7 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
               className="font-display text-lg sm:text-xl font-bold text-[#F8FAFC] flex items-center gap-2"
             >
               <ListOrdered className="h-5 w-5 text-indigo-400" />
-              <span>Instrukcja wykonania krok po kroku</span>
+              <span>{isEn ? 'Step-by-step instructions' : 'Instrukcja wykonania krok po kroku'}</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {lesson.stepByStepGuide.map((stepItem) => (
@@ -346,7 +353,7 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
                   className="rounded-xl border border-white/[0.08] bg-[#0B101B] p-5 space-y-2"
                 >
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-indigo-500/15 border border-indigo-500/30 font-mono text-xs font-bold text-indigo-300">
-                    Krok {stepItem.step}
+                    {isEn ? `Step ${stepItem.step}` : `Krok ${stepItem.step}`}
                   </span>
                   <h3 className="text-sm sm:text-base font-bold text-[#F8FAFC]">
                     <RichInlineText text={stepItem.title} />
@@ -368,7 +375,7 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
               className="font-display text-lg sm:text-xl font-bold text-[#F8FAFC] flex items-center gap-2"
             >
               <AlertTriangle className="h-5 w-5 text-amber-400" />
-              <span>Najczęstsze błędy i jak ich unikać</span>
+              <span>{isEn ? 'Common mistakes and how to avoid them' : 'Najczęstsze błędy i jak ich unikać'}</span>
             </h2>
             <div className="space-y-5">
               {lesson.commonMistakes.map((mistakeItem, idx) => (
@@ -381,11 +388,13 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
                       <RichInlineText text={mistakeItem.mistake} />
                     </h3>
                     <p className="text-xs sm:text-sm text-[#94A3B8]">
-                      <strong className="text-[#CBD5E1]">Dlaczego to się zdarza: </strong>
+                      <strong className="text-[#CBD5E1]">
+                        {isEn ? 'Why it happens: ' : 'Dlaczego to się zdarza: '}
+                      </strong>
                       <RichInlineText text={mistakeItem.whyItHappens} />
                     </p>
                     <p className="text-xs sm:text-sm text-emerald-300">
-                      <strong>Jak naprawić: </strong>
+                      <strong>{isEn ? 'How to fix: ' : 'Jak naprawić: '}</strong>
                       <RichInlineText text={mistakeItem.howToFix} />
                     </p>
                   </div>
@@ -393,15 +402,15 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
                     <CodeBlock
                       code={mistakeItem.badCode}
                       language="html"
-                      title="Błędny zapis"
-                      badge="Błąd"
+                      title={isEn ? 'Incorrect snippet' : 'Błędny zapis'}
+                      badge={isEn ? 'Error' : 'Błąd'}
                       badgeColor="rose"
                     />
                     <CodeBlock
                       code={mistakeItem.goodCode}
                       language="html"
-                      title="Prawidłowy zapis"
-                      badge="Poprawnie"
+                      title={isEn ? 'Valid snippet' : 'Prawidłowy zapis'}
+                      badge={isEn ? 'Valid' : 'Poprawnie'}
                       badgeColor="emerald"
                     />
                   </div>
@@ -414,7 +423,7 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
         {/* Key Takeaways & Exercise Solution Reference */}
         <section className="rounded-2xl border border-emerald-500/30 bg-[#0A131F] p-6 sm:p-8 space-y-5">
           <h2 className="font-display text-lg sm:text-xl font-bold text-[#F8FAFC]">
-            Podsumowanie i wzorzec praktycznego zadania
+            {isEn ? 'Summary & practice exercise reference' : 'Podsumowanie i wzorzec praktycznego zadania'}
           </h2>
 
           {beginnerAid.keyTakeaways.length > 0 && (
@@ -434,7 +443,7 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
             <div className="pt-4 border-t border-white/[0.08] space-y-3">
               <div className="flex items-center gap-2 text-xs font-semibold text-indigo-300">
                 <Terminal className="h-4 w-4" />
-                <span>Zadanie praktyczne w tej lekcji</span>
+                <span>{isEn ? 'Hands-on exercise in this lesson' : 'Zadanie praktyczne w tej lekcji'}</span>
               </div>
               <p className="text-sm text-[#CBD5E1] leading-relaxed">
                 <RichInlineText text={lesson.interactiveExercise.instructions} />
@@ -444,21 +453,21 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
                 <CodeBlock
                   code={lesson.interactiveExercise.solutionCode.html}
                   language="html"
-                  title="Przykładowe rozwiązanie — HTML"
+                  title={isEn ? 'Reference solution — HTML' : 'Przykładowe rozwiązanie — HTML'}
                 />
               )}
               {lesson.interactiveExercise.solutionCode?.css && (
                 <CodeBlock
                   code={lesson.interactiveExercise.solutionCode.css}
                   language="css"
-                  title="Przykładowe rozwiązanie — CSS"
+                  title={isEn ? 'Reference solution — CSS' : 'Przykładowe rozwiązanie — CSS'}
                 />
               )}
               {lesson.interactiveExercise.solutionCode?.js && (
                 <CodeBlock
                   code={lesson.interactiveExercise.solutionCode.js}
                   language="javascript"
-                  title="Przykładowe rozwiązanie — JavaScript / TypeScript"
+                  title={isEn ? 'Reference solution — JavaScript / TypeScript' : 'Przykładowe rozwiązanie — JavaScript / TypeScript'}
                 />
               )}
             </div>
@@ -466,7 +475,9 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
 
           <div className="pt-4 border-t border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <p className="text-xs sm:text-sm text-[#94A3B8]">
-              Chcesz uruchomić ten kod w interaktywnym edytorze z testem kroków i zapisać postęp?
+              {isEn
+                ? 'Want to run this code in the interactive editor with automated step verification and save your progress?'
+                : 'Chcesz uruchomić ten kod w interaktywnym edytorze z testem kroków i zapisać postęp?'}
             </p>
             <button
               type="button"
@@ -474,14 +485,14 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
               className="inline-flex items-center justify-center gap-2 px-5 py-3 text-xs sm:text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors whitespace-nowrap shrink-0"
             >
               <Play className="h-4 w-4 shrink-0" />
-              <span>Ćwicz w edytorze na żywo</span>
+              <span>{isEn ? 'Practice in Live Editor' : 'Ćwicz w edytorze na żywo'}</span>
             </button>
           </div>
         </section>
 
         {/* Previous / Next Crawlable Lesson Links */}
         <nav
-          aria-label="Nawigacja między lekcjami"
+          aria-label={isEn ? 'Lesson navigation' : 'Nawigacja między lekcjami'}
           className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-white/[0.08]"
         >
           {prevLesson ? (
@@ -492,7 +503,7 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
             >
               <span className="inline-flex items-center gap-1.5 text-xs text-[#94A3B8]">
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Poprzednia lekcja
+                {isEn ? 'Previous lesson' : 'Poprzednia lekcja'}
               </span>
               <p className="text-sm font-bold text-[#F8FAFC] leading-snug">
                 <RichInlineText text={prevLesson.title} />
@@ -506,10 +517,12 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
             >
               <span className="inline-flex items-center gap-1.5 text-xs text-[#94A3B8]">
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Powrót do spisu lekcji
+                {isEn ? 'Back to lesson index' : 'Powrót do spisu lekcji'}
               </span>
               <p className="text-sm font-bold text-[#F8FAFC]">
-                Wszystkie {MODULES_DATA.length} modułów i {allLessons.length} lekcji
+                {isEn
+                  ? `All ${allModules.length} modules and ${allLessons.length} lessons`
+                  : `Wszystkie ${allModules.length} modułów i ${allLessons.length} lekcji`}
               </p>
             </a>
           )}
@@ -521,7 +534,7 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
               className="rounded-2xl border border-white/10 bg-[#0B101B] hover:border-indigo-500/60 p-5 space-y-1.5 text-right transition-colors"
             >
               <span className="inline-flex items-center justify-end gap-1.5 text-xs text-indigo-400 font-semibold">
-                Następna lekcja
+                {isEn ? 'Next lesson' : 'Następna lekcja'}
                 <ArrowRight className="h-3.5 w-3.5" />
               </span>
               <p className="text-sm font-bold text-[#F8FAFC] leading-snug">

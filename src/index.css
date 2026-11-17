@@ -214,21 +214,57 @@ html.light #root > div {
   color: #0f172a !important;
 }
 
-html.light header,
+html.light::-webkit-scrollbar-track,
+html.light ::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.85);
+}
+
+html.light::-webkit-scrollbar-thumb,
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.8);
+}
+
+html.light::-webkit-scrollbar-thumb:hover,
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.9);
+}
+
+html.light header.z-40,
 html.light aside,
 html.light footer {
   background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
 }
 
+html.light .brand-logo-wordmark {
+  color: #0f172a !important;
+}
+
+/* Primary page shell dark hex backgrounds -> Light slate canvas */
+html.light .bg-\[\#06080E\],
+html.light .bg-\[\#06080E\]\/90,
+html.light .bg-\[\#06080E\]\/85,
+html.light .bg-\[\#05070D\],
+html.light .bg-\[\#04060B\],
+html.light .bg-\[\#090D16\] {
+  background-color: #f8fafc !important;
+}
+
+/* Dark Slate backgrounds -> Crisp Light surfaces */
 html.light .bg-slate-950,
 html.light .bg-slate-950\/95,
 html.light .bg-slate-950\/90,
 html.light .bg-slate-950\/80,
+html.light .bg-slate-950\/75,
 html.light .bg-slate-950\/70,
 html.light .bg-slate-950\/60,
 html.light .bg-slate-950\/50,
-html.light .bg-slate-950\/40 {
+html.light .bg-slate-950\/40,
+html.light .bg-\[\#060911\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#070A12\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#080C15\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#090E1A\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#0A131F\]:not(.fsda-keep-dark, .fsda-keep-dark *) {
   background-color: #f1f5f9 !important;
 }
 
@@ -236,16 +272,84 @@ html.light .bg-slate-900,
 html.light .bg-slate-900\/95,
 html.light .bg-slate-900\/90,
 html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/75,
 html.light .bg-slate-900\/70,
 html.light .bg-slate-900\/60,
 html.light .bg-slate-900\/50,
-html.light .bg-slate-900\/40 {
+html.light .bg-slate-900\/40,
+html.light .bg-\[\#0b101b\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#0B101B\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#0B101B\]\/90:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#0B1120\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#0D1322\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#0D1526\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#0E111B\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#0E1523\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#0F1624\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#0F172A\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#101726\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#10172A\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#111827\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#11192E\]:not(.fsda-keep-dark, .fsda-keep-dark *) {
   background-color: #ffffff !important;
 }
 
+/* Dark gradient panels -> Soft Light surfaces in Light Mode */
+html.light .from-\[\#0B101B\]:not(.fsda-keep-dark),
+html.light .from-slate-950:not(.fsda-keep-dark),
+html.light .from-slate-900:not(.fsda-keep-dark),
+html.light .from-slate-850:not(.fsda-keep-dark) {
+  --tw-gradient-from: #ffffff !important;
+}
+
+html.light .from-indigo-950:not(.fsda-keep-dark),
+html.light .from-indigo-950\/70:not(.fsda-keep-dark),
+html.light .from-indigo-950\/60:not(.fsda-keep-dark),
+html.light .from-indigo-950\/50:not(.fsda-keep-dark),
+html.light .from-indigo-950\/30:not(.fsda-keep-dark) {
+  --tw-gradient-from: #eef2ff !important;
+}
+
+html.light .from-emerald-950\/35:not(.fsda-keep-dark) {
+  --tw-gradient-from: #ecfdf5 !important;
+}
+
+html.light .from-rose-950\/70:not(.fsda-keep-dark),
+html.light .from-rose-950\/30:not(.fsda-keep-dark) {
+  --tw-gradient-from: #fff1f2 !important;
+}
+
+html.light .via-slate-900:not(.fsda-keep-dark),
+html.light .via-slate-900\/90:not(.fsda-keep-dark) {
+  --tw-gradient-via: #ffffff !important;
+}
+
+html.light .to-slate-950:not(.fsda-keep-dark),
+html.light .to-slate-900:not(.fsda-keep-dark),
+html.light .to-slate-900\/90:not(.fsda-keep-dark) {
+  --tw-gradient-to: #f1f5f9 !important;
+}
+
+html.light .to-indigo-950\/70:not(.fsda-keep-dark),
+html.light .to-indigo-950\/30:not(.fsda-keep-dark) {
+  --tw-gradient-to: #eef2ff !important;
+}
+
+/* Accent text gradients inside Light Mode */
+html.light .bg-clip-text.from-indigo-400:not(.fsda-keep-dark *) {
+  --tw-gradient-from: #4338ca !important;
+}
+
+html.light .bg-clip-text.to-cyan-400:not(.fsda-keep-dark *) {
+  --tw-gradient-to: #0e7490 !important;
+}
+
 html.light .bg-slate-800,
+html.light .bg-slate-800\/90,
 html.light .bg-slate-800\/80,
-html.light .bg-slate-800\/60 {
+html.light .bg-slate-800\/60,
+html.light .bg-white\/\[0\.04\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-white\/\[0\.06\]:not(.fsda-keep-dark, .fsda-keep-dark *) {
   background-color: #e2e8f0 !important;
 }
 
@@ -253,33 +357,96 @@ html.light .border-slate-900,
 html.light .border-slate-800,
 html.light .border-slate-800\/80,
 html.light .border-slate-800\/60,
-html.light .border-slate-700 {
+html.light .border-slate-700,
+html.light .border-white\/\[0\.06\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-white\/\[0\.08\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-white\/10:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-white\/15:not(.fsda-keep-dark, .fsda-keep-dark *) {
   border-color: #cbd5e1 !important;
 }
 
-html.light .text-white:not(.bg-indigo-600 *):not(.bg-emerald-600 *):not(.bg-rose-600 *):not(.bg-cyan-600 *):not(.bg-amber-600 *):not(.bg-indigo-600):not(.bg-emerald-600):not(.bg-rose-600):not(.bg-cyan-600):not(.bg-amber-600) {
+html.light .divide-white\/\[0\.08\]:not(.fsda-keep-dark, .fsda-keep-dark *) > :not(:last-child) {
+  border-color: #cbd5e1 !important;
+}
+
+/* Typography contrast in Light Mode */
+html.light .text-white:not(.bg-indigo-600 *):not(.bg-emerald-600 *):not(.bg-rose-600 *):not(.bg-cyan-600 *):not(.bg-amber-600 *):not(.bg-indigo-600):not(.bg-emerald-600):not(.bg-rose-600):not(.bg-cyan-600):not(.bg-amber-600):not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *):not(code),
+html.light .text-\[\#F8FAFC\]:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-indigo-600 *):not(pre *) {
   color: #0f172a !important;
 }
 
-html.light .text-slate-100,
-html.light .text-slate-200 {
+html.light .text-slate-100:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *),
+html.light .text-slate-200:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *),
+html.light .text-\[\#E2E8F0\]:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *) {
   color: #1e293b !important;
 }
 
-html.light .text-slate-300 {
+html.light .text-slate-300:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *),
+html.light .text-\[\#CBD5E1\]:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *) {
   color: #334155 !important;
 }
 
-html.light .text-slate-400,
-html.light .text-slate-500 {
+html.light .text-slate-400:not(.fsda-keep-dark *):not(pre *),
+html.light .text-slate-500:not(.fsda-keep-dark *):not(pre *),
+html.light .text-\[\#94A3B8\]:not(.fsda-keep-dark *):not(pre *),
+html.light .text-\[\#64748B\]:not(.fsda-keep-dark *):not(pre *),
+html.light .text-\[\#475569\]:not(.fsda-keep-dark *):not(pre *) {
   color: #475569 !important;
 }
 
-/* Keep code editors and terminal consoles dark in Light Mode for developer readability */
+/* Accent label readability in Light Mode */
+html.light .text-indigo-300:not(.fsda-keep-dark *):not(.bg-indigo-600 *),
+html.light .text-indigo-400:not(.fsda-keep-dark *):not(.bg-indigo-600 *) {
+  color: #4338ca !important;
+}
+
+html.light .text-emerald-300:not(.fsda-keep-dark *):not(.bg-emerald-600 *),
+html.light .text-emerald-400:not(.fsda-keep-dark *):not(.bg-emerald-600 *) {
+  color: #047857 !important;
+}
+
+html.light .text-amber-300:not(.fsda-keep-dark *):not(.bg-amber-600 *),
+html.light .text-amber-400:not(.fsda-keep-dark *):not(.bg-amber-600 *) {
+  color: #b45309 !important;
+}
+
+/* High-contrast inline code tokens in Light Mode */
+html.light code.fsda-token-html:not(.fsda-keep-dark *) {
+  background-color: #fff7ed !important;
+  border-color: #fdba74 !important;
+  color: #9a3412 !important;
+}
+
+html.light code.fsda-token-css:not(.fsda-keep-dark *) {
+  background-color: #ecfeff !important;
+  border-color: #67e8f9 !important;
+  color: #155e75 !important;
+}
+
+html.light code.fsda-token-js:not(.fsda-keep-dark *) {
+  background-color: #fffbeb !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+
+html.light code.fsda-token-cli:not(.fsda-keep-dark *) {
+  background-color: #ecfdf5 !important;
+  border-color: #6ee7b7 !important;
+  color: #065f46 !important;
+}
+
+html.light code.fsda-token-general:not(.fsda-keep-dark *) {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+/* Keep code editors, terminals, and IDE showcase cards dark in Light Mode */
 html.light .bg-\[\#0d1117\],
 html.light .bg-\[\#161b22\],
-html.light pre.bg-slate-950 {
-  background-color: #0f172a !important;
+html.light pre.bg-slate-950,
+html.light .fsda-keep-dark {
+  background-color: #0b101b !important;
   color: #e2e8f0 !important;
 }
 

@@ -40,7 +40,8 @@ interface VirtualFile {
 }
 
 export const TerminalSimulator: React.FC = () => {
-  const { currentUser, awardCustomXp } = useApp();
+  const { currentUser, awardCustomXp, language } = useApp();
+  const isEn = language === 'en';
 
   const [inputVal, setInputVal] = useState('');
   const [history, setHistory] = useState<string[]>([]);
@@ -50,71 +51,118 @@ export const TerminalSimulator: React.FC = () => {
   const [isGitInitialized, setIsGitInitialized] = useState<boolean>(false);
   const [gitStaged, setGitStaged] = useState<string[]>([]);
   const [gitCommits, setGitCommits] = useState<{ hash: string; msg: string; date: string }[]>([]);
+  const [sessionCompletedIds, setSessionCompletedIds] = useState<string[]>([]);
 
-  // Missions State
-  const [missions, setMissions] = useState<Mission[]>([
-    {
-      id: 'm-1',
-      title: 'Inicjalizacja repozytorium Git',
-      description: 'Zainicjalizuj lokalne repozytorium kontroli wersji poleceniem git init.',
-      expectedCommandRegex: /^git\s+init(\s+.*)?$/i,
-      xpReward: 40,
-      completed: false,
-      hint: 'Wpisz: git init',
-    },
-    {
-      id: 'm-2',
-      title: 'Dodanie plików do poczekalni (Staging)',
-      description: 'Dodaj wszystkie pliki projektu do poczekalni poleceniem git add .',
-      expectedCommandRegex: /^git\s+add\s+(\.|\*|-A)$/i,
-      xpReward: 40,
-      completed: false,
-      hint: 'Wpisz: git add .',
-    },
-    {
-      id: 'm-3',
-      title: 'Utworzenie pierwszego commita',
-      description: 'Zapisz migawkę zmian z czytelnym komunikatem za pomocą git commit -m "feat: init"',
-      expectedCommandRegex: /^git\s+commit\s+-m\s+["'].*["']$/i,
-      xpReward: 50,
-      completed: false,
-      hint: 'Wpisz: git commit -m "feat: initial commit"',
-    },
-    {
-      id: 'm-4',
-      title: 'Nowa gałąź developerska',
-      description: 'Utwórz i przełącz się na nową gałąź feature/auth.',
-      expectedCommandRegex: /^git\s+(checkout\s+-b|switch\s+-c)\s+feature\/auth$/i,
-      xpReward: 50,
-      completed: false,
-      hint: 'Wpisz: git checkout -b feature/auth',
-    },
-    {
-      id: 'm-5',
-      title: 'Uruchomienie testów automatycznych',
-      description: 'Uruchom zestaw testów jednostkowych za pomocą npm test.',
-      expectedCommandRegex: /^npm\s+(test|run\s+test)$/i,
-      xpReward: 60,
-      completed: false,
-      hint: 'Wpisz: npm test',
-    },
-  ]);
+  const missionsBase: Omit<Mission, 'completed'>[] = isEn
+    ? [
+        {
+          id: 'm-1',
+          title: 'Initialize Git Repository',
+          description: 'Initialize a local version-control repository by running git init.',
+          expectedCommandRegex: /^git\s+init(\s+.*)?$/i,
+          xpReward: 40,
+          hint: 'Type: git init',
+        },
+        {
+          id: 'm-2',
+          title: 'Stage Project Files',
+          description: 'Add all project files to the Git staging area with git add .',
+          expectedCommandRegex: /^git\s+add\s+(\.|\*|-A)$/i,
+          xpReward: 40,
+          hint: 'Type: git add .',
+        },
+        {
+          id: 'm-3',
+          title: 'Create First Commit',
+          description: 'Record a snapshot with a clear commit message using git commit -m "feat: init"',
+          expectedCommandRegex: /^git\s+commit\s+-m\s+["'].*["']$/i,
+          xpReward: 50,
+          hint: 'Type: git commit -m "feat: initial commit"',
+        },
+        {
+          id: 'm-4',
+          title: 'Create Feature Branch',
+          description: 'Create and switch to a new branch named feature/auth.',
+          expectedCommandRegex: /^git\s+(checkout\s+-b|switch\s+-c)\s+feature\/auth$/i,
+          xpReward: 50,
+          hint: 'Type: git checkout -b feature/auth',
+        },
+        {
+          id: 'm-5',
+          title: 'Run Automated Tests',
+          description: 'Execute the unit test suite by running npm test.',
+          expectedCommandRegex: /^npm\s+(test|run\s+test)$/i,
+          xpReward: 60,
+          hint: 'Type: npm test',
+        },
+      ]
+    : [
+        {
+          id: 'm-1',
+          title: 'Inicjalizacja repozytorium Git',
+          description: 'Zainicjalizuj lokalne repozytorium kontroli wersji poleceniem git init.',
+          expectedCommandRegex: /^git\s+init(\s+.*)?$/i,
+          xpReward: 40,
+          hint: 'Wpisz: git init',
+        },
+        {
+          id: 'm-2',
+          title: 'Dodanie plików do poczekalni (Staging)',
+          description: 'Dodaj wszystkie pliki projektu do poczekalni poleceniem git add .',
+          expectedCommandRegex: /^git\s+add\s+(\.|\*|-A)$/i,
+          xpReward: 40,
+          hint: 'Wpisz: git add .',
+        },
+        {
+          id: 'm-3',
+          title: 'Utworzenie pierwszego commita',
+          description: 'Zapisz migawkę zmian z czytelnym komunikatem za pomocą git commit -m "feat: init"',
+          expectedCommandRegex: /^git\s+commit\s+-m\s+["'].*["']$/i,
+          xpReward: 50,
+          hint: 'Wpisz: git commit -m "feat: initial commit"',
+        },
+        {
+          id: 'm-4',
+          title: 'Nowa gałąź developerska',
+          description: 'Utwórz i przełącz się na nową gałąź feature/auth.',
+          expectedCommandRegex: /^git\s+(checkout\s+-b|switch\s+-c)\s+feature\/auth$/i,
+          xpReward: 50,
+          hint: 'Wpisz: git checkout -b feature/auth',
+        },
+        {
+          id: 'm-5',
+          title: 'Uruchomienie testów automatycznych',
+          description: 'Uruchom zestaw testów jednostkowych za pomocą npm test.',
+          expectedCommandRegex: /^npm\s+(test|run\s+test)$/i,
+          xpReward: 60,
+          hint: 'Wpisz: npm test',
+        },
+      ];
+
+  const claimed = currentUser.claimedRewards || [];
+  const missions: Mission[] = missionsBase.map((m) => ({
+    ...m,
+    completed: claimed.includes(`terminal-mission-${m.id}`) || sessionCompletedIds.includes(m.id),
+  }));
+
+  const getBootLines = (english: boolean): TerminalLine[] =>
+    english
+      ? [
+          { id: 'boot-1', type: 'system', text: 'Full Stack Academy Cloud Terminal v2.5 (Linux x86_64 Ubuntu 24.04 LTS)' },
+          { id: 'boot-2', type: 'system', text: 'Type "help" to list available commands or complete the missions on the right.' },
+          { id: 'boot-3', type: 'output', text: 'Project loaded in ~/app (Node.js v22.14, TypeScript v5.5, Git v2.43)' },
+        ]
+      : [
+          { id: 'boot-1', type: 'system', text: 'Full Stack Academy Cloud Terminal v2.5 (Linux x86_64 Ubuntu 24.04 LTS)' },
+          { id: 'boot-2', type: 'system', text: 'Wpisz "help" aby wyświetlić listę dostępnych komend lub wykonaj misje po prawej.' },
+          { id: 'boot-3', type: 'output', text: 'Projekt załadowany w katalogu ~/app (Node.js v22.14, TypeScript v5.5, Git v2.43)' },
+        ];
+
+  const [lines, setLines] = useState<TerminalLine[]>(() => getBootLines(isEn));
 
   useEffect(() => {
-    const claimed = currentUser.claimedRewards || [];
-    setMissions((prev) =>
-      prev.map((m) => ({
-        ...m,
-        completed: claimed.includes(`terminal-mission-${m.id}`),
-      }))
-    );
-  }, [currentUser.id, currentUser.claimedRewards]);
-
-  const [lines, setLines] = useState<TerminalLine[]>([
-    { id: '1', type: 'system', text: 'Full Stack Academy Cloud Terminal v2.5 (Linux x86_64 Ubuntu 24.04 LTS)' },
-    { id: '2', type: 'system', text: 'Wpisz "help" aby wyświetlić listę dostępnych komend lub wykonaj misje po prawej.' },
-    { id: '3', type: 'output', text: 'Projekt załadowany w katalogu ~/app (Node.js v22.14, TypeScript v5.5, Git v2.43)' },
-  ]);
+    setLines((prev) => (prev.length === 3 && prev.every((l) => l.id.startsWith('boot-')) ? getBootLines(isEn) : prev));
+  }, [isEn]);
 
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -155,7 +203,7 @@ export const TerminalSimulator: React.FC = () => {
         soundManager.playSuccess();
         const granted = awardCustomXp(
           m.xpReward,
-          `Misja terminalowa: ${m.title}`,
+          `${isEn ? 'Terminal Mission' : 'Misja terminalowa'}: ${m.title}`,
           `terminal-mission-${m.id}`,
           { command: cmd }
         );
@@ -163,15 +211,15 @@ export const TerminalSimulator: React.FC = () => {
           newOutputs.push({
             id: `succ-${Date.now()}-${m.id}`,
             type: 'success',
-            text: `MISJA ZALICZONA: "${m.title}"! Zdobywasz +${m.xpReward} XP.`,
+            text: isEn
+              ? `MISSION COMPLETE: "${m.title}"! +${m.xpReward} XP earned.`
+              : `MISJA ZALICZONA: "${m.title}"! Zdobywasz +${m.xpReward} XP.`,
           });
         }
       }
     });
     if (matchedMissionIds.length > 0) {
-      setMissions((prev) =>
-        prev.map((m) => (matchedMissionIds.includes(m.id) ? { ...m, completed: true } : m))
-      );
+      setSessionCompletedIds((prev) => Array.from(new Set([...prev, ...matchedMissionIds])));
     }
 
     // Process Command Logic
@@ -191,7 +239,20 @@ export const TerminalSimulator: React.FC = () => {
         newOutputs.push({
           id: `out-${Date.now()}-h`,
           type: 'output',
-          text: `Dostępne polecenia:
+          text: isEn
+            ? `Available commands:
+  git <init|status|add|commit|branch|checkout|log|push>  - Git version control CLI
+  npm <run dev|test|build|install>                       - Node.js package manager
+  docker <ps|images|compose up>                          - Container management
+  ls [-la]                                               - List directory contents
+  cat <file>                                             - Print file contents (e.g. cat package.json)
+  pwd                                                    - Print working directory
+  cd <dir>                                               - Change working directory
+  curl <url>                                             - Send an HTTP request
+  whoami                                                 - Display active student info
+  date                                                   - Current server timestamp
+  clear                                                  - Clear terminal output`
+            : `Dostępne polecenia:
   git <init|status|add|commit|branch|checkout|log|push>  - Narzędzie kontroli wersji Git
   npm <run dev|test|build|install>                       - Menedżer pakietów Node.js
   docker <ps|images|compose up>                          - Zarządzanie kontenerami
@@ -214,7 +275,7 @@ export const TerminalSimulator: React.FC = () => {
         newOutputs.push({
           id: `out-${Date.now()}`,
           type: 'output',
-          text: `${currentUser.name} <${currentUser.email}> (Rola: ${currentUser.role}, XP: ${currentUser.xp})`,
+          text: `${currentUser.name} <${currentUser.email}> (${isEn ? 'Role' : 'Rola'}: ${currentUser.role}, XP: ${currentUser.xp})`,
         });
         break;
 
@@ -248,7 +309,7 @@ drwxr-xr-x 2 student student 4096 Oct 22 11:50 public
 
       case 'cat':
         if (!arg1) {
-          newOutputs.push({ id: `err-${Date.now()}`, type: 'error', text: 'Użycie: cat <nazwa_pliku>' });
+          newOutputs.push({ id: `err-${Date.now()}`, type: 'error', text: isEn ? 'Usage: cat <filename>' : 'Użycie: cat <nazwa_pliku>' });
         } else if (arg1 === 'package.json') {
           newOutputs.push({
             id: `out-${Date.now()}`,
@@ -273,7 +334,12 @@ drwxr-xr-x 2 student student 4096 Oct 22 11:50 public
           newOutputs.push({
             id: `out-${Date.now()}`,
             type: 'output',
-            text: `# 🎓 Full Stack Academy Project
+            text: isEn
+              ? `# Full Stack Academy Project
+Educational project combining React, Node.js, and PostgreSQL.
+Run unit tests: npm test
+Start dev server: npm run dev`
+              : `# 🎓 Full Stack Academy Project
 Projekt edukacyjny łączący React, Node.js i PostgreSQL.
 Wszystkie testy jednostkowe: npm test
 Uruchomienie serwera: npm run dev`,
@@ -285,7 +351,11 @@ Uruchomienie serwera: npm run dev`,
             text: `node_modules/\ndist/\n.env\n.DS_Store`,
           });
         } else {
-          newOutputs.push({ id: `err-${Date.now()}`, type: 'error', text: `cat: ${arg1}: Nie znaleziono takiego pliku.` });
+          newOutputs.push({
+            id: `err-${Date.now()}`,
+            type: 'error',
+            text: isEn ? `cat: ${arg1}: No such file or directory` : `cat: ${arg1}: Nie znaleziono takiego pliku.`,
+          });
         }
         break;
 
@@ -297,7 +367,11 @@ Uruchomienie serwera: npm run dev`,
         } else if (arg1 === '..') {
           setCurrentPath('~');
         } else {
-          newOutputs.push({ id: `err-${Date.now()}`, type: 'error', text: `cd: brak katalogu: ${arg1}` });
+          newOutputs.push({
+            id: `err-${Date.now()}`,
+            type: 'error',
+            text: isEn ? `cd: no such directory: ${arg1}` : `cd: brak katalogu: ${arg1}`,
+          });
         }
         break;
 
@@ -307,27 +381,46 @@ Uruchomienie serwera: npm run dev`,
           newOutputs.push({
             id: `out-${Date.now()}`,
             type: 'output',
-            text: 'Dostępne podkomendy git: init, status, add, commit, branch, checkout, switch, log, push, diff',
+            text: isEn
+              ? 'Available git subcommands: init, status, add, commit, branch, checkout, switch, log, push, diff'
+              : 'Dostępne podkomendy git: init, status, add, commit, branch, checkout, switch, log, push, diff',
           });
         } else if (arg1 === 'init') {
           setIsGitInitialized(true);
           newOutputs.push({
             id: `out-${Date.now()}`,
             type: 'success',
-            text: 'Zainicjalizowano puste repozytorium Git w /home/student/app/.git/',
+            text: isEn
+              ? 'Initialized empty Git repository in /home/student/app/.git/'
+              : 'Zainicjalizowano puste repozytorium Git w /home/student/app/.git/',
           });
         } else if (!isGitInitialized) {
           newOutputs.push({
             id: `err-${Date.now()}`,
             type: 'error',
-            text: 'fatal: not a git repository (or any of the parent directories): .git\nWpisz najpierw: git init',
+            text: isEn
+              ? 'fatal: not a git repository (or any of the parent directories): .git\nRun first: git init'
+              : 'fatal: not a git repository (or any of the parent directories): .git\nWpisz najpierw: git init',
           });
         } else if (arg1 === 'status') {
           if (gitStaged.length === 0 && gitCommits.length === 0) {
             newOutputs.push({
               id: `out-${Date.now()}`,
               type: 'output',
-              text: `Na gałęzi ${gitBranch}
+              text: isEn
+                ? `On branch ${gitBranch}
+No commits yet
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	README.md
+	package.json
+	src/
+	tsconfig.json
+	vite.config.ts
+
+nothing added to commit but untracked files present (use "git add" to track)`
+                : `Na gałęzi ${gitBranch}
 Brak commitów.
 
 Nieśledzone pliki (użyj "git add <plik>..." aby uwzględnić w commicie):
@@ -343,7 +436,14 @@ Brak dodanych zmian do commita (użyj "git add").`,
             newOutputs.push({
               id: `out-${Date.now()}`,
               type: 'output',
-              text: `Na gałęzi ${gitBranch}
+              text: isEn
+                ? `On branch ${gitBranch}
+Changes to be committed:
+	new file:   README.md
+	new file:   package.json
+	new file:   src/App.tsx
+	new file:   tsconfig.json`
+                : `Na gałęzi ${gitBranch}
 Zmiany gotowe do zatwierdzenia (Staged for commit):
 	nowy plik:   README.md
 	nowy plik:   package.json
@@ -354,7 +454,9 @@ Zmiany gotowe do zatwierdzenia (Staged for commit):
             newOutputs.push({
               id: `out-${Date.now()}`,
               type: 'output',
-              text: `Na gałęzi ${gitBranch}\nDrzewo robocze czyste (working tree clean), brak zmian.`,
+              text: isEn
+                ? `On branch ${gitBranch}\nnothing to commit, working tree clean`
+                : `Na gałęzi ${gitBranch}\nDrzewo robocze czyste (working tree clean), brak zmian.`,
             });
           }
         } else if (arg1 === 'add') {
@@ -362,11 +464,17 @@ Zmiany gotowe do zatwierdzenia (Staged for commit):
           newOutputs.push({
             id: `out-${Date.now()}`,
             type: 'output',
-            text: 'Pliki dodane do poczekalni (Staging Area). Gotowe do wykonania git commit.',
+            text: isEn
+              ? 'Files staged in the index. Ready to run git commit.'
+              : 'Pliki dodane do poczekalni (Staging Area). Gotowe do wykonania git commit.',
           });
         } else if (arg1 === 'commit') {
           if (gitStaged.length === 0 && gitCommits.length > 0) {
-            newOutputs.push({ id: `out-${Date.now()}`, type: 'output', text: 'Brak zmian dodanych do poczekalni (użyj git add).' });
+            newOutputs.push({
+              id: `out-${Date.now()}`,
+              type: 'output',
+              text: isEn ? 'No staged changes to commit (use git add).' : 'Brak zmian dodanych do poczekalni (użyj git add).',
+            });
           } else {
             const rawMsg = cmd.match(/["'](.*?)["']/)?.[1] || 'feat: initial commit';
             const hash = Math.random().toString(16).substring(2, 9);
@@ -388,24 +496,32 @@ Zmiany gotowe do zatwierdzenia (Staged for commit):
         } else if (arg1 === 'checkout' || arg1 === 'switch') {
           const target = arg2 === '-b' || arg2 === '-c' ? parts[3] : arg2;
           if (!target) {
-            newOutputs.push({ id: `err-${Date.now()}`, type: 'error', text: 'Użycie: git checkout -b <nazwa_gałęzi>' });
+            newOutputs.push({
+              id: `err-${Date.now()}`,
+              type: 'error',
+              text: isEn ? 'Usage: git checkout -b <branch_name>' : 'Użycie: git checkout -b <nazwa_gałęzi>',
+            });
           } else {
             setGitBranch(target);
             newOutputs.push({
               id: `out-${Date.now()}`,
               type: 'success',
-              text: `Przełączono na nową gałąź '${target}'`,
+              text: isEn ? `Switched to a new branch '${target}'` : `Przełączono na nową gałąź '${target}'`,
             });
           }
         } else if (arg1 === 'log') {
           if (gitCommits.length === 0) {
-            newOutputs.push({ id: `out-${Date.now()}`, type: 'output', text: 'Brak wykonanych commitów w repozytorium.' });
+            newOutputs.push({
+              id: `out-${Date.now()}`,
+              type: 'output',
+              text: isEn ? 'No commits recorded in repository yet.' : 'Brak wykonanych commitów w repozytorium.',
+            });
           } else {
             const logs = gitCommits
               .map(
                 (c) => `commit ${c.hash}7a38b29f (HEAD -> ${gitBranch})
-Autor: ${currentUser.name} <${currentUser.email}>
-Data:  ${c.date}
+Author: ${currentUser.name} <${currentUser.email}>
+Date:   ${c.date}
 
     ${c.msg}
 `
@@ -444,7 +560,7 @@ ok 3 - verifyAntiBotSubmission rejects bot
 ok 4 - filterAndSortUsers filters by role
 1..4
 # tests 4 | suites 0 | pass 4 | fail 0 | duration_ms 42.1ms
-✓ Wszystkie testy zaliczone pomyślnie!`,
+✓ ${isEn ? 'All tests passed!' : 'Wszystkie testy zaliczone pomyślnie!'}`,
           });
         } else if (arg1 === 'run' && arg2 === 'dev') {
           newOutputs.push({
@@ -475,7 +591,7 @@ dist/assets/index-Bq829Lm.js     182.40 kB │ gzip: 54.12 kB
 found 0 vulnerabilities`,
           });
         } else {
-          newOutputs.push({ id: `out-${Date.now()}`, type: 'output', text: `npm v10.8.2\nUżyj: npm test, npm run dev, npm run build` });
+          newOutputs.push({ id: `out-${Date.now()}`, type: 'output', text: `npm v10.8.2\n${isEn ? 'Usage' : 'Użyj'}: npm test, npm run dev, npm run build` });
         }
         break;
 
@@ -498,13 +614,13 @@ postgres     16-alpine   74839201bcde   2 weeks ago    412MB
 node         22-alpine   839201abc123   3 weeks ago    188MB`,
           });
         } else {
-          newOutputs.push({ id: `out-${Date.now()}`, type: 'output', text: `Docker Engine v26.1.4\nUżyj: docker ps, docker images` });
+          newOutputs.push({ id: `out-${Date.now()}`, type: 'output', text: `Docker Engine v26.1.4\n${isEn ? 'Usage' : 'Użyj'}: docker ps, docker images` });
         }
         break;
 
       case 'curl':
         if (!arg1) {
-          newOutputs.push({ id: `err-${Date.now()}`, type: 'error', text: 'Użycie: curl http://localhost:3000/api/health' });
+          newOutputs.push({ id: `err-${Date.now()}`, type: 'error', text: `${isEn ? 'Usage' : 'Użycie'}: curl http://localhost:3000/api/health` });
         } else {
           newOutputs.push({
             id: `out-${Date.now()}`,
@@ -522,7 +638,9 @@ Content-Length: 48
         newOutputs.push({
           id: `err-${Date.now()}`,
           type: 'error',
-          text: `bash: ${mainCmd}: nie znaleziono polecenia. Wpisz "help" aby zobaczyć dostępne komendy.`,
+          text: isEn
+            ? `bash: ${mainCmd}: command not found. Type "help" to list available commands.`
+            : `bash: ${mainCmd}: nie znaleziono polecenia. Wpisz "help" aby zobaczyć dostępne komendy.`,
         });
         break;
     }
@@ -570,13 +688,15 @@ Content-Length: 48
         <div>
           <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-1">
             <TerminalIcon className="h-4 w-4" />
-            <span>Interaktywny Symulator Konsoli</span>
+            <span>{isEn ? 'Interactive CLI Simulator' : 'Interaktywny Symulator Konsoli'}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Terminal Bash, Git & Docker w Przeglądarce
+            {isEn ? 'Browser Bash, Git & Docker Terminal' : 'Terminal Bash, Git & Docker w Przeglądarce'}
           </h1>
           <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-            Prawdziwe środowisko wiersza poleceń dla programisty: wykonuj polecenia Gita, uruchamiaj testy jednostkowe npm, badaj pliki i zdobywaj punkty XP za ukończone misje.
+            {isEn
+              ? 'Full developer command-line sandbox: practice Git workflows, run npm unit tests, inspect files, and earn XP for completed missions.'
+              : 'Prawdziwe środowisko wiersza poleceń dla programisty: wykonuj polecenia Gita, uruchamiaj testy jednostkowe npm, badaj pliki i zdobywaj punkty XP za ukończone misje.'}
           </p>
         </div>
 
@@ -585,14 +705,18 @@ Content-Length: 48
             <Sparkles className="h-4 w-4 text-amber-400" />
             <div>
               <span className="font-bold text-white">{completedMissionsCount} / {missions.length}</span>
-              <span className="text-slate-400 ml-1.5">misji</span>
+              <span className="text-slate-400 ml-1.5">{isEn ? 'missions' : 'misji'}</span>
             </div>
           </div>
           <button
             type="button"
             onClick={() => {
               setLines([
-                { id: `r-${Date.now()}`, type: 'system', text: 'Terminal zresetowany do stanu początkowego.' },
+                {
+                  id: `r-${Date.now()}`,
+                  type: 'system',
+                  text: isEn ? 'Terminal reset to initial state.' : 'Terminal zresetowany do stanu początkowego.',
+                },
               ]);
               setIsGitInitialized(false);
               setGitStaged([]);
@@ -602,7 +726,7 @@ Content-Length: 48
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            <span>Reset</span>
+            <span>{isEn ? 'Reset' : 'Reset'}</span>
           </button>
         </div>
       </div>
@@ -668,7 +792,7 @@ Content-Length: 48
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Wpisz komendę..."
+                placeholder={isEn ? 'Enter a command...' : 'Wpisz komendę...'}
                 className="flex-1 min-w-[120px] bg-transparent text-white focus:outline-none caret-cyan-400 text-xs font-mono"
               />
             </form>
@@ -677,7 +801,7 @@ Content-Length: 48
 
           {/* Quick Command Hints Bar */}
           <div className="px-4 py-2 border-t border-slate-800/80 bg-[#161b22]/80 flex flex-wrap gap-2 text-[11px] font-mono">
-            <span className="text-slate-400">Szybkie komendy:</span>
+            <span className="text-slate-400">{isEn ? 'Quick commands:' : 'Szybkie komendy:'}</span>
             {['git status', 'git add .', 'git commit -m "feat: init"', 'npm test', 'npm run dev', 'docker ps', 'ls -la', 'clear'].map((c) => (
               <button
                 key={c}
@@ -701,7 +825,7 @@ Content-Length: 48
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                <h3 className="text-sm font-bold text-white">Misje Konsolowe (+XP)</h3>
+                <h3 className="text-sm font-bold text-white">{isEn ? 'Terminal Missions (+XP)' : 'Misje Konsolowe (+XP)'}</h3>
               </div>
               <span className="text-xs font-mono text-indigo-400 font-bold">
                 +{missions.reduce((acc, m) => acc + (m.completed ? m.xpReward : 0), 0)} XP
@@ -746,13 +870,13 @@ Content-Length: 48
                       <button
                         type="button"
                         onClick={() => {
-                          const cmd = m.hint.replace('Wpisz: ', '');
+                          const cmd = m.hint.replace(/^(Wpisz|Type):\s*/i, '');
                           setInputVal(cmd);
                           inputRef.current?.focus();
                         }}
                         className="text-cyan-400 hover:text-cyan-300 font-semibold"
                       >
-                        Wklej &gt;
+                        {isEn ? 'Paste >' : 'Wklej >'}
                       </button>
                     </div>
                   )}
@@ -765,12 +889,12 @@ Content-Length: 48
           <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 text-xs text-slate-400 space-y-2">
             <div className="font-bold text-slate-200 flex items-center gap-1.5">
               <Code className="h-3.5 w-3.5 text-cyan-400" />
-              <span>Skróty klawiszowe terminala:</span>
+              <span>{isEn ? 'Terminal Keyboard Shortcuts:' : 'Skróty klawiszowe terminala:'}</span>
             </div>
             <ul className="space-y-1 text-[11px]">
-              <li><kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">Tab</kbd> — Inteligentne autouzupełnianie poleceń</li>
-              <li><kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">↑ / ↓</kbd> — Przewijanie historii komend</li>
-              <li><kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">clear</kbd> — Czyszczenie bufora ekranu</li>
+              <li><kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">Tab</kbd> — {isEn ? 'Smart command autocomplete' : 'Inteligentne autouzupełnianie poleceń'}</li>
+              <li><kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">↑ / ↓</kbd> — {isEn ? 'Browse command history' : 'Przewijanie historii komend'}</li>
+              <li><kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">clear</kbd> — {isEn ? 'Clear terminal screen buffer' : 'Czyszczenie bufora ekranu'}</li>
             </ul>
           </div>
 

@@ -19,7 +19,8 @@ export const GoogleAdSenseBanner: React.FC<GoogleAdSenseBannerProps> = ({
   variant = 'horizontal',
   className = '',
 }) => {
-  const { currentUser, isAuthenticated, adSenseConfig, setIsSubModalOpen } = useApp();
+  const { currentUser, isAuthenticated, adSenseConfig, setIsSubModalOpen, language, allLessons, allModules, allProjects } = useApp();
+  const isEn = language === 'en';
   const insRef = useRef<HTMLModElement | null>(null);
   const pushedSlotRef = useRef<string>('');
   const [dismissedInView, setDismissedInView] = useState(false);
@@ -61,7 +62,15 @@ export const GoogleAdSenseBanner: React.FC<GoogleAdSenseBannerProps> = ({
         <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400">
           <span className="inline-flex items-center gap-1 font-mono uppercase tracking-wider text-slate-400">
             <Info className="h-3 w-3 text-emerald-400 shrink-0" />
-            <span>{hasRealSlotUnit ? 'Reklama • AdSense' : 'Edycja Otwarta'}</span>
+            <span>
+              {hasRealSlotUnit
+                ? isEn
+                  ? 'Ad • AdSense'
+                  : 'Reklama • AdSense'
+                : isEn
+                  ? 'Open Edition'
+                  : 'Edycja Otwarta'}
+            </span>
           </span>
           <button
             type="button"
@@ -86,10 +95,12 @@ export const GoogleAdSenseBanner: React.FC<GoogleAdSenseBannerProps> = ({
         ) : (
           <div className="space-y-1.5 pt-0.5">
             <p className="text-xs font-bold text-white leading-snug">
-              100% Darmowy dostęp (AdSense)
+              {isEn ? '100% Free Access (AdSense)' : '100% Darmowy dostęp (AdSense)'}
             </p>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              Wszystkie 15 modułów i 12 projektów są bezpłatne dzięki Google AdSense.
+              {isEn
+                ? `All ${allModules.length} modules and ${allProjects.length} projects are free thanks to Google AdSense.`
+                : `Wszystkie ${allModules.length} modułów i ${allProjects.length} projektów są bezpłatne dzięki Google AdSense.`}
             </p>
           </div>
         )}
@@ -99,18 +110,30 @@ export const GoogleAdSenseBanner: React.FC<GoogleAdSenseBannerProps> = ({
 
   return (
     <aside
-      aria-label="Informacja o darmowym dostępie finansowanym przez Google AdSense"
+      aria-label={
+        isEn
+          ? 'Information about free access funded by Google AdSense'
+          : 'Informacja o darmowym dostępie finansowanym przez Google AdSense'
+      }
       data-testid={`adsense-banner-${placement}`}
       className={`rounded-2xl border border-slate-800/90 bg-slate-900/50 overflow-hidden shadow-md print:hidden ${className}`}
     >
       <div className="px-4 py-2 bg-slate-950/80 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px]">
         <div className="flex items-center gap-2 text-slate-400">
           <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] font-bold uppercase tracking-wider">
-            {hasRealSlotUnit ? 'Reklama Google AdSense' : 'Edycja Otwarta · AdSense'}
+            {hasRealSlotUnit
+              ? isEn
+                ? 'Google AdSense Ad'
+                : 'Reklama Google AdSense'
+              : isEn
+                ? 'Open Edition · AdSense'
+                : 'Edycja Otwarta · AdSense'}
           </span>
           <span className="hidden sm:inline text-slate-500">•</span>
           <span className="hidden sm:inline text-slate-400">
-            100% darmowa nauka wspierana przez reklamy Google AdSense
+            {isEn
+              ? '100% free learning supported by Google AdSense ads'
+              : '100% darmowa nauka wspierana przez reklamy Google AdSense'}
           </span>
         </div>
 
@@ -121,12 +144,12 @@ export const GoogleAdSenseBanner: React.FC<GoogleAdSenseBannerProps> = ({
             className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 font-semibold text-[11px] transition-colors cursor-pointer"
           >
             <Sparkles className="h-3 w-3 text-indigo-400" />
-            <span>O modelu darmowym</span>
+            <span>{isEn ? 'About free model' : 'O modelu darmowym'}</span>
           </button>
           <button
             type="button"
             onClick={() => setDismissedInView(true)}
-            title="Ukryj tę informację w tym widoku"
+            title={isEn ? 'Hide this notice in this view' : 'Ukryj tę informację w tym widoku'}
             className="p-0.5 rounded text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
           >
             <X className="h-3.5 w-3.5" />
@@ -148,14 +171,16 @@ export const GoogleAdSenseBanner: React.FC<GoogleAdSenseBannerProps> = ({
       ) : (
         <div className="px-4 py-3 sm:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/40">
           <p className="text-xs text-slate-300 leading-relaxed">
-            Korzystasz z pełnej, darmowej wersji Full Stack Developer Academy (96 lekcji, 6 symulatorów i 12 projektów za 0 zł). Plan PRO bez reklam pojawi się w kolejnym etapie.
+            {isEn
+              ? `You are using the full free version of Full Stack Developer Academy (${allLessons.length} lessons, 6 simulators and ${allProjects.length} projects for $0). An ad-free PRO plan will launch in a future stage.`
+              : `Korzystasz z pełnej, darmowej wersji Full Stack Developer Academy (${allLessons.length} lekcji, 6 symulatorów i ${allProjects.length} projektów za 0 zł). Plan PRO bez reklam pojawi się w kolejnym etapie.`}
           </p>
           <button
             type="button"
             onClick={() => setIsSubModalOpen(true)}
             className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold shrink-0 transition-colors cursor-pointer"
           >
-            Szczegóły dostępu
+            {isEn ? 'Access details' : 'Szczegóły dostępu'}
           </button>
         </div>
       )}
