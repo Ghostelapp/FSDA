@@ -1,7 +1,22 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { User, UserFilters, Announcement } from '../types';
+import {
+  User,
+  UserFilters,
+  Announcement,
+  VisitorEventRecord,
+  VisitorPresenceRecord,
+} from '../types';
 import { filterAndSortUsers } from '../utils/userFilters';
+import {
+  aggregateRealQuizAnalytics,
+  aggregateVisitorAnalytics,
+} from '../utils/visitorAnalytics';
+import {
+  fetchVisitorAnalyticsFromCloud,
+  subscribeVisitorAnalyticsForAdmin,
+  clearVisitorTelemetryByAdmin,
+} from '../firebase';
 import {
   isValidAdSenseClientId,
   isConfiguredAdUnitSlotId,
@@ -10,6 +25,7 @@ import {
 } from '../utils/adsense';
 import { ProtectedRoute } from './ProtectedRoute';
 import { CopyButton } from './CopyButton';
+import { VisitorTrafficPanel } from './VisitorTrafficPanel';
 import { 
   ShieldCheck, 
   Users, 
@@ -34,7 +50,8 @@ import {
   Eye,
   SlidersHorizontal,
   Smartphone,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Activity
 } from 'lucide-react';
 import { AndroidPlayStoreModal } from './AndroidPlayStoreModal';
 import { PromoAssetsPanel } from './PromoAssetsPanel';
@@ -48,6 +65,9 @@ const DEFAULT_BAN_REASON_EN = 'Violation of fair-learning policy or suspected au
 
 export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal }) => {
   const { 
+    currentUser,
+    isAuthenticated,
+    isCloudConnected,
     allUsers,
     allModules,
     language,
@@ -68,10 +88,88 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
   } = useApp();
   const isEn = language === 'en';
 
-  const [adminTab, setAdminTab] = useState<'students' | 'security' | 'announcements' | 'analytics' | 'curriculum' | 'adsense' | 'promo'>('students');
+  const [adminTab, setAdminTab] = useState<'students' | 'traffic' | 'announcements' | 'analytics' | 'curriculum' | 'adsense' | 'promo' | 'security'>('students');
   const [securityFilter, setSecurityFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
   const [isPlayStoreModalOpen, setIsPlayStoreModalOpen] = useState(false);
   const [copiedAdSnippet, setCopiedAdSnippet] = useState<'none' | 'adstxt' | 'head'>('none');
+
+  // Real Firestore Visitor Telemetry State
+  const [visitorEvents, setVisitorEvents] = useState<VisitorEventRecord[]>([]);
+  const [visitorPresences, setVisitorPresences] = useState<VisitorPresenceRecord[]>([]);
+  const [isLoadingTraffic, setIsLoadingTraffic] = useState(false);
+  const [isTrafficLive, setIsTrafficLive] = useState(true);
+  const [trafficLastSyncedMs, setTrafficLastSyncedMs] = useState<number | null>(null);
+  const [trafficError, setTrafficError] = useState<string | null>(null);
+
+  const canReadAdminCloudTelemetry =
+    isAuthenticated && currentUser.role === 'admin' && isCloudConnected;
+
+  const refreshVisitorAnalytics = useCallback(async () => {
+    if (!canReadAdminCloudTelemetry) return;
+    setIsLoadingTraffic(true);
+    setTrafficError(null);
+    try {
+      const result = await fetchVisitorAnalyticsFromCloud(1500);
+      setVisitorEvents(result.events);
+      setVisitorPresences(result.presences);
+      setTrafficLastSyncedMs(Date.now());
+    } catch (err) {
+      setTrafficError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsLoadingTraffic(false);
+    }
+  }, [canReadAdminCloudTelemetry]);
+
+  useEffect(() => {
+    if (!canReadAdminCloudTelemetry) return;
+    if (!isTrafficLive) {
+      void refreshVisitorAnalytics();
+      return;
+    }
+
+    setIsLoadingTraffic(true);
+    setTrafficError(null);
+    const unsub = subscribeVisitorAnalyticsForAdmin(
+      (events) => {
+        setVisitorEvents(events);
+        setTrafficLastSyncedMs(Date.now());
+        setIsLoadingTraffic(false);
+      },
+      (presences) => {
+        setVisitorPresences(presences);
+        setTrafficLastSyncedMs(Date.now());
+        setIsLoadingTraffic(false);
+      },
+      (err) => {
+        setTrafficError(err instanceof Error ? err.message : String(err));
+        setIsLoadingTraffic(false);
+      },
+      1500
+    );
+
+    return () => unsub();
+  }, [canReadAdminCloudTelemetry, isTrafficLive, refreshVisitorAnalytics]);
+
+  const handleClearVisitorTelemetry = async () => {
+    if (!canReadAdminCloudTelemetry) return;
+    await clearVisitorTelemetryByAdmin(
+      visitorEvents.map((e) => e.id),
+      visitorPresences.map((p) => p.sessionId)
+    );
+    setVisitorEvents([]);
+    setVisitorPresences([]);
+    setTrafficLastSyncedMs(Date.now());
+  };
+
+  const quickTrafficSummary = useMemo(
+    () => aggregateVisitorAnalytics(visitorEvents, visitorPresences, Date.now(), '7d', '', language),
+    [visitorEvents, visitorPresences, language]
+  );
+
+  const realQuizAnalytics = useMemo(
+    () => aggregateRealQuizAnalytics(allUsers, allModules),
+    [allUsers, allModules]
+  );
 
   // Account Filters State
   const [filters, setFilters] = useState<UserFilters>({
@@ -225,7 +323,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
       />
 
       {/* Quick KPI stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400">{isEn ? 'User Accounts' : 'Baza Kont'}</span>
@@ -238,6 +336,26 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
             <span className="text-rose-400 font-bold">{stats.suspendedCount + stats.bannedCount} {isEn ? 'blocked' : 'zablokowanych'}</span>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setAdminTab('traffic')}
+          className="text-left rounded-2xl border border-cyan-500/30 bg-slate-900/70 hover:bg-slate-900 p-5 transition-colors cursor-pointer"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-cyan-300">{isEn ? 'Today Views / Live' : 'Odwiedziny Dziś'}</span>
+            <Activity className="h-4 w-4 text-cyan-400" />
+          </div>
+          <p className="mt-2 text-2xl font-black text-white">
+            {quickTrafficSummary.todayPageviews}
+            <span className="ml-2 text-xs font-bold text-emerald-400">
+              • {quickTrafficSummary.onlineNowCount} online
+            </span>
+          </p>
+          <p className="mt-1 text-[11px] text-slate-400">
+            {quickTrafficSummary.uniqueVisitors} {isEn ? 'unique (7d)' : 'unikalnych (7 dni)'}
+          </p>
+        </button>
 
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
           <div className="flex items-center justify-between">
@@ -259,7 +377,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
           <p className="mt-1 text-[11px] text-emerald-400">{isEn ? 'Total:' : 'Łącznie:'} {totalXP} XP</p>
         </div>
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-400">{isEn ? 'Completed Lessons' : 'Zaliczone Lekcje'}</span>
             <BookOpen className="h-4 w-4 text-cyan-400" />
@@ -282,6 +400,22 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
         >
           <Users className="h-4 w-4" />
           <span>{isEn ? `Accounts & Filtering (${allUsers.length})` : `Filtracja i Baza Kont (${allUsers.length})`}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setAdminTab('traffic')}
+          className={`pb-3 border-b-2 flex items-center gap-1.5 transition-colors whitespace-nowrap ${
+            adminTab === 'traffic'
+              ? 'border-cyan-500 text-cyan-400'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Activity className="h-4 w-4" />
+          <span>
+            {isEn
+              ? `Visitor Traffic (${quickTrafficSummary.totalPageviews})`
+              : `Statystyki Odwiedzin (${quickTrafficSummary.totalPageviews})`}
+          </span>
         </button>
         <button
           type="button"
@@ -843,55 +977,102 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
         </div>
       )}
 
-      {/* TAB 3: Analytics */}
+      {/* TAB: Real Visitor Traffic Analytics */}
+      {adminTab === 'traffic' && (
+        <VisitorTrafficPanel
+          language={language}
+          events={visitorEvents}
+          presences={visitorPresences}
+          isLoading={isLoadingTraffic}
+          isLiveSubscribed={isTrafficLive}
+          onToggleLive={() => setIsTrafficLive((prev) => !prev)}
+          onRefresh={() => void refreshVisitorAnalytics()}
+          onClearAll={handleClearVisitorTelemetry}
+          lastSyncedAtMs={trafficLastSyncedMs}
+          errorMessage={trafficError}
+        />
+      )}
+
+      {/* TAB 3: Real Quiz Analytics */}
       {adminTab === 'analytics' && (
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-6">
-          <div>
-            <h3 className="text-base font-bold text-white">
-              {isEn ? 'Quiz Scores & Challenging Topics Analysis' : 'Analiza wyników i problematycznych zagadnień'}
-            </h3>
-            <p className="text-xs text-slate-400 mt-1">
-              {isEn
-                ? 'Breakdown of average student quiz results across the HTML5 module:'
-                : 'Zestawienie średnich wyników testów wiedzy kursantów z modułu HTML5:'}
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/60 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-white">
-                  {isEn ? 'Lesson 3: Modern Forms & Native Validation' : 'Lekcja 3: Nowoczesne formularze i walidacja'}
-                </span>
-                <span className="text-amber-400 font-semibold font-mono">{isEn ? 'Avg Score: 74%' : 'Średni wynik: 74%'}</span>
-              </div>
-              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full" style={{ width: '74%' }} />
-              </div>
-              <p className="text-[11px] text-slate-400">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-white">
+                {isEn ? 'Real Student Quiz Scores Analysis' : 'Rzeczywista Analiza Wyników Quizów Kursantów'}
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
                 {isEn
-                  ? 'Most common mistake: Omitting the "for" attribute on <label> tags and relying solely on placeholders.'
-                  : 'Najczęstszy błąd: Pomijanie atrybutu "for" w tagu <label> i stosowanie wyłącznie placeholderów.'}
+                  ? 'Aggregated directly from verified student quiz scores stored in user profiles (sorted by lowest avg score first):'
+                  : 'Obliczane wyłącznie na podstawie prawdziwych wyników quizów zapisanych na kontach kursantów (od najtrudniejszych lekcji):'}
               </p>
             </div>
-
-            <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/60 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-white">
-                  {isEn ? 'Lesson 5: Accessibility (a11y/WCAG) & SEO' : 'Lekcja 5: Dostępność cyfrowa (a11y/WCAG) i SEO'}
-                </span>
-                <span className="text-emerald-400 font-semibold font-mono">{isEn ? 'Avg Score: 88%' : 'Średni wynik: 88%'}</span>
+            <div className="flex items-center gap-3 text-xs">
+              <div className="rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-2">
+                <span className="text-slate-400">{isEn ? 'Submissions:' : 'Podejścia:'}</span>{' '}
+                <strong className="text-white font-mono">{realQuizAnalytics.totalQuizAttempts}</strong>
               </div>
-              <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: '88%' }} />
+              <div className="rounded-xl border border-slate-800 bg-slate-950/80 px-3 py-2">
+                <span className="text-slate-400">{isEn ? 'Overall Avg:' : 'Średnia:'}</span>{' '}
+                <strong className="text-cyan-300 font-mono">{realQuizAnalytics.overallAvgScorePercent}%</strong>
               </div>
-              <p className="text-[11px] text-slate-400">
-                {isEn
-                  ? 'High pass rate: Students consistently master POUR principles and aria-label attributes.'
-                  : 'Wysoka zdawalność: Kursanci doskonale radzą sobie z zasadą POUR i atrybutami aria-label.'}
-              </p>
             </div>
           </div>
+
+          {realQuizAnalytics.rows.length === 0 ? (
+            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-8 text-center space-y-1.5">
+              <p className="text-sm font-bold text-slate-200">
+                {isEn ? 'No completed quiz submissions yet' : 'Brak rozwiązanych quizów na kontach kursantów'}
+              </p>
+              <p className="text-xs text-slate-400">
+                {isEn
+                  ? 'Real per-lesson averages and pass rates will appear automatically as students complete lesson quizzes.'
+                  : 'Gdy kursanci rozwiążą pierwsze quizy w lekcjach, pojawi się tu prawdziwy ranking średnich wyników i zdawalności.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {realQuizAnalytics.rows.map((row) => (
+                <div key={row.lessonId} className="p-4 rounded-xl border border-slate-800 bg-slate-950/60 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div>
+                      <span className="font-bold text-white">{row.lessonTitle}</span>
+                      <span className="ml-2 text-[11px] text-slate-400 font-mono">({row.lessonId} · {row.moduleTitle})</span>
+                    </div>
+                    <span
+                      className={`font-semibold font-mono ${
+                        row.avgScorePercent >= 80
+                          ? 'text-emerald-400'
+                          : row.avgScorePercent >= 60
+                          ? 'text-amber-400'
+                          : 'text-rose-400'
+                      }`}
+                    >
+                      {isEn ? 'Avg:' : 'Średnia:'} {row.avgScorePercent}% · {row.attemptsCount}{' '}
+                      {isEn ? 'attempts' : 'wyników'}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${
+                        row.avgScorePercent >= 80
+                          ? 'bg-emerald-500'
+                          : row.avgScorePercent >= 60
+                          ? 'bg-amber-500'
+                          : 'bg-rose-500'
+                      }`}
+                      style={{ width: `${row.avgScorePercent}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    {isEn
+                      ? `Pass rate (>=80%): ${row.passRatePercent}% • Lowest recorded score: ${row.lowestScorePercent}%`
+                      : `Zdawalność (>=80%): ${row.passRatePercent}% • Najniższy wynik: ${row.lowestScorePercent}%`}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

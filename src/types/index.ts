@@ -328,3 +328,77 @@ export interface SecurityAuditEvent {
   details: string;
 }
 
+export type VisitorDeviceType = 'desktop' | 'mobile' | 'tablet';
+export type VisitorTimeframe = '24h' | '7d' | '30d';
+
+export interface VisitorEventRecord {
+  id: string;
+  visitorId: string;
+  sessionId: string;
+  dateKey: string;
+  path: string;
+  tab: string;
+  referrerHost: string;
+  utmSource: string;
+  deviceType: VisitorDeviceType;
+  language: 'pl' | 'en';
+  isAuthenticated: boolean;
+  createdAtMs: number;
+}
+
+export interface VisitorPresenceRecord {
+  sessionId: string;
+  visitorId: string;
+  path: string;
+  tab: string;
+  referrerHost: string;
+  deviceType: VisitorDeviceType;
+  language: 'pl' | 'en';
+  isAuthenticated: boolean;
+  lastSeenMs: number;
+}
+
+export interface VisitorTimeSeriesPoint {
+  key: string;
+  label: string;
+  pageviews: number;
+  uniqueVisitors: number;
+  sessions: number;
+}
+
+export interface VisitorPageStat {
+  path: string;
+  tab: string;
+  views: number;
+  uniqueVisitors: number;
+  sharePercent: number;
+  lastVisitedAtMs: number;
+}
+
+export interface VisitorSourceStat {
+  sourceKey: string;
+  utmSource: string;
+  visits: number;
+  uniqueVisitors: number;
+  sharePercent: number;
+}
+
+export interface VisitorAnalyticsSummary {
+  timeframe: VisitorTimeframe;
+  totalPageviews: number;
+  uniqueVisitors: number;
+  uniqueSessions: number;
+  avgPagesPerSession: number;
+  todayPageviews: number;
+  todayUniqueVisitors: number;
+  onlineNowCount: number;
+  activePresenceList: VisitorPresenceRecord[];
+  dailySeries: VisitorTimeSeriesPoint[];
+  topPages: VisitorPageStat[];
+  topSources: VisitorSourceStat[];
+  devices: Record<VisitorDeviceType, number>;
+  languages: Record<'pl' | 'en', number>;
+  authenticatedCount: number;
+  guestCount: number;
+  recentVisits: VisitorEventRecord[];
+}

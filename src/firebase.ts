@@ -12,15 +12,31 @@ import {
   doc,
   setDoc,
   getDoc,
+  getDocs,
   getDocFromServer,
   deleteDoc,
   collection,
+  query,
+  orderBy,
+  limit,
   onSnapshot,
+  serverTimestamp,
+  Timestamp,
+  writeBatch,
   Unsubscribe,
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import firebaseAppletConfig from '../firebase-applet-config.json';
-import { User, Announcement } from './types';
+import {
+  User,
+  Announcement,
+  VisitorEventRecord,
+  VisitorPresenceRecord,
+} from './types';
+import {
+  VisitorEventWritePayload,
+  VisitorPresenceWritePayload,
+} from './utils/visitorAnalytics';
 import { sanitizeGithubIntegrationForPersistence } from './utils/githubService';
 
 const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env || {};
@@ -442,6 +458,235 @@ export async function deleteAnnouncementFromCloud(id: string): Promise<boolean> 
     handleFirestoreError(error, OperationType.DELETE, path);
     return false;
   }
+}
+
+function toEpochMs(value: unknown, fallbackMs: number = Date.now()): number {
+  if (value instanceof Timestamp) return value.toMillis();
+  if (typeof value === 'object' && value !== null && 'toMillis' in value && typeof (value as { toMillis: unknown }).toMillis === 'function') {
+    return (value as { toMillis: () => number }).toMillis();
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallbackMs;
+}
+
+function parseVisitorEventSnapshot(data: Record<string, unknown>, docId: string): VisitorEventRecord {
+  const device = data.deviceType === 'mobile' || data.deviceType === 'tablet' ? data.deviceType : 'desktop';
+  return {
+    id: typeof data.id === 'string' ? data.id : docId,
+    visitorId: typeof data.visitorId === 'string' ? data.visitorId : 'anonymous',
+    sessionId: typeof data.sessionId === 'string' ? data.sessionId : 'session',
+    dateKey: typeof data.dateKey === 'string' ? data.dateKey : new Date().toISOString().split('T')[0],
+    path: typeof data.path === 'string' ? data.path : '/',
+    tab: typeof data.tab === 'string' ? data.tab : 'landing',
+    referrerHost: typeof data.referrerHost === 'string' ? data.referrerHost : 'direct',
+    utmSource: typeof data.utmSource === 'string' ? data.utmSource : 'none',
+    deviceType: device,
+    language: data.language === 'en' ? 'en' : 'pl',
+    isAuthenticated: Boolean(data.isAuthenticated),
+    createdAtMs: toEpochMs(data.createdAt),
+  };
+}
+
+function parseVisitorPresenceSnapshot(data: Record<string, unknown>, docId: string): VisitorPresenceRecord {
+  const device = data.deviceType === 'mobile' || data.deviceType === 'tablet' ? data.deviceType : 'desktop';
+  return {
+    sessionId: typeof data.sessionId === 'string' ? data.sessionId : docId,
+    visitorId: typeof data.visitorId === 'string' ? data.visitorId : 'anonymous',
+    path: typeof data.path === 'string' ? data.path : '/',
+    tab: typeof data.tab === 'string' ? data.tab : 'landing',
+    referrerHost: typeof data.referrerHost === 'string' ? data.referrerHost : 'direct',
+    deviceType: device,
+    language: data.language === 'en' ? 'en' : 'pl',
+    isAuthenticated: Boolean(data.isAuthenticated),
+    lastSeenMs: toEpochMs(data.lastSeen),
+  };
+}
+
+export async function recordVisitorEventToCloud(payload: VisitorEventWritePayload): Promise<boolean> {
+  const path = `visitor_events/${payload.id}`;
+  try {
+    await setDoc(doc(db, 'visitor_events', payload.id), {
+      ...payload,
+      createdAt: serverTimestamp(),
+    });
+    return true;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+    return false;
+  }
+}
+
+export async function upsertVisitorPresenceToCloud(payload: VisitorPresenceWritePayload): Promise<boolean> {
+  const path = `visitor_presence/${payload.sessionId}`;
+  try {
+    await setDoc(doc(db, 'visitor_presence', payload.sessionId), {
+      ...payload,
+      lastSeen: serverTimestamp(),
+    });
+    return true;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+    return false;
+  }
+}
+
+export async function fetchVisitorAnalyticsFromCloud(
+  maxEvents = 1500
+): Promise<{ events: VisitorEventRecord[]; presences: VisitorPresenceRecord[] }> {
+  try {
+    const [eventsSnap, presenceSnap] = await Promise.all([
+      getDocs(query(collection(db, 'visitor_events'), orderBy('createdAt', 'desc'), limit(maxEvents))),
+      getDocs(query(collection(db, 'visitor_presence'), orderBy('lastSeen', 'desc'), limit(250))),
+    ]);
+
+    const events: VisitorEventRecord[] = [];
+    eventsSnap.forEach((docSnap) => {
+      events.push(parseVisitorEventSnapshot(docSnap.data() as Record<string, unknown>, docSnap.id));
+    });
+
+    const presences: VisitorPresenceRecord[] = [];
+    presenceSnap.forEach((docSnap) => {
+      presences.push(parseVisitorPresenceSnapshot(docSnap.data() as Record<string, unknown>, docSnap.id));
+    });
+
+    return { events, presences };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, 'visitor_events');
+    throw error;
+  }
+}
+
+export function subscribeVisitorAnalyticsForAdmin(
+  onEvents: (events: VisitorEventRecord[]) => void,
+  onPresence: (presences: VisitorPresenceRecord[]) => void,
+  onError?: (err: unknown) => void,
+  maxEvents = 1500
+): Unsubscribe {
+  const eventsQuery = query(
+    collection(db, 'visitor_events'),
+    orderBy('createdAt', 'desc'),
+    limit(maxEvents)
+  );
+  const presenceQuery = query(
+    collection(db, 'visitor_presence'),
+    orderBy('lastSeen', 'desc'),
+    limit(250)
+  );
+
+  const unsubEvents = onSnapshot(
+    eventsQuery,
+    (snap) => {
+      const list: VisitorEventRecord[] = [];
+      snap.forEach((docSnap) => {
+        list.push(parseVisitorEventSnapshot(docSnap.data() as Record<string, unknown>, docSnap.id));
+      });
+      onEvents(list);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'visitor_events');
+      onError?.(error);
+    }
+  );
+
+  const unsubPresence = onSnapshot(
+    presenceQuery,
+    (snap) => {
+      const list: VisitorPresenceRecord[] = [];
+      snap.forEach((docSnap) => {
+        list.push(parseVisitorPresenceSnapshot(docSnap.data() as Record<string, unknown>, docSnap.id));
+      });
+      onPresence(list);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'visitor_presence');
+      onError?.(error);
+    }
+  );
+
+  return () => {
+    unsubEvents();
+    unsubPresence();
+  };
+}
+
+export async function clearVisitorTelemetryByAdmin(
+  eventIds: string[],
+  presenceIds: string[]
+): Promise<number> {
+  const targets: { col: 'visitor_events' | 'visitor_presence'; id: string }[] = [
+    ...eventIds.map((id) => ({ col: 'visitor_events' as const, id })),
+    ...presenceIds.map((id) => ({ col: 'visitor_presence' as const, id })),
+  ];
+
+  let deleted = 0;
+  try {
+    for (let i = 0; i < targets.length; i += 400) {
+      const chunk = targets.slice(i, i + 400);
+      const batch = writeBatch(db);
+      for (const item of chunk) {
+        batch.delete(doc(db, item.col, item.id));
+      }
+      await batch.commit();
+      deleted += chunk.length;
+    }
+    return deleted;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, 'visitor_events');
+    throw error;
+  }
+}
+
+export function subscribeAllUsersForAdmin(
+  onUpdate: (users: User[]) => void
+): Unsubscribe {
+  const path = 'users';
+  return onSnapshot(
+    query(collection(db, 'users'), limit(500)),
+    (snap) => {
+      const usersList: User[] = [];
+      snap.forEach((docSnap) => {
+        const data = docSnap.data() as Partial<User>;
+        usersList.push({
+          id: data.id || docSnap.id,
+          name: data.name || 'Kursant Google',
+          email: data.email || 'user@gmail.com',
+          role: data.role === 'admin' ? 'admin' : 'student',
+          status: data.status || 'active',
+          antiBotVerified: true,
+          antiBotScore: 100,
+          avatar: data.avatar,
+          xp: typeof data.xp === 'number' ? data.xp : 0,
+          level: typeof data.level === 'number' ? data.level : 1,
+          streakDays: typeof data.streakDays === 'number' ? data.streakDays : 0,
+          lastActiveDate: data.lastActiveDate || new Date().toISOString().split('T')[0],
+          weeklyGoalMinutes: typeof data.weeklyGoalMinutes === 'number' ? data.weeklyGoalMinutes : 180,
+          weeklySpentMinutes: typeof data.weeklySpentMinutes === 'number' ? data.weeklySpentMinutes : 0,
+          completedLessons: Array.isArray(data.completedLessons) ? data.completedLessons : [],
+          completedProjects: Array.isArray(data.completedProjects) ? data.completedProjects : [],
+          unlockedBadges: Array.isArray(data.unlockedBadges) ? data.unlockedBadges : [],
+          claimedRewards: Array.isArray(data.claimedRewards) ? data.claimedRewards : [],
+          quizScores: data.quizScores || {},
+          savedCode: data.savedCode || {},
+          githubIntegration: data.githubIntegration,
+          lives: typeof data.lives === 'number' ? data.lives : 5,
+          maxLives: typeof data.maxLives === 'number' ? data.maxLives : 5,
+          isPro: Boolean(data.isPro),
+          proPlan: data.proPlan ?? null,
+          streakFreezes: typeof data.streakFreezes === 'number' ? data.streakFreezes : 0,
+          bio: data.bio || '',
+          createdAt: data.createdAt || new Date().toISOString().split('T')[0],
+        });
+      });
+      onUpdate(usersList);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, path);
+    }
+  );
 }
 
 export async function signInWithGoogleFirebase(): Promise<FirebaseUser> {

@@ -101,6 +101,21 @@ import {
   XP_COST_STREAK_FREEZE
 } from '../utils/gamification';
 import {
+  VISITOR_ID_STORAGE_KEY,
+  VISITOR_SESSION_STORAGE_KEY,
+  VISITOR_REFERRER_STORAGE_KEY,
+  VISITOR_UTM_STORAGE_KEY,
+  generateSafeTelemetryId,
+  isValidTelemetryToken,
+  normalizeReferrerHost,
+  extractUtmSource,
+  detectDeviceType,
+  normalizeVisitedPath,
+  shouldDeduplicatePageview,
+  buildVisitorEventWritePayload,
+  buildVisitorPresenceWritePayload,
+} from '../utils/visitorAnalytics';
+import {
   auth,
   onAuthStateChanged,
   testFirebaseConnection,
@@ -119,6 +134,9 @@ import {
   CloudLifeAction,
   subscribeToUserProfile,
   subscribeToCloudAnnouncements,
+  subscribeAllUsersForAdmin,
+  recordVisitorEventToCloud,
+  upsertVisitorPresenceToCloud,
   saveAnnouncementToCloud,
   deleteAnnouncementFromCloud,
 } from '../firebase';
@@ -793,6 +811,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     let unsubProfile: (() => void) | null = null;
     let unsubAnnouncements: (() => void) | null = null;
+    let unsubAllUsers: (() => void) | null = null;
 
     const unsubAuth = onAuthStateChanged(auth, async (fbUser) => {
       if (unsubProfile) {
@@ -802,6 +821,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (unsubAnnouncements) {
         unsubAnnouncements();
         unsubAnnouncements = null;
+      }
+      if (unsubAllUsers) {
+        unsubAllUsers();
+        unsubAllUsers = null;
       }
 
       if (fbUser) {
@@ -871,6 +894,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               setAnnouncements(remoteAnns);
             }
           });
+
+          if (cloudProfile.role === 'admin') {
+            unsubAllUsers = subscribeAllUsersForAdmin((remoteUsers) => {
+              if (remoteUsers.length === 0) return;
+              setAllUsers((prev) => {
+                const byId = new Map<string, User>();
+                for (const u of prev) byId.set(u.id, u);
+                for (const ru of remoteUsers) {
+                  const existing = byId.get(ru.id);
+                  byId.set(ru.id, existing ? { ...existing, ...ru } : ru);
+                }
+                return Array.from(byId.values());
+              });
+            });
+          }
         } catch (err) {
           console.error('Failed to initialize cloud user profile:', err);
         } finally {
@@ -886,8 +924,122 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       unsubAuth();
       if (unsubProfile) unsubProfile();
       if (unsubAnnouncements) unsubAnnouncements();
+      if (unsubAllUsers) unsubAllUsers();
     };
   }, []);
+
+  // Automatic real visitor telemetry & active presence tracking (Firestore, anonymized, zero PII)
+  const lastTrackedVisitRef = useRef<{ key: string | null; atMs: number }>({
+    key: null,
+    atMs: 0,
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const resolveVisitorTokens = () => {
+      let visitorId = '';
+      let sessionId = '';
+      let referrerHost = 'direct';
+      let utmSource = 'none';
+
+      try {
+        const storedVisitor = localStorage.getItem(VISITOR_ID_STORAGE_KEY);
+        visitorId = isValidTelemetryToken(storedVisitor)
+          ? storedVisitor
+          : generateSafeTelemetryId('vis');
+        if (storedVisitor !== visitorId) {
+          localStorage.setItem(VISITOR_ID_STORAGE_KEY, visitorId);
+        }
+      } catch {
+        visitorId = generateSafeTelemetryId('vis');
+      }
+
+      try {
+        const storedSession = sessionStorage.getItem(VISITOR_SESSION_STORAGE_KEY);
+        sessionId = isValidTelemetryToken(storedSession)
+          ? storedSession
+          : generateSafeTelemetryId('ses');
+        if (storedSession !== sessionId) {
+          sessionStorage.setItem(VISITOR_SESSION_STORAGE_KEY, sessionId);
+        }
+
+        const storedRef = sessionStorage.getItem(VISITOR_REFERRER_STORAGE_KEY);
+        if (storedRef) {
+          referrerHost = storedRef;
+        } else {
+          referrerHost = normalizeReferrerHost(document.referrer || '', window.location.hostname || '');
+          sessionStorage.setItem(VISITOR_REFERRER_STORAGE_KEY, referrerHost);
+        }
+
+        const currentUtm = extractUtmSource(window.location.search || '');
+        const storedUtm = sessionStorage.getItem(VISITOR_UTM_STORAGE_KEY);
+        if (currentUtm !== 'none') {
+          utmSource = currentUtm;
+          sessionStorage.setItem(VISITOR_UTM_STORAGE_KEY, utmSource);
+        } else if (storedUtm) {
+          utmSource = storedUtm;
+        } else {
+          utmSource = 'none';
+          sessionStorage.setItem(VISITOR_UTM_STORAGE_KEY, utmSource);
+        }
+      } catch {
+        if (!sessionId) sessionId = generateSafeTelemetryId('ses');
+      }
+
+      return { visitorId, sessionId, referrerHost, utmSource };
+    };
+
+    const { visitorId, sessionId, referrerHost, utmSource } = resolveVisitorTokens();
+    const rawPath = window.location.pathname || '/';
+    const rawSearch = window.location.search || '';
+    const resolvedPublicPath = buildPublicPath(activeTab, selectedLessonId);
+    const targetPath = resolvedPublicPath || (isPublicTab(activeTab) ? rawPath : '/app');
+    const targetSearch = resolvedPublicPath ? rawSearch : rawSearch || `?tab=${activeTab}`;
+    const normalizedPath = normalizeVisitedPath(targetPath, targetSearch);
+    const deviceType = detectDeviceType(window.innerWidth, navigator.userAgent || '');
+
+    const visitKey = `${activeTab}::${normalizedPath}`;
+    const nowMs = Date.now();
+
+    if (!shouldDeduplicatePageview(lastTrackedVisitRef.current.key, visitKey, lastTrackedVisitRef.current.atMs, nowMs)) {
+      lastTrackedVisitRef.current = { key: visitKey, atMs: nowMs };
+      const eventPayload = buildVisitorEventWritePayload({
+        visitorId,
+        sessionId,
+        date: new Date(nowMs),
+        pathname: normalizedPath.split('?')[0] || '/',
+        search: normalizedPath.includes('?') ? normalizedPath.slice(normalizedPath.indexOf('?')) : '',
+        tab: activeTab,
+        referrerHost,
+        utmSource,
+        deviceType,
+        language,
+        isAuthenticated,
+      });
+      void recordVisitorEventToCloud(eventPayload);
+    }
+
+    const sendPresence = () => {
+      if (document.visibilityState === 'hidden') return;
+      const presencePayload = buildVisitorPresenceWritePayload({
+        sessionId,
+        visitorId,
+        pathname: normalizedPath.split('?')[0] || '/',
+        search: normalizedPath.includes('?') ? normalizedPath.slice(normalizedPath.indexOf('?')) : '',
+        tab: activeTab,
+        referrerHost,
+        deviceType: detectDeviceType(window.innerWidth, navigator.userAgent || ''),
+        language,
+        isAuthenticated,
+      });
+      void upsertVisitorPresenceToCloud(presencePayload);
+    };
+
+    sendPresence();
+    const heartbeatId = window.setInterval(sendPresence, 60_000);
+    return () => window.clearInterval(heartbeatId);
+  }, [activeTab, selectedLessonId, language, isAuthenticated]);
 
   // Automatically sync currentUser changes to Cloud Firestore when connected via Firebase Auth
   useEffect(() => {

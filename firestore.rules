@@ -37,6 +37,16 @@ service cloud.firestore {
     //   - date: string (required, 1..40 chars)
     //   - category: string (required, 'update' | 'tip' | 'event')
     //   - author: string (required, 1..120 chars)
+    //
+    // Collection: visitor_events
+    // Document ID: {eventId} (8..128 safe token chars)
+    // Fields:
+    //   - id, visitorId, sessionId, dateKey, path, tab, referrerHost, utmSource, deviceType, language, isAuthenticated, createdAt (== request.time)
+    //
+    // Collection: visitor_presence
+    // Document ID: {sessionId} (8..128 safe token chars)
+    // Fields:
+    //   - sessionId, visitorId, path, tab, referrerHost, deviceType, language, isAuthenticated, lastSeen (== request.time)
     // ===============================================================
 
     // Helper Functions
@@ -164,10 +174,94 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    function isValidTokenId(token) {
+      return token is string &&
+        token.size() >= 8 &&
+        token.size() <= 128 &&
+        token.matches("^[a-zA-Z0-9_-]{8,128}$");
+    }
+
+    function isValidVisitorEvent(data, eventId) {
+      return data.keys().hasAll([
+          'id', 'visitorId', 'sessionId', 'dateKey', 'path', 'tab',
+          'referrerHost', 'utmSource', 'deviceType', 'language', 'isAuthenticated', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'visitorId', 'sessionId', 'dateKey', 'path', 'tab',
+          'referrerHost', 'utmSource', 'deviceType', 'language', 'isAuthenticated', 'createdAt'
+        ]) &&
+        data.id == eventId &&
+        isValidTokenId(data.id) &&
+        isValidTokenId(data.visitorId) &&
+        isValidTokenId(data.sessionId) &&
+        data.dateKey is string &&
+        data.dateKey.matches("^20[2-9][0-9]-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$") &&
+        data.path is string &&
+        data.path.size() >= 1 &&
+        data.path.size() <= 160 &&
+        data.path.matches("^/[a-zA-Z0-9_/?=&.%-]{0,159}$") &&
+        data.tab is string &&
+        data.tab.size() >= 1 &&
+        data.tab.size() <= 40 &&
+        data.tab.matches("^[a-z0-9_]{1,40}$") &&
+        data.referrerHost is string &&
+        data.referrerHost.size() >= 1 &&
+        data.referrerHost.size() <= 120 &&
+        data.utmSource is string &&
+        data.utmSource.size() >= 1 &&
+        data.utmSource.size() <= 80 &&
+        data.deviceType in ['desktop', 'mobile', 'tablet'] &&
+        data.language in ['pl', 'en'] &&
+        data.isAuthenticated is bool &&
+        data.createdAt == request.time;
+    }
+
+    function isValidVisitorPresence(data, sessionId) {
+      return data.keys().hasAll([
+          'sessionId', 'visitorId', 'path', 'tab', 'referrerHost',
+          'deviceType', 'language', 'isAuthenticated', 'lastSeen'
+        ]) &&
+        data.keys().hasOnly([
+          'sessionId', 'visitorId', 'path', 'tab', 'referrerHost',
+          'deviceType', 'language', 'isAuthenticated', 'lastSeen'
+        ]) &&
+        data.sessionId == sessionId &&
+        isValidTokenId(data.sessionId) &&
+        isValidTokenId(data.visitorId) &&
+        data.path is string &&
+        data.path.size() >= 1 &&
+        data.path.size() <= 160 &&
+        data.path.matches("^/[a-zA-Z0-9_/?=&.%-]{0,159}$") &&
+        data.tab is string &&
+        data.tab.size() >= 1 &&
+        data.tab.size() <= 40 &&
+        data.tab.matches("^[a-z0-9_]{1,40}$") &&
+        data.referrerHost is string &&
+        data.referrerHost.size() >= 1 &&
+        data.referrerHost.size() <= 120 &&
+        data.deviceType in ['desktop', 'mobile', 'tablet'] &&
+        data.language in ['pl', 'en'] &&
+        data.isAuthenticated is bool &&
+        data.lastSeen == request.time;
+    }
+
     match /announcements/{announcementId} {
       allow read: if isAuthenticated();
       allow create, update: if isAdmin() && isValidAnnouncement(request.resource.data);
       allow delete: if isAdmin();
+    }
+
+    match /visitor_events/{eventId} {
+      allow read, delete: if isAdmin();
+      allow create: if isValidVisitorEvent(request.resource.data, eventId);
+      allow update: if false;
+    }
+
+    match /visitor_presence/{sessionId} {
+      allow read, delete: if isAdmin();
+      allow create: if isValidVisitorPresence(request.resource.data, sessionId);
+      allow update: if isValidVisitorPresence(request.resource.data, sessionId) &&
+        request.resource.data.visitorId == resource.data.visitorId;
     }
   }
 }

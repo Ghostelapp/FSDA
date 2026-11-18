@@ -49,6 +49,43 @@
         "author": { "type": "string", "description": "Author display name." }
       },
       "required": ["id", "title", "content", "date", "category", "author"]
+    },
+    "VisitorEvent": {
+      "title": "VisitorEvent",
+      "description": "Anonymized pageview and referral telemetry event stored without PII for admin traffic analytics.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique event document ID." },
+        "visitorId": { "type": "string", "description": "Anonymous persistent browser visitor token." },
+        "sessionId": { "type": "string", "description": "Anonymous tab session token." },
+        "dateKey": { "type": "string", "description": "UTC/local calendar day in YYYY-MM-DD format." },
+        "path": { "type": "string", "description": "Normalized visited path starting with /." },
+        "tab": { "type": "string", "description": "Application tab or public route identifier." },
+        "referrerHost": { "type": "string", "description": "Normalized traffic source host (e.g. direct, wykop.pl, google.com)." },
+        "utmSource": { "type": "string", "description": "Optional UTM source tag or 'none'." },
+        "deviceType": { "type": "string", "enum": ["desktop", "mobile", "tablet"], "description": "Viewport device category." },
+        "language": { "type": "string", "enum": ["pl", "en"], "description": "Active UI language." },
+        "isAuthenticated": { "type": "boolean", "description": "Whether visitor had an active account session." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of the visit event." }
+      },
+      "required": ["id", "visitorId", "sessionId", "dateKey", "path", "tab", "referrerHost", "utmSource", "deviceType", "language", "isAuthenticated", "createdAt"]
+    },
+    "VisitorPresence": {
+      "title": "VisitorPresence",
+      "description": "Active anonymous tab heartbeat for real-time online visitor count and current route visibility.",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string", "description": "Anonymous tab session token." },
+        "visitorId": { "type": "string", "description": "Anonymous persistent browser visitor token." },
+        "path": { "type": "string", "description": "Current active path." },
+        "tab": { "type": "string", "description": "Current active route or tab." },
+        "referrerHost": { "type": "string", "description": "Initial traffic source host." },
+        "deviceType": { "type": "string", "enum": ["desktop", "mobile", "tablet"], "description": "Viewport device category." },
+        "language": { "type": "string", "enum": ["pl", "en"], "description": "Active UI language." },
+        "isAuthenticated": { "type": "boolean", "description": "Whether visitor had an active account session." },
+        "lastSeen": { "type": "string", "format": "date-time", "description": "Server timestamp of the latest heartbeat." }
+      },
+      "required": ["sessionId", "visitorId", "path", "tab", "referrerHost", "deviceType", "language", "isAuthenticated", "lastSeen"]
     }
   },
   "firestore": {
@@ -59,6 +96,14 @@
     "/announcements/{announcementId}": {
       "schema": { "$ref": "#/entities/Announcement" },
       "description": "Academy announcements readable by authenticated users and writable by admins."
+    },
+    "/visitor_events/{eventId}": {
+      "schema": { "$ref": "#/entities/VisitorEvent" },
+      "description": "Append-only anonymous visit telemetry events writable by visitors and readable/deletable only by administrators."
+    },
+    "/visitor_presence/{sessionId}": {
+      "schema": { "$ref": "#/entities/VisitorPresence" },
+      "description": "Live session heartbeat records writable by the active session and readable/deletable only by administrators."
     }
   }
 }
