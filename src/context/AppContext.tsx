@@ -39,7 +39,12 @@ import {
   GithubSyncResult,
   GithubProjectSubmitResult,
 } from '../utils/githubService';
-import { getProjectInteractiveExercise } from '../utils/codeRunner';
+import {
+  REQUIRED_QUIZ_SCORE,
+  evaluateLessonQuiz,
+  getProjectInteractiveExercise,
+  validateExerciseCode,
+} from '../utils/codeRunner';
 import {
   DEFAULT_ADSENSE_CONFIG,
   shouldShowAdsForUser,
@@ -68,6 +73,8 @@ import {
   canResetUserPassword,
   sanitizeImportedUser,
   createGuestUser,
+  classifyGoogleAuthError,
+  GoogleAuthErrorClassification,
 } from '../utils/authValidation';
 import {
   DEFAULT_REMINDER_SETTINGS,
@@ -206,7 +213,11 @@ interface AppContextType {
   toggleTheme: () => void;
   setActiveTab: (tab: AppTab, lessonId?: string, projectId?: string) => void;
   loginUser: (email: string, password?: string) => { success: boolean; error?: string };
-  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{
+    success: boolean;
+    error?: string;
+    classification?: GoogleAuthErrorClassification;
+  }>;
   syncNowToCloud: () => Promise<boolean>;
   registerUser: (params: {
     name: string;
@@ -1632,7 +1643,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setAllUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
     setLivesInfo(calculateRegeneratedLives(updatedUser));
     if ((updatedUser.role !== 'admin' && activeTab === 'admin') || activeTab === 'landing') {
-      setActiveTabState('dashboard');
+      setActiveTab('dashboard');
     }
     soundManager.playSuccess();
     showToast(
@@ -1642,8 +1653,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { success: true };
   };
 
-  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+  const loginWithGoogle = async (): Promise<{
+    success: boolean;
+    error?: string;
+    classification?: GoogleAuthErrorClassification;
+  }> => {
     const isEn = languageRef.current === 'en';
+    const lang = languageRef.current;
     try {
       setIsSyncingCloud(true);
       const fbUser = await signInWithGoogleFirebase();
@@ -1661,7 +1677,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return [cloudProfile, ...prev];
       });
       if (activeTab === 'landing') {
-        setActiveTabState('dashboard');
+        setActiveTab('dashboard');
       }
       soundManager.playLevelUp();
       showToast(
@@ -1672,39 +1688,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       );
       return { success: true };
     } catch (err) {
-      const msg = err instanceof Error ? err.message : (isEn ? 'Failed to sign in with Google.' : 'Nie udało się zalogować przez Google.');
-      const errCode = (err as { code?: string })?.code || '';
-      const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'current-domain';
+      const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+      const classification = classifyGoogleAuthError(err, currentHostname, lang);
 
-      if (msg.includes('popup-closed-by-user') || errCode === 'auth/popup-closed-by-user') {
-        return {
-          success: false,
-          error: isEn
-            ? 'The Google sign-in window was closed before completing authorization.'
-            : 'Okno logowania Google zostało zamknięte przed zakończeniem autoryzacji.',
-        };
-      }
-
-      if (msg.includes('unauthorized-domain') || errCode === 'auth/unauthorized-domain') {
-        const domainError = isEn
-          ? `Domain "${currentHostname}" requires authorization in Firebase Console (Authentication -> Settings -> Authorized domains -> Add domain). You can also sign in or register with email & password below.`
-          : `Domena "${currentHostname}" wymaga autoryzacji w Firebase Console (Authentication -> Settings -> Authorized domains -> Add domain). Możesz też od razu zalogować się lub założyć konto przez e-mail i hasło poniżej.`;
-        showToast(
-          isEn
-            ? `Domain ${currentHostname} is not yet listed under Authorized domains in Firebase. Use email login or add the domain in Firebase Console.`
-            : `Domena ${currentHostname} nie jest jeszcze na liście Authorized domains w Firebase. Użyj logowania e-mail lub dodaj domenę w konsoli Firebase.`,
-          'danger'
-        );
-        return {
-          success: false,
-          error: `Firebase Google Auth error (auth/unauthorized-domain): ${domainError}`,
-        };
-      }
-
-      showToast(isEn ? `Google sign-in error: ${msg}` : `Błąd logowania Google: ${msg}`, 'danger');
+      showToast(classification.toastMessage, 'danger');
       return {
         success: false,
-        error: isEn ? `Firebase Google Auth error: ${msg}` : `Błąd autoryzacji Firebase Google: ${msg}`,
+        error: classification.userMessage,
+        classification,
       };
     } finally {
       setIsSyncingCloud(false);
@@ -1764,7 +1755,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsAuthenticated(true);
     setLivesInfo(calculateRegeneratedLives(newUser));
     if ((newUser.role !== 'admin' && activeTab === 'admin') || activeTab === 'landing') {
-      setActiveTabState('dashboard');
+      setActiveTab('dashboard');
     }
 
     soundManager.playLevelUp();
@@ -2080,7 +2071,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser(guest);
     setLivesInfo(calculateRegeneratedLives(guest));
     if (activeTab === 'admin') {
-      setActiveTabState('dashboard');
+      setActiveTab('dashboard');
     }
     showToast(
       isEn ? `Signed out (${prevName}). Now browsing in Guest mode.` : `Wylogowano z konta (${prevName}). Jesteś teraz w trybie gościa.`,
@@ -2088,17 +2079,72 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
   };
 
-  const completeLesson = (lessonId: string, xpReward: number, answers?: Record<string, number>) => {
+  const completeLesson = (lessonId: string, _xpReward: number, answers?: Record<string, number>) => {
     const lang = languageRef.current;
     const isEn = lang === 'en';
     const lessonObj = allLessons.find((l) => l.id === lessonId);
-    const lessonMinutes = lessonObj?.durationMinutes || 25;
+    if (!lessonObj) {
+      showToast(
+        isEn ? 'Invalid lesson identifier.' : 'Nieprawidłowy identyfikator lekcji.',
+        'danger'
+      );
+      return;
+    }
+
+    if (currentUser.completedLessons.includes(lessonId)) {
+      return;
+    }
+
+    const savedExerciseCode = currentUser.savedCode[lessonObj.interactiveExercise.id];
+    const exerciseValidation = savedExerciseCode
+      ? validateExerciseCode(lessonObj.interactiveExercise, savedExerciseCode, lang)
+      : null;
+    if (!exerciseValidation?.allPassed) {
+      showToast(
+        isEn
+          ? 'Pass the interactive coding exercise in the editor before completing the lesson.'
+          : 'Najpierw rozwiąż i zalicz ćwiczenie praktyczne w edytorze kodu.',
+        'danger'
+      );
+      return;
+    }
+
+    const hasSubmittedAnswers =
+      Boolean(answers) && typeof answers === 'object' && Object.keys(answers).length > 0;
+    const quizEval = hasSubmittedAnswers
+      ? evaluateLessonQuiz(lessonObj, answers, REQUIRED_QUIZ_SCORE)
+      : null;
+    if (hasSubmittedAnswers && !quizEval?.valid) {
+      showToast(
+        isEn ? 'Please answer all quiz questions.' : 'Odpowiedz na wszystkie pytania quizu.',
+        'danger'
+      );
+      return;
+    }
+
+    const verifiedQuizScore = Math.max(
+      quizEval?.valid ? quizEval.scorePercent : 0,
+      currentUser.quizScores[lessonId] || 0
+    );
+    if (verifiedQuizScore < REQUIRED_QUIZ_SCORE) {
+      showToast(
+        isEn
+          ? `Pass the lesson quiz with at least ${REQUIRED_QUIZ_SCORE}% before completing the lesson.`
+          : `Zalicz quiz sprawdzający na co najmniej ${REQUIRED_QUIZ_SCORE}%, aby ukończyć lekcję.`,
+        'danger'
+      );
+      return;
+    }
+
+    const canonicalXpReward = lessonObj.xpReward;
+    const lessonMinutes = lessonObj.durationMinutes || 25;
 
     setCurrentUser((prev) => {
       const alreadyCompleted = prev.completedLessons.includes(lessonId);
-      const newCompleted = alreadyCompleted ? prev.completedLessons : [...prev.completedLessons, lessonId];
-      const addedXp = alreadyCompleted ? 0 : xpReward;
-      const newXp = prev.xp + addedXp;
+      if (alreadyCompleted) return prev;
+
+      const newCompleted = [...prev.completedLessons, lessonId];
+      const newXp = prev.xp + canonicalXpReward;
       const levelInfo = calculateLevel(newXp, lang);
       const todayStr = new Date().toISOString().split('T')[0];
       const localTodayKey = formatLocalDateKey();
@@ -2115,6 +2161,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         todaySpentMinutes: prevTodayMinutes + lessonMinutes,
         lastGoalDate: localTodayKey,
         completedLessons: newCompleted,
+        quizScores: {
+          ...prev.quizScores,
+          [lessonId]: Math.max(verifiedQuizScore, prev.quizScores[lessonId] || 0),
+        },
       };
 
       // Check badges
@@ -2132,10 +2182,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           isEn ? `Leveled up to Level ${levelInfo.level}: ${levelInfo.title}!` : `Awans na Poziom ${levelInfo.level}: ${levelInfo.title}!`,
           'success'
         );
-      } else if (!alreadyCompleted) {
+      } else {
         soundManager.playSuccess();
         showToast(
-          isEn ? `Congrats! Lesson completed (+${xpReward} XP)` : `Gratulacje! Ukończono lekcję (+${xpReward} XP)`,
+          isEn
+            ? `Congrats! Lesson completed (+${canonicalXpReward} XP)`
+            : `Gratulacje! Ukończono lekcję (+${canonicalXpReward} XP)`,
           'success'
         );
       }
@@ -2145,7 +2197,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return updatedUser;
     });
     if (firebaseUid && isCloudConnected) {
-      void completeLessonInCloud(lessonId, answers).catch(() => {
+      const cloudAnswers = quizEval?.valid ? answers : undefined;
+      void completeLessonInCloud(lessonId, cloudAnswers).catch(() => {
         showToast(
           isEn ? 'Failed to confirm lesson completion in cloud.' : 'Nie udało się potwierdzić zaliczenia lekcji w chmurze.',
           'danger'
@@ -2154,12 +2207,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const saveQuizScore = (lessonId: string, scorePercent: number, answers: Record<string, number>) => {
+  const saveQuizScore = (lessonId: string, _scorePercent: number, answers: Record<string, number>) => {
     const isEn = languageRef.current === 'en';
+    const lessonObj = allLessons.find((l) => l.id === lessonId);
+    if (!lessonObj) return;
+
+    const evaluation = evaluateLessonQuiz(lessonObj, answers, REQUIRED_QUIZ_SCORE);
+    if (!evaluation.valid) {
+      showToast(
+        isEn ? 'Invalid quiz answers submitted.' : 'Przesłano nieprawidłowe odpowiedzi quizu.',
+        'danger'
+      );
+      return;
+    }
+
+    const canonicalScore = evaluation.scorePercent;
+
     setCurrentUser((prev) => {
       const updatedScores = {
         ...prev.quizScores,
-        [lessonId]: Math.max(scorePercent, prev.quizScores[lessonId] || 0),
+        [lessonId]: Math.max(canonicalScore, prev.quizScores[lessonId] || 0),
       };
 
       const updatedUser: User = {
@@ -2172,7 +2239,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updatedUser.unlockedBadges = [...(updatedUser.unlockedBadges || []), ...newBadges];
         soundManager.playBadgeUnlocked();
         showToast(isEn ? 'Unlocked a knowledge quiz badge!' : 'Zdobyto odznakę za test wiedzy!', 'badge');
-      } else if (scorePercent >= 80) {
+      } else if (canonicalScore >= REQUIRED_QUIZ_SCORE) {
         soundManager.playSuccess();
       }
 
@@ -2190,7 +2257,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const verifyLessonExercise = async (exerciseId: string, code: { html: string; css: string; js: string }) => {
-    const isEn = languageRef.current === 'en';
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
+    const lessonObj = allLessons.find((l) => l.interactiveExercise.id === exerciseId);
+    if (!lessonObj) return false;
+
+    const localValidation = validateExerciseCode(lessonObj.interactiveExercise, code, lang);
+    if (!localValidation.allPassed) {
+      return false;
+    }
+
     if (!firebaseUid || !isCloudConnected) return true;
     try {
       await verifyLessonExerciseInCloud(exerciseId, code);
@@ -2215,14 +2291,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
-  const completeProject = (projectId: string, xpReward: number, code?: { html: string; css: string; js: string }) => {
+  const completeProject = (projectId: string, _xpReward: number, code?: { html: string; css: string; js: string }) => {
     const lang = languageRef.current;
     const isEn = lang === 'en';
+    const projectObj = allProjects.find((p) => p.id === projectId);
+    if (!projectObj) return;
+
+    const projectExercise = getProjectInteractiveExercise(projectObj, lang);
+    const candidateCode = code || currentUser.savedCode[projectExercise.id];
+    if (!candidateCode || !validateExerciseCode(projectExercise, candidateCode, lang).allPassed) {
+      showToast(
+        isEn
+          ? 'Project code does not pass all verification checks yet.'
+          : 'Kod projektu nie spełnia jeszcze wszystkich testów weryfikacyjnych.',
+        'danger'
+      );
+      return;
+    }
+
+    const canonicalXpReward = projectObj.xpReward;
+
     setCurrentUser((prev) => {
       const alreadyCompleted = prev.completedProjects.includes(projectId);
-      const newCompleted = alreadyCompleted ? prev.completedProjects : [...prev.completedProjects, projectId];
-      const addedXp = alreadyCompleted ? 0 : xpReward;
-      const newXp = prev.xp + addedXp;
+      if (alreadyCompleted) return prev;
+      const newCompleted = [...prev.completedProjects, projectId];
+      const newXp = prev.xp + canonicalXpReward;
       const levelInfo = calculateLevel(newXp, lang);
 
       const updatedUser: User = {
@@ -2241,21 +2334,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       showToast(
-        isEn ? `Awesome! Project submitted and passed (+${xpReward} XP)` : `Wspaniale! Projekt oddany i zaliczony (+${xpReward} XP)`,
+        isEn
+          ? `Awesome! Project submitted and passed (+${canonicalXpReward} XP)`
+          : `Wspaniale! Projekt oddany i zaliczony (+${canonicalXpReward} XP)`,
         'success'
       );
       setAllUsers((users) => users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
       return updatedUser;
     });
     if (firebaseUid && isCloudConnected) {
-      if (!code) {
-        showToast(
-          isEn ? 'Missing project code for server verification.' : 'Brakuje kodu projektu do weryfikacji serwerowej.',
-          'danger'
-        );
-        return;
-      }
-      void completeProjectInCloud(projectId, code).catch(() => {
+      void completeProjectInCloud(projectId, candidateCode).catch(() => {
         showToast(
           isEn ? 'Server did not confirm project completion.' : 'Serwer nie potwierdził zaliczenia projektu.',
           'danger'

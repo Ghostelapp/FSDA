@@ -61,6 +61,7 @@ export default defineConfig(() => {
           globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,webp,svg,woff,woff2,json}'],
           globIgnores: ['promo/**', 'play-store/**'],
           navigateFallbackDenylist: [
+            /^\/__\//,
             /^\/promo\//,
             /^\/play-store\//,
             /^\/\.well-known\//,

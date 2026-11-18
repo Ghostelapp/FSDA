@@ -4,7 +4,13 @@ import { useApp } from '../context/AppContext';
 import { CodeBlock } from './CodeBlock';
 import { CodeEditor } from './CodeEditor';
 import { RichInlineText, renderInlineTokens } from './RichInlineText';
-import { ValidationSummary } from '../utils/codeRunner';
+import {
+  REQUIRED_QUIZ_SCORE,
+  ValidationSummary,
+  checkLessonCompletionEligibility,
+  evaluateLessonQuiz,
+  validateExerciseCode,
+} from '../utils/codeRunner';
 import {
   parseInlineTokens,
   parseTheoryBlocks,
@@ -70,6 +76,14 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
   const [showOptionalTasks, setShowOptionalTasks] = useState<boolean>(false);
 
   // Verification gates state
+  const [editorCodeDraft, setEditorCodeDraft] = useState<{ html: string; css: string; js: string }>(() => {
+    const saved = currentUser.savedCode[lesson.interactiveExercise.id];
+    return {
+      html: saved?.html ?? lesson.interactiveExercise.starterCode.html,
+      css: saved?.css ?? lesson.interactiveExercise.starterCode.css,
+      js: saved?.js ?? lesson.interactiveExercise.starterCode.js,
+    };
+  });
   const [exercisePassed, setExercisePassed] = useState(false);
   const [lastValidation, setLastValidation] = useState<ValidationSummary | null>(null);
   const [verificationBanner, setVerificationBanner] = useState<{
@@ -84,13 +98,27 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
     setQuizScore(null);
     setIndependentHintVisible(false);
     setVerificationBanner(null);
-    setLastValidation(null);
     setStepFilter('all');
     setShowWalkthroughSteps(false);
     setShowOptionalTasks(false);
 
+    const saved = currentUser.savedCode[lesson.interactiveExercise.id];
+    const initialCode = {
+      html: saved?.html ?? lesson.interactiveExercise.starterCode.html,
+      css: saved?.css ?? lesson.interactiveExercise.starterCode.css,
+      js: saved?.js ?? lesson.interactiveExercise.starterCode.js,
+    };
+    setEditorCodeDraft(initialCode);
+
     const alreadyCompleted = currentUser.completedLessons.includes(lesson.id);
-    setExercisePassed(alreadyCompleted);
+    if (saved) {
+      const savedValidation = validateExerciseCode(lesson.interactiveExercise, initialCode, language);
+      setLastValidation(savedValidation);
+      setExercisePassed(alreadyCompleted || savedValidation.allPassed);
+    } else {
+      setLastValidation(null);
+      setExercisePassed(alreadyCompleted);
+    }
 
     const existingScore = currentUser.quizScores[lesson.id];
     if (existingScore !== undefined) {
@@ -142,6 +170,10 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
 
   const handleSelectQuizOption = (questionId: string, optionIndex: number) => {
     if (quizSubmitted) return;
+    const question = lesson.quiz.find((q) => q.id === questionId);
+    if (!question || !Number.isInteger(optionIndex) || optionIndex < 0 || optionIndex >= question.options.length) {
+      return;
+    }
     if (!currentUser.isPro && currentLives <= 0) {
       setIsLivesModalOpen(true);
       return;
@@ -150,24 +182,24 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
   };
 
   const handleSubmitQuiz = () => {
-    if (lesson.quiz.length === 0) return;
+    if (quizSubmitted || lesson.quiz.length === 0) return;
     if (!currentUser.isPro && currentLives <= 0) {
       setIsLivesModalOpen(true);
       return;
     }
 
-    let correctCount = 0;
-    lesson.quiz.forEach((q) => {
-      if (quizAnswers[q.id] === q.correctAnswer) {
-        correctCount++;
-      }
-    });
-    const percentage = Math.round((correctCount / lesson.quiz.length) * 100);
-    setQuizScore(percentage);
-    setQuizSubmitted(true);
-    saveQuizScore(lesson.id, percentage, quizAnswers);
+    const evaluation = evaluateLessonQuiz(lesson, quizAnswers, REQUIRED_QUIZ_SCORE);
+    if (!evaluation.valid) return;
 
-    if (percentage < 100 && !currentUser.isPro) {
+    const bestScore = Math.max(evaluation.scorePercent, currentUser.quizScores[lesson.id] ?? 0);
+    setQuizScore(bestScore);
+    setQuizSubmitted(true);
+    if (bestScore >= REQUIRED_QUIZ_SCORE) {
+      setVerificationBanner(null);
+    }
+    saveQuizScore(lesson.id, evaluation.scorePercent, quizAnswers);
+
+    if (evaluation.scorePercent < 100 && !currentUser.isPro) {
       loseLife(
         isEn
           ? `Incorrect answer in lesson quiz: ${lesson.title}`
@@ -185,25 +217,50 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
     setQuizSubmitted(false);
   };
 
-  const quizPassed = (quizScore !== null && quizScore >= 50) || isCompleted;
-  const canCompleteLesson = isCompleted || (exercisePassed && quizPassed);
+  const eligibility = checkLessonCompletionEligibility({
+    isExercisePassed: exercisePassed,
+    quizScore: quizScore ?? undefined,
+    requiredQuizScore: REQUIRED_QUIZ_SCORE,
+    language,
+  });
+  const quizPassed = eligibility.isQuizPassed || isCompleted;
+  const canCompleteLesson = isCompleted || eligibility.canComplete;
 
   const handleVerifyAndComplete = () => {
     if (isCompleted) return;
 
+    // Re-verify live editor code immediately before completing to prevent post-pass code reset/deletion bypass
+    const liveCodeValidation = validateExerciseCode(lesson.interactiveExercise, editorCodeDraft, language);
+    const liveExercisePassed = exercisePassed && liveCodeValidation.allPassed;
+    if (!liveCodeValidation.allPassed) {
+      setExercisePassed(false);
+      setLastValidation(liveCodeValidation);
+    }
+
+    const currentQuizEval = evaluateLessonQuiz(lesson, quizAnswers, REQUIRED_QUIZ_SCORE);
+    const effectiveQuizScore = currentQuizEval.valid
+      ? Math.max(currentQuizEval.scorePercent, quizScore ?? 0)
+      : (quizScore ?? 0);
+    const liveEligibility = checkLessonCompletionEligibility({
+      isExercisePassed: liveExercisePassed,
+      quizScore: effectiveQuizScore,
+      requiredQuizScore: REQUIRED_QUIZ_SCORE,
+      language,
+    });
+
     const missingParts: string[] = [];
-    if (!exercisePassed) {
+    if (!liveEligibility.isExercisePassed) {
       missingParts.push(
         isEn
           ? 'passing the hands-on exercise in the code editor (all tests green)'
           : 'zaliczenie ćwiczenia praktycznego w edytorze kodu (wszystkie testy na zielono)'
       );
     }
-    if (!quizPassed) {
+    if (!liveEligibility.isQuizPassed) {
       missingParts.push(
         isEn
-          ? 'completing the knowledge check quiz with at least 50%'
-          : 'rozwiązanie quizu sprawdzającego z wynikiem minimum 50%'
+          ? `completing the knowledge check quiz with at least ${REQUIRED_QUIZ_SCORE}%`
+          : `rozwiązanie quizu sprawdzającego z wynikiem minimum ${REQUIRED_QUIZ_SCORE}%`
       );
     }
 
@@ -217,7 +274,12 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
       return;
     }
 
-    completeLesson(lesson.id, lesson.xpReward, quizAnswers);
+    saveCodeSnippet(lesson.interactiveExercise.id, editorCodeDraft);
+    completeLesson(
+      lesson.id,
+      lesson.xpReward,
+      currentQuizEval.valid ? quizAnswers : undefined
+    );
     setVerificationBanner({
       type: 'success',
       message: isEn
@@ -978,8 +1040,12 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
             {/* Main Interactive Code Editor */}
             <CodeEditor
               exercise={lesson.interactiveExercise}
-              savedCode={currentUser.savedCode[lesson.interactiveExercise.id]}
-              onSave={(code) => saveCodeSnippet(lesson.interactiveExercise.id, code)}
+              savedCode={editorCodeDraft}
+              onCodeChange={(nextCode) => setEditorCodeDraft(nextCode)}
+              onSave={(code) => {
+                setEditorCodeDraft(code);
+                saveCodeSnippet(lesson.interactiveExercise.id, code);
+              }}
               onValidationChange={(result) => {
                 setLastValidation(result);
                 if (result.allPassed) {
@@ -990,11 +1056,14 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
                 }
               }}
               onSuccess={async (code) => {
+                setEditorCodeDraft(code);
                 saveCodeSnippet(lesson.interactiveExercise.id, code);
                 const verified = await verifyLessonExercise(lesson.interactiveExercise.id, code);
                 if (verified) {
                   setExercisePassed(true);
                   setVerificationBanner(null);
+                } else {
+                  setExercisePassed(false);
                 }
               }}
             />
@@ -1141,8 +1210,8 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
                   <div>
                     <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
                       {isEn
-                        ? 'Knowledge verification • Min. 50% required'
-                        : 'Weryfikacja wiedzy • Wymagane min. 50%'}
+                        ? `Knowledge verification • Min. ${REQUIRED_QUIZ_SCORE}% required`
+                        : `Weryfikacja wiedzy • Wymagane min. ${REQUIRED_QUIZ_SCORE}%`}
                     </span>
                     <h2 className="text-lg sm:text-xl font-bold text-white">
                       {isEn
@@ -1155,7 +1224,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
                 {quizScore !== null && (
                   <div
                     className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-2 tabular-nums ${
-                      quizScore >= 50
+                      quizScore >= REQUIRED_QUIZ_SCORE
                         ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
                         : 'bg-rose-950/50 border-rose-500/40 text-rose-300'
                     }`}
@@ -1335,7 +1404,9 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
                     )}
                     <div>
                       <p className="font-bold">
-                        {isEn ? '2. Checkpoint quiz (min. 50%)' : '2. Quiz sprawdzający (min. 50%)'}
+                        {isEn
+                          ? `2. Checkpoint quiz (min. ${REQUIRED_QUIZ_SCORE}%)`
+                          : `2. Quiz sprawdzający (min. ${REQUIRED_QUIZ_SCORE}%)`}
                       </p>
                       <p className="text-[11px] opacity-80">
                         {quizPassed
@@ -1344,8 +1415,8 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
                             : `Quiz zaliczony (${quizScore ?? 100}%)`
                           : quizScore !== null
                           ? isEn
-                            ? `Score ${quizScore}% — min. 50% required`
-                            : `Wynik ${quizScore}% — wymagane min. 50%`
+                            ? `Score ${quizScore}% — min. ${REQUIRED_QUIZ_SCORE}% required`
+                            : `Wynik ${quizScore}% — wymagane min. ${REQUIRED_QUIZ_SCORE}%`
                           : isEn
                           ? 'Answer the questions above and click "Check answers"'
                           : 'Odpowiedz na pytania powyżej i kliknij "Sprawdź odpowiedzi"'}

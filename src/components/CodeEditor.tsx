@@ -28,6 +28,7 @@ interface CodeEditorProps {
   exercise: InteractiveExercise;
   onSuccess?: (code: { html: string; css: string; js: string }) => void;
   onValidationChange?: (result: ValidationSummary) => void;
+  onCodeChange?: (code: { html: string; css: string; js: string }) => void;
   savedCode?: { html: string; css: string; js: string };
   onSave?: (code: { html: string; css: string; js: string }) => void;
 }
@@ -36,6 +37,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   exercise,
   onSuccess,
   onValidationChange,
+  onCodeChange,
   savedCode,
   onSave,
 }) => {
@@ -69,11 +71,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
   // Synchronize if exercise changes
   useEffect(() => {
-    setCode({
+    const initialCode = {
       html: savedCode?.html ?? exercise.starterCode.html,
       css: savedCode?.css ?? exercise.starterCode.css,
       js: savedCode?.js ?? exercise.starterCode.js,
-    });
+    };
+    setCode(initialCode);
     setConsoleLogs([]);
     setValidationResult(null);
     setActiveFileTab(detectPrimaryExerciseTab(exercise));
@@ -117,6 +120,22 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // Live non-punitive checklist so students see progress as they type (like Mimo/Codecademy/freeCodeCamp)
   const liveChecklist = validateExerciseCode(exercise, code, language);
 
+  const applyCodeUpdate = (nextCode: { html: string; css: string; js: string }) => {
+    setCode(nextCode);
+    if (onCodeChange) {
+      onCodeChange(nextCode);
+    }
+    const nextCheck = validateExerciseCode(exercise, nextCode, language);
+    if (!nextCheck.allPassed) {
+      if (validationResult?.allPassed) {
+        setValidationResult(nextCheck);
+      }
+      if (onValidationChange) {
+        onValidationChange(nextCheck);
+      }
+    }
+  };
+
   const handleRunAndValidate = () => {
     if (!currentUser.isPro && currentLives <= 0) {
       setIsLivesModalOpen(true);
@@ -146,22 +165,37 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   };
 
   const confirmResetCode = () => {
-    setCode({
+    const starter = {
       html: exercise.starterCode.html,
       css: exercise.starterCode.css,
       js: exercise.starterCode.js,
-    });
+    };
+    setCode(starter);
+    if (onCodeChange) {
+      onCodeChange(starter);
+    }
+    if (onSave) {
+      onSave(starter);
+    }
+    const resetCheck = validateExerciseCode(exercise, starter, language);
     setValidationResult(null);
+    if (onValidationChange) {
+      onValidationChange(resetCheck);
+    }
     setConsoleLogs([]);
     setShowResetModal(false);
   };
 
   const handleApplySolution = () => {
-    setCode({
+    const solution = {
       html: exercise.solutionCode.html,
       css: exercise.solutionCode.css,
       js: exercise.solutionCode.js,
-    });
+    };
+    setCode(solution);
+    if (onCodeChange) {
+      onCodeChange(solution);
+    }
     setActiveFileTab(primaryTab);
     setShowSolutionModal(false);
   };
@@ -176,7 +210,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       const currentVal = textarea.value;
 
       const newVal = currentVal.substring(0, start) + '  ' + currentVal.substring(end);
-      setCode((prev) => ({ ...prev, [activeFileTab]: newVal }));
+      applyCodeUpdate({ ...code, [activeFileTab]: newVal });
 
       // Restore cursor position after state updates
       setTimeout(() => {
@@ -538,7 +572,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
               <textarea
                 ref={textareaRef}
                 value={currentCodeContent}
-                onChange={(e) => setCode({ ...code, [activeFileTab]: e.target.value })}
+                onChange={(e) => applyCodeUpdate({ ...code, [activeFileTab]: e.target.value })}
                 onKeyDown={handleKeyDown}
                 onScroll={handleEditorScroll}
                 spellCheck={false}

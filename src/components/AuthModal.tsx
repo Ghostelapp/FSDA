@@ -6,7 +6,13 @@ import {
   verifyAntiBotSubmission,
   AntiBotChallenge,
 } from '../utils/antiBot';
-import { getPasswordStrength, validateEmailFormat } from '../utils/authValidation';
+import {
+  AuthModalMode,
+  GoogleAuthErrorClassification,
+  getPasswordStrength,
+  validateEmailFormat,
+} from '../utils/authValidation';
+import { activeFirebaseConfig } from '../firebase';
 import { GithubSyncCard } from './GithubSyncCard';
 import {
   X,
@@ -31,9 +37,10 @@ import {
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialMode?: AuthModalMode;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMode }) => {
   const {
     language,
     currentUser,
@@ -50,8 +57,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   } = useApp();
   const isEn = language === 'en';
 
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'profile'>(() =>
-    isAuthenticated ? 'profile' : 'login'
+  const [mode, setMode] = useState<AuthModalMode>(() =>
+    initialMode ?? (isAuthenticated ? 'profile' : 'login')
   );
   const wasOpenRef = React.useRef(false);
 
@@ -79,15 +86,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   // Status & Feedback
   const [errorMessage, setErrorMessage] = useState('');
+  const [googleAuthIssue, setGoogleAuthIssue] = useState<GoogleAuthErrorClassification | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
 
   // Reset form timer when modal opens or mode changes
   useEffect(() => {
     if (isOpen && !wasOpenRef.current) {
-      setMode(isAuthenticated ? 'profile' : 'login');
+      setMode(initialMode ?? (isAuthenticated ? 'profile' : 'login'));
     }
     wasOpenRef.current = isOpen;
-  }, [isOpen, isAuthenticated]);
+  }, [isOpen, initialMode, isAuthenticated]);
 
   useEffect(() => {
     if (isOpen) {
@@ -97,6 +105,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       setSliderProgress(0);
       setIsHumanConfirmed(false);
       setErrorMessage('');
+      setGoogleAuthIssue(null);
       setSuccessMessage('');
       setProfileName(currentUser.name);
       setProfileBio(currentUser.bio || '');
@@ -128,6 +137,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setGoogleAuthIssue(null);
     setSuccessMessage('');
 
     if (!email.trim() || !password.trim()) {
@@ -149,12 +159,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   const handleGoogleLogin = async () => {
     setErrorMessage('');
+    setGoogleAuthIssue(null);
     setSuccessMessage('');
     const res = await loginWithGoogle();
     if (res.success) {
       onClose();
-    } else if (res.error) {
-      setErrorMessage(res.error);
+    } else {
+      if (res.classification) {
+        setGoogleAuthIssue(res.classification);
+      }
+      if (res.error) {
+        setErrorMessage(res.error);
+      }
     }
   };
 
@@ -315,6 +331,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
         className={`w-full ${mode === 'profile' ? 'max-w-xl' : 'max-w-lg'} rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -325,7 +344,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-white leading-tight">
+              <h2 id="auth-modal-title" className="text-base sm:text-lg font-bold text-white leading-tight">
                 {mode === 'login' && (isEn ? 'Sign In to the Academy' : 'Logowanie do Akademii')}
                 {mode === 'register' &&
                   (isEn ? 'Register with Anti-Bot Shield' : 'Rejestracja z Ochroną Anty-Bot')}
@@ -526,81 +545,106 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           )}
 
           {/* Feedback Messages */}
-          {errorMessage && (
-            <div className="p-3.5 rounded-2xl bg-rose-950/50 border border-rose-500/40 text-xs text-rose-200 space-y-2.5 animate-in slide-in-from-top-1">
+          {(errorMessage || googleAuthIssue) && (
+            <div
+              role="alert"
+              className={`p-3.5 rounded-2xl text-xs space-y-2.5 animate-in slide-in-from-top-1 border ${
+                googleAuthIssue?.isDomainConfigIssue
+                  ? 'bg-amber-950/40 border-amber-500/40 text-amber-100'
+                  : 'bg-rose-950/50 border-rose-500/40 text-rose-200'
+              }`}
+            >
               <div className="flex items-start gap-2.5">
-                <ShieldAlert className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
-                <div className="flex-1 leading-relaxed">{errorMessage}</div>
-              </div>
-              {errorMessage.includes('unauthorized-domain') && (
-                <div className="rounded-xl bg-slate-950/90 border border-rose-500/30 p-3 space-y-2 text-[11px] text-slate-300">
-                  <p className="font-bold text-amber-300">
-                    {isEn
-                      ? 'How to authorize Google sign-in for this domain (1 min):'
-                      : 'Jak odblokować logowanie Google dla tej domeny (1 minuta):'}
-                  </p>
-                  <ol className="list-decimal list-inside space-y-1 text-slate-300">
-                    <li>
-                      {isEn ? 'Open ' : 'Otwórz '}
-                      <a
-                        href="https://console.firebase.google.com/project/gen-lang-client-0198524417/authentication/settings"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-400 hover:text-indigo-300 underline font-semibold"
-                      >
-                        Firebase Console → Authentication → Settings → Authorized domains
-                      </a>
-                    </li>
-                    <li>
-                      {isEn ? (
-                        <>
-                          Click <strong>Add domain</strong> and paste the current app hostname:
-                        </>
-                      ) : (
-                        <>
-                          Kliknij <strong>Add domain</strong> i wklej aktualną domenę aplikacji:
-                        </>
-                      )}
-                    </li>
-                  </ol>
-                  <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 font-mono text-[11px] text-emerald-300">
-                    <span className="truncate">
-                      {typeof window !== 'undefined' ? window.location.hostname : 'localhost'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const host = typeof window !== 'undefined' ? window.location.hostname : '';
-                        if (host && navigator.clipboard) {
-                          void navigator.clipboard.writeText(host);
-                          setSuccessMessage(isEn ? `Copied domain: ${host}` : `Skopiowano domenę: ${host}`);
-                        }
-                      }}
-                      className="shrink-0 px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-sans font-semibold text-[10px]"
-                    >
-                      {isEn ? 'Copy domain' : 'Kopiuj domenę'}
-                    </button>
-                  </div>
-                  <div className="pt-1 flex items-center justify-between gap-2 border-t border-slate-800">
-                    <span className="text-slate-400">
-                      {isEn
-                        ? "Don't want to wait? Register a free email account below:"
-                        : 'Nie chcesz czekać? Załóż darmowe konto e-mail poniżej:'}
-                    </span>
-                    {mode !== 'register' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMode('register');
-                          setErrorMessage('');
-                        }}
-                        className="shrink-0 px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-300 font-semibold"
-                      >
-                        {isEn ? 'Email sign-up →' : 'Rejestracja e-mail →'}
-                      </button>
-                    )}
-                  </div>
+                <ShieldAlert
+                  className={`h-4 w-4 shrink-0 mt-0.5 ${
+                    googleAuthIssue?.isDomainConfigIssue ? 'text-amber-400' : 'text-rose-400'
+                  }`}
+                />
+                <div className="flex-1 space-y-1 leading-relaxed">
+                  {googleAuthIssue && (
+                    <p className="font-bold text-white">{googleAuthIssue.userTitle}</p>
+                  )}
+                  <p>{googleAuthIssue ? googleAuthIssue.userMessage : errorMessage}</p>
                 </div>
+              </div>
+
+              {googleAuthIssue?.recommendEmailAuth && mode !== 'register' && (
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/10">
+                  <span className="text-[11px] text-slate-300">
+                    {isEn ? 'Create an instant email account instead:' : 'Załóż darmowe konto e-mail poniżej:'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('register');
+                      setErrorMessage('');
+                      setGoogleAuthIssue(null);
+                    }}
+                    className="shrink-0 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold cursor-pointer"
+                  >
+                    {isEn ? 'Register free →' : 'Rejestracja e-mail →'}
+                  </button>
+                </div>
+              )}
+
+              {googleAuthIssue?.isDomainConfigIssue && (
+                <details className="rounded-xl bg-slate-950/90 border border-slate-800 px-3 py-2 text-[11px] text-slate-300">
+                  <summary className="cursor-pointer font-semibold text-slate-300 hover:text-white select-none">
+                    {isEn
+                      ? 'Owner guide: Add this domain in Firebase Console'
+                      : 'Dla właściciela domeny: jak odblokować Google OAuth'}
+                  </summary>
+                  <div className="mt-2 space-y-2 pt-2 border-t border-slate-800/80">
+                    <ol className="list-decimal list-inside space-y-1 text-slate-300">
+                      <li>
+                        {isEn ? 'Open ' : 'Otwórz '}
+                        <a
+                          href={`https://console.firebase.google.com/project/${activeFirebaseConfig.projectId}/authentication/settings`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-400 hover:text-indigo-300 underline font-semibold"
+                        >
+                          Firebase Console ({activeFirebaseConfig.projectId}) → Authentication → Settings → Authorized domains
+                        </a>
+                      </li>
+                      <li>
+                        {isEn ? (
+                          <>
+                            Click <strong>Add domain</strong> and add these hostnames:
+                          </>
+                        ) : (
+                          <>
+                            Kliknij <strong>Add domain</strong> i dodaj poniższe domeny:
+                          </>
+                        )}
+                      </li>
+                    </ol>
+                    <div className="space-y-1.5">
+                      {googleAuthIssue.recommendedDomains.map((domainHost) => (
+                        <div
+                          key={domainHost}
+                          className="flex items-center justify-between gap-2 rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 font-mono text-[11px] text-emerald-300"
+                        >
+                          <span className="truncate">{domainHost}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (navigator.clipboard) {
+                                void navigator.clipboard.writeText(domainHost);
+                                setSuccessMessage(
+                                  isEn ? `Copied domain: ${domainHost}` : `Skopiowano domenę: ${domainHost}`
+                                );
+                              }
+                            }}
+                            className="shrink-0 px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-sans font-semibold text-[10px] cursor-pointer"
+                          >
+                            {isEn ? 'Copy' : 'Kopiuj'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </details>
               )}
             </div>
           )}
@@ -672,11 +716,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
               <button
                 type="submit"
-                className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2"
+                className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>{isEn ? 'Sign In' : 'Zaloguj się'}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
+
+              <p className="text-center text-xs text-slate-400 pt-1">
+                {isEn ? "Don't have an account yet?" : 'Nie masz jeszcze konta?'}{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('register');
+                    setErrorMessage('');
+                    setGoogleAuthIssue(null);
+                  }}
+                  className="font-semibold text-indigo-400 hover:text-indigo-300 underline underline-offset-2 cursor-pointer"
+                >
+                  {isEn ? 'Create a free account →' : 'Załóż darmowe konto →'}
+                </button>
+              </p>
             </form>
           )}
 
@@ -883,11 +942,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
               <button
                 type="submit"
-                className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2"
+                className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <ShieldCheck className="h-4 w-4" />
                 <span>{isEn ? 'Register Verified Account' : 'Zarejestruj zweryfikowane konto'}</span>
               </button>
+
+              <p className="text-center text-xs text-slate-400 pt-1">
+                {isEn ? 'Already have an account?' : 'Masz już konto w akademii?'}{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setErrorMessage('');
+                    setGoogleAuthIssue(null);
+                  }}
+                  className="font-semibold text-indigo-400 hover:text-indigo-300 underline underline-offset-2 cursor-pointer"
+                >
+                  {isEn ? 'Sign in instead →' : 'Zaloguj się →'}
+                </button>
+              </p>
             </form>
           )}
 

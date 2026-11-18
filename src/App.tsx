@@ -13,6 +13,7 @@ import { PublicLessonView } from './components/PublicLessonView';
 import { PublicInfoPageView } from './components/PublicInfoPageView';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { isPublicTab } from './utils/publicRoutes';
+import { AuthModalMode } from './utils/authValidation';
 import { Sparkles, Trophy, X, Code2, AlertTriangle } from 'lucide-react';
 
 const DashboardView = React.lazy(() => import('./components/DashboardView').then(({ DashboardView }) => ({ default: DashboardView })));
@@ -38,7 +39,13 @@ const MainContent: React.FC = () => {
   const { activeTab, selectedLessonId, allLessons, toast, dismissToast, setActiveTab, isAuthenticated, logout, language } = useApp();
   const isEn = language === 'en';
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalInitialMode, setAuthModalInitialMode] = useState<AuthModalMode | undefined>(undefined);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  const openAuthModal = React.useCallback((preferredMode?: AuthModalMode) => {
+    setAuthModalInitialMode(preferredMode);
+    setIsAuthModalOpen(true);
+  }, []);
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,14 +54,17 @@ const MainContent: React.FC = () => {
         setIsCommandPaletteOpen((prev) => !prev);
       }
     };
-    const handleOpenAuth = () => setIsAuthModalOpen(true);
+    const handleOpenAuth = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ mode?: AuthModalMode }>).detail;
+      openAuthModal(detail?.mode);
+    };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('akademia:open-auth-modal', handleOpenAuth);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('akademia:open-auth-modal', handleOpenAuth);
     };
-  }, []);
+  }, [openAuthModal]);
 
   // Retrieve current active lesson (defaults to Module 1, Lesson 1)
   const currentLesson = allLessons.find((l) => l.id === selectedLessonId) || allLessons[0];
@@ -74,7 +84,7 @@ const MainContent: React.FC = () => {
 
       {/* Toast Notification Banner */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 duration-300 print:hidden">
+        <div className="fixed top-20 right-4 sm:right-6 z-50 max-w-md animate-in slide-in-from-top-3 duration-300 print:hidden">
           <div className={`flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-md ${
             toast.type === 'badge'
               ? 'bg-amber-950/90 border-amber-500/50 text-amber-200'
@@ -154,15 +164,15 @@ const MainContent: React.FC = () => {
                 <ProtectedRoute
                   requiredRole="admin"
                   allowGuests={false}
-                  onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                  onOpenAuthModal={openAuthModal}
                 >
-                  <AdminPanelView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
+                  <AdminPanelView onOpenAuthModal={() => openAuthModal()} />
                 </ProtectedRoute>
               ) : (
                 <ProtectedRoute
                   requiredRole="student"
                   allowGuests={false}
-                  onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                  onOpenAuthModal={openAuthModal}
                 >
                   {activeTab === 'dashboard' && <DashboardView />}
                   {activeTab === 'modules' && <ModulesView />}
@@ -310,7 +320,11 @@ const MainContent: React.FC = () => {
       {/* Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authModalInitialMode}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setAuthModalInitialMode(undefined);
+        }}
       />
 
       {/* Global Command Palette (Ctrl+K) */}

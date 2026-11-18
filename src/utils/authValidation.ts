@@ -458,3 +458,180 @@ export function checkProtectedRouteAccess(
   return { allowed: true };
 }
 
+export type AuthModalMode = 'login' | 'register' | 'forgot' | 'profile';
+
+export type GoogleAuthErrorCode =
+  | 'unauthorized-domain'
+  | 'popup-blocked'
+  | 'popup-closed'
+  | 'cancelled'
+  | 'operation-not-supported'
+  | 'network'
+  | 'unknown';
+
+export interface GoogleAuthErrorClassification {
+  code: GoogleAuthErrorCode;
+  rawCode: string;
+  hostname: string;
+  recommendedDomains: string[];
+  userTitle: string;
+  userMessage: string;
+  toastMessage: string;
+  recommendEmailAuth: boolean;
+  isDomainConfigIssue: boolean;
+}
+
+export function getRecommendedAuthorizedDomains(hostname: string): string[] {
+  const cleanHost = (hostname || '').trim().toLowerCase().replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+  if (!cleanHost) return ['localhost'];
+  const list = [cleanHost];
+  if (cleanHost.startsWith('www.')) {
+    const apex = cleanHost.slice(4);
+    if (apex && !list.includes(apex)) list.push(apex);
+  } else if (
+    cleanHost !== 'localhost' &&
+    !/^\d+\.\d+\.\d+\.\d+$/.test(cleanHost) &&
+    cleanHost.split('.').length === 2
+  ) {
+    list.push(`www.${cleanHost}`);
+  }
+  return list;
+}
+
+export function classifyGoogleAuthError(
+  error: unknown,
+  hostname: string = 'localhost',
+  language: AppLanguage = 'pl'
+): GoogleAuthErrorClassification {
+  const isEn = language === 'en';
+  const rawCode =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code?: unknown }).code || '')
+      : '';
+  const rawMessage = error instanceof Error ? error.message : String(error || '');
+  const combined = `${rawCode} ${rawMessage}`.toLowerCase();
+  const cleanHost = (hostname || 'localhost').trim() || 'localhost';
+  const recommendedDomains = getRecommendedAuthorizedDomains(cleanHost);
+
+  if (combined.includes('unauthorized-domain')) {
+    return {
+      code: 'unauthorized-domain',
+      rawCode: rawCode || 'auth/unauthorized-domain',
+      hostname: cleanHost,
+      recommendedDomains,
+      userTitle: isEn
+        ? 'Google Sign-In unavailable on this domain yet'
+        : 'Logowanie przez Google wymaga włączenia dla tej domeny',
+      userMessage: isEn
+        ? `Google Sign-In is not authorized for "${cleanHost}" yet. You can create a free account or sign in with email right now — all lessons, simulators, and progress work identically.`
+        : `Logowanie przez Google na domenie „${cleanHost}” oczekuje na dodanie jej przez administratora w Firebase Console. Możesz już teraz założyć darmowe konto lub zalogować się e-mailem — wszystkie lekcje i symulatory działają od razu.`,
+      toastMessage: isEn
+        ? `Google Sign-In requires domain authorization (${cleanHost}). Use Email login or registration.`
+        : `Logowanie Google wymaga autoryzacji domeny (${cleanHost}). Użyj logowania lub rejestracji e-mailem.`,
+      recommendEmailAuth: true,
+      isDomainConfigIssue: true,
+    };
+  }
+
+  if (combined.includes('popup-blocked')) {
+    return {
+      code: 'popup-blocked',
+      rawCode: rawCode || 'auth/popup-blocked',
+      hostname: cleanHost,
+      recommendedDomains,
+      userTitle: isEn ? 'Browser blocked the Google sign-in window' : 'Przeglądarka zablokowała okno logowania Google',
+      userMessage: isEn
+        ? 'Your browser or in-app WebView blocked the Google popup window. Allow popups for this site, open the page in Chrome/Safari, or use email sign-in / registration.'
+        : 'Twoja przeglądarka (lub wbudowana przeglądarka aplikacji) zablokowała wyskakujące okno Google. Zezwól na wyskakujące okna, otwórz stronę w Chrome/Safari albo zaloguj się e-mailem.',
+      toastMessage: isEn
+        ? 'Google popup was blocked by your browser. Allow popups or use Email login.'
+        : 'Przeglądarka zablokowała okno Google. Odblokuj wyskakujące okna lub zaloguj się e-mailem.',
+      recommendEmailAuth: true,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('operation-not-supported-in-this-environment') || combined.includes('web-storage-unsupported')) {
+    return {
+      code: 'operation-not-supported',
+      rawCode: rawCode || 'auth/operation-not-supported-in-this-environment',
+      hostname: cleanHost,
+      recommendedDomains,
+      userTitle: isEn ? 'Google popup unsupported in this browser view' : 'Logowanie popup Google nie jest obsługiwane w tym widoku',
+      userMessage: isEn
+        ? 'This embedded browser blocks third-party OAuth cookies/storage. Open the site in your main browser or sign in with email & password.'
+        : 'Wbudowana przeglądarka ogranicza pliki cookie/pamięć dla okien OAuth. Otwórz stronę w głównej przeglądarce lub skorzystaj z bezpłatnego konta e-mail.',
+      toastMessage: isEn
+        ? 'OAuth popup blocked by embedded browser. Use Email sign-in or your main browser.'
+        : 'Ograniczona przeglądarka blokuje okno OAuth. Użyj logowania e-mail lub pełnej przeglądarki.',
+      recommendEmailAuth: true,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('popup-closed-by-user')) {
+    return {
+      code: 'popup-closed',
+      rawCode: rawCode || 'auth/popup-closed-by-user',
+      hostname: cleanHost,
+      recommendedDomains,
+      userTitle: isEn ? 'Google sign-in window closed' : 'Zamknięto okno logowania Google',
+      userMessage: isEn
+        ? 'The Google sign-in window was closed before completing authorization. Try again or sign in with email.'
+        : 'Okno logowania Google zostało zamknięte przed zakończeniem autoryzacji. Spróbuj ponownie lub zaloguj się e-mailem.',
+      toastMessage: isEn
+        ? 'Google sign-in window closed before completing authorization.'
+        : 'Okno logowania Google zostało zamknięte przed ukończeniem.',
+      recommendEmailAuth: false,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('cancelled-popup-request')) {
+    return {
+      code: 'cancelled',
+      rawCode: rawCode || 'auth/cancelled-popup-request',
+      hostname: cleanHost,
+      recommendedDomains,
+      userTitle: isEn ? 'Previous Google login attempt cancelled' : 'Anulowano poprzednią próbę logowania Google',
+      userMessage: isEn
+        ? 'Another Google sign-in popup was already opening. Click "Sign in with Google" once more.'
+        : 'Poprzednie okno logowania zostało zastąpione nowym żądaniem. Kliknij przycisk „Zaloguj przez Google” jeszcze raz.',
+      toastMessage: isEn ? 'Cancelled duplicate Google popup request.' : 'Anulowano zdublowane okno logowania Google.',
+      recommendEmailAuth: false,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('network-request-failed')) {
+    return {
+      code: 'network',
+      rawCode: rawCode || 'auth/network-request-failed',
+      hostname: cleanHost,
+      recommendedDomains,
+      userTitle: isEn ? 'Network connection error' : 'Błąd połączenia sieciowego',
+      userMessage: isEn
+        ? 'Unable to reach Google authentication servers. Check your internet connection or ad-blocker and try again.'
+        : 'Nie udało się połączyć z serwerami autoryzacji Google. Sprawdź połączenie z internetem lub blokadę reklam i spróbuj ponownie.',
+      toastMessage: isEn ? 'Network error while connecting to Google Auth.' : 'Błąd sieci podczas łączenia z logowaniem Google.',
+      recommendEmailAuth: true,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  return {
+    code: 'unknown',
+    rawCode: rawCode || 'auth/unknown',
+    hostname: cleanHost,
+    recommendedDomains,
+    userTitle: isEn ? 'Google Sign-In error' : 'Błąd logowania przez Google',
+    userMessage: rawMessage || (isEn ? 'Failed to sign in with Google.' : 'Nie udało się zalogować przez Google.'),
+    toastMessage: isEn
+      ? `Google sign-in error: ${rawMessage || 'Unknown error'}`
+      : `Błąd logowania Google: ${rawMessage || 'Nieznany błąd'}`,
+    recommendEmailAuth: true,
+    isDomainConfigIssue: false,
+  };
+}
+
+

@@ -3,7 +3,12 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { MODULES_DATA } from '../src/data/modulesData';
 import { PROJECTS_DATA } from '../src/data/projectsData';
-import { getProjectInteractiveExercise, validateExerciseCode } from '../src/utils/codeRunner';
+import {
+  REQUIRED_QUIZ_SCORE,
+  evaluateLessonQuiz,
+  getProjectInteractiveExercise,
+  validateExerciseCode,
+} from '../src/utils/codeRunner';
 import {
   calculateLevel,
   checkBadgesToUnlock,
@@ -87,13 +92,11 @@ function scoreAnswers(lesson: Lesson, answers: unknown): number {
   if (!answers || typeof answers !== 'object' || Array.isArray(answers)) {
     throw new HttpsError('invalid-argument', 'Odpowiedzi quizu są nieprawidłowe.');
   }
-  const submitted = answers as Record<string, unknown>;
-  const expectedIds = new Set(lesson.quiz.map((question) => question.id));
-  if (Object.keys(submitted).length !== expectedIds.size || Object.keys(submitted).some((id) => !expectedIds.has(id))) {
-    throw new HttpsError('invalid-argument', 'Odpowiedz na każde pytanie quizu.');
+  const evaluation = evaluateLessonQuiz(lesson, answers as Record<string, unknown>, REQUIRED_QUIZ_SCORE);
+  if (!evaluation.valid) {
+    throw new HttpsError('invalid-argument', 'Odpowiedz poprawnie na każde pytanie quizu.');
   }
-  const correct = lesson.quiz.filter((question) => submitted[question.id] === question.correctAnswer).length;
-  return Math.round((correct / lesson.quiz.length) * 100);
+  return evaluation.scorePercent;
 }
 
 function getNewBadges(data: Record<string, any>, changes: Partial<User>): string[] {
@@ -159,7 +162,14 @@ export const completeLesson = onCall({ region: 'us-central1', maxInstances: 20 }
   const lesson = getLesson(request.data?.lessonId);
   const ref = getUserRef(uid);
   let scoreFromRequest: number | undefined;
-  if (request.data?.answers !== undefined) scoreFromRequest = scoreAnswers(lesson, request.data.answers);
+  const rawAnswers = request.data?.answers;
+  const hasAnswersPayload =
+    rawAnswers !== undefined &&
+    rawAnswers !== null &&
+    (typeof rawAnswers !== 'object' || Array.isArray(rawAnswers) || Object.keys(rawAnswers).length > 0);
+  if (hasAnswersPayload) {
+    scoreFromRequest = scoreAnswers(lesson, rawAnswers);
+  }
 
   await database.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
@@ -173,8 +183,11 @@ export const completeLesson = onCall({ region: 'us-central1', maxInstances: 20 }
     if (scoreFromRequest !== undefined) {
       quizScores[lesson.id] = Math.max(quizScores[lesson.id] || 0, scoreFromRequest);
     }
-    if ((quizScores[lesson.id] || 0) < 80) {
-      throw new HttpsError('failed-precondition', 'Quiz musi być zaliczony na co najmniej 80%.');
+    if ((quizScores[lesson.id] || 0) < REQUIRED_QUIZ_SCORE) {
+      throw new HttpsError(
+        'failed-precondition',
+        `Quiz musi być zaliczony na co najmniej ${REQUIRED_QUIZ_SCORE}%.`
+      );
     }
 
     const completedLessons: string[] = profile.completedLessons || [];

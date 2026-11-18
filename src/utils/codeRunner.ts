@@ -1,5 +1,72 @@
-import { InteractiveExercise, Project } from '../types';
+import { InteractiveExercise, Lesson, Project } from '../types';
 import type { AppLanguage } from './i18n';
+
+export const REQUIRED_QUIZ_SCORE = 80;
+
+const HTML_VOID_TAGS = new Set([
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
+]);
+
+const JS_RESERVED_KEYWORDS = new Set([
+  'const',
+  'let',
+  'var',
+  'if',
+  'else',
+  'for',
+  'while',
+  'do',
+  'switch',
+  'case',
+  'break',
+  'continue',
+  'try',
+  'catch',
+  'finally',
+  'async',
+  'await',
+  'function',
+  'return',
+  'class',
+  'typeof',
+  'instanceof',
+]);
+
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function stripJsStringLiterals(js: string): string {
+  return js
+    .replace(/"(?:\\.|[^"\\])*"/g, '""')
+    .replace(/'(?:\\.|[^'\\])*'/g, "''")
+    .replace(/`(?:\\.|[^`\\])*`/g, '``');
+}
+
+export function normalizeCssSnippet(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/\s*:\s*/g, ': ')
+    .replace(/\s*;\s*/g, '; ')
+    .replace(/\s*,\s*/g, ', ')
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 export interface RuleResult {
   id: string;
@@ -18,15 +85,92 @@ export interface ValidationSummary {
 export function stripCodeComments(raw: string, lang: 'html' | 'css' | 'js'): string {
   if (!raw) return '';
   if (lang === 'html') {
-    return raw.replace(/<!--[\s\S]*?-->/g, '');
+    return raw
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
   }
   if (lang === 'css') {
-    return raw.replace(/\/\*[\s\S]*?\*\//g, '');
+    return raw
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/<!--[\s\S]*?-->/g, '');
   }
-  // js: strip block comments /* ... */ and single-line comments // ... (avoiding http:// or https://)
+  // js: strip block comments /* ... */, HTML comments <!-- ... -->, and single-line comments // ... (avoiding http:// or https://)
   return raw
     .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/(^|[^:\\])\/\/.*$/gm, '$1');
+}
+
+export interface QuizEvaluationResult {
+  valid: boolean;
+  answeredCount: number;
+  totalQuestions: number;
+  correctCount: number;
+  scorePercent: number;
+  passed: boolean;
+  invalidQuestionIds: string[];
+}
+
+export function evaluateLessonQuiz(
+  lesson: Pick<Lesson, 'id' | 'quiz'>,
+  answers: Record<string, unknown> | undefined | null,
+  requiredScore: number = REQUIRED_QUIZ_SCORE
+): QuizEvaluationResult {
+  const quiz = Array.isArray(lesson?.quiz) ? lesson.quiz : [];
+  const totalQuestions = quiz.length;
+  if (totalQuestions === 0 || !answers || typeof answers !== 'object' || Array.isArray(answers)) {
+    return {
+      valid: false,
+      answeredCount: 0,
+      totalQuestions,
+      correctCount: 0,
+      scorePercent: 0,
+      passed: false,
+      invalidQuestionIds: quiz.map((q) => q.id),
+    };
+  }
+
+  const submitted = answers as Record<string, unknown>;
+  const expectedIds = new Set(quiz.map((q) => q.id));
+  const extraKeys = Object.keys(submitted).filter((k) => !expectedIds.has(k));
+
+  let answeredCount = 0;
+  let correctCount = 0;
+  const invalidQuestionIds: string[] = [...extraKeys];
+
+  for (const q of quiz) {
+    const rawAns = submitted[q.id];
+    if (
+      typeof rawAns !== 'number' ||
+      !Number.isInteger(rawAns) ||
+      rawAns < 0 ||
+      rawAns >= q.options.length
+    ) {
+      invalidQuestionIds.push(q.id);
+      continue;
+    }
+    answeredCount += 1;
+    if (rawAns === q.correctAnswer) {
+      correctCount += 1;
+    }
+  }
+
+  const valid =
+    totalQuestions > 0 &&
+    answeredCount === totalQuestions &&
+    invalidQuestionIds.length === 0;
+  const scorePercent = valid ? Math.round((correctCount / totalQuestions) * 100) : 0;
+  const passed = valid && scorePercent >= requiredScore;
+
+  return {
+    valid,
+    answeredCount,
+    totalQuestions,
+    correctCount,
+    scorePercent,
+    passed,
+    invalidQuestionIds,
+  };
 }
 
 export interface LessonCompletionCheck {
@@ -45,7 +189,7 @@ export function checkLessonCompletionEligibility(params: {
   language?: AppLanguage;
 }): LessonCompletionCheck {
   const isEn = params.language === 'en';
-  const requiredQuizScore = params.requiredQuizScore ?? 80;
+  const requiredQuizScore = params.requiredQuizScore ?? REQUIRED_QUIZ_SCORE;
   const quizScore = params.quizScore ?? 0;
   const isExercisePassed = Boolean(params.isExercisePassed);
   const isQuizPassed = quizScore >= requiredQuizScore;
@@ -76,20 +220,51 @@ export function checkLessonCompletionEligibility(params: {
   };
 }
 
+function checkHtmlAttributeInOpeningTag(
+  cleanHtml: string,
+  attrName: string,
+  attrVal: string | null
+): boolean {
+  const openingTags = cleanHtml.match(/<[a-zA-Z][a-zA-Z0-9-]*\s+[^>]*>/g) || [];
+  const escapedAttr = escapeRegExp(attrName);
+
+  for (const tag of openingTags) {
+    if (attrVal) {
+      const escapedVal = escapeRegExp(attrVal);
+      const regex = new RegExp(
+        `\\s${escapedAttr}\\s*=\\s*(?:["'][^"']*${escapedVal}[^"']*["']|${escapedVal}(?=\\s|>|/))`,
+        'i'
+      );
+      if (regex.test(tag)) return true;
+    } else {
+      const regex = new RegExp(
+        `\\s${escapedAttr}(?:\\s*=\\s*(?:["'][^"']+["']|[^\\s"'=<>]+)|(?=\\s|/|>))`,
+        'i'
+      );
+      if (regex.test(tag)) return true;
+    }
+  }
+  return false;
+}
+
 export function validateExerciseCode(
   exercise: InteractiveExercise,
   code: { html: string; css: string; js: string },
   language: AppLanguage = 'pl'
 ): ValidationSummary {
   const isEn = language === 'en';
-  const cleanHtml = stripCodeComments(code.html, 'html');
-  const cleanCss = stripCodeComments(code.css, 'css');
-  const cleanJs = stripCodeComments(code.js, 'js');
+  const cleanHtml = stripCodeComments(code?.html || '', 'html');
+  const cleanCss = stripCodeComments(code?.css || '', 'css');
+  const cleanJs = stripCodeComments(code?.js || '', 'js');
   const results: RuleResult[] = [];
 
   const normalizedHtml = cleanHtml.toLowerCase();
-  const normalizedCss = cleanCss.toLowerCase().replace(/\s+/g, ' ');
+  const hasAnyHtmlTag = /<[a-zA-Z!][a-zA-Z0-9-]*[\s>/]/.test(cleanHtml);
+  const rawNormalizedCss = cleanCss.toLowerCase().replace(/\s+/g, ' ');
+  const canonicalCss = normalizeCssSnippet(cleanCss);
+  const hasCssRuleBlock = cleanCss.includes('{') && cleanCss.includes('}');
   const normalizedJs = cleanJs.toLowerCase();
+  const jsWithoutStrings = stripJsStringLiterals(normalizedJs);
 
   for (const rule of exercise.rules) {
     let passed = false;
@@ -98,7 +273,7 @@ export function validateExerciseCode(
     switch (rule.ruleType) {
       case 'html_contains': {
         const targetClean = rule.target.toLowerCase();
-        passed = normalizedHtml.includes(targetClean);
+        passed = hasAnyHtmlTag && normalizedHtml.includes(targetClean);
         if (!passed) {
           message = isEn
             ? `Missing expected snippet: "${rule.target}"`
@@ -108,10 +283,13 @@ export function validateExerciseCode(
       }
 
       case 'html_tag_exists': {
-        const tag = rule.target.toLowerCase();
-        // Regex checking for <tag or <tag ... >
-        const tagRegex = new RegExp(`<${tag}(\\s|>|/)`, 'i');
-        passed = tagRegex.test(cleanHtml);
+        const tag = rule.target.toLowerCase().trim();
+        const escapedTag = escapeRegExp(tag);
+        const openTagRegex = new RegExp(`<${escapedTag}(?:\\s[^>]*)?>`, 'i');
+        const hasOpenTag = openTagRegex.test(cleanHtml);
+        const hasCloseTag =
+          HTML_VOID_TAGS.has(tag) || new RegExp(`</${escapedTag}\\s*>`, 'i').test(cleanHtml);
+        passed = hasOpenTag && hasCloseTag;
         if (!passed) {
           message = isEn
             ? `Missing required <${rule.target}> tag in HTML structure`
@@ -121,20 +299,15 @@ export function validateExerciseCode(
       }
 
       case 'html_attr_exists': {
-        const attrName = rule.target.toLowerCase();
-        const attrVal = rule.param ? rule.param.toLowerCase() : null;
-        if (attrVal) {
-          const regex = new RegExp(`${attrName}\\s*=\\s*["'][^"']*${attrVal}[^"']*["']`, 'i');
-          passed = regex.test(cleanHtml);
-          if (!passed) {
+        const attrName = rule.target.toLowerCase().trim();
+        const attrVal = rule.param ? rule.param.toLowerCase().trim() : null;
+        passed = checkHtmlAttributeInOpeningTag(cleanHtml, attrName, attrVal);
+        if (!passed) {
+          if (attrVal) {
             message = isEn
               ? `Missing attribute ${attrName} containing "${rule.param}"`
               : `Brak atrybutu ${attrName} zawierającego "${rule.param}"`;
-          }
-        } else {
-          const regex = new RegExp(`\\b${attrName}\\b`, 'i');
-          passed = regex.test(cleanHtml);
-          if (!passed) {
+          } else {
             message = isEn ? `Missing attribute ${attrName}` : `Brak atrybutu ${attrName}`;
           }
         }
@@ -142,8 +315,12 @@ export function validateExerciseCode(
       }
 
       case 'css_contains': {
-        const cssTarget = rule.target.toLowerCase();
-        passed = normalizedCss.includes(cssTarget);
+        const rawTarget = rule.target.toLowerCase().replace(/\s+/g, ' ').trim();
+        const canonicalTarget = normalizeCssSnippet(rule.target);
+        passed =
+          hasCssRuleBlock &&
+          (rawNormalizedCss.includes(rawTarget) ||
+            (canonicalTarget.length > 0 && canonicalCss.includes(canonicalTarget)));
         if (!passed) {
           message = isEn
             ? `CSS stylesheet should include rule: "${rule.target}"`
@@ -153,8 +330,12 @@ export function validateExerciseCode(
       }
 
       case 'js_contains': {
-        const jsTarget = rule.target.toLowerCase();
-        passed = normalizedJs.includes(jsTarget);
+        const jsTarget = rule.target.toLowerCase().trim();
+        if (JS_RESERVED_KEYWORDS.has(jsTarget)) {
+          passed = new RegExp(`\\b${escapeRegExp(jsTarget)}\\b`, 'i').test(jsWithoutStrings);
+        } else {
+          passed = normalizedJs.includes(jsTarget);
+        }
         if (!passed) {
           message = isEn
             ? `JavaScript code should include: "${rule.target}"`

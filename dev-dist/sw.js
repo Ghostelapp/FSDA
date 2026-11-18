@@ -79,12 +79,12 @@ define(['./workbox-afac4cd2'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "index.html",
-    "revision": "0.tsmgsit94oo"
+    "revision": "0.ku3epp3djdo"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/],
-    denylist: [/^\/promo\//, /^\/play-store\//, /^\/\.well-known\//, /\.(txt|xml|zip|tar|gz|keystore|aab|apk|json|png|jpg|jpeg|webp|ico|svg|html|webmanifest)$/i]
+    denylist: [/^\/__\//, /^\/promo\//, /^\/play-store\//, /^\/\.well-known\//, /\.(txt|xml|zip|tar|gz|keystore|aab|apk|json|png|jpg|jpeg|webp|ico|svg|html|webmanifest)$/i]
   }));
   workbox.registerRoute(/^https:\/\/fonts\.googleapis\.com\/.*/i, new workbox.CacheFirst({
     "cacheName": "google-fonts-cache",

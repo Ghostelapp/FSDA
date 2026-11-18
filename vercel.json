@@ -30,7 +30,7 @@
       "destination": "/polityka-prywatnosci/index.html"
     },
     {
-      "source": "/((?!api/|assets/|\\.well-known/|play-store/|promo/|ads\\.txt|robots\\.txt|sitemap\\.xml|privacy-policy\\.html|twa-manifest\\.json|manifest\\.json|manifest\\.webmanifest|sw\\.js|sw-notifications\\.js|workbox-|favicon|icon\\.svg|apple-touch-icon|pwa-).*)",
+      "source": "/((?!api/|__/|assets/|\\.well-known/|play-store/|promo/|ads\\.txt|robots\\.txt|sitemap\\.xml|privacy-policy\\.html|twa-manifest\\.json|manifest\\.json|manifest\\.webmanifest|sw\\.js|sw-notifications\\.js|workbox-|favicon|icon\\.svg|apple-touch-icon|pwa-).*)",
       "destination": "/index.html"
     }
   ],
@@ -51,6 +51,10 @@
     {
       "source": "/(.*)",
       "headers": [
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        },
         {
           "key": "X-Content-Type-Options",
           "value": "nosniff"

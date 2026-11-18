@@ -1,15 +1,20 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { UserRole } from '../types';
-import { checkProtectedRouteAccess, isGuestUser } from '../utils/authValidation';
+import {
+  AuthModalMode,
+  GoogleAuthErrorClassification,
+  checkProtectedRouteAccess,
+  isGuestUser,
+} from '../utils/authValidation';
 import { activeFirebaseConfig } from '../firebase';
-import { ShieldAlert, Lock, LogIn, ArrowLeft, UserCheck } from 'lucide-react';
+import { ShieldAlert, Lock, LogIn, ArrowLeft, UserCheck, UserPlus, AlertCircle, Check } from 'lucide-react';
 
 export interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: UserRole;
   allowGuests?: boolean;
-  onOpenAuthModal?: () => void;
+  onOpenAuthModal?: (preferredMode?: AuthModalMode) => void;
   fallbackTitle?: string;
   fallbackMessage?: string;
 }
@@ -24,8 +29,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { currentUser, isAuthenticated, isSyncingCloud, loginWithGoogle, setActiveTab, language } = useApp();
   const isEn = language === 'en';
-  const [googleAuthError, setGoogleAuthError] = React.useState<string>('');
-  const [copiedHost, setCopiedHost] = React.useState(false);
+  const [googleAuthIssue, setGoogleAuthIssue] = React.useState<GoogleAuthErrorClassification | null>(null);
+  const [copiedHost, setCopiedHost] = React.useState<string | null>(null);
 
   const access = checkProtectedRouteAccess(currentUser, isAuthenticated, {
     requiredRole,
@@ -40,23 +45,39 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const isGuest = isGuestUser(currentUser, isAuthenticated);
   const isStudentAuthGate = requiredRole === 'student' && access.reason === 'guest_blocked';
 
-  const handleTriggerLogin = () => {
+  const handleTriggerLogin = (preferredMode?: AuthModalMode) => {
     if (onOpenAuthModal) {
-      onOpenAuthModal();
+      onOpenAuthModal(preferredMode);
     } else {
-      window.dispatchEvent(new CustomEvent('akademia:open-auth-modal'));
+      window.dispatchEvent(
+        new CustomEvent('akademia:open-auth-modal', {
+          detail: preferredMode ? { mode: preferredMode } : undefined,
+        })
+      );
     }
   };
 
   const handleGoogleLoginClick = async () => {
-    setGoogleAuthError('');
+    setGoogleAuthIssue(null);
     const res = await loginWithGoogle();
-    if (!res.success && res.error) {
-      setGoogleAuthError(res.error);
+    if (!res.success) {
+      if (res.classification) {
+        setGoogleAuthIssue(res.classification);
+      } else if (res.error) {
+        setGoogleAuthIssue({
+          code: 'unknown',
+          rawCode: 'auth/unknown',
+          hostname: typeof window !== 'undefined' ? window.location.hostname : 'localhost',
+          recommendedDomains: [],
+          userTitle: isEn ? 'Google Sign-In unavailable' : 'Logowanie przez Google niedostępne',
+          userMessage: res.error,
+          toastMessage: res.error,
+          recommendEmailAuth: true,
+          isDomainConfigIssue: false,
+        });
+      }
     }
   };
-
-  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
   return (
     <section
@@ -147,72 +168,113 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           )}
         </div>
 
-        {googleAuthError && (
-          <div className="rounded-2xl bg-rose-950/50 border border-rose-500/40 p-4 text-xs text-rose-200 space-y-2.5">
-            <p className="font-semibold">{googleAuthError}</p>
-            {googleAuthError.includes('unauthorized-domain') && (
-              <div className="rounded-xl bg-slate-950/90 border border-rose-500/30 p-3 space-y-2 text-[11px] text-slate-300">
-                <p>
-                  {isEn ? 'App is connecting to Firebase project ID:' : 'Aplikacja łączy się z projektem Firebase o ID:'}{' '}
-                  <strong className="text-amber-300 font-mono">{activeFirebaseConfig.projectId}</strong>.{' '}
-                  {isEn ? 'Add domain' : 'Dodaj domenę'}{' '}
-                  <strong className="text-emerald-300 font-mono">{currentHostname}</strong>{' '}
-                  {isEn ? 'in' : 'w'}{' '}
-                  <a
-                    href={`https://console.firebase.google.com/project/${activeFirebaseConfig.projectId}/authentication/settings`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-400 hover:text-indigo-300 underline font-semibold"
-                  >
-                    Firebase Console ({activeFirebaseConfig.projectId} → Authentication → Settings → Authorized domains)
-                  </a>{' '}
-                  {isEn ? 'or in' : 'lub w'}{' '}
-                  <a
-                    href={`https://console.cloud.google.com/customer-identity/settings?project=${activeFirebaseConfig.projectId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-cyan-400 hover:text-cyan-300 underline font-semibold"
-                  >
-                    Google Cloud Identity Platform
-                  </a>
-                  .
-                </p>
-                <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 font-mono text-emerald-300">
-                  <span className="truncate">{currentHostname}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (navigator.clipboard) {
-                        void navigator.clipboard.writeText(currentHostname);
-                        setCopiedHost(true);
-                      }
-                    }}
-                    className="shrink-0 px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-sans font-semibold text-[10px]"
-                  >
-                    {copiedHost ? (isEn ? 'Copied!' : 'Skopiowano!') : (isEn ? 'Copy domain' : 'Kopiuj domenę')}
-                  </button>
-                </div>
+        {googleAuthIssue && (
+          <div
+            role="alert"
+            className="rounded-2xl bg-amber-950/40 border border-amber-500/40 p-4 text-xs text-amber-100 space-y-3"
+          >
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="font-bold text-white">{googleAuthIssue.userTitle}</p>
+                <p className="text-slate-200 leading-relaxed">{googleAuthIssue.userMessage}</p>
               </div>
+            </div>
+
+            {googleAuthIssue.recommendEmailAuth && access.reason === 'guest_blocked' && (
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleTriggerLogin('register')}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-sm cursor-pointer"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  <span>{isEn ? 'Create free email account' : 'Załóż darmowe konto e-mail'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTriggerLogin('login')}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-100 text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  <LogIn className="h-3.5 w-3.5" />
+                  <span>{isEn ? 'Sign in with email' : 'Mam już konto — Zaloguj'}</span>
+                </button>
+              </div>
+            )}
+
+            {googleAuthIssue.isDomainConfigIssue && (
+              <details className="rounded-xl bg-slate-950/90 border border-slate-800 px-3 py-2.5 text-[11px] text-slate-300">
+                <summary className="cursor-pointer font-semibold text-slate-300 hover:text-white select-none">
+                  {isEn
+                    ? 'Site owner instructions: Enable Google Sign-In in Firebase Console'
+                    : 'Informacja dla administratora domeny (Firebase Console)'}
+                </summary>
+                <div className="mt-2.5 space-y-2 pt-2 border-t border-slate-800/80">
+                  <p>
+                    {isEn ? 'Firebase project ID:' : 'ID projektu Firebase:'}{' '}
+                    <strong className="text-amber-300 font-mono">{activeFirebaseConfig.projectId}</strong>.{' '}
+                    {isEn ? 'Open' : 'Otwórz'}{' '}
+                    <a
+                      href={`https://console.firebase.google.com/project/${activeFirebaseConfig.projectId}/authentication/settings`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-400 hover:text-indigo-300 underline font-semibold"
+                    >
+                      Firebase Console → Authentication → Settings → Authorized domains
+                    </a>{' '}
+                    {isEn ? 'and add:' : 'i dodaj poniższą domenę (Add domain):'}
+                  </p>
+                  <div className="space-y-1.5">
+                    {googleAuthIssue.recommendedDomains.map((domainHost) => (
+                      <div
+                        key={domainHost}
+                        className="flex items-center justify-between gap-2 rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 font-mono text-emerald-300"
+                      >
+                        <span className="truncate">{domainHost}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (navigator.clipboard) {
+                              void navigator.clipboard.writeText(domainHost);
+                              setCopiedHost(domainHost);
+                            }
+                          }}
+                          className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-sans font-semibold text-[10px] cursor-pointer"
+                        >
+                          {copiedHost === domainHost ? (
+                            <>
+                              <Check className="h-3 w-3" />
+                              <span>{isEn ? 'Copied' : 'Skopiowano'}</span>
+                            </>
+                          ) : (
+                            <span>{isEn ? 'Copy' : 'Kopiuj'}</span>
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </details>
             )}
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-1">
           {access.reason === 'guest_blocked' ? (
             <>
               <button
                 type="button"
                 onClick={() => void handleGoogleLoginClick()}
                 disabled={isSyncingCloud}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-xs sm:text-sm font-bold transition-colors shadow-lg cursor-pointer disabled:opacity-60"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-xs sm:text-[13px] font-bold transition-colors shadow-lg cursor-pointer disabled:opacity-60 whitespace-nowrap"
               >
-                <UserCheck className="h-4 w-4 text-indigo-600" />
+                <UserCheck className="h-4 w-4 text-indigo-600 shrink-0" />
                 <span>
                   {isSyncingCloud
                     ? isEn
-                      ? 'Connecting to Google...'
-                      : 'Łączenie z Google...'
+                      ? 'Connecting...'
+                      : 'Łączenie...'
                     : isEn
                     ? 'Sign in with Google'
                     : 'Zaloguj przez Google'}
@@ -220,11 +282,19 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
               </button>
               <button
                 type="button"
-                onClick={handleTriggerLogin}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold transition-colors shadow-lg shadow-indigo-600/20 cursor-pointer"
+                onClick={() => handleTriggerLogin('register')}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-[13px] font-bold transition-colors shadow-lg shadow-indigo-600/20 cursor-pointer whitespace-nowrap"
               >
-                <LogIn className="h-4 w-4" />
-                <span>{isEn ? 'Sign in with Email / Register' : 'Zaloguj się e-mailem / Załóż konto'}</span>
+                <UserPlus className="h-4 w-4 shrink-0" />
+                <span>{isEn ? 'Create free account' : 'Załóż darmowe konto'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTriggerLogin('login')}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-slate-100 text-xs sm:text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap"
+              >
+                <LogIn className="h-4 w-4 text-indigo-400 shrink-0" />
+                <span>{isEn ? 'Sign in with email' : 'Logowanie e-mail'}</span>
               </button>
             </>
           ) : (
@@ -232,18 +302,27 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('dashboard')}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors shadow-lg shadow-indigo-600/20"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors shadow-lg shadow-indigo-600/20 cursor-pointer"
               >
                 <ArrowLeft className="h-4 w-4" />
                 <span>{isEn ? 'Back to Student Dashboard' : 'Powrót do Pulpitu Kursanta'}</span>
               </button>
               <button
                 type="button"
-                onClick={handleTriggerLogin}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-semibold transition-colors"
+                onClick={() => void handleGoogleLoginClick()}
+                disabled={isSyncingCloud}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60"
               >
                 <UserCheck className="h-4 w-4 text-indigo-400" />
-                <span>{isEn ? 'Administrator Auth (Google OAuth)' : 'Autoryzacja Administratora (Google OAuth)'}</span>
+                <span>
+                  {isSyncingCloud
+                    ? isEn
+                      ? 'Connecting to Google...'
+                      : 'Łączenie z Google...'
+                    : isEn
+                    ? 'Administrator Auth (Google OAuth)'
+                    : 'Autoryzacja Administratora (Google OAuth)'}
+                </span>
               </button>
             </>
           )}
@@ -252,3 +331,4 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     </section>
   );
 };
+

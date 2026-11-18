@@ -11,6 +11,8 @@ import {
   createGuestUser,
   isGuestUser,
   checkProtectedRouteAccess,
+  getRecommendedAuthorizedDomains,
+  classifyGoogleAuthError,
 } from './authValidation';
 import { User } from '../types';
 
@@ -267,4 +269,46 @@ test('checkProtectedRouteAccess blocks non-admin students from AdminPanelView an
   const adminAccess = checkProtectedRouteAccess(MOCK_USERS[0], true, { requiredRole: 'admin', allowGuests: false });
   assert.equal(adminAccess.allowed, true);
 });
+
+test('getRecommendedAuthorizedDomains includes both apex and www variants cleanly', () => {
+  assert.deepEqual(getRecommendedAuthorizedDomains('fsda.tech'), ['fsda.tech', 'www.fsda.tech']);
+  assert.deepEqual(getRecommendedAuthorizedDomains('www.fsda.tech'), ['www.fsda.tech', 'fsda.tech']);
+  assert.deepEqual(getRecommendedAuthorizedDomains('app.fsda.tech'), ['app.fsda.tech']);
+  assert.deepEqual(getRecommendedAuthorizedDomains('localhost'), ['localhost']);
+});
+
+test('classifyGoogleAuthError classifies unauthorized-domain, popup-blocked, closed, and network errors', () => {
+  const domainErrPl = classifyGoogleAuthError(
+    { code: 'auth/unauthorized-domain', message: 'Firebase: Error (auth/unauthorized-domain).' },
+    'fsda.tech',
+    'pl'
+  );
+  assert.equal(domainErrPl.code, 'unauthorized-domain');
+  assert.equal(domainErrPl.isDomainConfigIssue, true);
+  assert.equal(domainErrPl.recommendEmailAuth, true);
+  assert.deepEqual(domainErrPl.recommendedDomains, ['fsda.tech', 'www.fsda.tech']);
+  assert.equal(domainErrPl.userMessage.includes('poniżej'), false);
+
+  const domainErrEn = classifyGoogleAuthError(
+    { code: 'auth/unauthorized-domain' },
+    'fsda.tech',
+    'en'
+  );
+  assert.equal(domainErrEn.code, 'unauthorized-domain');
+  assert.ok(domainErrEn.userMessage.includes('fsda.tech'));
+
+  const popupBlocked = classifyGoogleAuthError({ code: 'auth/popup-blocked' }, 'fsda.tech', 'pl');
+  assert.equal(popupBlocked.code, 'popup-blocked');
+  assert.equal(popupBlocked.isDomainConfigIssue, false);
+  assert.equal(popupBlocked.recommendEmailAuth, true);
+
+  const popupClosed = classifyGoogleAuthError({ code: 'auth/popup-closed-by-user' }, 'fsda.tech', 'pl');
+  assert.equal(popupClosed.code, 'popup-closed');
+  assert.equal(popupClosed.recommendEmailAuth, false);
+
+  const netErr = classifyGoogleAuthError(new Error('auth/network-request-failed'), 'fsda.tech', 'en');
+  assert.equal(netErr.code, 'network');
+  assert.equal(netErr.recommendEmailAuth, true);
+});
+
 
