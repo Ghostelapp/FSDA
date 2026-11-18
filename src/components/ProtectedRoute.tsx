@@ -202,6 +202,35 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
               </div>
             )}
 
+            {googleAuthIssue.isProviderConfigIssue && (
+              <details
+                open
+                className="rounded-xl bg-slate-950/90 border border-slate-800 px-3 py-2.5 text-[11px] text-slate-300"
+              >
+                <summary className="cursor-pointer font-semibold text-amber-300 hover:text-white select-none">
+                  {isEn
+                    ? 'Site owner instructions: Enable Sign-in providers in Firebase Console'
+                    : 'Instrukcja dla właściciela: włącz dostawców logowania w Firebase Console'}
+                </summary>
+                <div className="mt-2 space-y-1.5 pt-2 border-t border-slate-800/80">
+                  <p>
+                    {isEn ? 'Open' : 'Otwórz'}{' '}
+                    <a
+                      href={`https://console.firebase.google.com/project/${activeFirebaseConfig.projectId}/authentication/providers`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-400 hover:text-indigo-300 underline font-semibold"
+                    >
+                      Firebase Console ({activeFirebaseConfig.projectId}) → Authentication → Sign-in method
+                    </a>{' '}
+                    {isEn
+                      ? 'and enable both Google and Email/Password providers.'
+                      : 'i włącz dostawców Google oraz Email/Password.'}
+                  </p>
+                </div>
+              </details>
+            )}
+
             {googleAuthIssue.isDomainConfigIssue && (
               <details className="rounded-xl bg-slate-950/90 border border-slate-800 px-3 py-2.5 text-[11px] text-slate-300">
                 <summary className="cursor-pointer font-semibold text-slate-300 hover:text-white select-none">

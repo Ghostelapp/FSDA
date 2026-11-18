@@ -462,6 +462,8 @@ export type AuthModalMode = 'login' | 'register' | 'forgot' | 'profile';
 
 export type GoogleAuthErrorCode =
   | 'unauthorized-domain'
+  | 'operation-not-allowed'
+  | 'configuration-not-found'
   | 'popup-blocked'
   | 'popup-closed'
   | 'cancelled'
@@ -479,6 +481,7 @@ export interface GoogleAuthErrorClassification {
   toastMessage: string;
   recommendEmailAuth: boolean;
   isDomainConfigIssue: boolean;
+  isProviderConfigIssue?: boolean;
 }
 
 export function getRecommendedAuthorizedDomains(hostname: string): string[] {
@@ -530,6 +533,49 @@ export function classifyGoogleAuthError(
         : `Logowanie Google wymaga autoryzacji domeny (${cleanHost}). Użyj logowania lub rejestracji e-mailem.`,
       recommendEmailAuth: true,
       isDomainConfigIssue: true,
+      isProviderConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('operation-not-allowed')) {
+    return {
+      code: 'operation-not-allowed',
+      rawCode: rawCode || 'auth/operation-not-allowed',
+      hostname: cleanHost,
+      recommendedDomains,
+      userTitle: isEn
+        ? 'Google provider is not enabled in Firebase Console'
+        : 'Dostawca logowania Google nie jest włączony w Firebase Console',
+      userMessage: isEn
+        ? 'Google Sign-In must be enabled in Firebase Console → Authentication → Sign-in method before users can sign in with Google.'
+        : 'Aby logowanie przez Google działało, właściciel aplikacji musi włączyć dostawcę „Google” w Firebase Console → Authentication → Sign-in method.',
+      toastMessage: isEn
+        ? 'Enable Google provider in Firebase Console -> Sign-in method.'
+        : 'Włącz dostawcę Google w Firebase Console -> Sign-in method.',
+      recommendEmailAuth: true,
+      isDomainConfigIssue: false,
+      isProviderConfigIssue: true,
+    };
+  }
+
+  if (combined.includes('configuration-not-found')) {
+    return {
+      code: 'configuration-not-found',
+      rawCode: rawCode || 'auth/configuration-not-found',
+      hostname: cleanHost,
+      recommendedDomains,
+      userTitle: isEn
+        ? 'Firebase Authentication is not initialized yet'
+        : 'Firebase Authentication nie zostało jeszcze uruchomione w konsoli',
+      userMessage: isEn
+        ? 'Open Firebase Console → Authentication, click "Get started", and enable Google and Email/Password providers.'
+        : 'Otwórz Firebase Console → Authentication, kliknij „Get started” (Rozpocznij) i włącz dostawców Google oraz Email/Password.',
+      toastMessage: isEn
+        ? 'Initialize Authentication in Firebase Console (Get started -> Sign-in method).'
+        : 'Uruchom Authentication w Firebase Console (Get started -> Sign-in method).',
+      recommendEmailAuth: true,
+      isDomainConfigIssue: false,
+      isProviderConfigIssue: true,
     };
   }
 
@@ -548,6 +594,7 @@ export function classifyGoogleAuthError(
         : 'Przeglądarka zablokowała okno Google. Odblokuj wyskakujące okna lub zaloguj się e-mailem.',
       recommendEmailAuth: true,
       isDomainConfigIssue: false,
+      isProviderConfigIssue: false,
     };
   }
 
@@ -566,6 +613,7 @@ export function classifyGoogleAuthError(
         : 'Ograniczona przeglądarka blokuje okno OAuth. Użyj logowania e-mail lub pełnej przeglądarki.',
       recommendEmailAuth: true,
       isDomainConfigIssue: false,
+      isProviderConfigIssue: false,
     };
   }
 
@@ -584,6 +632,7 @@ export function classifyGoogleAuthError(
         : 'Okno logowania Google zostało zamknięte przed ukończeniem.',
       recommendEmailAuth: false,
       isDomainConfigIssue: false,
+      isProviderConfigIssue: false,
     };
   }
 
@@ -600,6 +649,7 @@ export function classifyGoogleAuthError(
       toastMessage: isEn ? 'Cancelled duplicate Google popup request.' : 'Anulowano zdublowane okno logowania Google.',
       recommendEmailAuth: false,
       isDomainConfigIssue: false,
+      isProviderConfigIssue: false,
     };
   }
 
@@ -616,6 +666,7 @@ export function classifyGoogleAuthError(
       toastMessage: isEn ? 'Network error while connecting to Google Auth.' : 'Błąd sieci podczas łączenia z logowaniem Google.',
       recommendEmailAuth: true,
       isDomainConfigIssue: false,
+      isProviderConfigIssue: false,
     };
   }
 
@@ -631,7 +682,235 @@ export function classifyGoogleAuthError(
       : `Błąd logowania Google: ${rawMessage || 'Nieznany błąd'}`,
     recommendEmailAuth: true,
     isDomainConfigIssue: false,
+    isProviderConfigIssue: false,
   };
 }
+
+export type EmailAuthErrorCode =
+  | 'operation-not-allowed'
+  | 'configuration-not-found'
+  | 'email-already-in-use'
+  | 'invalid-credential'
+  | 'wrong-password'
+  | 'user-not-found'
+  | 'weak-password'
+  | 'invalid-email'
+  | 'user-disabled'
+  | 'too-many-requests'
+  | 'requires-recent-login'
+  | 'unauthorized-domain'
+  | 'network'
+  | 'unknown';
+
+export interface EmailAuthErrorClassification {
+  code: EmailAuthErrorCode;
+  rawCode: string;
+  userTitle: string;
+  userMessage: string;
+  isProviderConfigIssue: boolean;
+  isDomainConfigIssue: boolean;
+}
+
+export function classifyEmailAuthError(
+  error: unknown,
+  hostname: string = 'localhost',
+  language: AppLanguage = 'pl'
+): EmailAuthErrorClassification {
+  const isEn = language === 'en';
+  const rawCode =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code?: unknown }).code || '')
+      : '';
+  const rawMessage = error instanceof Error ? error.message : String(error || '');
+  const combined = `${rawCode} ${rawMessage}`.toLowerCase();
+  const cleanHost = (hostname || 'localhost').trim() || 'localhost';
+
+  if (combined.includes('operation-not-allowed')) {
+    return {
+      code: 'operation-not-allowed',
+      rawCode: rawCode || 'auth/operation-not-allowed',
+      userTitle: isEn
+        ? 'Email/Password sign-in not enabled in Firebase Console'
+        : 'Logowanie E-mail/Hasło wymaga włączenia w Firebase Console',
+      userMessage: isEn
+        ? 'The "Email/Password" provider is currently disabled in Firebase Authentication. Enable it in Firebase Console → Authentication → Sign-in method.'
+        : 'Dostawca „Email/Password” (E-mail i hasło) jest obecnie wyłączony w projekcie Firebase. Włącz go w Firebase Console → Authentication → Sign-in method.',
+      isProviderConfigIssue: true,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('configuration-not-found')) {
+    return {
+      code: 'configuration-not-found',
+      rawCode: rawCode || 'auth/configuration-not-found',
+      userTitle: isEn
+        ? 'Firebase Authentication is not initialized yet'
+        : 'Firebase Authentication nie zostało jeszcze uruchomione w tym projekcie',
+      userMessage: isEn
+        ? 'In this Firebase project, open Authentication, click "Get started", and enable the Email/Password & Google providers.'
+        : 'W nowym projekcie Firebase otwórz zakładkę Authentication, kliknij „Get started” (Rozpocznij) i włącz dostawców Email/Password oraz Google.',
+      isProviderConfigIssue: true,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('unauthorized-domain')) {
+    return {
+      code: 'unauthorized-domain',
+      rawCode: rawCode || 'auth/unauthorized-domain',
+      userTitle: isEn
+        ? 'Domain not authorized in Firebase Console'
+        : 'Domena wymaga autoryzacji w Firebase Console',
+      userMessage: isEn
+        ? `Add "${cleanHost}" to Firebase Console → Authentication → Settings → Authorized domains.`
+        : `Dodaj domenę „${cleanHost}” w Firebase Console → Authentication → Settings → Authorized domains.`,
+      isProviderConfigIssue: false,
+      isDomainConfigIssue: true,
+    };
+  }
+
+  if (combined.includes('email-already-in-use')) {
+    return {
+      code: 'email-already-in-use',
+      rawCode: rawCode || 'auth/email-already-in-use',
+      userTitle: isEn ? 'Account already exists' : 'Konto z tym adresem e-mail już istnieje',
+      userMessage: isEn
+        ? 'An account with this email address is already registered in Firebase. Sign in instead or use "Forgot password?" to reset access.'
+        : 'Konto z podanym adresem e-mail istnieje już w bazie Firebase. Przejdź do logowania albo użyj opcji „Reset hasła”.',
+      isProviderConfigIssue: false,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('wrong-password')) {
+    return {
+      code: 'wrong-password',
+      rawCode: rawCode || 'auth/wrong-password',
+      userTitle: isEn ? 'Incorrect password' : 'Nieprawidłowe hasło',
+      userMessage: isEn
+        ? 'Incorrect password. Double-check your password or use "Reset password".'
+        : 'Nieprawidłowe hasło dostępowe. Sprawdź hasło lub skorzystaj z zakładki „Reset hasła”.',
+      isProviderConfigIssue: false,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('user-not-found')) {
+    return {
+      code: 'user-not-found',
+      rawCode: rawCode || 'auth/user-not-found',
+      userTitle: isEn ? 'Account not found' : 'Nie znaleziono konta',
+      userMessage: isEn
+        ? 'No Firebase account was found with this email address. Check the spelling or create a free account.'
+        : 'Nie znaleziono konta z tym adresem e-mail w Firebase. Sprawdź pisownię lub załóż darmowe konto.',
+      isProviderConfigIssue: false,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('invalid-credential') || combined.includes('invalid-login-credentials')) {
+    return {
+      code: 'invalid-credential',
+      rawCode: rawCode || 'auth/invalid-credential',
+      userTitle: isEn ? 'Invalid email or password' : 'Nieprawidłowy e-mail lub hasło',
+      userMessage: isEn
+        ? 'Invalid email address or password. Double-check your credentials, use "Reset password", or sign in with Google if your account was created via Google.'
+        : 'Nieprawidłowy adres e-mail lub hasło. Sprawdź dane logowania, użyj „Reset hasła” albo zaloguj się przez Google, jeśli konto powstało przez Google.',
+      isProviderConfigIssue: false,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('weak-password')) {
+    return {
+      code: 'weak-password',
+      rawCode: rawCode || 'auth/weak-password',
+      userTitle: isEn ? 'Password too weak' : 'Zbyt słabe hasło',
+      userMessage: isEn
+        ? 'Firebase requires a password with at least 6 characters.'
+        : 'Firebase wymaga hasła o długości co najmniej 6 znaków.',
+      isProviderConfigIssue: false,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('invalid-email')) {
+    return {
+      code: 'invalid-email',
+      rawCode: rawCode || 'auth/invalid-email',
+      userTitle: isEn ? 'Invalid email address' : 'Nieprawidłowy adres e-mail',
+      userMessage: isEn
+        ? 'Enter a valid email address format (e.g. name@domain.com).'
+        : 'Podaj poprawny format adresu e-mail (np. imie@domena.pl).',
+      isProviderConfigIssue: false,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('user-disabled')) {
+    return {
+      code: 'user-disabled',
+      rawCode: rawCode || 'auth/user-disabled',
+      userTitle: isEn ? 'Account disabled' : 'Konto zostało zablokowane',
+      userMessage: isEn
+        ? 'This account has been disabled by an administrator.'
+        : 'To konto zostało zablokowane w systemie Firebase Authentication przez administratora.',
+      isProviderConfigIssue: false,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('too-many-requests')) {
+    return {
+      code: 'too-many-requests',
+      rawCode: rawCode || 'auth/too-many-requests',
+      userTitle: isEn ? 'Too many attempts' : 'Zbyt wiele prób logowania',
+      userMessage: isEn
+        ? 'Access to this account has been temporarily throttled due to multiple failed attempts. Wait a minute or reset your password.'
+        : 'Zbyt wiele nieudanych prób logowania. Odczekaj chwilę lub zresetuj hasło, aby odblokować natychmiast.',
+      isProviderConfigIssue: false,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('requires-recent-login')) {
+    return {
+      code: 'requires-recent-login',
+      rawCode: rawCode || 'auth/requires-recent-login',
+      userTitle: isEn ? 'Re-authentication required' : 'Wymagane ponowne logowanie',
+      userMessage: isEn
+        ? 'Changing your password requires a recent login. Sign out, sign back in, and try again.'
+        : 'Ze względów bezpieczeństwa zmiana hasła wymaga świeżej sesji. Wyloguj się, zaloguj ponownie i spróbuj jeszcze raz.',
+      isProviderConfigIssue: false,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('network-request-failed')) {
+    return {
+      code: 'network',
+      rawCode: rawCode || 'auth/network-request-failed',
+      userTitle: isEn ? 'Network connection error' : 'Błąd połączenia sieciowego',
+      userMessage: isEn
+        ? 'Unable to reach Firebase Auth servers. Check your internet connection or ad-blocker and try again.'
+        : 'Nie udało się połączyć z serwerem Firebase Authentication. Sprawdź internet lub wtyczki blokujące i spróbuj ponownie.',
+      isProviderConfigIssue: false,
+      isDomainConfigIssue: false,
+    };
+  }
+
+  return {
+    code: 'unknown',
+    rawCode: rawCode || 'auth/unknown',
+    userTitle: isEn ? 'Authentication error' : 'Błąd autoryzacji Firebase',
+    userMessage:
+      rawMessage ||
+      (isEn ? 'Authentication failed. Please try again.' : 'Nie udało się uwierzytelnić w Firebase. Spróbuj ponownie.'),
+    isProviderConfigIssue: false,
+    isDomainConfigIssue: false,
+  };
+}
+
 
 

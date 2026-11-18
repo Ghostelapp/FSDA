@@ -13,6 +13,7 @@ import {
   checkProtectedRouteAccess,
   getRecommendedAuthorizedDomains,
   classifyGoogleAuthError,
+  classifyEmailAuthError,
 } from './authValidation';
 import { User } from '../types';
 
@@ -309,6 +310,45 @@ test('classifyGoogleAuthError classifies unauthorized-domain, popup-blocked, clo
   const netErr = classifyGoogleAuthError(new Error('auth/network-request-failed'), 'fsda.tech', 'en');
   assert.equal(netErr.code, 'network');
   assert.equal(netErr.recommendEmailAuth, true);
+
+  const opNotAllowed = classifyGoogleAuthError({ code: 'auth/operation-not-allowed' }, 'fsda.tech', 'pl');
+  assert.equal(opNotAllowed.code, 'operation-not-allowed');
+  assert.equal(opNotAllowed.isProviderConfigIssue, true);
+
+  const configNotFound = classifyGoogleAuthError({ code: 'auth/configuration-not-found' }, 'fsda.tech', 'pl');
+  assert.equal(configNotFound.code, 'configuration-not-found');
+  assert.equal(configNotFound.isProviderConfigIssue, true);
 });
+
+test('classifyEmailAuthError classifies provider config, credentials, weak password, and rate-limit errors', () => {
+  const providerDisabled = classifyEmailAuthError({ code: 'auth/operation-not-allowed' }, 'fsda.tech', 'pl');
+  assert.equal(providerDisabled.code, 'operation-not-allowed');
+  assert.equal(providerDisabled.isProviderConfigIssue, true);
+  assert.ok(providerDisabled.userMessage.includes('Email/Password'));
+
+  const configNotFound = classifyEmailAuthError({ code: 'auth/configuration-not-found' }, 'fsda.tech', 'pl');
+  assert.equal(configNotFound.code, 'configuration-not-found');
+  assert.equal(configNotFound.isProviderConfigIssue, true);
+  assert.ok(configNotFound.userMessage.includes('Get started'));
+
+  const alreadyInUse = classifyEmailAuthError({ code: 'auth/email-already-in-use' }, 'fsda.tech', 'en');
+  assert.equal(alreadyInUse.code, 'email-already-in-use');
+  assert.equal(alreadyInUse.isProviderConfigIssue, false);
+
+  const invalidCred = classifyEmailAuthError({ code: 'auth/invalid-credential' }, 'fsda.tech', 'pl');
+  assert.equal(invalidCred.code, 'invalid-credential');
+
+  const weakPass = classifyEmailAuthError({ code: 'auth/weak-password' }, 'fsda.tech', 'pl');
+  assert.equal(weakPass.code, 'weak-password');
+
+  const tooMany = classifyEmailAuthError({ code: 'auth/too-many-requests' }, 'fsda.tech', 'en');
+  assert.equal(tooMany.code, 'too-many-requests');
+
+  const domainErr = classifyEmailAuthError({ code: 'auth/unauthorized-domain' }, 'fsda.tech', 'pl');
+  assert.equal(domainErr.code, 'unauthorized-domain');
+  assert.equal(domainErr.isDomainConfigIssue, true);
+  assert.ok(domainErr.userMessage.includes('fsda.tech'));
+});
+
 
 

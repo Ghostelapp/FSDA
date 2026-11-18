@@ -67,6 +67,7 @@ import {
   SITE_BASE_URL,
 } from '../utils/publicRoutes';
 import {
+  validateEmailFormat,
   authenticateUserCredentials,
   validateAndCreateUser,
   canSwitchToUser,
@@ -74,7 +75,9 @@ import {
   sanitizeImportedUser,
   createGuestUser,
   classifyGoogleAuthError,
+  classifyEmailAuthError,
   GoogleAuthErrorClassification,
+  EmailAuthErrorClassification,
 } from '../utils/authValidation';
 import {
   DEFAULT_REMINDER_SETTINGS,
@@ -127,7 +130,12 @@ import {
   onAuthStateChanged,
   testFirebaseConnection,
   signInWithGoogleFirebase,
+  signUpWithEmailFirebase,
+  signInWithEmailFirebase,
+  sendPasswordResetFirebase,
+  updateFirebaseUserProfile,
   signOutFromFirebase,
+  trackFirebaseEvent,
   fetchOrCreateCloudUserProfile,
   saveUserProfileToCloud,
   verifyLessonExerciseInCloud,
@@ -212,7 +220,14 @@ interface AppContextType {
   setThemePreference: (preference: ThemePreference) => void;
   toggleTheme: () => void;
   setActiveTab: (tab: AppTab, lessonId?: string, projectId?: string) => void;
-  loginUser: (email: string, password?: string) => { success: boolean; error?: string };
+  loginUser: (
+    email: string,
+    password?: string
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    classification?: EmailAuthErrorClassification;
+  }>;
   loginWithGoogle: () => Promise<{
     success: boolean;
     error?: string;
@@ -227,18 +242,33 @@ interface AppContextType {
     antiBotPassed: boolean;
     antiBotScore?: number;
     bio?: string;
-  }) => { success: boolean; user?: User; error?: string };
+  }) => Promise<{
+    success: boolean;
+    user?: User;
+    error?: string;
+    classification?: EmailAuthErrorClassification;
+  }>;
   updateCurrentUserProfile: (partial: {
     name?: string;
     bio?: string;
     password?: string;
     weeklyGoalMinutes?: number;
-  }) => { success: boolean; message: string };
+  }) => Promise<{
+    success: boolean;
+    message: string;
+    classification?: EmailAuthErrorClassification;
+  }>;
   switchUser: (userId: string) => void;
   logout: () => void;
   deleteUser: (userId: string) => void;
   setUserStatus: (userId: string, status: UserStatus, reason?: string) => void;
-  resetUserPassword: (email: string, newPassword?: string) => { success: boolean; message: string };
+  resetUserPassword: (
+    email: string
+  ) => Promise<{
+    success: boolean;
+    message: string;
+    classification?: EmailAuthErrorClassification;
+  }>;
   verifyUserAntiBot: (userId: string) => void;
   giveProByAdmin: (userId: string, isPro: boolean, plan?: 'monthly' | 'yearly') => void;
   refillUserLivesByAdmin: (userId: string) => void;
@@ -667,6 +697,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isSyncingCloud, setIsSyncingCloud] = useState<boolean>(false);
   const [isSyncingGithub, setIsSyncingGithub] = useState<boolean>(false);
   const lastCloudSyncHashRef = useRef<string>('');
+  const pendingCloudProfileRef = useRef<{ name?: string; bio?: string } | null>(null);
   const currentUserRef = useRef<User>(currentUser);
   useEffect(() => {
     currentUserRef.current = currentUser;
@@ -844,7 +875,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setIsCloudConnected(true);
         setIsSyncingCloud(true);
         try {
-          const cloudProfile = await fetchOrCreateCloudUserProfile(fbUser, currentUserRef.current);
+          const cloudProfile = await fetchOrCreateCloudUserProfile(
+            fbUser,
+            currentUserRef.current,
+            pendingCloudProfileRef.current ?? undefined
+          );
+          if (cloudProfile.status && cloudProfile.status !== 'active') {
+            await signOutFromFirebase();
+            setFirebaseUid(null);
+            setIsCloudConnected(false);
+            setIsAuthenticated(false);
+            setCurrentUser(createGuestUser(languageRef.current));
+            return;
+          }
           lastCloudSyncHashRef.current = JSON.stringify({
             xp: cloudProfile.xp,
             level: cloudProfile.level,
@@ -1613,44 +1656,178 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const loginUser = (email: string, password?: string): { success: boolean; error?: string } => {
+  const loginUser = async (
+    email: string,
+    password?: string
+  ): Promise<{
+    success: boolean;
+    error?: string;
+    classification?: EmailAuthErrorClassification;
+  }> => {
     const lang = languageRef.current;
     const isEn = lang === 'en';
-    const result = authenticateUserCredentials(allUsers, email, password, lang);
-    if (!result.success || !result.user) {
-      appendSecurityLog({
-        type: 'auth_blocked',
-        severity: (email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com' ? 'critical' : 'warning',
-        actorEmail: (email || (isEn ? 'unknown' : 'nieznany')).trim(),
-        actorRole: !isAuthenticated ? 'guest' : currentUser.role,
-        action: isEn ? 'Failed login attempt via form' : 'Nieudana próba logowania formularzem',
-        details: result.error || (isEn ? 'Credential authorization failed.' : 'Błąd autoryzacji danych logowania.'),
-      });
-      return { success: false, error: result.error };
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const rawPassword = password || '';
+
+    if (!cleanEmail) {
+      return {
+        success: false,
+        error: isEn ? 'Enter your email address.' : 'Wprowadź adres e-mail.',
+      };
     }
 
-    const updatedUser = result.user;
-    appendSecurityLog({
-      type: 'login_success',
-      severity: 'info',
-      actorEmail: updatedUser.email,
-      actorRole: updatedUser.role,
-      action: isEn ? 'Successful user login' : 'Pomyślne logowanie użytkownika',
-      details: isEn ? `Signed in as student: ${updatedUser.name}.` : `Zalogowano na konto kursanta: ${updatedUser.name}.`,
-    });
-    setCurrentUser(updatedUser);
-    setIsAuthenticated(true);
-    setAllUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
-    setLivesInfo(calculateRegeneratedLives(updatedUser));
-    if ((updatedUser.role !== 'admin' && activeTab === 'admin') || activeTab === 'landing') {
-      setActiveTab('dashboard');
+    if (!validateEmailFormat(cleanEmail)) {
+      return {
+        success: false,
+        error: isEn
+          ? 'Enter a valid email format (e.g. name@domain.com).'
+          : 'Wprowadź poprawny format adresu e-mail (np. imie@domena.pl).',
+      };
     }
-    soundManager.playSuccess();
-    showToast(
-      isEn ? `Welcome back, ${updatedUser.name}! Signed in.` : `Witaj ponownie, ${updatedUser.name}! Zalogowano pomyślnie.`,
-      'success'
-    );
-    return { success: true };
+
+    if (!rawPassword.trim()) {
+      return {
+        success: false,
+        error: isEn ? 'Enter your password.' : 'Wprowadź hasło dostępowe.',
+      };
+    }
+
+    if (cleanEmail === 'zordonzordon1@gmail.com') {
+      const adminErr = isEn
+        ? 'Administrator account is protected and requires Google Firebase Auth verification (use "Sign in with Google").'
+        : 'Konto Administratora jest chronione i wymaga weryfikacji tożsamości przez Google Firebase Auth (przycisk „Zaloguj przez Google”).';
+      appendSecurityLog({
+        type: 'auth_blocked',
+        severity: 'critical',
+        actorEmail: cleanEmail,
+        actorRole: !isAuthenticated ? 'guest' : currentUser.role,
+        action: isEn ? 'Rejected password login attempt on Administrator account' : 'Odrzucono próbę logowania hasłem na konto Administratora',
+        details: adminErr,
+      });
+      return { success: false, error: adminErr };
+    }
+
+    const legacyCandidate = allUsers.find((u) => u.email.trim().toLowerCase() === cleanEmail);
+    if (legacyCandidate && legacyCandidate.status !== 'active') {
+      const statusRes = authenticateUserCredentials(allUsers, cleanEmail, rawPassword, lang);
+      return { success: false, error: statusRes.error };
+    }
+
+    const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+
+    try {
+      setIsSyncingCloud(true);
+      let fbUser;
+      try {
+        fbUser = await signInWithEmailFirebase(cleanEmail, rawPassword);
+      } catch (signInErr) {
+        const errCode =
+          typeof signInErr === 'object' && signInErr !== null && 'code' in signInErr
+            ? String((signInErr as { code?: unknown }).code || '')
+            : '';
+        // Migrate verified legacy local accounts transparently to Firebase Auth when password matches
+        const canMigrateLegacy =
+          legacyCandidate &&
+          legacyCandidate.role !== 'admin' &&
+          legacyCandidate.id.startsWith('user-') &&
+          legacyCandidate.password === rawPassword &&
+          (errCode === 'auth/user-not-found' || errCode === 'auth/invalid-credential');
+
+        if (canMigrateLegacy && legacyCandidate) {
+          pendingCloudProfileRef.current = {
+            name: legacyCandidate.name,
+            bio: legacyCandidate.bio,
+          };
+          fbUser = await signUpWithEmailFirebase(cleanEmail, rawPassword, legacyCandidate.name);
+        } else {
+          throw signInErr;
+        }
+      }
+
+      const cloudProfile = await fetchOrCreateCloudUserProfile(
+        fbUser,
+        legacyCandidate || currentUserRef.current,
+        pendingCloudProfileRef.current ?? undefined
+      );
+      pendingCloudProfileRef.current = null;
+
+      if (cloudProfile.status !== 'active') {
+        await signOutFromFirebase();
+        const blockedMsg =
+          cloudProfile.status === 'banned'
+            ? isEn
+              ? `Account blocked. Reason: ${cloudProfile.banReason || 'Violation of platform terms.'}`
+              : `Konto zostało zablokowane. Powód: ${cloudProfile.banReason || 'Naruszenie regulaminu platformy.'}`
+            : isEn
+            ? 'Account suspended or awaiting security verification.'
+            : 'Konto zostało zawieszone lub oczekuje na weryfikację bezpieczeństwa.';
+        appendSecurityLog({
+          type: 'auth_blocked',
+          severity: 'warning',
+          actorEmail: cleanEmail,
+          actorRole: cloudProfile.role,
+          action: isEn ? 'Blocked sign-in to inactive account' : 'Zablokowano logowanie na nieaktywne konto',
+          details: blockedMsg,
+        });
+        return { success: false, error: blockedMsg };
+      }
+
+      setFirebaseUid(fbUser.uid);
+      setIsCloudConnected(true);
+      setCurrentUser(cloudProfile);
+      setIsAuthenticated(true);
+      setLivesInfo(calculateRegeneratedLives(cloudProfile));
+      setAllUsers((prev) => {
+        const exists = prev.some((u) => u.id === cloudProfile.id);
+        if (exists) {
+          return prev.map((u) => (u.id === cloudProfile.id ? cloudProfile : u));
+        }
+        return [cloudProfile, ...prev.filter((u) => u.email.trim().toLowerCase() !== cleanEmail)];
+      });
+
+      appendSecurityLog({
+        type: 'login_success',
+        severity: 'info',
+        actorEmail: cloudProfile.email,
+        actorRole: cloudProfile.role,
+        action: isEn ? 'Successful Firebase Email login' : 'Pomyślne logowanie Firebase (E-mail)',
+        details: isEn
+          ? `Signed in as student: ${cloudProfile.name}.`
+          : `Zalogowano na konto kursanta: ${cloudProfile.name} (synchronizacja Firestore).`,
+      });
+
+      if ((cloudProfile.role !== 'admin' && activeTab === 'admin') || activeTab === 'landing') {
+        setActiveTab('dashboard');
+      }
+      trackFirebaseEvent('login', { method: 'email' });
+      soundManager.playSuccess();
+      showToast(
+        isEn
+          ? `Signed in via Firebase! Welcome back, ${cloudProfile.name}.`
+          : `Zalogowano przez Firebase! Witaj ponownie, ${cloudProfile.name}.`,
+        'success'
+      );
+      return { success: true };
+    } catch (err) {
+      pendingCloudProfileRef.current = null;
+      const classification = classifyEmailAuthError(err, currentHostname, lang);
+      appendSecurityLog({
+        type: 'auth_blocked',
+        severity: 'warning',
+        actorEmail: cleanEmail,
+        actorRole: !isAuthenticated ? 'guest' : currentUser.role,
+        action: isEn ? 'Failed Firebase Email login attempt' : 'Nieudana próba logowania Firebase (E-mail)',
+        details: `${classification.rawCode}: ${classification.userMessage}`,
+      });
+      showToast(classification.userTitle, 'danger');
+      return {
+        success: false,
+        error: classification.userMessage,
+        classification,
+      };
+    } finally {
+      setIsSyncingCloud(false);
+    }
   };
 
   const loginWithGoogle = async (): Promise<{
@@ -1663,7 +1840,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       setIsSyncingCloud(true);
       const fbUser = await signInWithGoogleFirebase();
-      const cloudProfile = await fetchOrCreateCloudUserProfile(fbUser, currentUser);
+      const cloudProfile = await fetchOrCreateCloudUserProfile(fbUser, currentUserRef.current);
+      if (cloudProfile.status !== 'active') {
+        await signOutFromFirebase();
+        const blockedMsg = isEn
+          ? 'Your account is suspended or blocked.'
+          : 'Twoje konto zostało zawieszone lub zablokowane.';
+        showToast(blockedMsg, 'danger');
+        return { success: false, error: blockedMsg };
+      }
       setFirebaseUid(fbUser.uid);
       setIsCloudConnected(true);
       setCurrentUser(cloudProfile);
@@ -1679,6 +1864,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (activeTab === 'landing') {
         setActiveTab('dashboard');
       }
+      trackFirebaseEvent('login', { method: 'google' });
       soundManager.playLevelUp();
       showToast(
         isEn
@@ -1707,8 +1893,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!firebaseUid || !isCloudConnected) {
       showToast(
         isEn
-          ? 'Sign in with Google (Firebase Auth) to enable cloud synchronization.'
-          : 'Zaloguj się przez Google (Firebase Auth), aby włączyć synchronizację w chmurze.',
+          ? 'Sign in with Google or Email (Firebase Auth) to enable cloud synchronization.'
+          : 'Zaloguj się przez Google lub E-mail (Firebase Auth), aby włączyć synchronizację w chmurze.',
         'info'
       );
       return false;
@@ -1733,7 +1919,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return ok;
   };
 
-  const registerUser = (params: {
+  const registerUser = async (params: {
     name: string;
     email: string;
     password?: string;
@@ -1741,40 +1927,89 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     antiBotPassed: boolean;
     antiBotScore?: number;
     bio?: string;
-  }): { success: boolean; user?: User; error?: string } => {
+  }): Promise<{
+    success: boolean;
+    user?: User;
+    error?: string;
+    classification?: EmailAuthErrorClassification;
+  }> => {
     const lang = languageRef.current;
     const isEn = lang === 'en';
-    const result = validateAndCreateUser(allUsers, params, lang);
-    if (!result.success || !result.user) {
-      return { success: false, error: result.error };
+    const cleanName = (params.name || '').trim();
+    const cleanEmail = (params.email || '').trim().toLowerCase();
+    const rawPassword = params.password || '';
+
+    const preCheck = validateAndCreateUser([], { ...params, name: cleanName, email: cleanEmail }, lang);
+    if (!preCheck.success || !preCheck.user) {
+      return { success: false, error: preCheck.error };
     }
 
-    const newUser = result.user;
-    setAllUsers((prev) => [...prev, newUser]);
-    setCurrentUser(newUser);
-    setIsAuthenticated(true);
-    setLivesInfo(calculateRegeneratedLives(newUser));
-    if ((newUser.role !== 'admin' && activeTab === 'admin') || activeTab === 'landing') {
-      setActiveTab('dashboard');
-    }
+    const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    const bioOverride =
+      params.bio?.trim() ||
+      (isEn ? 'New Full Stack Academy student.' : 'Nowy kursant Akademii Full Stack.');
 
-    soundManager.playLevelUp();
-    showToast(
-      isEn
-        ? `Account created and verified against bots! Welcome, ${newUser.name}.`
-        : `Konto zostało pomyślnie utworzone i zweryfikowane anty-botem! Witaj, ${newUser.name}.`,
-      'success'
-    );
-    return { success: true, user: newUser };
+    try {
+      setIsSyncingCloud(true);
+      pendingCloudProfileRef.current = {
+        name: cleanName,
+        bio: bioOverride,
+      };
+      const fbUser = await signUpWithEmailFirebase(cleanEmail, rawPassword, cleanName);
+      const cloudProfile = await fetchOrCreateCloudUserProfile(
+        fbUser,
+        currentUserRef.current,
+        pendingCloudProfileRef.current
+      );
+      pendingCloudProfileRef.current = null;
+
+      setFirebaseUid(fbUser.uid);
+      setIsCloudConnected(true);
+      setAllUsers((prev) => {
+        const exists = prev.some((u) => u.id === cloudProfile.id);
+        return exists ? prev.map((u) => (u.id === cloudProfile.id ? cloudProfile : u)) : [cloudProfile, ...prev];
+      });
+      setCurrentUser(cloudProfile);
+      setIsAuthenticated(true);
+      setLivesInfo(calculateRegeneratedLives(cloudProfile));
+      if ((cloudProfile.role !== 'admin' && activeTab === 'admin') || activeTab === 'landing') {
+        setActiveTab('dashboard');
+      }
+      trackFirebaseEvent('sign_up', { method: 'email' });
+      soundManager.playLevelUp();
+      showToast(
+        isEn
+          ? `Firebase account created and verified! Welcome, ${cloudProfile.name}.`
+          : `Konto Firebase zostało utworzone i zweryfikowane! Witaj, ${cloudProfile.name}.`,
+        'badge'
+      );
+      return { success: true, user: cloudProfile };
+    } catch (err) {
+      pendingCloudProfileRef.current = null;
+      const classification = classifyEmailAuthError(err, currentHostname, lang);
+      showToast(classification.userTitle, 'danger');
+      return {
+        success: false,
+        error: classification.userMessage,
+        classification,
+      };
+    } finally {
+      setIsSyncingCloud(false);
+    }
   };
 
-  const updateCurrentUserProfile = (partial: {
+  const updateCurrentUserProfile = async (partial: {
     name?: string;
     bio?: string;
     password?: string;
     weeklyGoalMinutes?: number;
-  }): { success: boolean; message: string } => {
-    const isEn = languageRef.current === 'en';
+  }): Promise<{
+    success: boolean;
+    message: string;
+    classification?: EmailAuthErrorClassification;
+  }> => {
+    const lang = languageRef.current;
+    const isEn = lang === 'en';
     if (!isAuthenticated || currentUser.id === 'user-guest') {
       return {
         success: false,
@@ -1797,33 +2032,59 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
     }
 
-    const updatedUser: User = {
-      ...currentUser,
-      name: cleanName,
-      bio: partial.bio !== undefined ? partial.bio.trim() : currentUser.bio,
-      password:
-        partial.password && partial.password.trim().length >= 6
-          ? partial.password
-          : currentUser.password,
-      weeklyGoalMinutes:
-        typeof partial.weeklyGoalMinutes === 'number' && partial.weeklyGoalMinutes >= 30
-          ? partial.weeklyGoalMinutes
-          : currentUser.weeklyGoalMinutes,
-    };
+    const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
 
-    setCurrentUser(updatedUser);
-    setAllUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
-    soundManager.playSuccess();
-    showToast(
-      isEn
-        ? 'Your profile and security settings have been updated.'
-        : 'Twój profil oraz ustawienia bezpieczeństwa zostały zaktualizowane.',
-      'success'
-    );
-    return {
-      success: true,
-      message: isEn ? 'Profile changes saved.' : 'Zmiany w profilu zostały zapisane.',
-    };
+    try {
+      if (firebaseUid && isCloudConnected) {
+        setIsSyncingCloud(true);
+        await updateFirebaseUserProfile({
+          displayName: cleanName,
+          newPassword: partial.password,
+        });
+      }
+
+      const updatedUser: User = {
+        ...currentUser,
+        name: cleanName,
+        bio: partial.bio !== undefined ? partial.bio.trim() : currentUser.bio,
+        password:
+          !firebaseUid && partial.password && partial.password.trim().length >= 6
+            ? partial.password
+            : undefined,
+        weeklyGoalMinutes:
+          typeof partial.weeklyGoalMinutes === 'number' && partial.weeklyGoalMinutes >= 30
+            ? partial.weeklyGoalMinutes
+            : currentUser.weeklyGoalMinutes,
+      };
+
+      if (firebaseUid && isCloudConnected) {
+        await saveUserProfileToCloud(firebaseUid, updatedUser);
+      }
+
+      setCurrentUser(updatedUser);
+      setAllUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+      soundManager.playSuccess();
+      showToast(
+        isEn
+          ? 'Your profile and security settings have been updated.'
+          : 'Twój profil oraz ustawienia bezpieczeństwa zostały zaktualizowane.',
+        'success'
+      );
+      return {
+        success: true,
+        message: isEn ? 'Profile changes saved.' : 'Zmiany w profilu zostały zapisane.',
+      };
+    } catch (err) {
+      const classification = classifyEmailAuthError(err, currentHostname, lang);
+      showToast(classification.userTitle, 'danger');
+      return {
+        success: false,
+        message: classification.userMessage,
+        classification,
+      };
+    } finally {
+      setIsSyncingCloud(false);
+    }
   };
 
   const deleteUser = (userId: string) => {
@@ -1909,42 +2170,59 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
   };
 
-  const resetUserPassword = (email: string, newPassword: string = 'newPassword2026!'): { success: boolean; message: string } => {
+  const resetUserPassword = async (
+    email: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    classification?: EmailAuthErrorClassification;
+  }> => {
     const lang = languageRef.current;
     const isEn = lang === 'en';
     const cleanEmail = (email || '').trim().toLowerCase();
-    const found = allUsers.find((u) => u.email.trim().toLowerCase() === cleanEmail);
-    const resetCheck = canResetUserPassword(found, lang);
-    if (!resetCheck.allowed || !found) {
+
+    if (!cleanEmail || !validateEmailFormat(cleanEmail)) {
       return {
         success: false,
-        message: resetCheck.error || (isEn ? 'No account found with that email address.' : 'Nie znaleziono konta z podanym adresem e-mail.'),
+        message: isEn
+          ? 'Enter a valid email address format.'
+          : 'Podaj poprawny format adresu e-mail.',
       };
     }
 
-    if (!newPassword || newPassword.length < 6) {
+    const foundAdmin = allUsers.find((u) => u.email.trim().toLowerCase() === cleanEmail);
+    if (cleanEmail === 'zordonzordon1@gmail.com' || foundAdmin?.role === 'admin') {
+      const check = canResetUserPassword(
+        foundAdmin || ({ email: cleanEmail, role: 'admin', id: 'user-admin' } as User),
+        lang
+      );
       return {
         success: false,
-        message: isEn ? 'New password must be at least 6 characters long.' : 'Nowe hasło musi mieć co najmniej 6 znaków.',
+        message: check.error || (isEn ? 'Administrator password reset is disabled.' : 'Reset hasła administratora jest wyłączony.'),
       };
     }
 
-    setAllUsers((prev) =>
-      prev.map((u) => (u.id === found.id ? { ...u, password: newPassword } : u))
-    );
-    if (currentUser.id === found.id) {
-      setCurrentUser((prev) => ({ ...prev, password: newPassword }));
+    const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+
+    try {
+      setIsSyncingCloud(true);
+      await sendPasswordResetFirebase(cleanEmail);
+      const okMsg = isEn
+        ? `Firebase sent a password reset link to ${cleanEmail}. Check your inbox (and Spam folder).`
+        : `Firebase wysłał link do zmiany hasła na adres ${cleanEmail}. Sprawdź skrzynkę e-mail (oraz folder Spam).`;
+      showToast(okMsg, 'badge');
+      return { success: true, message: okMsg };
+    } catch (err) {
+      const classification = classifyEmailAuthError(err, currentHostname, lang);
+      showToast(classification.userTitle, 'danger');
+      return {
+        success: false,
+        message: classification.userMessage,
+        classification,
+      };
+    } finally {
+      setIsSyncingCloud(false);
     }
-    showToast(
-      isEn ? `Password updated for ${found.name}.` : `Hasło dla ${found.name} zostało zaktualizowane.`,
-      'badge'
-    );
-    return {
-      success: true,
-      message: isEn
-        ? `New password set for ${found.email}: ${newPassword}`
-        : `Nowe hasło dla konta ${found.email} zostało ustawione: ${newPassword}`,
-    };
   };
 
   const verifyUserAntiBot = (userId: string) => {

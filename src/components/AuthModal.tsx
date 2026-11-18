@@ -8,6 +8,7 @@ import {
 } from '../utils/antiBot';
 import {
   AuthModalMode,
+  EmailAuthErrorClassification,
   GoogleAuthErrorClassification,
   getPasswordStrength,
   validateEmailFormat,
@@ -66,7 +67,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
-  const [newResetPassword, setNewResetPassword] = useState('akademia2026!');
   const [showPassword, setShowPassword] = useState(false);
   const [bio, setBio] = useState('');
 
@@ -85,8 +85,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
   const [isHumanConfirmed, setIsHumanConfirmed] = useState(false);
 
   // Status & Feedback
+  const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [googleAuthIssue, setGoogleAuthIssue] = useState<GoogleAuthErrorClassification | null>(null);
+  const [emailAuthIssue, setEmailAuthIssue] = useState<EmailAuthErrorClassification | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
 
   // Reset form timer when modal opens or mode changes
@@ -104,8 +106,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
       setAntiBotAnswer('');
       setSliderProgress(0);
       setIsHumanConfirmed(false);
+      setIsSubmittingAuth(false);
       setErrorMessage('');
       setGoogleAuthIssue(null);
+      setEmailAuthIssue(null);
       setSuccessMessage('');
       setProfileName(currentUser.name);
       setProfileBio(currentUser.bio || '');
@@ -134,10 +138,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     }
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setGoogleAuthIssue(null);
+    setEmailAuthIssue(null);
     setSuccessMessage('');
 
     if (!email.trim() || !password.trim()) {
@@ -149,17 +154,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
       return;
     }
 
-    const res = loginUser(email.trim(), password);
-    if (res.success) {
-      onClose();
-    } else {
-      setErrorMessage(res.error || (isEn ? 'Sign-in error.' : 'Błąd logowania.'));
+    setIsSubmittingAuth(true);
+    try {
+      const res = await loginUser(email.trim(), password);
+      if (res.success) {
+        onClose();
+      } else {
+        if (res.classification) {
+          setEmailAuthIssue(res.classification);
+        }
+        setErrorMessage(res.error || (isEn ? 'Sign-in error.' : 'Błąd logowania.'));
+      }
+    } finally {
+      setIsSubmittingAuth(false);
     }
   };
 
   const handleGoogleLogin = async () => {
     setErrorMessage('');
     setGoogleAuthIssue(null);
+    setEmailAuthIssue(null);
     setSuccessMessage('');
     const res = await loginWithGoogle();
     if (res.success) {
@@ -174,9 +188,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setGoogleAuthIssue(null);
+    setEmailAuthIssue(null);
     setSuccessMessage('');
 
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -233,29 +249,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
       return;
     }
 
-    const res = registerUser({
-      name: name.trim(),
-      email: email.trim(),
-      password,
-      role: 'student',
-      antiBotPassed: botCheck.isHuman,
-      antiBotScore: botCheck.score,
-      bio: bio.trim(),
-    });
+    setIsSubmittingAuth(true);
+    try {
+      const res = await registerUser({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        role: 'student',
+        antiBotPassed: botCheck.isHuman,
+        antiBotScore: botCheck.score,
+        bio: bio.trim(),
+      });
 
-    if (res.success) {
-      onClose();
-    } else {
-      setErrorMessage(
-        res.error ||
-          (isEn ? 'Could not register the user account.' : 'Nie udało się zarejestrować użytkownika.')
-      );
+      if (res.success) {
+        onClose();
+      } else {
+        if (res.classification) {
+          setEmailAuthIssue(res.classification);
+        }
+        setErrorMessage(
+          res.error ||
+            (isEn ? 'Could not register the user account.' : 'Nie udało się zarejestrować użytkownika.')
+        );
+      }
+    } finally {
+      setIsSubmittingAuth(false);
     }
   };
 
-  const handleForgotSubmit = (e: React.FormEvent) => {
+  const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setGoogleAuthIssue(null);
+    setEmailAuthIssue(null);
     setSuccessMessage('');
 
     if (!email.trim()) {
@@ -272,45 +298,48 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
       return;
     }
 
-    const targetPass = newResetPassword.trim() || 'akademia2026!';
-    if (targetPass.length < 6) {
-      setErrorMessage(
-        isEn
-          ? 'The new password must be at least 6 characters long.'
-          : 'Nowe hasło musi zawierać co najmniej 6 znaków.'
-      );
-      return;
-    }
-
-    const res = resetUserPassword(email.trim(), targetPass);
-    if (res.success) {
-      setSuccessMessage(res.message);
-      setPassword(targetPass);
-      setTimeout(() => {
-        setMode('login');
-      }, 2000);
-    } else {
-      setErrorMessage(res.message);
+    setIsSubmittingAuth(true);
+    try {
+      const res = await resetUserPassword(email.trim());
+      if (res.success) {
+        setSuccessMessage(res.message);
+      } else {
+        if (res.classification) {
+          setEmailAuthIssue(res.classification);
+        }
+        setErrorMessage(res.message);
+      }
+    } finally {
+      setIsSubmittingAuth(false);
     }
   };
 
-  const handleProfileSave = (e: React.FormEvent) => {
+  const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setEmailAuthIssue(null);
     setSuccessMessage('');
 
-    const res = updateCurrentUserProfile({
-      name: profileName,
-      bio: profileBio,
-      password: profileNewPassword.trim() ? profileNewPassword : undefined,
-      weeklyGoalMinutes: profileWeeklyGoal,
-    });
+    setIsSubmittingAuth(true);
+    try {
+      const res = await updateCurrentUserProfile({
+        name: profileName,
+        bio: profileBio,
+        password: profileNewPassword.trim() ? profileNewPassword : undefined,
+        weeklyGoalMinutes: profileWeeklyGoal,
+      });
 
-    if (res.success) {
-      setSuccessMessage(res.message);
-      setProfileNewPassword('');
-    } else {
-      setErrorMessage(res.message);
+      if (res.success) {
+        setSuccessMessage(res.message);
+        setProfileNewPassword('');
+      } else {
+        if (res.classification) {
+          setEmailAuthIssue(res.classification);
+        }
+        setErrorMessage(res.message);
+      }
+    } finally {
+      setIsSubmittingAuth(false);
     }
   };
 
@@ -356,16 +385,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
               <p className="text-[11px] sm:text-xs text-slate-400">
                 {mode === 'login' &&
                   (isEn
-                    ? 'Sign in with Google Firebase Cloud or your email address.'
-                    : 'Zaloguj się przez Chmurę Google Firebase lub adresem e-mail.')}
+                    ? 'Sign in with Google or email via Firebase Auth & Cloud Firestore.'
+                    : 'Zaloguj się przez Google lub e-mail w Firebase Auth & Cloud Firestore.')}
                 {mode === 'register' &&
                   (isEn
                     ? 'Fill in your details and verify that you are human.'
                     : 'Wypełnij dane i potwierdź tożsamość człowieka.')}
                 {mode === 'forgot' &&
                   (isEn
-                    ? 'Set a new access password for your account.'
-                    : 'Ustaw nowe hasło dostępowe dla swojego konta.')}
+                    ? 'Receive a Firebase password reset link in your email inbox.'
+                    : 'Otrzymaj oficjalny link resetujący hasło Firebase na swój adres e-mail.')}
                 {mode === 'profile' &&
                   (isEn
                     ? 'Manage your profile details, password, and active session.'
@@ -520,14 +549,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                 </div>
                 <p className="text-[11px] text-slate-400">
                   {isEn
-                    ? 'Sign in with Google to sync XP, badges, hearts, and code in real time across devices.'
-                    : 'Zaloguj się kontem Google, aby synchronizować XP, odznaki, serca i kod w czasie rzeczywistym między urządzeniami.'}
+                    ? 'Both Google Sign-In and Email/Password sync your XP, badges, hearts, and code in Cloud Firestore across devices.'
+                    : 'Zarówno logowanie Google, jak i E-mail/Hasło synchronizuje Twoje XP, odznaki, serca i kod w Cloud Firestore między urządzeniami.'}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => void handleGoogleLogin()}
-                disabled={isSyncingCloud}
+                disabled={isSyncingCloud || isSubmittingAuth}
                 className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold shadow-md transition-all cursor-pointer disabled:opacity-60"
               >
                 <Cloud className="h-4 w-4 text-indigo-600" />
@@ -545,11 +574,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
           )}
 
           {/* Feedback Messages */}
-          {(errorMessage || googleAuthIssue) && (
+          {(errorMessage || googleAuthIssue || emailAuthIssue) && (
             <div
               role="alert"
               className={`p-3.5 rounded-2xl text-xs space-y-2.5 animate-in slide-in-from-top-1 border ${
-                googleAuthIssue?.isDomainConfigIssue
+                googleAuthIssue?.isDomainConfigIssue ||
+                googleAuthIssue?.isProviderConfigIssue ||
+                emailAuthIssue?.isProviderConfigIssue ||
+                emailAuthIssue?.isDomainConfigIssue
                   ? 'bg-amber-950/40 border-amber-500/40 text-amber-100'
                   : 'bg-rose-950/50 border-rose-500/40 text-rose-200'
               }`}
@@ -557,14 +589,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
               <div className="flex items-start gap-2.5">
                 <ShieldAlert
                   className={`h-4 w-4 shrink-0 mt-0.5 ${
-                    googleAuthIssue?.isDomainConfigIssue ? 'text-amber-400' : 'text-rose-400'
+                    googleAuthIssue?.isDomainConfigIssue ||
+                    googleAuthIssue?.isProviderConfigIssue ||
+                    emailAuthIssue?.isProviderConfigIssue ||
+                    emailAuthIssue?.isDomainConfigIssue
+                      ? 'text-amber-400'
+                      : 'text-rose-400'
                   }`}
                 />
                 <div className="flex-1 space-y-1 leading-relaxed">
-                  {googleAuthIssue && (
-                    <p className="font-bold text-white">{googleAuthIssue.userTitle}</p>
+                  {(googleAuthIssue || emailAuthIssue) && (
+                    <p className="font-bold text-white">
+                      {googleAuthIssue ? googleAuthIssue.userTitle : emailAuthIssue?.userTitle}
+                    </p>
                   )}
-                  <p>{googleAuthIssue ? googleAuthIssue.userMessage : errorMessage}</p>
+                  <p>
+                    {googleAuthIssue
+                      ? googleAuthIssue.userMessage
+                      : emailAuthIssue
+                      ? emailAuthIssue.userMessage
+                      : errorMessage}
+                  </p>
                 </div>
               </div>
 
@@ -579,12 +624,51 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                       setMode('register');
                       setErrorMessage('');
                       setGoogleAuthIssue(null);
+                      setEmailAuthIssue(null);
                     }}
                     className="shrink-0 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold cursor-pointer"
                   >
                     {isEn ? 'Register free →' : 'Rejestracja e-mail →'}
                   </button>
                 </div>
+              )}
+
+              {(emailAuthIssue?.isProviderConfigIssue || googleAuthIssue?.isProviderConfigIssue) && (
+                <details
+                  open
+                  className="rounded-xl bg-slate-950/90 border border-slate-800 px-3 py-2 text-[11px] text-slate-300"
+                >
+                  <summary className="cursor-pointer font-semibold text-amber-300 hover:text-white select-none">
+                    {isEn
+                      ? 'Owner guide: Enable Sign-in providers in Firebase Console'
+                      : 'Dla właściciela projektu: jak włączyć logowanie w Firebase Console'}
+                  </summary>
+                  <div className="mt-2 space-y-1.5 pt-2 border-t border-slate-800/80">
+                    <ol className="list-decimal list-inside space-y-1 text-slate-300">
+                      <li>
+                        {isEn ? 'Open ' : 'Otwórz '}
+                        <a
+                          href={`https://console.firebase.google.com/project/${activeFirebaseConfig.projectId}/authentication/providers`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-400 hover:text-indigo-300 underline font-semibold"
+                        >
+                          Firebase Console ({activeFirebaseConfig.projectId}) → Authentication → Sign-in method
+                        </a>
+                      </li>
+                      <li>
+                        {isEn
+                          ? 'Click "Email/Password", turn on Enable, and click Save.'
+                          : 'Kliknij „Email/Password” (E-mail/Hasło), włącz przełącznik Enable i kliknij Save.'}
+                      </li>
+                      <li>
+                        {isEn
+                          ? 'Also verify "Google" provider is enabled with a support email.'
+                          : 'Upewnij się też, że dostawca „Google” jest włączony i ma wybrany e-mail wsparcia.'}
+                      </li>
+                    </ol>
+                  </div>
+                </details>
               )}
 
               {googleAuthIssue?.isDomainConfigIssue && (
@@ -716,9 +800,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
 
               <button
                 type="submit"
-                className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2 cursor-pointer"
+                disabled={isSubmittingAuth || isSyncingCloud}
+                className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
-                <span>{isEn ? 'Sign In' : 'Zaloguj się'}</span>
+                <span>
+                  {isSubmittingAuth
+                    ? isEn
+                      ? 'Signing in via Firebase...'
+                      : 'Logowanie przez Firebase...'
+                    : isEn
+                    ? 'Sign In'
+                    : 'Zaloguj się'}
+                </span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
 
@@ -942,10 +1035,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
 
               <button
                 type="submit"
-                className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2 cursor-pointer"
+                disabled={isSubmittingAuth || isSyncingCloud}
+                className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
                 <ShieldCheck className="h-4 w-4" />
-                <span>{isEn ? 'Register Verified Account' : 'Zarejestruj zweryfikowane konto'}</span>
+                <span>
+                  {isSubmittingAuth
+                    ? isEn
+                      ? 'Creating Firebase account...'
+                      : 'Tworzenie konta Firebase...'
+                    : isEn
+                    ? 'Register Verified Account'
+                    : 'Zarejestruj zweryfikowane konto'}
+                </span>
               </button>
 
               <p className="text-center text-xs text-slate-400 pt-1">
@@ -970,8 +1072,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
             <form onSubmit={handleForgotSubmit} className="space-y-4">
               <div className="p-4 rounded-2xl bg-indigo-950/20 border border-indigo-500/20 text-xs text-slate-300 leading-relaxed">
                 {isEn
-                  ? 'Enter the email address linked to your account and type a new password (or generate one). Once confirmed, you will be redirected to sign in.'
-                  : 'Podaj adres e-mail przypisany do Twojego konta oraz wpisz nowe hasło (lub użyj wygenerowanego). Po zatwierdzeniu zostaniesz przekierowany do logowania.'}
+                  ? 'Enter the email address linked to your account. Firebase Authentication will send a secure password-reset link directly to your inbox (check Spam/Promotions if needed).'
+                  : 'Podaj adres e-mail powiązany z Twoim kontem. Firebase Authentication wyśle bezpieczny link do ustawienia nowego hasła na Twoją skrzynkę pocztową (sprawdź także folder Spam/Oferty).'}
               </div>
 
               <div className="space-y-1">
@@ -992,46 +1094,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="forgot-new-pass" className="text-xs font-semibold text-slate-300 block">
-                    {isEn ? 'New password (min. 6 characters):' : 'Nowe hasło dostępowe (min. 6 znaków):'}
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setNewResetPassword(`FullStack${Math.floor(100 + Math.random() * 900)}!`)}
-                    className="text-[11px] text-cyan-400 hover:text-cyan-300"
-                  >
-                    {isEn ? 'Generate strong password' : 'Losuj silne hasło'}
-                  </button>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
-                  <input
-                    id="forgot-new-pass"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={newResetPassword}
-                    onChange={(e) => setNewResetPassword(e.target.value)}
-                    placeholder={isEn ? 'Minimum 6 characters' : 'Minimum 6 znaków'}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 pl-9 pr-10 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
               <button
                 type="submit"
-                className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2"
+                disabled={isSubmittingAuth || isSyncingCloud}
+                className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 text-xs font-bold transition-all shadow-md shadow-indigo-900/40 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
                 <KeyRound className="h-4 w-4" />
-                <span>{isEn ? 'Set New Password' : 'Ustaw nowe hasło dostępowe'}</span>
+                <span>
+                  {isSubmittingAuth
+                    ? isEn
+                      ? 'Sending reset link...'
+                      : 'Wysyłanie linku resetującego...'
+                    : isEn
+                    ? 'Send Password Reset Email'
+                    : 'Wyślij link resetujący hasło'}
+                </span>
               </button>
             </form>
           )}
@@ -1143,10 +1220,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
 
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2"
+                  disabled={isSubmittingAuth || isSyncingCloud}
+                  className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   <Save className="h-4 w-4" />
-                  <span>{isEn ? 'Save profile changes' : 'Zapisz zmiany w profilu'}</span>
+                  <span>
+                    {isSubmittingAuth
+                      ? isEn
+                        ? 'Saving to Firebase...'
+                        : 'Zapisywanie w Firebase...'
+                      : isEn
+                      ? 'Save profile changes'
+                      : 'Zapisz zmiany w profilu'}
+                  </span>
                 </button>
               </form>
             </div>

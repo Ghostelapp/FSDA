@@ -26,7 +26,8 @@ import {
 } from './rewardValidation';
 
 const app = initializeApp();
-const database = getFirestore(app, 'ai-studio-fullstackdevelop-80d152f2-d04c-445c-9051-a2745372418c');
+const databaseId = process.env.FIRESTORE_DATABASE_ID?.trim();
+const database = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
 const lessons = MODULES_DATA.flatMap((module) => module.lessons);
 
 type CodeBundle = { html: string; css: string; js: string };

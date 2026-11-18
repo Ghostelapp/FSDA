@@ -1,8 +1,19 @@
 import { initializeApp } from 'firebase/app';
 import {
+  getAnalytics,
+  isSupported as isAnalyticsSupported,
+  logEvent as firebaseLogEvent,
+  Analytics,
+} from 'firebase/analytics';
+import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
+  updatePassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   User as FirebaseUser,
@@ -26,7 +37,6 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import firebaseAppletConfig from '../firebase-applet-config.json';
 import {
   User,
   Announcement,
@@ -41,28 +51,68 @@ import { sanitizeGithubIntegrationForPersistence } from './utils/githubService';
 
 const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env || {};
 
+const USER_FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyD6JohhtsGb8cVkanoIDcfmcRUiyjq7wyA',
+  authDomain: 'fsda-1d673.firebaseapp.com',
+  projectId: 'fsda-1d673',
+  storageBucket: 'fsda-1d673.firebasestorage.app',
+  messagingSenderId: '971033891347',
+  appId: '1:971033891347:web:520dcba532dff9818565e6',
+  measurementId: 'G-MNX8T1X154',
+};
+
 export const activeFirebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || firebaseAppletConfig.apiKey,
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || firebaseAppletConfig.authDomain,
-  projectId: env.VITE_FIREBASE_PROJECT_ID || firebaseAppletConfig.projectId,
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || firebaseAppletConfig.storageBucket,
+  apiKey: env.VITE_FIREBASE_API_KEY || USER_FIREBASE_CONFIG.apiKey,
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || USER_FIREBASE_CONFIG.authDomain,
+  projectId: env.VITE_FIREBASE_PROJECT_ID || USER_FIREBASE_CONFIG.projectId,
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || USER_FIREBASE_CONFIG.storageBucket,
   messagingSenderId:
-    env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseAppletConfig.messagingSenderId,
-  appId: env.VITE_FIREBASE_APP_ID || firebaseAppletConfig.appId,
-  firestoreDatabaseId:
-    env.VITE_FIREBASE_DATABASE_ID || firebaseAppletConfig.firestoreDatabaseId,
+    env.VITE_FIREBASE_MESSAGING_SENDER_ID || USER_FIREBASE_CONFIG.messagingSenderId,
+  appId: env.VITE_FIREBASE_APP_ID || USER_FIREBASE_CONFIG.appId,
+  measurementId: env.VITE_FIREBASE_MEASUREMENT_ID || USER_FIREBASE_CONFIG.measurementId,
+  firestoreDatabaseId: env.VITE_FIREBASE_DATABASE_ID || '',
 };
 
 // Initialize Firebase SDK with forced long-polling to prevent WebChannel RPC 'Listen' stream transport errors in iframes/proxies
 export const app = initializeApp(activeFirebaseConfig);
-export const db = initializeFirestore(
-  app,
-  {
-    experimentalForceLongPolling: true,
-    ignoreUndefinedProperties: true,
-  },
-  activeFirebaseConfig.firestoreDatabaseId
-);
+export let analytics: Analytics | null = null;
+if (typeof window !== 'undefined' && activeFirebaseConfig.measurementId) {
+  void isAnalyticsSupported()
+    .then((supported) => {
+      if (supported) {
+        analytics = getAnalytics(app);
+      }
+    })
+    .catch(() => {
+      // Ignore Analytics initialization errors when cookies/storage are blocked
+    });
+}
+
+export function trackFirebaseEvent(
+  eventName: string,
+  params?: Record<string, string | number | boolean>
+): void {
+  if (!analytics) return;
+  try {
+    firebaseLogEvent(analytics, eventName, params);
+  } catch {
+    // Ignore non-fatal analytics dispatch errors
+  }
+}
+
+export const db = activeFirebaseConfig.firestoreDatabaseId
+  ? initializeFirestore(
+      app,
+      {
+        experimentalForceLongPolling: true,
+        ignoreUndefinedProperties: true,
+      },
+      activeFirebaseConfig.firestoreDatabaseId
+    )
+  : initializeFirestore(app, {
+      experimentalForceLongPolling: true,
+      ignoreUndefinedProperties: true,
+    });
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
@@ -282,7 +332,8 @@ export async function saveUserProfileToCloud(uid: string, user: User): Promise<b
 
 export async function fetchOrCreateCloudUserProfile(
   fbUser: FirebaseUser,
-  fallbackLocalUser?: User
+  fallbackLocalUser?: User,
+  profileOverrides?: { name?: string; bio?: string }
 ): Promise<User> {
   const uid = fbUser.uid;
   const path = `users/${uid}`;
@@ -291,10 +342,13 @@ export async function fetchOrCreateCloudUserProfile(
     (fbUser.email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com';
 
   const isGuestFallback = !fallbackLocalUser || fallbackLocalUser.id === 'user-guest';
+  const overrideName = profileOverrides?.name?.trim();
+  const overrideBio = profileOverrides?.bio?.trim();
 
   const initialUser: User = {
     id: uid,
     name:
+      overrideName ||
       fbUser.displayName ||
       (!isGuestFallback ? fallbackLocalUser?.name : undefined) ||
       'Kursant Akademii',
@@ -305,7 +359,7 @@ export async function fetchOrCreateCloudUserProfile(
     antiBotScore: 100,
     avatar:
       fbUser.photoURL ||
-      `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(uid)}`,
+      `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(overrideName || uid)}`,
     xp: 0,
     level: 1,
     streakDays: 0,
@@ -326,7 +380,8 @@ export async function fetchOrCreateCloudUserProfile(
     streakFreezes: 0,
     bio: isAdminEmail
       ? 'Główny Administrator i Architekt Akademii Full Stack Developer (Chmura Firebase).'
-      : 'Kursant Full Stack Developer Academy (Synchronizacja z chmurą Firestore).',
+      : overrideBio ||
+        'Kursant Full Stack Developer Academy (Synchronizacja z chmurą Firestore).',
     createdAt: new Date().toISOString().split('T')[0],
   };
 
@@ -334,9 +389,19 @@ export async function fetchOrCreateCloudUserProfile(
     const snap = await getDoc(doc(db, 'users', uid));
     if (snap.exists()) {
       const data = snap.data() as Partial<User>;
-      return {
+      const resolvedName =
+        overrideName && (!data.name || data.name === 'Kursant Akademii')
+          ? overrideName
+          : data.name || fbUser.displayName || overrideName || 'Kursant Google';
+      const resolvedBio =
+        overrideBio &&
+        (!data.bio || data.bio.startsWith('Kursant Full Stack Developer Academy'))
+          ? overrideBio
+          : data.bio || 'Zalogowano przez Firebase Auth (Chmura Firestore).';
+
+      const hydratedUser: User = {
         id: data.id || uid,
-        name: data.name || fbUser.displayName || 'Kursant Google',
+        name: resolvedName,
         email: data.email || fbUser.email || 'user@gmail.com',
         role: isAdminEmail ? 'admin' : 'student',
         status: data.status || 'active',
@@ -345,7 +410,7 @@ export async function fetchOrCreateCloudUserProfile(
         avatar:
           data.avatar ||
           fbUser.photoURL ||
-          `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(uid)}`,
+          `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(resolvedName || uid)}`,
         xp: typeof data.xp === 'number' ? data.xp : 0,
         level: typeof data.level === 'number' ? data.level : 1,
         streakDays: typeof data.streakDays === 'number' ? data.streakDays : 1,
@@ -366,16 +431,22 @@ export async function fetchOrCreateCloudUserProfile(
         isPro: isAdminEmail ? true : Boolean(data.isPro),
         proPlan: isAdminEmail ? 'lifetime' : data.proPlan,
         streakFreezes: typeof data.streakFreezes === 'number' ? data.streakFreezes : 1,
-        bio: data.bio || 'Zalogowano przez Google Firebase Auth (Chmura Firestore).',
+        bio: resolvedBio,
         createdAt: data.createdAt || new Date().toISOString().split('T')[0],
       };
+
+      if (resolvedName !== data.name || resolvedBio !== data.bio) {
+        void saveUserProfileToCloud(uid, hydratedUser);
+      }
+
+      return hydratedUser;
     }
 
-    void saveUserProfileToCloud(uid, initialUser);
+    await saveUserProfileToCloud(uid, initialUser);
     return initialUser;
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, path);
-    // Do not block Google login if Firestore is temporarily in offline mode — return the authenticated user and sync in background
+    // Do not block login if Firestore is temporarily in offline mode — return the authenticated user and sync in background
     void saveUserProfileToCloud(uid, initialUser);
     return initialUser;
   }
@@ -693,6 +764,48 @@ export function subscribeAllUsersForAdmin(
 export async function signInWithGoogleFirebase(): Promise<FirebaseUser> {
   const result = await signInWithPopup(auth, googleProvider);
   return result.user;
+}
+
+export async function signUpWithEmailFirebase(
+  email: string,
+  password: string,
+  displayName?: string
+): Promise<FirebaseUser> {
+  const result = await createUserWithEmailAndPassword(auth, email, password);
+  if (displayName && displayName.trim()) {
+    try {
+      await updateProfile(result.user, { displayName: displayName.trim() });
+    } catch {
+      // ignore non-fatal displayName update error; Firestore keeps authoritative profile name
+    }
+  }
+  return result.user;
+}
+
+export async function signInWithEmailFirebase(
+  email: string,
+  password: string
+): Promise<FirebaseUser> {
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  return result.user;
+}
+
+export async function sendPasswordResetFirebase(email: string): Promise<void> {
+  await sendPasswordResetEmail(auth, email);
+}
+
+export async function updateFirebaseUserProfile(updates: {
+  displayName?: string;
+  newPassword?: string;
+}): Promise<void> {
+  const current = auth.currentUser;
+  if (!current) return;
+  if (updates.displayName && updates.displayName.trim() && updates.displayName.trim() !== current.displayName) {
+    await updateProfile(current, { displayName: updates.displayName.trim() });
+  }
+  if (updates.newPassword && updates.newPassword.trim().length >= 6) {
+    await updatePassword(current, updates.newPassword.trim());
+  }
 }
 
 export async function signOutFromFirebase(): Promise<void> {
