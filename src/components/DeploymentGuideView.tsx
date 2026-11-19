@@ -8,11 +8,12 @@ import {
   BookOpen,
   Smartphone,
   Download,
-  PackageCheck
+  PackageCheck,
+  Apple
 } from 'lucide-react';
 import { CodeBlock } from './CodeBlock';
 import { AndroidPlayStoreModal } from './AndroidPlayStoreModal';
-import { downloadVerifiedPlayStoreZip } from '../utils/playStoreDownload';
+import { downloadVerifiedIosZip, downloadVerifiedPlayStoreZip } from '../utils/playStoreDownload';
 import { useApp } from '../context/AppContext';
 
 export const DeploymentGuideView: React.FC = () => {
@@ -21,6 +22,7 @@ export const DeploymentGuideView: React.FC = () => {
   const isAdmin = isAuthenticated && currentUser.role === 'admin';
   const [isPlayStoreModalOpen, setIsPlayStoreModalOpen] = useState(false);
   const [isDownloadingZip, setIsDownloadingZip] = useState(false);
+  const [isDownloadingIosZip, setIsDownloadingIosZip] = useState(false);
 
   const handleDownloadZip = async () => {
     setIsDownloadingZip(true);
@@ -28,6 +30,15 @@ export const DeploymentGuideView: React.FC = () => {
       await downloadVerifiedPlayStoreZip();
     } finally {
       setIsDownloadingZip(false);
+    }
+  };
+
+  const handleDownloadIosZip = async () => {
+    setIsDownloadingIosZip(true);
+    try {
+      await downloadVerifiedIosZip();
+    } finally {
+      setIsDownloadingIosZip(false);
     }
   };
 
@@ -247,12 +258,12 @@ npx @bubblewrap/cli build`;
             className="px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-extrabold transition-all shadow-lg shadow-indigo-600/30 shrink-0 flex items-center gap-2"
           >
             <PackageCheck className="h-4 w-4" />
-            <span>{isEn ? 'Google Play Center (Admin)' : 'Centrum Google Play (Admin)'}</span>
+            <span>{isEn ? 'Mobile Release Center (Android & iOS)' : 'Centrum Wydań Android & iOS'}</span>
           </button>
         )}
       </div>
 
-      {/* SECTION 0: Google Play Store APK / AAB Highlight Card (Admin Only) */}
+      {/* SECTION 0: Google Play & Apple App Store Highlight Card (Admin Only) */}
       {isAdmin && (
         <section className="rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-950 p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -261,18 +272,18 @@ npx @bubblewrap/cli build`;
                 <Smartphone className="h-5 w-5" />
                 <h2 className="text-white">
                   {isEn
-                    ? 'Google Play Store Production Bundle (Admin Only — TWA v3.0.0)'
-                    : 'Pakiet Produkcyjny Google Play Store (Tylko Administrator — TWA v3.0.0)'}
+                    ? 'Google Play & Apple App Store Production Bundles (Admin Only — v3.0.0)'
+                    : 'Pakiety Produkcyjne Google Play & Apple App Store (Tylko Admin — v3.0.0)'}
                 </h2>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
                 {isEn ? (
                   <>
-                    Includes a preconfigured Android Studio project (<code className="text-indigo-300">com.fullstackacademy.app</code>, <strong>Target SDK 35 / Android 15</strong>), release <code className="text-amber-300">android.keystore</code>, Digital Asset Links <code className="text-emerald-300">/.well-known/assetlinks.json</code>, GDPR Privacy Policy, and 9:16 store screenshots.
+                    Includes a preconfigured Android TWA &amp; Expo iOS WKWebView project (<code className="text-indigo-300">com.fullstackacademy.app</code>, <strong>Target SDK 35</strong> &amp; <strong>iOS Privacy Manifest CA92.1</strong>), <code className="text-amber-300">android.keystore</code>, Universal Links (<code className="text-emerald-300">apple-app-site-association</code>), 1024×1024 RGB icon, and 1290×2796 iPhone 6.7&quot; screenshots.
                   </>
                 ) : (
                   <>
-                    Projekt posiada skonfigurowany moduł Android Studio (<code className="text-indigo-300">com.fullstackacademy.app</code>, <strong>Target SDK 35 / Android 15</strong>), wygenerowany klucz podpisu <code className="text-amber-300">android.keystore</code>, plik weryfikacyjny <code className="text-emerald-300">/.well-known/assetlinks.json</code>, Politykę Prywatności RODO oraz gotowe zrzuty ekranu 9:16.
+                    Zawiera projekt Android TWA oraz Expo iOS WKWebView (<code className="text-indigo-300">com.fullstackacademy.app</code>, <strong>Target SDK 35</strong> oraz <strong>iOS Privacy Manifest CA92.1</strong>), klucz <code className="text-amber-300">android.keystore</code>, Universal Links (<code className="text-emerald-300">apple-app-site-association</code>), ikonę 1024×1024 RGB i zrzuty iPhone 6.7&quot;.
                   </>
                 )}
               </p>
@@ -288,7 +299,20 @@ npx @bubblewrap/cli build`;
                 <span>
                   {isDownloadingZip
                     ? isEn ? 'Verifying...' : 'Weryfikacja...'
-                    : isEn ? 'Download Package (.zip)' : 'Pobierz Pakiet (.zip)'}
+                    : isEn ? 'Android Pack (.zip)' : 'Pakiet Android (.zip)'}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadIosZip}
+                disabled={isDownloadingIosZip}
+                className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-md shadow-sky-600/20 cursor-pointer"
+              >
+                <Apple className="h-4 w-4" />
+                <span>
+                  {isDownloadingIosZip
+                    ? isEn ? 'Verifying...' : 'Weryfikacja...'
+                    : isEn ? 'iOS App Store (.zip)' : 'Pakiet iOS (.zip)'}
                 </span>
               </button>
               <button
@@ -431,11 +455,11 @@ npx @bubblewrap/cli build`;
         <p className="text-xs text-slate-300 leading-relaxed">
           {isEn ? (
             <>
-              Recommended automated workflow in <code className="prose-code-token text-indigo-300 bg-indigo-950/50 border-indigo-500/30">.github/workflows/ci.yml</code> and <code className="prose-code-token text-emerald-300 bg-emerald-950/50 border-emerald-500/30">.github/workflows/google-play-publish.yml</code>:
+              Recommended automated workflows in <code className="prose-code-token text-indigo-300 bg-indigo-950/50 border-indigo-500/30">.github/workflows/ci.yml</code>, <code className="prose-code-token text-emerald-300 bg-emerald-950/50 border-emerald-500/30">.github/workflows/google-play-publish.yml</code>, and <code className="prose-code-token text-sky-300 bg-sky-950/50 border-sky-500/30">.github/workflows/ios-app-store-publish.yml</code>:
             </>
           ) : (
             <>
-              Zalecany zautomatyzowany przepływ pracy w pliku <code className="prose-code-token text-indigo-300 bg-indigo-950/50 border-indigo-500/30">.github/workflows/ci.yml</code> oraz <code className="prose-code-token text-emerald-300 bg-emerald-950/50 border-emerald-500/30">.github/workflows/google-play-publish.yml</code>:
+              Zalecane zautomatyzowane przepływy pracy w plikach <code className="prose-code-token text-indigo-300 bg-indigo-950/50 border-indigo-500/30">.github/workflows/ci.yml</code>, <code className="prose-code-token text-emerald-300 bg-emerald-950/50 border-emerald-500/30">.github/workflows/google-play-publish.yml</code> oraz <code className="prose-code-token text-sky-300 bg-sky-950/50 border-sky-500/30">.github/workflows/ios-app-store-publish.yml</code>:
             </>
           )}
         </p>

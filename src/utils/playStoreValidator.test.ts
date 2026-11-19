@@ -3,9 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
+  validateAppleAssociation,
+  validateAppStoreListing,
   validateAssetLinks,
   validateStoreListing,
   validateTwaManifest,
+  type AppleAppSiteAssociation,
+  type AppStoreListingMeta,
   type AssetLinkEntry,
   type PlayStoreListingMeta,
   type TwaManifestConfig,
@@ -107,5 +111,64 @@ test('buildZipArchive produces valid PKZIP and public/fullstack-academy-google-p
   const easConfig = JSON.parse(fs.readFileSync(path.resolve('expo-mobile-app/eas.json'), 'utf-8'));
   assert.equal(easConfig.build.preview.android.buildType, 'apk');
   assert.equal(easConfig.build.production.android.buildType, 'app-bundle');
+});
+
+test('iOS App Store config, Privacy Manifest, Universal Links, PNG specs, and iOS ZIP archive are valid', () => {
+  const aasa = JSON.parse(
+    fs.readFileSync(path.resolve('public/.well-known/apple-app-site-association'), 'utf-8')
+  ) as AppleAppSiteAssociation;
+  const aasaRes = validateAppleAssociation(aasa, 'com.fullstackacademy.app');
+  assert.equal(aasaRes.valid, true, `AASA errors: ${aasaRes.errors.join(', ')}`);
+
+  const badAasaRes = validateAppleAssociation({}, 'com.fullstackacademy.app');
+  assert.equal(badAasaRes.valid, false);
+
+  const appStoreMeta = JSON.parse(
+    fs.readFileSync(path.resolve('public/app-store/karta-app-store.json'), 'utf-8')
+  ) as AppStoreListingMeta;
+  const iosChecks = validateAppStoreListing(appStoreMeta);
+  assert.equal(iosChecks.length, 5);
+  for (const check of iosChecks) {
+    assert.equal(check.passed, true, `Failed iOS check ${check.id}: ${check.title}`);
+  }
+
+  const expoAppJson = JSON.parse(fs.readFileSync(path.resolve('expo-mobile-app/app.json'), 'utf-8'));
+  assert.equal(expoAppJson.expo.ios.bundleIdentifier, 'com.fullstackacademy.app');
+  assert.equal(expoAppJson.expo.ios.buildNumber, '4');
+  assert.ok(expoAppJson.expo.ios.associatedDomains.includes('applinks:fsda.tech'));
+  assert.equal(
+    expoAppJson.expo.ios.privacyManifests.NSPrivacyAccessedAPITypes[0].NSPrivacyAccessedAPIType,
+    'NSPrivacyAccessedAPICategoryUserDefaults'
+  );
+  assert.ok(
+    expoAppJson.expo.ios.privacyManifests.NSPrivacyAccessedAPITypes[0].NSPrivacyAccessedAPITypeReasons.includes('CA92.1')
+  );
+
+  // Verify 1024x1024 iOS icon is RGB (color type 2 = opaque, no alpha channel)
+  const iconBuf = fs.readFileSync(path.resolve('public/app-store/app-store-icon-1024x1024.png'));
+  assert.equal(iconBuf.readUInt32BE(16), 1024);
+  assert.equal(iconBuf.readUInt32BE(20), 1024);
+  assert.equal(iconBuf[25], 2, 'iOS App Store icon must be opaque RGB (colorType 2)');
+
+  // Verify all 3 iPhone 6.7" screenshots are 1290x2796 RGB
+  for (const shotName of [
+    'public/app-store/iphone-67-1-landing.png',
+    'public/app-store/iphone-67-2-map.png',
+    'public/app-store/iphone-67-3-lesson.png',
+  ]) {
+    const buf = fs.readFileSync(path.resolve(shotName));
+    assert.equal(buf.readUInt32BE(16), 1290, `${shotName} width must be 1290`);
+    assert.equal(buf.readUInt32BE(20), 2796, `${shotName} height must be 2796`);
+    assert.equal(buf[25], 2, `${shotName} must be opaque RGB (colorType 2)`);
+  }
+
+  const easConfig = JSON.parse(fs.readFileSync(path.resolve('expo-mobile-app/eas.json'), 'utf-8'));
+  assert.equal(easConfig.build.simulator.ios.simulator, true);
+
+  const iosZip = new Uint8Array(
+    fs.readFileSync(path.resolve('public/fullstack-academy-ios-app-pack.zip'))
+  );
+  assert.equal(isValidZipBuffer(iosZip), true, 'public/fullstack-academy-ios-app-pack.zip must be a valid PKZIP archive');
+  assert.ok(iosZip.length > 400_000, 'iOS ZIP archive should include Expo project, App Store 1290x2796 screenshots, and 1024x1024 icon');
 });
 

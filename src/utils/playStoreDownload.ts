@@ -17,6 +17,7 @@ const EXPO_PACKAGE_JSON = JSON.stringify(
       web: 'expo start --web',
       'build:apk': 'eas build -p android --profile preview',
       'build:aab': 'eas build -p android --profile production',
+      'build:ios-sim': 'eas build -p ios --profile simulator',
       'build:ios-preview': 'eas build -p ios --profile preview',
       'build:ios': 'eas build -p ios --profile production',
       'submit:ios': 'eas submit -p ios --profile production',
@@ -60,8 +61,24 @@ const EXPO_APP_JSON = JSON.stringify(
         supportsTablet: true,
         bundleIdentifier: 'com.fullstackacademy.app',
         buildNumber: '4',
+        icon: './assets/ios-icon-1024x1024.png',
+        associatedDomains: [`applinks:${PRODUCTION_HOST}`, `webcredentials:${PRODUCTION_HOST}`],
+        config: {
+          usesNonExemptEncryption: false,
+        },
         infoPlist: {
           ITSAppUsesNonExemptEncryption: false,
+        },
+        privacyManifests: {
+          NSPrivacyTracking: false,
+          NSPrivacyTrackingDomains: [],
+          NSPrivacyCollectedDataTypes: [],
+          NSPrivacyAccessedAPITypes: [
+            {
+              NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+              NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
+            },
+          ],
         },
       },
       android: {
@@ -150,6 +167,10 @@ const EXPO_EAS_JSON = JSON.stringify(
         developmentClient: true,
         distribution: 'internal',
         android: { buildType: 'apk' },
+      },
+      simulator: {
+        distribution: 'internal',
+        ios: { simulator: true, image: 'latest' },
       },
       preview: {
         distribution: 'internal',
@@ -540,7 +561,56 @@ export async function downloadVerifiedPlayStoreZip(): Promise<void> {
 }
 
 /**
- * Downloads an individual Play Store configuration/asset file via fetch + Blob,
+ * Downloads the dedicated Apple App Store / iOS release archive (fullstack-academy-ios-app-pack.zip).
+ */
+export async function downloadVerifiedIosZip(): Promise<void> {
+  const staticIosZip = await fetchBinarySafe('/fullstack-academy-ios-app-pack.zip');
+  if (staticIosZip && isValidZipBuffer(staticIosZip)) {
+    triggerBlobDownload(staticIosZip, 'fullstack-academy-ios-app-pack.zip', 'application/zip');
+    return;
+  }
+
+  const gitignoreContent = `node_modules/\n.expo/\ndist/\nweb-build/\n*.jks\n*.p8\n*.p12\n*.key\n*.mobileprovision\n.DS_Store\n`;
+  const easignoreContent = `node_modules/\n.expo/\ndist/\nweb-build/\n.git/\n/ios\n/android\n`;
+
+  const entries: ZipEntryInput[] = [
+    { path: 'expo-mobile-app/.gitignore', data: gitignoreContent },
+    { path: 'expo-mobile-app/.easignore', data: easignoreContent },
+    { path: 'expo-mobile-app/package.json', data: EXPO_PACKAGE_JSON },
+    { path: 'expo-mobile-app/app.json', data: EXPO_APP_JSON },
+    { path: 'expo-mobile-app/eas.json', data: EXPO_EAS_JSON },
+    { path: 'expo-mobile-app/App.tsx', data: EXPO_APP_TSX },
+    { path: 'expo-mobile-app/plugins/withFmtConstevalFix.js', data: EXPO_FMT_PLUGIN_JS },
+  ];
+
+  const assetsToFetch: Array<{ url: string; zipPath: string }> = [
+    { url: '/.well-known/apple-app-site-association', zipPath: 'public/.well-known/apple-app-site-association' },
+    { url: '/app-store/karta-app-store.json', zipPath: 'public/app-store/karta-app-store.json' },
+    { url: '/app-store/app-store-icon-1024x1024.png', zipPath: 'public/app-store/app-store-icon-1024x1024.png' },
+    { url: '/app-store/app-store-icon-1024x1024.png', zipPath: 'expo-mobile-app/assets/ios-icon-1024x1024.png' },
+    { url: '/app-store/iphone-67-1-landing.png', zipPath: 'public/app-store/iphone-67-1-landing.png' },
+    { url: '/app-store/iphone-67-2-map.png', zipPath: 'public/app-store/iphone-67-2-map.png' },
+    { url: '/app-store/iphone-67-3-lesson.png', zipPath: 'public/app-store/iphone-67-3-lesson.png' },
+    { url: '/apple-touch-icon.png', zipPath: 'public/apple-touch-icon.png' },
+    { url: '/pwa-512x512.png', zipPath: 'expo-mobile-app/assets/icon.png' },
+    { url: '/pwa-512x512.png', zipPath: 'expo-mobile-app/assets/splash.png' },
+  ];
+
+  await Promise.all(
+    assetsToFetch.map(async (item) => {
+      const bytes = await fetchBinarySafe(item.url);
+      if (bytes) {
+        entries.push({ path: item.zipPath, data: bytes });
+      }
+    })
+  );
+
+  const zipBuffer = buildZipArchive(entries);
+  triggerBlobDownload(zipBuffer, 'fullstack-academy-ios-app-pack.zip', 'application/zip');
+}
+
+/**
+ * Downloads an individual Play Store / App Store configuration/asset file via fetch + Blob,
  * bypassing Service Worker NavigationRoute so it never saves index.html by mistake.
  */
 export async function downloadVerifiedAssetFile(

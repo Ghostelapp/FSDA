@@ -1,0 +1,36 @@
+{
+  "platform": "ios",
+  "bundleId": "com.fullstackacademy.app",
+  "version": "3.0.0",
+  "buildNumber": "4",
+  "minimumOSVersion": "15.1",
+  "supportsTablet": true,
+  "defaultLanguage": "pl-PL",
+  "title": "Full Stack Academy — Kurs IT",
+  "subtitle": "Nauka Kodu, React, SQL i Git",
+  "promotionalText": "Nowość v3.0: Interaktywna Mapa Kursu (15 stref, 96 lekcji) z animowanymi przejściami, edytorem kodu na żywo, terminalem Bash/Git oraz Studio SQL.",
+  "keywords": "programowanie,javascript,react,html,css,sql,git,nodejs,typescript,fullstack,kurs it,nauka kodu",
+  "description": "Zostań profesjonalnym Full Stack Developerem z aplikacją mobilną Full Stack Academy na iPhone'a i iPada!\n\nUcz się programowania krok po kroku poprzez Interaktywną Mapę Kursu z 96 lekcjami w 15 strefach, praktyczne zadania w edytorze kodu na żywo, symulator terminala Bash/Git, Studio REST API oraz Studio Bazy Danych SQL.\n\nGŁÓWNE FUNKCJE APLIKACJI (WERSJA 3.0):\n• Interaktywna Mapa Kursu (15 stref i 96 lekcji) z płynnymi animacjami przejść oraz inspektorem postępów na żywo.\n• Pełna ścieżka programisty: Internet, HTML5, CSS3, JavaScript ES6+, Git, TypeScript, React, Node.js, Express, PostgreSQL/Prisma, OAuth2/JWT, Stripe, Vitest/Playwright, Docker/CI/CD, Next.js oraz Scrum.\n• Wbudowana Piaskownica Kodu (HTML/CSS/JS) z automatyczną weryfikacją testów jednostkowych i AST.\n• Symulator Terminala UNIX/Bash, systemu Git, Studio Bazy Danych SQL oraz Wizualizator JavaScript Event Loop.\n• Fiszki SM-2, ściągi techniczne, Kreator CV IT oraz Egzaminy Live Coding (Mock Interviews).\n• Grywalizacja: punkty XP, ligi tygodniowe, Wyzwanie Dnia, odznaki oraz imienny Certyfikat Ukończenia Kursu.\n• Edycja Otwarta 0 zł i tryb Offline umożliwiający powtarzanie materiałów w podróży.",
+  "category": "Education",
+  "secondaryCategory": "Developer Tools",
+  "ageRating": "4+",
+  "usesNonExemptEncryption": false,
+  "privacyManifest": {
+    "tracking": false,
+    "accessedApiCategory": "NSPrivacyAccessedAPICategoryUserDefaults",
+    "reason": "CA92.1"
+  },
+  "contactEmail": "zordonzordon1@gmail.com",
+  "privacyPolicyUrl": "https://fsda.tech/privacy-policy.html",
+  "supportUrl": "https://fsda.tech/kontakt",
+  "marketingUrl": "https://fsda.tech",
+  "assets": {
+    "icon1024Opaque": "/app-store/app-store-icon-1024x1024.png",
+    "appleTouchIcon180": "/apple-touch-icon.png",
+    "iphone67Screenshots": [
+      "/app-store/iphone-67-1-landing.png",
+      "/app-store/iphone-67-2-map.png",
+      "/app-store/iphone-67-3-lesson.png"
+    ]
+  }
+}

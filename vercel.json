@@ -30,11 +30,37 @@
       "destination": "/polityka-prywatnosci/index.html"
     },
     {
-      "source": "/((?!api/|__/|assets/|\\.well-known/|play-store/|promo/|ads\\.txt|robots\\.txt|sitemap\\.xml|privacy-policy\\.html|twa-manifest\\.json|manifest\\.json|manifest\\.webmanifest|sw\\.js|sw-notifications\\.js|workbox-|favicon|icon\\.svg|apple-touch-icon|pwa-).*)",
+      "source": "/((?!api/|__/|assets/|\\.well-known/|play-store/|app-store/|promo/|fullstack-academy-|ads\\.txt|robots\\.txt|sitemap\\.xml|privacy-policy\\.html|twa-manifest\\.json|manifest\\.json|manifest\\.webmanifest|sw\\.js|sw-notifications\\.js|workbox-|favicon|icon\\.svg|apple-touch-icon|pwa-).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/.well-known/apple-app-site-association",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/assetlinks.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    },
     {
       "source": "/ads.txt",
       "headers": [

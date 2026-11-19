@@ -118,6 +118,81 @@ if (!isValidZipBuffer(fullZipBytes)) {
   throw new Error('Generated Full ZIP buffer failed PKZIP integrity validation!');
 }
 
+const iosIconSource = path.join(rootDir, 'public/app-store/app-store-icon-1024x1024.png');
+if (fs.existsSync(iosIconSource)) {
+  fs.copyFileSync(iosIconSource, path.join(expoAssetsDir, 'ios-icon-1024x1024.png'));
+}
+
 const outFullZipPath = path.join(rootDir, 'public/fullstack-academy-google-play-pack.zip');
 fs.writeFileSync(outFullZipPath, Buffer.from(fullZipBytes));
 console.log(`Successfully built valid Full ZIP archive: ${outFullZipPath} (${fullZipBytes.length} bytes, ${fullEntries.length} files)`);
+
+// C. Build dedicated Apple App Store / iOS release archive: public/fullstack-academy-ios-app-pack.zip
+const IOS_QUICK_START_TXT = `========================================================================
+  FULL STACK ACADEMY — PAKIET PUBLIKACJI APPLE APP STORE / TESTFLIGHT (v3.0.0)
+  Bundle ID: com.fullstackacademy.app | Build: 4 | Domena: https://fsda.tech
+========================================================================
+
+SPOSÓB 1 — NAJSZYBSZY (BEZ KOMPUTERA MAC): EXPO EAS CLOUD -> .IPA / TESTFLIGHT
+1. Wejdź do folderu expo-mobile-app:
+     cd expo-mobile-app
+     npm install
+2. Zaloguj się do konta Expo (https://expo.dev):
+     npx eas-cli login
+3. Opcjonalnie — testowy build na Symulator iOS (bez płatnego konta Apple Developer):
+     npx eas-cli build -p ios --profile simulator
+4. Zbuduj podpisany plik .IPA gotowy do TestFlight i App Store Connect:
+     npx eas-cli build -p ios --profile production
+5. Wyślij plik .IPA do App Store Connect:
+     npx eas-cli submit -p ios --profile production
+
+------------------------------------------------------------------------
+SPOSÓB 2 — LOKALNIE NA MACOS + XCODE:
+1. Wejdź do expo-mobile-app i wygeneruj natywny projekt Xcode:
+     cd expo-mobile-app && npm install && npx expo prebuild --platform ios --clean
+2. Zainstaluj CocoaPods (zawiera poprawkę withFmtConstevalFix.js dla Xcode 16/26):
+     cd ios && pod install
+3. Otwórz ios/*.xcworkspace w Xcode -> Product -> Archive -> Distribute App.
+
+WAŻNE:
+W pliku public/.well-known/apple-app-site-association zamień YOUR_APPLE_TEAM_ID
+na swój 10-znakowy Apple Team ID z https://developer.apple.com/account.
+========================================================================
+`;
+
+const iosEntries: ZipEntryInput[] = [
+  {
+    path: 'INSTRUKCJA_IOS_SZYBKI_START.txt',
+    data: IOS_QUICK_START_TXT,
+  },
+];
+
+collectDirectoryFiles(path.join(rootDir, 'expo-mobile-app'), iosEntries, rootDir);
+collectDirectoryFiles(path.join(rootDir, 'public/app-store'), iosEntries, rootDir);
+
+const iosSingleFiles = [
+  'IOS_APP_STORE_GUIDE.md',
+  'public/.well-known/apple-app-site-association',
+  'public/privacy-policy.html',
+  'public/apple-touch-icon.png',
+  '.github/workflows/ios-app-store-publish.yml',
+];
+
+for (const rel of iosSingleFiles) {
+  const full = path.join(rootDir, rel);
+  if (fs.existsSync(full)) {
+    iosEntries.push({
+      path: rel,
+      data: new Uint8Array(fs.readFileSync(full)),
+    });
+  }
+}
+
+const iosZipBytes = buildZipArchive(iosEntries);
+if (!isValidZipBuffer(iosZipBytes)) {
+  throw new Error('Generated iOS ZIP buffer failed PKZIP integrity validation!');
+}
+
+const outIosZipPath = path.join(rootDir, 'public/fullstack-academy-ios-app-pack.zip');
+fs.writeFileSync(outIosZipPath, Buffer.from(iosZipBytes));
+console.log(`Successfully built valid iOS ZIP archive: ${outIosZipPath} (${iosZipBytes.length} bytes, ${iosEntries.length} files)`);

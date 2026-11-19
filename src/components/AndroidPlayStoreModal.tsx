@@ -18,14 +18,19 @@ import {
   FileText,
   ExternalLink,
   PackageCheck,
-  Rocket
+  Rocket,
+  Apple
 } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { useApp } from '../context/AppContext';
 import {
+  validateAppleAssociation,
+  validateAppStoreListing,
   validateAssetLinks,
   validateStoreListing,
   validateTwaManifest,
+  type AppleAppSiteAssociation,
+  type AppStoreListingMeta,
   type AssetLinkEntry,
   type PlayStoreListingMeta,
   type TwaManifestConfig,
@@ -33,6 +38,7 @@ import {
 import {
   downloadVerifiedAssetFile,
   downloadVerifiedExpoZip,
+  downloadVerifiedIosZip,
   downloadVerifiedPlayStoreZip,
 } from '../utils/playStoreDownload';
 
@@ -144,6 +150,79 @@ const LISTING_META_CONFIG: PlayStoreListingMeta = {
   },
 };
 
+const IOS_BUILD_COMMANDS = `# 1. Wypakuj fullstack-academy-ios-app-pack.zip i wejdź do expo-mobile-app:
+cd expo-mobile-app
+npm install
+
+# 2. Zaloguj się do konta Expo (https://expo.dev):
+npx eas-cli login
+
+# 3a. Opcjonalnie — build na Symulator iOS (bez płatnego Apple Developer):
+npx eas-cli build -p ios --profile simulator
+
+# 3b. Zbuduj podpisany plik .IPA do TestFlight & App Store Connect:
+npx eas-cli build -p ios --profile production
+
+# 4. Wyślij paczkę .IPA bezpośrednio do App Store Connect:
+npx eas-cli submit -p ios --profile production`;
+
+const IOS_AASA_CONFIG: AppleAppSiteAssociation = {
+  applinks: {
+    apps: [],
+    details: [
+      {
+        appIDs: ['YOUR_APPLE_TEAM_ID.com.fullstackacademy.app'],
+        components: [
+          { '/': '/baza-wiedzy/*' },
+          { '/': '/app/*' },
+          { '/': '/o-nas' },
+          { '/': '/kontakt' },
+        ],
+      },
+    ],
+  },
+  webcredentials: {
+    apps: ['YOUR_APPLE_TEAM_ID.com.fullstackacademy.app'],
+  },
+};
+
+const IOS_LISTING_META_CONFIG: AppStoreListingMeta = {
+  platform: 'ios',
+  bundleId: 'com.fullstackacademy.app',
+  version: '3.0.0',
+  buildNumber: '4',
+  minimumOSVersion: '15.1',
+  supportsTablet: true,
+  defaultLanguage: 'pl-PL',
+  title: STORE_TITLE,
+  subtitle: 'Nauka Kodu, React, SQL i Git',
+  promotionalText:
+    'Nowość v3.0: Interaktywna Mapa Kursu (15 stref, 96 lekcji) z animowanymi przejściami, edytorem kodu na żywo, terminalem Bash/Git oraz Studio SQL.',
+  keywords:
+    'programowanie,javascript,react,html,css,sql,git,nodejs,typescript,fullstack,kurs it,nauka kodu',
+  description: STORE_FULL_DESC,
+  category: 'Education',
+  ageRating: '4+',
+  usesNonExemptEncryption: false,
+  privacyManifest: {
+    tracking: false,
+    accessedApiCategory: 'NSPrivacyAccessedAPICategoryUserDefaults',
+    reason: 'CA92.1',
+  },
+  contactEmail: 'zordonzordon1@gmail.com',
+  privacyPolicyUrl: PRIVACY_POLICY_URL,
+  supportUrl: `https://${PRODUCTION_HOST}/kontakt`,
+  assets: {
+    icon1024Opaque: '/app-store/app-store-icon-1024x1024.png',
+    appleTouchIcon180: '/apple-touch-icon.png',
+    iphone67Screenshots: [
+      '/app-store/iphone-67-1-landing.png',
+      '/app-store/iphone-67-2-map.png',
+      '/app-store/iphone-67-3-lesson.png',
+    ],
+  },
+};
+
 export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
   isOpen,
   onClose,
@@ -151,7 +230,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
   const { currentUser, isAuthenticated, language } = useApp();
   const isEn = language === 'en';
   const { isInstallable, isInstalled, install } = usePWAInstall();
-  const [activeTab, setActiveTab] = useState<'expo_apk' | 'release_pack' | 'store_listing' | 'install' | 'checklist'>('expo_apk');
+  const [activeTab, setActiveTab] = useState<'expo_apk' | 'ios_app_store' | 'release_pack' | 'store_listing' | 'install' | 'checklist'>('expo_apk');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadedSuccessId, setDownloadedSuccessId] = useState<string | null>(null);
@@ -162,6 +241,8 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
     const twaRes = validateTwaManifest(TWA_MANIFEST_CONFIG);
     const assetRes = validateAssetLinks(ASSET_LINKS_CONFIG, 'com.fullstackacademy.app', SHA256_FINGERPRINT);
     const listingChecks = validateStoreListing(LISTING_META_CONFIG);
+    const aasaRes = validateAppleAssociation(IOS_AASA_CONFIG, 'com.fullstackacademy.app');
+    const iosListingChecks = validateAppStoreListing(IOS_LISTING_META_CONFIG);
 
     return [
       {
@@ -196,7 +277,18 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
             : `Zweryfikowano odcisk SHA-256 (${SHA256_FINGERPRINT.slice(0, 23)}...) — ukrywa pasek adresu przeglądarki w APK.`
           : assetRes.errors.join(' '),
       },
+      {
+        id: 'apple-universal-links',
+        title: 'Apple Universal Links (.well-known/apple-app-site-association)',
+        passed: aasaRes.valid,
+        details: aasaRes.valid
+          ? isEn
+            ? 'Configured applinks & webcredentials for com.fullstackacademy.app (replace YOUR_APPLE_TEAM_ID before submission).'
+            : 'Skonfigurowano applinks i webcredentials dla com.fullstackacademy.app (przed publikacją wpisz Apple Team ID).'
+          : aasaRes.errors.join(' '),
+      },
       ...listingChecks,
+      ...iosListingChecks,
     ];
   }, [isEn]);
 
@@ -241,6 +333,17 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
     }
   };
 
+  const handleDownloadIosZip = async () => {
+    setDownloadingId('ios_zip');
+    try {
+      await downloadVerifiedIosZip();
+      setDownloadedSuccessId('ios_zip');
+      setTimeout(() => setDownloadedSuccessId(null), 3000);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   const handleDownloadSingle = async (
     id: string,
     url: string,
@@ -279,14 +382,14 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                   <Sparkles className="h-3 w-3" />
                   <span>
                     {isEn
-                      ? 'Admin Only • Expo EAS Build & Google Play v3.0.0'
-                      : 'Tylko Administrator • Expo EAS Build & Google Play v3.0.0'}
+                      ? 'Admin Only • Expo EAS Build • Google Play & Apple App Store v3.0.0'
+                      : 'Tylko Administrator • Expo EAS Build • Google Play & App Store v3.0.0'}
                   </span>
                 </div>
                 <h2 className="text-base sm:text-xl font-bold text-white mt-1">
                   {isEn
-                    ? 'Expo (EAS) APK Builder & Google Play Release Center'
-                    : 'Generator APK przez Expo (EAS) & Centrum Google Play'}
+                    ? 'Mobile Release Center (Android APK/AAB & iOS IPA)'
+                    : 'Centrum Wydań Mobilnych (Android APK/AAB & iOS App Store)'}
                 </h2>
               </div>
             </div>
@@ -313,7 +416,19 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
               }`}
             >
               <Rocket className="h-3.5 w-3.5" />
-              <span>{isEn ? 'Expo APK (Cloud EAS Build)' : 'Expo APK (EAS Build w Chmurze)'}</span>
+              <span>{isEn ? 'Android Expo (APK)' : 'Android Expo (APK)'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('ios_app_store')}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'ios_app_store'
+                  ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <Apple className="h-3.5 w-3.5" />
+              <span>{isEn ? 'iOS / App Store (.IPA)' : 'iOS / App Store (.IPA)'}</span>
             </button>
             <button
               type="button"
@@ -525,6 +640,287 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                       )}
                     </span>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'ios_app_store' && (
+            <div className="space-y-4">
+              {/* Main iOS App Store Release Pack Card */}
+              <div className="rounded-2xl border border-sky-500/40 bg-gradient-to-br from-sky-950/60 via-slate-900 to-slate-950 p-4 sm:p-5 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-sky-400">
+                      {isEn
+                        ? 'Apple App Store Connect & TestFlight • Bundle com.fullstackacademy.app v3.0.0 (Build 4)'
+                        : 'Apple App Store Connect & TestFlight • Bundle com.fullstackacademy.app v3.0.0 (Build 4)'}
+                    </span>
+                    <h3 className="text-base sm:text-lg font-extrabold text-white">
+                      {isEn
+                        ? 'iOS & Apple App Store Release Pack (`fullstack-academy-ios-app-pack.zip`)'
+                        : 'Pakiet Produkcyjny iOS & App Store (`fullstack-academy-ios-app-pack.zip`)'}
+                    </h3>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      {isEn ? (
+                        <>
+                          Preconfigured <strong>Expo iOS WKWebView</strong> project with <strong>Privacy Manifest (CA92.1)</strong>, <code>associatedDomains</code> (<code>applinks:fsda.tech</code>), Xcode 26 Podfile fix, opaque <strong>1024×1024 RGB icon</strong>, and 3 native <strong>1290×2796 (iPhone 6.7")</strong> screenshots.
+                        </>
+                      ) : (
+                        <>
+                          Skonfigurowany projekt <strong>Expo iOS WKWebView</strong> z wymaganym przez Apple <strong>Privacy Manifest (CA92.1)</strong>, Universal Links (<code>applinks:fsda.tech</code>), poprawką Xcode Podfile, nieprzezroczystą ikoną <strong>1024×1024 RGB</strong> oraz 3 zrzutami <strong>1290×2796 (iPhone 6.7&quot;)</strong>.
+                        </>
+                      )}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadIosZip}
+                    disabled={downloadingId === 'ios_zip'}
+                    className="px-5 py-3 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 disabled:opacity-60 text-white text-xs font-extrabold transition-all shadow-lg shadow-sky-600/30 shrink-0 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {downloadedSuccessId === 'ios_zip' ? (
+                      <>
+                        <Check className="h-4 w-4 text-emerald-200" />
+                        <span>{isEn ? 'Downloaded iOS Pack (.zip)!' : 'Pobrano Pakiet iOS (.zip)!'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        <span>
+                          {downloadingId === 'ios_zip'
+                            ? isEn
+                              ? 'Preparing iOS pack...'
+                              : 'Pakowanie iOS .zip...'
+                            : isEn
+                              ? 'Download iOS Pack (.zip)'
+                              : 'Pobierz Pakiet iOS (.zip)'}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Quick single iOS downloads */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'ios_aasa',
+                        '/.well-known/apple-app-site-association',
+                        'apple-app-site-association',
+                        'application/json',
+                        JSON.stringify(IOS_AASA_CONFIG, null, 2)
+                      )
+                    }
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-emerald-300 transition-colors cursor-pointer"
+                  >
+                    {downloadedSuccessId === 'ios_aasa' ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    ) : (
+                      <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                    )}
+                    <span className="truncate">apple-app-site-association</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'ios_meta',
+                        '/app-store/karta-app-store.json',
+                        'karta-app-store.json',
+                        'application/json',
+                        JSON.stringify(IOS_LISTING_META_CONFIG, null, 2)
+                      )
+                    }
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-sky-300 transition-colors cursor-pointer"
+                  >
+                    {downloadedSuccessId === 'ios_meta' ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    ) : (
+                      <FileText className="h-3.5 w-3.5 shrink-0" />
+                    )}
+                    <span className="truncate">karta-app-store.json</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'ios_icon1024',
+                        '/app-store/app-store-icon-1024x1024.png',
+                        'app-store-icon-1024x1024.png',
+                        'image/png'
+                      )
+                    }
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-indigo-300 transition-colors cursor-pointer"
+                  >
+                    {downloadedSuccessId === 'ios_icon1024' ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                    ) : (
+                      <ImageIcon className="h-3.5 w-3.5 shrink-0" />
+                    )}
+                    <span className="truncate">Ikona 1024×1024 RGB</span>
+                  </button>
+
+                  <div className="px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] text-slate-300 flex items-center justify-center text-center">
+                    <span>PrivacyInfo: UserDefaults CA92.1</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Build .IPA via Expo EAS Cloud (without local macOS!) */}
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                    <Terminal className="h-4 w-4 text-sky-400" />
+                    <span>
+                      {isEn
+                        ? 'Generate signed .IPA & submit to TestFlight without a Mac (Expo EAS Cloud):'
+                        : 'Kompilacja podpisanego .IPA i wysyłka do TestFlight bez komputera Mac (Expo EAS Cloud):'}
+                    </span>
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(IOS_BUILD_COMMANDS, 'ios_cmd')}
+                    className="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1 font-semibold cursor-pointer shrink-0"
+                  >
+                    {copiedCode === 'ios_cmd' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>{isEn ? 'Copy' : 'Kopiuj'}</span>
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <CopyButton text={IOS_BUILD_COMMANDS} className="absolute top-2.5 right-2.5 z-10" />
+                  <pre className="rounded-xl bg-slate-900 p-3.5 pr-24 font-mono text-[11px] text-sky-300 border border-slate-800 overflow-x-auto leading-relaxed">
+                    {IOS_BUILD_COMMANDS}
+                  </pre>
+                </div>
+              </div>
+
+              {/* App Store Connect Metadata Quick Copy & 1290x2796 iPhone 6.7" Assets */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-sky-400">
+                      {isEn ? 'Subtitle (28/30 chars)' : 'Podtytuł w App Store (28/30 znaków)'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(IOS_LISTING_META_CONFIG.subtitle, 'ios_sub')}
+                      className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold"
+                    >
+                      {copiedCode === 'ios_sub' ? (isEn ? 'Copied!' : 'Skopiowano!') : isEn ? 'Copy' : 'Kopiuj'}
+                    </button>
+                  </div>
+                  <p className="text-xs font-bold text-white">{IOS_LISTING_META_CONFIG.subtitle}</p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-sky-400">
+                      {isEn ? `Keywords (${IOS_LISTING_META_CONFIG.keywords.length}/100)` : `Słowa kluczowe (${IOS_LISTING_META_CONFIG.keywords.length}/100)`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(IOS_LISTING_META_CONFIG.keywords, 'ios_kw')}
+                      className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold"
+                    >
+                      {copiedCode === 'ios_kw' ? (isEn ? 'Copied!' : 'Skopiowano!') : isEn ? 'Copy' : 'Kopiuj'}
+                    </button>
+                  </div>
+                  <p className="text-[11px] font-mono text-slate-300 break-all">{IOS_LISTING_META_CONFIG.keywords}</p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 space-y-3">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <ImageIcon className="h-4 w-4 text-sky-400" />
+                  <span>
+                    {isEn
+                      ? 'Apple App Store Icon (1024×1024 RGB) & iPhone 6.7" Screenshots (1290×2796):'
+                      : 'Ikona App Store (1024×1024 RGB bez alpha) & Zrzuty iPhone 6.7" (1290×2796):'}
+                  </span>
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'ios_icon_card',
+                        '/app-store/app-store-icon-1024x1024.png',
+                        'app-store-icon-1024x1024.png',
+                        'image/png'
+                      )
+                    }
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center cursor-pointer"
+                  >
+                    <img src="/app-store/app-store-icon-1024x1024.png" alt="iOS 1024x1024 Icon" className="h-14 w-14 rounded-2xl object-cover border border-slate-700" />
+                    <span className="block text-[11px] font-bold text-white">Ikona 1024×1024</span>
+                    <span className="block text-[10px] text-sky-400">
+                      {downloadedSuccessId === 'ios_icon_card' ? (isEn ? 'Downloaded!' : 'Pobrano!') : 'PNG RGB'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'ios_shot1',
+                        '/app-store/iphone-67-1-landing.png',
+                        'iphone-67-1-landing.png',
+                        'image/png'
+                      )
+                    }
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center cursor-pointer"
+                  >
+                    <img src="/app-store/iphone-67-1-landing.png" alt="iPhone 6.7 Landing" className="h-14 w-7 rounded object-cover border border-slate-700" />
+                    <span className="block text-[11px] font-bold text-white">iPhone #1 Start</span>
+                    <span className="block text-[10px] text-sky-400">
+                      {downloadedSuccessId === 'ios_shot1' ? (isEn ? 'Downloaded!' : 'Pobrano!') : '1290×2796'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'ios_shot2',
+                        '/app-store/iphone-67-2-map.png',
+                        'iphone-67-2-map.png',
+                        'image/png'
+                      )
+                    }
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center cursor-pointer"
+                  >
+                    <img src="/app-store/iphone-67-2-map.png" alt="iPhone 6.7 Map" className="h-14 w-7 rounded object-cover border border-slate-700" />
+                    <span className="block text-[11px] font-bold text-white">iPhone #2 Mapa</span>
+                    <span className="block text-[10px] text-sky-400">
+                      {downloadedSuccessId === 'ios_shot2' ? (isEn ? 'Downloaded!' : 'Pobrano!') : '1290×2796'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'ios_shot3',
+                        '/app-store/iphone-67-3-lesson.png',
+                        'iphone-67-3-lesson.png',
+                        'image/png'
+                      )
+                    }
+                    className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-center space-y-1.5 transition-colors flex flex-col items-center cursor-pointer"
+                  >
+                    <img src="/app-store/iphone-67-3-lesson.png" alt="iPhone 6.7 Lesson" className="h-14 w-7 rounded object-cover border border-slate-700" />
+                    <span className="block text-[11px] font-bold text-white">iPhone #3 Lekcja</span>
+                    <span className="block text-[10px] text-sky-400">
+                      {downloadedSuccessId === 'ios_shot3' ? (isEn ? 'Downloaded!' : 'Pobrano!') : '1290×2796'}
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>

@@ -175,3 +175,142 @@ export function validateStoreListing(listing: PlayStoreListingMeta): PlayStoreVa
     },
   ];
 }
+
+export interface AppleAppSiteAssociation {
+  applinks?: {
+    apps?: string[];
+    details?: Array<{
+      appIDs?: string[];
+      appID?: string;
+      components?: Array<Record<string, string>>;
+      paths?: string[];
+    }>;
+  };
+  webcredentials?: {
+    apps?: string[];
+  };
+}
+
+export interface AppStoreListingMeta {
+  platform: 'ios';
+  bundleId: string;
+  version: string;
+  buildNumber: string;
+  minimumOSVersion: string;
+  supportsTablet: boolean;
+  defaultLanguage: string;
+  title: string;
+  subtitle: string;
+  promotionalText: string;
+  keywords: string;
+  description: string;
+  category: string;
+  ageRating: string;
+  usesNonExemptEncryption: boolean;
+  privacyManifest?: {
+    tracking: boolean;
+    accessedApiCategory: string;
+    reason: string;
+  };
+  contactEmail: string;
+  privacyPolicyUrl: string;
+  supportUrl: string;
+  assets: {
+    icon1024Opaque: string;
+    appleTouchIcon180: string;
+    iphone67Screenshots: string[];
+  };
+}
+
+export function validateAppleAssociation(
+  aasa: AppleAppSiteAssociation,
+  expectedBundleId: string
+): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+
+  if (!aasa || typeof aasa !== 'object' || !aasa.applinks) {
+    return { valid: false, errors: ['Brak sekcji applinks w pliku apple-app-site-association.'] };
+  }
+
+  const details = aasa.applinks.details || [];
+  if (!Array.isArray(details) || details.length === 0) {
+    errors.push('Sekcja applinks.details musi zawierać co najmniej jeden wpis aplikacji.');
+  } else {
+    const first = details[0];
+    const ids = first.appIDs || (first.appID ? [first.appID] : []);
+    if (!ids.some((id) => id.endsWith(`.${expectedBundleId}`))) {
+      errors.push(`Żaden wpis appIDs nie zawiera Bundle ID ${expectedBundleId}.`);
+    }
+    if ((!first.components || first.components.length === 0) && (!first.paths || first.paths.length === 0)) {
+      errors.push('Brak ścieżek URL (components/paths) w apple-app-site-association.');
+    }
+  }
+
+  const webCreds = aasa.webcredentials?.apps || [];
+  if (!webCreds.some((id) => id.endsWith(`.${expectedBundleId}`))) {
+    errors.push(`Sekcja webcredentials.apps powinna zawierać ${expectedBundleId}.`);
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+export function validateAppStoreListing(listing: AppStoreListingMeta): PlayStoreValidationCheck[] {
+  const titleLen = listing.title.trim().length;
+  const subtitleLen = listing.subtitle.trim().length;
+  const keywordsLen = listing.keywords.trim().length;
+  const promoLen = listing.promotionalText.trim().length;
+  const descLen = listing.description.trim().length;
+
+  return [
+    {
+      id: 'ios-bundle-id',
+      title: `iOS Bundle ID (${listing.bundleId}) v${listing.version} (build ${listing.buildNumber})`,
+      passed: PACKAGE_ID_REGEX.test(listing.bundleId) && Number(listing.buildNumber) >= 1 && listing.supportsTablet,
+      details: `Obsługa iPhone i iPad (supportsTablet), minimalny system iOS ${listing.minimumOSVersion}.`,
+    },
+    {
+      id: 'ios-privacy-manifest',
+      title: 'Apple Privacy Manifest (PrivacyInfo.xcprivacy — UserDefaults CA92.1) & Encryption',
+      passed:
+        listing.usesNonExemptEncryption === false &&
+        listing.privacyManifest?.tracking === false &&
+        listing.privacyManifest?.accessedApiCategory === 'NSPrivacyAccessedAPICategoryUserDefaults' &&
+        listing.privacyManifest?.reason === 'CA92.1',
+      details: 'Deklaracja wymagana przez App Store Connect od 2024 r. + ITSAppUsesNonExemptEncryption=false.',
+    },
+    {
+      id: 'ios-store-texts',
+      title: `Limity App Store Connect (Nazwa: ${titleLen}/30, Podtytuł: ${subtitleLen}/30, Słowa kl.: ${keywordsLen}/100)`,
+      passed:
+        titleLen > 0 &&
+        titleLen <= 30 &&
+        subtitleLen > 0 &&
+        subtitleLen <= 30 &&
+        keywordsLen > 0 &&
+        keywordsLen <= 100 &&
+        promoLen > 0 &&
+        promoLen <= 170 &&
+        descLen >= 100 &&
+        descLen <= 4000,
+      details: `Tekst promocyjny: ${promoLen}/170 znaków. Opis: ${descLen}/4000 znaków.`,
+    },
+    {
+      id: 'ios-urls',
+      title: 'Apple Privacy Policy & Support URL (HTTPS)',
+      passed:
+        listing.privacyPolicyUrl.startsWith('https://') &&
+        listing.supportUrl.startsWith('https://'),
+      details: `Privacy: ${listing.privacyPolicyUrl} • Support: ${listing.supportUrl}`,
+    },
+    {
+      id: 'ios-assets',
+      title: `Grafiki App Store (Ikona 1024x1024 RGB bez alpha, ${listing.assets.iphone67Screenshots.length} zrzuty iPhone 6.7")`,
+      passed: Boolean(listing.assets.icon1024Opaque) && listing.assets.iphone67Screenshots.length >= 3,
+      details: 'Ikona 1024×1024 RGB bez przezroczystości oraz zrzuty 1290×2796 (iPhone 6.7") gotowe.',
+    },
+  ];
+}
+

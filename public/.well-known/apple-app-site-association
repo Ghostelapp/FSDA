@@ -1,0 +1,35 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": [
+          "YOUR_APPLE_TEAM_ID.com.fullstackacademy.app"
+        ],
+        "components": [
+          {
+            "/": "/baza-wiedzy/*",
+            "comment": "Otwiera lekcje i Interaktywna Mape Kursu bezposrednio w aplikacji iOS"
+          },
+          {
+            "/": "/app/*",
+            "comment": "Otwiera panel nauki i dashboard bezposrednio w aplikacji iOS"
+          },
+          {
+            "/": "/o-nas",
+            "comment": "Podstrona O nas"
+          },
+          {
+            "/": "/kontakt",
+            "comment": "Podstrona Kontakt"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "YOUR_APPLE_TEAM_ID.com.fullstackacademy.app"
+    ]
+  }
+}

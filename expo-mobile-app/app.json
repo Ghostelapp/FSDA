@@ -16,8 +16,29 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.fullstackacademy.app",
       "buildNumber": "4",
+      "icon": "./assets/ios-icon-1024x1024.png",
+      "associatedDomains": [
+        "applinks:fsda.tech",
+        "webcredentials:fsda.tech"
+      ],
+      "config": {
+        "usesNonExemptEncryption": false
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "privacyManifests": {
+        "NSPrivacyTracking": false,
+        "NSPrivacyTrackingDomains": [],
+        "NSPrivacyCollectedDataTypes": [],
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
+          }
+        ]
       }
     },
     "android": {

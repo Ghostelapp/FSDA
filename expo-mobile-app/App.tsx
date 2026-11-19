@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   BackHandler,
+  Linking,
   Platform,
   SafeAreaView,
   StatusBar,
@@ -17,7 +18,33 @@ const ACADEMY_URL = 'https://fsda.tech';
 const MOBILE_BROWSER_UA =
   Platform.OS === 'android'
     ? 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 FullStackAcademyExpo/3.0.0'
-    : undefined;
+    : 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1 FullStackAcademyExpo/3.0.0';
+
+const ALLOWED_IN_APP_HOSTS = [
+  'fsda.tech',
+  'www.fsda.tech',
+  'accounts.google.com',
+  'apis.google.com',
+  'fsda-1d673.firebaseapp.com',
+];
+
+function shouldKeepInWebView(url: string): boolean {
+  if (!url) return true;
+  if (url.startsWith('about:') || url.startsWith('blob:') || url.startsWith('data:')) {
+    return true;
+  }
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return false;
+    }
+    return ALLOWED_IN_APP_HOSTS.some(
+      (host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`)
+    );
+  } catch {
+    return true;
+  }
+}
 
 export default function App() {
   const webViewRef = useRef<WebView>(null);
@@ -25,7 +52,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  // Obsługa fizycznego przycisku "Wstecz" w systemie Android
+  // Obsługa fizycznego przycisku "Wstecz" w systemie Android (na iOS działa gest przesunięcia krawędzi)
   useEffect(() => {
     if (Platform.OS !== 'android') return;
 
@@ -56,7 +83,7 @@ export default function App() {
           <Text style={styles.errorBadge}>TRYB OFFLINE</Text>
           <Text style={styles.errorTitle}>Brak połączenia z serwerem Akademii</Text>
           <Text style={styles.errorDesc}>
-            Sprawdź połączenie z Internetem na swoim telefonie i spróbuj ponownie.
+            Sprawdź połączenie z Internetem na swoim urządzeniu i spróbuj ponownie.
           </Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
             <Text style={styles.retryButtonText}>Spróbuj ponownie</Text>
@@ -73,10 +100,20 @@ export default function App() {
             thirdPartyCookiesEnabled={true}
             sharedCookiesEnabled={true}
             allowsInlineMediaPlayback={true}
+            mediaPlaybackRequiresUserAction={false}
             startInLoadingState={true}
             allowsBackForwardNavigationGestures={true}
+            contentInsetAdjustmentBehavior="automatic"
+            pullToRefreshEnabled={true}
             userAgent={MOBILE_BROWSER_UA}
             applicationNameForUserAgent="FullStackAcademyExpo/3.0.0"
+            onShouldStartLoadWithRequest={(request) => {
+              if (shouldKeepInWebView(request.url)) {
+                return true;
+              }
+              Linking.openURL(request.url).catch(() => {});
+              return false;
+            }}
             onNavigationStateChange={(navState) => {
               setCanGoBack(navState.canGoBack);
             }}
@@ -168,4 +205,3 @@ const styles = StyleSheet.create({
 });
 
 registerRootComponent(App);
-

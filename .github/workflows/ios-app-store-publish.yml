@@ -1,0 +1,73 @@
+name: Build iOS App (Xcode / EAS) & Prepare App Store Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Tryb budowania iOS (xcode-archive lub eas-cloud)'
+        required: true
+        default: 'xcode-archive'
+  push:
+    branches:
+      - release/ios-app-store
+
+jobs:
+  ios-prebuild-and-archive:
+    runs-on: macos-latest
+    steps:
+      - name: Pobierz kod źródłowy
+        uses: actions/checkout@v4
+
+      - name: Konfiguracja Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Wybierz najnowszą stabilną wersję Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Instalacja zależności projektu Expo iOS
+        working-directory: ./expo-mobile-app
+        run: npm install
+
+      - name: Wygeneruj natywny projekt Xcode (expo prebuild --platform ios)
+        working-directory: ./expo-mobile-app
+        run: npx expo prebuild --platform ios --clean
+
+      - name: Instalacja CocoaPods
+        working-directory: ./expo-mobile-app/ios
+        run: pod install
+
+      - name: Zbuduj niepodpisane archiwum weryfikacyjne Xcode (Release / Generic iOS)
+        if: ${{ github.event.inputs.mode != 'eas-cloud' }}
+        working-directory: ./expo-mobile-app/ios
+        run: |
+          WORKSPACE=$(find . -maxdepth 1 -name "*.xcworkspace" | head -n 1)
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Zbuduj podpisany plik .IPA w Expo EAS Cloud (gdy ustawiono EXPO_TOKEN)
+        if: ${{ github.event.inputs.mode == 'eas-cloud' && secrets.EXPO_TOKEN != '' }}
+        working-directory: ./expo-mobile-app
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli build -p ios --profile production --non-interactive
+
+      - name: Udostępnij wygenerowany projekt iOS i metadane App Store
+        uses: actions/upload-artifact@v4
+        with:
+          name: fullstack-academy-ios-app-store-artifacts
+          path: |
+            public/app-store/*
+            public/.well-known/apple-app-site-association
+            expo-mobile-app/app.json
+            expo-mobile-app/eas.json
