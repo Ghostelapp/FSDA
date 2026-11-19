@@ -47,7 +47,12 @@ import {
   VisitorEventWritePayload,
   VisitorPresenceWritePayload,
 } from './utils/visitorAnalytics';
-import { sanitizeGithubIntegrationForPersistence } from './utils/githubService';
+import {
+  CloudCallableResult,
+  classifyCloudCallableError,
+  serializeUserProfileFields,
+  serializeUserProgressForFirestore,
+} from './utils/cloudSync';
 
 const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env || {};
 
@@ -120,37 +125,69 @@ const cloudFunctions = getFunctions(app, 'us-central1');
 
 type CodeBundle = { html: string; css: string; js: string };
 
-export async function verifyLessonExerciseInCloud(exerciseId: string, code: CodeBundle): Promise<void> {
-  await httpsCallable(cloudFunctions, 'verifyLessonExercise')({ exerciseId, code });
+let cloudFunctionsUnavailable = false;
+
+async function invokeCloudCallable<TReq, TRes = unknown>(
+  name: string,
+  payload: TReq
+): Promise<CloudCallableResult<TRes>> {
+  if (cloudFunctionsUnavailable) {
+    return { status: 'unavailable' };
+  }
+  try {
+    const result = await httpsCallable<TReq, TRes>(cloudFunctions, name)(payload);
+    return { status: 'ok', data: result.data };
+  } catch (error) {
+    const kind = classifyCloudCallableError(error);
+    if (kind === 'unavailable') {
+      cloudFunctionsUnavailable = true;
+      return { status: 'unavailable', error };
+    }
+    return { status: 'rejected', error };
+  }
+}
+
+export async function verifyLessonExerciseInCloud(
+  exerciseId: string,
+  code: CodeBundle
+): Promise<CloudCallableResult<void>> {
+  return invokeCloudCallable('verifyLessonExercise', { exerciseId, code });
 }
 
 export async function submitQuizAnswersToCloud(
   lessonId: string,
   answers: Record<string, number>
-): Promise<number> {
-  const result = await httpsCallable<
+): Promise<CloudCallableResult<number>> {
+  const res = await invokeCloudCallable<
     { lessonId: string; answers: Record<string, number> },
     { scorePercent: number }
-  >(cloudFunctions, 'submitQuizAnswers')({ lessonId, answers });
-  return result.data.scorePercent;
+  >('submitQuizAnswers', { lessonId, answers });
+  return {
+    status: res.status,
+    data: res.data?.scorePercent,
+    error: res.error,
+  };
 }
 
 export async function completeLessonInCloud(
   lessonId: string,
   answers?: Record<string, number>
-): Promise<void> {
-  await httpsCallable(cloudFunctions, 'completeLesson')({ lessonId, answers });
+): Promise<CloudCallableResult<void>> {
+  return invokeCloudCallable('completeLesson', { lessonId, answers });
 }
 
-export async function completeProjectInCloud(projectId: string, code: CodeBundle): Promise<void> {
-  await httpsCallable(cloudFunctions, 'completeProject')({ projectId, code });
+export async function completeProjectInCloud(
+  projectId: string,
+  code: CodeBundle
+): Promise<CloudCallableResult<void>> {
+  return invokeCloudCallable('completeProject', { projectId, code });
 }
 
 export async function claimActivityRewardInCloud(
   rewardId?: string,
   proof?: Record<string, unknown>
-): Promise<void> {
-  await httpsCallable(cloudFunctions, 'claimActivityReward')({ rewardId, proof });
+): Promise<CloudCallableResult<void>> {
+  return invokeCloudCallable('claimActivityReward', { rewardId, proof });
 }
 
 export type CloudLifeAction =
@@ -167,20 +204,23 @@ export async function updateLivesInCloud(
   action: CloudLifeAction,
   targetUid?: string,
   proof?: Record<string, unknown>
-): Promise<void> {
-  await httpsCallable(cloudFunctions, 'updateLives')({ action, targetUid, proof });
+): Promise<CloudCallableResult<void>> {
+  return invokeCloudCallable('updateLives', { action, targetUid, proof });
 }
 
-export async function setUserStatusInCloud(targetUid: string, status: string): Promise<void> {
-  await httpsCallable(cloudFunctions, 'setUserStatus')({ targetUid, status });
+export async function setUserStatusInCloud(
+  targetUid: string,
+  status: string
+): Promise<CloudCallableResult<void>> {
+  return invokeCloudCallable('setUserStatus', { targetUid, status });
 }
 
 export async function setUserProStatusInCloud(
   targetUid: string,
   enabled: boolean,
   plan: 'monthly' | 'yearly'
-): Promise<void> {
-  await httpsCallable(cloudFunctions, 'setUserProStatus')({ targetUid, enabled, plan });
+): Promise<CloudCallableResult<void>> {
+  return invokeCloudCallable('setUserProStatus', { targetUid, enabled, plan });
 }
 
 export enum OperationType {
@@ -272,30 +312,27 @@ export async function testFirebaseConnection(): Promise<boolean> {
  * Sanitizes a User object before writing to Firestore (removes undefined fields and passwords)
  */
 export function serializeUserForFirestore(uid: string, user: User): Record<string, unknown> {
-  const sanitizedGithub = user.githubIntegration
-    ? sanitizeGithubIntegrationForPersistence(user.githubIntegration)
-    : undefined;
-  return {
-    name: (user.name || 'Kursant Akademii').slice(0, 120),
-    bio: (user.bio || 'Kursant Full Stack Developer Academy').slice(0, 600),
-    avatar:
-      user.avatar ||
-      `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user.name || uid)}`,
-    weeklyGoalMinutes: Math.max(30, Math.min(1440, Number(user.weeklyGoalMinutes) || 180)),
-    savedCode: user.savedCode && typeof user.savedCode === 'object' ? user.savedCode : {},
-    ...(sanitizedGithub ? { githubIntegration: sanitizedGithub } : {}),
-    updatedAt: new Date().toISOString(),
-  };
+  return serializeUserProfileFields(uid, user);
 }
 
 export async function saveUserProfileToCloud(uid: string, user: User): Promise<boolean> {
   const path = `users/${uid}`;
   try {
     const profileRef = doc(db, 'users', uid);
-    const payload = serializeUserForFirestore(uid, user);
+    const progressPayload = serializeUserProgressForFirestore(uid, user);
+    const profileOnlyPayload = serializeUserProfileFields(uid, user);
     const existing = await getDoc(profileRef);
     if (existing.exists()) {
-      await setDoc(profileRef, payload, { merge: true });
+      try {
+        await setDoc(profileRef, progressPayload, { merge: true });
+      } catch (writeErr) {
+        const errCode = (writeErr as { code?: string })?.code || '';
+        if (errCode === 'permission-denied') {
+          await setDoc(profileRef, profileOnlyPayload, { merge: true });
+        } else {
+          throw writeErr;
+        }
+      }
     } else {
       const email = (user.email || 'kursant@akademia.pl').slice(0, 254);
       const isAdminEmail = email.trim().toLowerCase() === 'zordonzordon1@gmail.com';
@@ -320,7 +357,7 @@ export async function saveUserProfileToCloud(uid: string, user: User): Promise<b
         streakFreezes: 0,
         weeklySpentMinutes: 0,
         createdAt: new Date().toISOString().split('T')[0],
-        ...payload,
+        ...profileOnlyPayload,
       });
     }
     return true;

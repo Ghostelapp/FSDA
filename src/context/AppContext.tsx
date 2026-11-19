@@ -891,6 +891,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           lastCloudSyncHashRef.current = JSON.stringify({
             xp: cloudProfile.xp,
             level: cloudProfile.level,
+            streakDays: cloudProfile.streakDays,
+            streakFreezes: cloudProfile.streakFreezes,
+            lastActiveDate: cloudProfile.lastActiveDate,
             lives: cloudProfile.lives,
             isPro: cloudProfile.isPro,
             name: cloudProfile.name,
@@ -920,6 +923,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const remoteHash = JSON.stringify({
               xp: remoteUser.xp,
               level: remoteUser.level,
+              streakDays: remoteUser.streakDays,
+              streakFreezes: remoteUser.streakFreezes,
+              lastActiveDate: remoteUser.lastActiveDate,
               lives: remoteUser.lives,
               isPro: remoteUser.isPro,
               name: remoteUser.name,
@@ -1102,6 +1108,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const currentHash = JSON.stringify({
       xp: currentUser.xp,
       level: currentUser.level,
+      streakDays: currentUser.streakDays,
+      streakFreezes: currentUser.streakFreezes,
+      lastActiveDate: currentUser.lastActiveDate,
       lives: currentUser.lives,
       isPro: currentUser.isPro,
       name: currentUser.name,
@@ -1202,11 +1211,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const syncLifeAction = (action: CloudLifeAction, targetUid?: string, proof?: Record<string, unknown>) => {
     if (!firebaseUid || !isCloudConnected) return;
     const isEn = languageRef.current === 'en';
-    void updateLivesInCloud(action, targetUid, proof).catch(() => {
-      showToast(
-        isEn ? 'Failed to confirm heart update in the cloud.' : 'Nie udało się potwierdzić zmiany serc w chmurze.',
-        'danger'
-      );
+    void updateLivesInCloud(action, targetUid, proof).then((res) => {
+      if (res.status === 'rejected') {
+        showToast(
+          isEn ? 'Failed to confirm heart update in the cloud.' : 'Nie udało się potwierdzić zmiany serc w chmurze.',
+          'danger'
+        );
+      }
     });
   };
 
@@ -2138,8 +2149,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       })
     );
     if (firebaseUid && isCloudConnected) {
-      void setUserStatusInCloud(userId, status).catch(() => {
-        showToast(isEn ? 'Failed to update account status in cloud.' : 'Nie udało się zmienić statusu konta w chmurze.', 'danger');
+      void setUserStatusInCloud(userId, status).then((res) => {
+        if (res.status === 'rejected') {
+          showToast(isEn ? 'Failed to update account status in cloud.' : 'Nie udało się zmienić statusu konta w chmurze.', 'danger');
+        }
       });
     }
 
@@ -2264,8 +2277,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       })
     );
     if (firebaseUid && isCloudConnected) {
-      void setUserProStatusInCloud(userId, isPro, plan).catch(() => {
-        showToast(isEn ? 'Failed to update PRO status in cloud.' : 'Nie udało się zmienić uprawnień PRO w chmurze.', 'danger');
+      void setUserProStatusInCloud(userId, isPro, plan).then((res) => {
+        if (res.status === 'rejected') {
+          showToast(isEn ? 'Failed to update PRO status in cloud.' : 'Nie udało się zmienić uprawnień PRO w chmurze.', 'danger');
+        }
       });
     }
     showToast(
@@ -2293,8 +2308,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       })
     );
     if (firebaseUid && isCloudConnected) {
-      void updateLivesInCloud('admin-refill', userId).catch(() => {
-        showToast(isEn ? 'Failed to refill hearts in cloud.' : 'Nie udało się uzupełnić serc w chmurze.', 'danger');
+      void updateLivesInCloud('admin-refill', userId).then((res) => {
+        if (res.status === 'rejected') {
+          showToast(isEn ? 'Failed to refill hearts in cloud.' : 'Nie udało się uzupełnić serc w chmurze.', 'danger');
+        }
       });
     }
     showToast(
@@ -2476,11 +2493,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
     if (firebaseUid && isCloudConnected) {
       const cloudAnswers = quizEval?.valid ? answers : undefined;
-      void completeLessonInCloud(lessonId, cloudAnswers).catch(() => {
-        showToast(
-          isEn ? 'Failed to confirm lesson completion in cloud.' : 'Nie udało się potwierdzić zaliczenia lekcji w chmurze.',
-          'danger'
-        );
+      void completeLessonInCloud(lessonId, cloudAnswers).then((res) => {
+        if (res.status === 'rejected') {
+          showToast(
+            isEn ? 'Failed to confirm lesson completion in cloud.' : 'Nie udało się potwierdzić zaliczenia lekcji w chmurze.',
+            'danger'
+          );
+        }
       });
     }
   };
@@ -2525,11 +2544,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return updatedUser;
     });
     if (firebaseUid && isCloudConnected) {
-      void submitQuizAnswersToCloud(lessonId, answers).catch(() => {
-        showToast(
-          isEn ? 'Failed to verify quiz answers in cloud.' : 'Nie udało się zweryfikować odpowiedzi quizu w chmurze.',
-          'danger'
-        );
+      void submitQuizAnswersToCloud(lessonId, answers).then((res) => {
+        if (res.status === 'rejected') {
+          showToast(
+            isEn ? 'Failed to verify quiz answers in cloud.' : 'Nie udało się zweryfikować odpowiedzi quizu w chmurze.',
+            'danger'
+          );
+        }
       });
     }
   };
@@ -2546,13 +2567,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     if (!firebaseUid || !isCloudConnected) return true;
-    try {
-      await verifyLessonExerciseInCloud(exerciseId, code);
-      return true;
-    } catch {
+    const cloudResult = await verifyLessonExerciseInCloud(exerciseId, code);
+    if (cloudResult.status === 'rejected') {
       showToast(isEn ? 'Server did not confirm exercise completion.' : 'Serwer nie potwierdził poprawności ćwiczenia.', 'danger');
       return false;
     }
+    return true;
   };
 
   const saveCodeSnippet = (exerciseId: string, code: { html: string; css: string; js: string }) => {
@@ -2621,11 +2641,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return updatedUser;
     });
     if (firebaseUid && isCloudConnected) {
-      void completeProjectInCloud(projectId, candidateCode).catch(() => {
-        showToast(
-          isEn ? 'Server did not confirm project completion.' : 'Serwer nie potwierdził zaliczenia projektu.',
-          'danger'
-        );
+      void completeProjectInCloud(projectId, candidateCode).then((res) => {
+        if (res.status === 'rejected') {
+          showToast(
+            isEn ? 'Server did not confirm project completion.' : 'Serwer nie potwierdził zaliczenia projektu.',
+            'danger'
+          );
+        }
       });
     }
   };
@@ -2926,8 +2948,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     soundManager.playSuccess();
     showToast(`${reason} (+${xpAmount} XP)`, 'success');
     if (firebaseUid && isCloudConnected && !rewardId?.startsWith('exercise-') && !rewardId?.startsWith('project-verify-')) {
-      void claimActivityRewardInCloud(rewardId, proof).catch(() => {
-        showToast(isEn ? 'Server did not confirm this reward.' : 'Serwer nie potwierdził tej nagrody.', 'danger');
+      void claimActivityRewardInCloud(rewardId, proof).then((res) => {
+        if (res.status === 'rejected') {
+          showToast(isEn ? 'Server did not confirm this reward.' : 'Serwer nie potwierdził tej nagrody.', 'danger');
+        }
       });
     }
     return true;
