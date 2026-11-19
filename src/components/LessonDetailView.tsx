@@ -1,9 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Lesson } from '../types';
 import { useApp } from '../context/AppContext';
 import { CodeBlock } from './CodeBlock';
 import { CodeEditor } from './CodeEditor';
 import { RichInlineText, renderInlineTokens } from './RichInlineText';
+import {
+  LessonMapNavigatorBar,
+  LessonRouteTransitionCard,
+} from './LessonMapNavigatorBar';
 import {
   REQUIRED_QUIZ_SCORE,
   ValidationSummary,
@@ -18,6 +23,13 @@ import {
   groupTheoryBlocksIntoSections,
   estimateLessonReadingMinutes,
 } from '../utils/lessonReadability';
+import {
+  LessonStepId,
+  computeLessonSlideDirection,
+  computeStepSlideDirection,
+  getLessonSlideVariants,
+  getStepSlideVariants,
+} from '../utils/lessonTransition';
 import {
   ArrowLeft,
   ArrowRight,
@@ -66,12 +78,14 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
   } = useApp();
   const isEn = language === 'en';
 
+  const prefersReducedMotion = Boolean(useReducedMotion());
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState<number | null>(null);
   const [independentHintVisible, setIndependentHintVisible] = useState(false);
   const [comfortTextSize, setComfortTextSize] = useState<boolean>(true);
-  const [stepFilter, setStepFilter] = useState<'all' | '1-teoria' | '2-przyklady' | '3-cwiczenie' | '4-quiz'>('all');
+  const [stepFilter, setStepFilter] = useState<LessonStepId>('all');
+  const [stepDirection, setStepDirection] = useState<1 | -1>(1);
   const [showWalkthroughSteps, setShowWalkthroughSteps] = useState<boolean>(false);
   const [showOptionalTasks, setShowOptionalTasks] = useState<boolean>(false);
 
@@ -155,8 +169,36 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
   const parentModule = allModules.find((m) => m.id === lesson.moduleId);
   const isCompleted = currentUser.completedLessons.includes(lesson.id);
 
-  // Next / Previous Lesson Navigation
+  // Next / Previous Lesson Navigation & Directional Slide Tracking
   const currentIndex = allLessons.findIndex((l) => l.id === lesson.id);
+  const [trackedLessonId, setTrackedLessonId] = useState<string>(lesson.id);
+  const [trackedLessonIndex, setTrackedLessonIndex] = useState<number>(currentIndex);
+  const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
+
+  if (lesson.id !== trackedLessonId) {
+    setSlideDirection(computeLessonSlideDirection(trackedLessonIndex, currentIndex));
+    setTrackedLessonId(lesson.id);
+    setTrackedLessonIndex(currentIndex);
+  }
+
+  const lessonSlideVariants = useMemo(
+    () => getLessonSlideVariants(prefersReducedMotion),
+    [prefersReducedMotion]
+  );
+
+  const stepSlideVariants = useMemo(
+    () => getStepSlideVariants(prefersReducedMotion),
+    [prefersReducedMotion]
+  );
+
+  const handleStepChange = (nextStep: LessonStepId, scrollToTop = false) => {
+    setStepDirection(computeStepSlideDirection(stepFilter, nextStep));
+    setStepFilter(nextStep);
+    if (scrollToTop) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson =
     currentIndex >= 0 && currentIndex < allLessons.length - 1
@@ -365,8 +407,30 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
         </div>
       </div>
 
-      {/* Lesson Hero Header */}
-      <header className="rounded-2xl border border-slate-800/90 bg-slate-900/75 p-6 sm:p-8 shadow-xl space-y-5">
+      {/* Interactive Lesson Map Navigator Bar (Connected Stations & 15-Zone Atlas Drawer) */}
+      <LessonMapNavigatorBar
+        currentLesson={lesson}
+        mode="app"
+        onSelectLesson={(lessonId) => setActiveTab('lesson', lessonId)}
+        onOpenFullMap={() => setActiveTab('modules')}
+      />
+
+      {/* Directional Slide Transition Viewport for Lesson Content */}
+      <div className="overflow-x-hidden">
+        <AnimatePresence mode="wait" custom={slideDirection} initial={false}>
+          <motion.div
+            key={lesson.id}
+            custom={slideDirection}
+            variants={lessonSlideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            data-testid="lesson-slide-container"
+            data-slide-direction={slideDirection > 0 ? 'forward' : 'backward'}
+            className="space-y-8 will-change-transform"
+          >
+            {/* Lesson Hero Header */}
+            <header className="rounded-2xl border border-slate-800/90 bg-slate-900/75 p-6 sm:p-8 shadow-xl space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center rounded-md bg-indigo-500/15 px-2.5 py-1 font-bold text-indigo-300 border border-indigo-500/30">
@@ -436,7 +500,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setStepFilter(tab.id as typeof stepFilter)}
+                  onClick={() => handleStepChange(tab.id as LessonStepId)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 tabular-nums ${
                     active
                       ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-950'
@@ -456,6 +520,16 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
         </div>
       </header>
 
+      <AnimatePresence mode="wait" custom={stepDirection} initial={false}>
+        <motion.div
+          key={stepFilter}
+          custom={stepDirection}
+          variants={stepSlideVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          className="space-y-8 will-change-transform"
+        >
       {/* =====================================================================
           STAGE 1: TEORIA, ANALOGIA, SŁOWNICZEK I KARTY ZAGADNIEŃ
       ===================================================================== */}
@@ -707,10 +781,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
             <div className="flex justify-end pt-2">
               <button
                 type="button"
-                onClick={() => {
-                  setStepFilter('2-przyklady');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                onClick={() => handleStepChange('2-przyklady', true)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-950/60 transition-all"
               >
                 <span>
@@ -940,10 +1011,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
             <div className="flex justify-between pt-2">
               <button
                 type="button"
-                onClick={() => {
-                  setStepFilter('1-teoria');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                onClick={() => handleStepChange('1-teoria', true)}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -951,10 +1019,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setStepFilter('3-cwiczenie');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                onClick={() => handleStepChange('3-cwiczenie', true)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-950/60 transition-all"
               >
                 <span>
@@ -1166,10 +1231,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
             <div className="flex justify-between pt-2">
               <button
                 type="button"
-                onClick={() => {
-                  setStepFilter('2-przyklady');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                onClick={() => handleStepChange('2-przyklady', true)}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -1177,10 +1239,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setStepFilter('4-quiz');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                onClick={() => handleStepChange('4-quiz', true)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-950/60 transition-all"
               >
                 <span>
@@ -1382,7 +1441,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
                     {!exercisePassed && stepFilter !== 'all' && (
                       <button
                         type="button"
-                        onClick={() => setStepFilter('3-cwiczenie')}
+                        onClick={() => handleStepChange('3-cwiczenie', true)}
                         className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-indigo-300 shrink-0"
                       >
                         {isEn ? 'Open editor' : 'Otwórz edytor'}
@@ -1444,64 +1503,24 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
               </div>
             )}
 
-            {/* Previous / Complete / Next Lesson Bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div>
-                {prevLesson && (
-                  <button
-                    onClick={() => setActiveTab('lesson', prevLesson.id)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition-colors text-left"
-                  >
-                    <ArrowLeft className="h-4 w-4 shrink-0" />
-                    <span>{isEn ? 'Previous:' : 'Poprzednia:'} <RichInlineText text={prevLesson.title} /></span>
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                {!isCompleted ? (
-                  <button
-                    onClick={handleVerifyAndComplete}
-                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white text-xs font-bold shadow-lg transition-all whitespace-nowrap shrink-0 ${
-                      canCompleteLesson
-                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-950/50'
-                        : 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    {canCompleteLesson ? (
-                      <CheckCircle2 className="h-4 w-4 text-white shrink-0" />
-                    ) : (
-                      <Lock className="h-4 w-4 text-amber-400 shrink-0" />
-                    )}
-                    <span>
-                      {isEn
-                        ? `Verify & complete lesson (+${lesson.xpReward} XP)`
-                        : `Zweryfikuj i ukończ lekcję (+${lesson.xpReward} XP)`}
-                    </span>
-                  </button>
-                ) : (
-                  <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span>
-                      {isEn ? `Lesson completed (+${lesson.xpReward} XP)` : `Lekcja ukończona (+${lesson.xpReward} XP)`}
-                    </span>
-                  </div>
-                )}
-
-                {nextLesson && (
-                  <button
-                    onClick={() => setActiveTab('lesson', nextLesson.id)}
-                    className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-950/50 text-left"
-                  >
-                    <span>{isEn ? 'Next:' : 'Następna:'} <RichInlineText text={nextLesson.title} /></span>
-                    <ArrowRight className="h-4 w-4 shrink-0" />
-                  </button>
-                )}
-              </div>
-            </div>
+            {/* Interactive 3-Station Route Transition Card (Previous -> Current -> Next) */}
+            <LessonRouteTransitionCard
+              currentLesson={lesson}
+              isCompleted={isCompleted}
+              canCompleteLesson={canCompleteLesson}
+              onVerifyAndComplete={handleVerifyAndComplete}
+              onSelectLesson={(lessonId) => setActiveTab('lesson', lessonId)}
+              onOpenFullMap={() => setActiveTab('modules')}
+              mode="app"
+            />
           </div>
         </div>
       )}
+        </motion.div>
+      </AnimatePresence>
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 };

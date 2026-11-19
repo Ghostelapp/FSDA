@@ -4,6 +4,10 @@ import { PublicHeader } from './PublicHeader';
 import { RichInlineText } from './RichInlineText';
 import { CodeBlock } from './CodeBlock';
 import {
+  LessonMapNavigatorBar,
+  LessonRouteTransitionCard,
+} from './LessonMapNavigatorBar';
+import {
   estimateLessonReadingMinutes,
   getBeginnerLessonAid,
   groupTheoryBlocksIntoSections,
@@ -114,6 +118,20 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
             {isEn ? 'Module' : 'Moduł'} {String(moduleInfo.id).padStart(2, '0')} · {isEn ? 'Lesson' : 'Lekcja'} {lesson.order}
           </span>
         </nav>
+
+        {/* Interactive Lesson Map Navigator Bar */}
+        <LessonMapNavigatorBar
+          currentLesson={lesson}
+          mode="public"
+          onSelectLesson={(targetId) => {
+            setActiveTab('public_lesson', targetId);
+            window.scrollTo({ top: 0, behavior: 'auto' });
+          }}
+          onOpenFullMap={() => {
+            setActiveTab('knowledge_base');
+            window.scrollTo({ top: 0, behavior: 'auto' });
+          }}
+        />
 
         {/* Article Hero Header */}
         <header className="space-y-4 pb-8 border-b border-white/[0.08]">
@@ -489,6 +507,21 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
             </button>
           </div>
         </section>
+
+        {/* Interactive 3-Station Route Transition Card */}
+        <LessonRouteTransitionCard
+          currentLesson={lesson}
+          isCompleted={false}
+          onSelectLesson={(targetId) => {
+            setActiveTab('public_lesson', targetId);
+            window.scrollTo({ top: 0, behavior: 'auto' });
+          }}
+          onOpenFullMap={() => {
+            setActiveTab('knowledge_base');
+            window.scrollTo({ top: 0, behavior: 'auto' });
+          }}
+          mode="public"
+        />
 
         {/* Previous / Next Crawlable Lesson Links */}
         <nav
