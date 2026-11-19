@@ -2,12 +2,12 @@ import { buildZipArchive, isNotHtmlFallback, isValidZipBuffer, type ZipEntryInpu
 
 const SHA256_FINGERPRINT =
   'A6:5D:54:DB:3F:7C:C1:DF:CF:E4:45:1D:26:21:41:15:B8:49:58:D4:D2:D8:93:9D:AF:81:34:4F:81:23:86:23';
-const PRODUCTION_HOST = 'fsda-phi.vercel.app';
+const PRODUCTION_HOST = 'fsda.tech';
 
 const EXPO_PACKAGE_JSON = JSON.stringify(
   {
     name: 'fullstack-academy-expo',
-    version: '2.0.0',
+    version: '3.0.0',
     private: true,
     main: 'App.tsx',
     scripts: {
@@ -46,7 +46,7 @@ const EXPO_APP_JSON = JSON.stringify(
     expo: {
       name: 'Full Stack Academy',
       slug: 'fullstack-academy',
-      version: '2.0.0',
+      version: '3.0.0',
       orientation: 'portrait',
       icon: './assets/icon.png',
       userInterfaceStyle: 'dark',
@@ -59,14 +59,14 @@ const EXPO_APP_JSON = JSON.stringify(
       ios: {
         supportsTablet: true,
         bundleIdentifier: 'com.fullstackacademy.app',
-        buildNumber: '3',
+        buildNumber: '4',
         infoPlist: {
           ITSAppUsesNonExemptEncryption: false,
         },
       },
       android: {
         package: 'com.fullstackacademy.app',
-        versionCode: 3,
+        versionCode: 4,
         adaptiveIcon: {
           foregroundImage: './assets/adaptive-icon.png',
           backgroundColor: '#020617',
@@ -185,6 +185,10 @@ import { registerRootComponent } from 'expo';
 import { WebView } from 'react-native-webview';
 
 const ACADEMY_URL = 'https://${PRODUCTION_HOST}';
+const MOBILE_BROWSER_UA =
+  Platform.OS === 'android'
+    ? 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 FullStackAcademyExpo/3.0.0'
+    : undefined;
 
 export default function App() {
   const webViewRef = useRef<WebView>(null);
@@ -230,7 +234,12 @@ export default function App() {
             style={styles.webview}
             javaScriptEnabled={true}
             domStorageEnabled={true}
+            thirdPartyCookiesEnabled={true}
+            sharedCookiesEnabled={true}
+            allowsInlineMediaPlayback={true}
             startInLoadingState={true}
+            userAgent={MOBILE_BROWSER_UA}
+            applicationNameForUserAgent="FullStackAcademyExpo/3.0.0"
             onNavigationStateChange={(nav) => setCanGoBack(nav.canGoBack)}
             onLoadStart={() => setIsLoading(true)}
             onLoadEnd={() => setIsLoading(false)}
@@ -272,7 +281,7 @@ registerRootComponent(App);
 `;
 
 const QUICK_START_TXT = `========================================================================
-  FULL STACK ACADEMY — PAKIET PUBLIKACJI GOOGLE PLAY & EXPO APK (v2.0.0)
+  FULL STACK ACADEMY — PAKIET PUBLIKACJI GOOGLE PLAY & EXPO APK (v3.0.0)
   Pakiet Android: com.fullstackacademy.app | Target SDK: 35 (Android 15)
 ========================================================================
 
@@ -339,8 +348,8 @@ android {
         applicationId "com.fullstackacademy.app"
         minSdk 21
         targetSdk 35
-        versionCode 2
-        versionName "2.0.0"
+        versionCode 4
+        versionName "3.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 

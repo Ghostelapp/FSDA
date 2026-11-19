@@ -13,7 +13,11 @@ import {
 import { registerRootComponent } from 'expo';
 import { WebView } from 'react-native-webview';
 
-const ACADEMY_URL = 'https://fsda-phi.vercel.app';
+const ACADEMY_URL = 'https://fsda.tech';
+const MOBILE_BROWSER_UA =
+  Platform.OS === 'android'
+    ? 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 FullStackAcademyExpo/3.0.0'
+    : undefined;
 
 export default function App() {
   const webViewRef = useRef<WebView>(null);
@@ -66,9 +70,13 @@ export default function App() {
             style={styles.webview}
             javaScriptEnabled={true}
             domStorageEnabled={true}
+            thirdPartyCookiesEnabled={true}
+            sharedCookiesEnabled={true}
+            allowsInlineMediaPlayback={true}
             startInLoadingState={true}
             allowsBackForwardNavigationGestures={true}
-            applicationNameForUserAgent="FullStackAcademyExpo/2.0.0"
+            userAgent={MOBILE_BROWSER_UA}
+            applicationNameForUserAgent="FullStackAcademyExpo/3.0.0"
             onNavigationStateChange={(navState) => {
               setCanGoBack(navState.canGoBack);
             }}

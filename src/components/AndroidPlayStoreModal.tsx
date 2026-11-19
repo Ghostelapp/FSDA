@@ -42,24 +42,25 @@ interface AndroidPlayStoreModalProps {
 }
 
 const SHA256_FINGERPRINT = 'A6:5D:54:DB:3F:7C:C1:DF:CF:E4:45:1D:26:21:41:15:B8:49:58:D4:D2:D8:93:9D:AF:81:34:4F:81:23:86:23';
-const PRODUCTION_HOST = 'ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app';
+const PRODUCTION_HOST = 'fsda.tech';
 const PRIVACY_POLICY_URL = `https://${PRODUCTION_HOST}/privacy-policy.html`;
 const STORE_TITLE = 'Full Stack Academy — Kurs IT';
 const STORE_SHORT_DESC = 'Nauka programowania od zera do Full Stack Developera: HTML, JS, React, SQL i Git';
 const STORE_FULL_DESC = `Zostań profesjonalnym Full Stack Developerem z aplikacją mobilną Full Stack Academy!
 
-Ucz się programowania krok po kroku poprzez 91 kompletnych lekcji w 15 modułach, praktyczne ćwiczenia w edytorze kodu, symulator terminala Bash/Git, Studio REST API oraz Studio Bazy Danych SQL.
+Ucz się programowania krok po kroku poprzez Interaktywną Mapę Kursu z 96 lekcjami w 15 strefach, praktyczne ćwiczenia w edytorze kodu, symulator terminala Bash/Git, Studio REST API oraz Studio Bazy Danych SQL.
 
-GŁÓWNE FUNKCJE APLIKACJI (WERSJA 2.0):
-• 15 kompletnych modułów szkoleniowych i 91 lekcji (od architektury Internetu, HTML5 i CSS3, przez JavaScript ES6+, Git, TypeScript i React, aż po Node.js, Express, PostgreSQL/Prisma, OAuth2/JWT, Stripe, Testy Vitest/Playwright, Docker/CI/CD, Next.js App Router i przygotowanie do pracy w Scrum).
-• Wbudowana Piaskownica Kodu (HTML/CSS/JS) z automatyczną weryfikacją testów jednostkowych i AST.
+GŁÓWNE FUNKCJE APLIKACJI (WERSJA 3.0):
+• Interaktywna Mapa Kursu (15 stref i 96 lekcji) z płynnymi animacjami przejść między stacjami oraz inspektorem lekcji na żywo.
+• Kompletny program: od architektury Internetu, HTML5 i CSS3, przez JavaScript ES6+, Git, TypeScript i React, aż po Node.js, Express, PostgreSQL/Prisma, OAuth2/JWT, Stripe, Testy Vitest/Playwright, Docker/CI/CD, Next.js App Router i pracę w Scrum.
+• Wbudowana Piaskownica Kodu (HTML/CSS/JS) z automatyczną weryfikacją testów jednostkowych i AST (288 pytań kontrolnych).
 • Interaktywny symulator Terminala UNIX / Bash oraz systemu kontroli wersji Git.
 • Studio Bazy Danych SQL z walidacją składni i wykonywaniem zapytań na żywo.
 • Studio REST API oraz Wizualizator JavaScript Event Loop (Call Stack, Web APIs, Microtasks, Macrotasks).
 • Fiszki SM-2 (Spaced Repetition), ściągi techniczne (Cheat Sheets) oraz Kreator CV programisty.
 • Egzaminy Live Coding (Mock Interviews) przygotowujące do rozmów kwalifikacyjnych.
 • System grywalizacji: punkty XP, ligi tygodniowe, Wyzwanie Dnia, dzienna seria nauki (Streak), odznaki oraz imienny Certyfikat Ukończenia Kursu.
-• Tryb Offline (Service Worker) pozwalający na naukę na telefonie bez dostępu do sieci.
+• Edycja Otwarta 0 zł i tryb Offline (Service Worker) pozwalający na naukę na telefonie bez dostępu do sieci.
 
 Dla kogo?
 Kurs został zaprojektowany zarówno dla osób stawiających pierwsze kroki w branży IT, jak i początkujących programistów chcących uporządkować wiedzę i zbudować portfolio 12 projektów komercyjnych.`;
@@ -99,8 +100,8 @@ const TWA_MANIFEST_CONFIG: TwaManifestConfig = {
   startUrl: '/',
   iconUrl: `https://${PRODUCTION_HOST}/pwa-512x512.png`,
   maskableIconUrl: `https://${PRODUCTION_HOST}/pwa-maskable-512x512.png`,
-  appVersionCode: 2,
-  appVersionName: '2.0.0',
+  appVersionCode: 4,
+  appVersionName: '3.0.0',
   signingKey: {
     path: './android.keystore',
     alias: 'android',
@@ -121,8 +122,8 @@ const ASSET_LINKS_CONFIG: AssetLinkEntry[] = [
 
 const LISTING_META_CONFIG: PlayStoreListingMeta = {
   appId: 'com.fullstackacademy.app',
-  versionName: '2.0.0',
-  versionCode: 2,
+  versionName: '3.0.0',
+  versionCode: 4,
   defaultLanguage: 'pl-PL',
   title: STORE_TITLE,
   shortDescription: STORE_SHORT_DESC,
@@ -181,8 +182,8 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
         passed: twaRes.valid,
         details: twaRes.valid
           ? isEn
-            ? 'Configured com.fullstackacademy.app v2.0.0 (versionCode 2), android.keystore signature, and 4 launcher shortcuts.'
-            : 'Skonfigurowano com.fullstackacademy.app v2.0.0 (versionCode 2), podpis android.keystore i 4 skróty ekranu głównego.'
+            ? 'Configured com.fullstackacademy.app v3.0.0 (versionCode 4), android.keystore signature, and 4 launcher shortcuts.'
+            : 'Skonfigurowano com.fullstackacademy.app v3.0.0 (versionCode 4), podpis android.keystore i 4 skróty ekranu głównego.'
           : twaRes.errors.join(' '),
       },
       {
@@ -278,8 +279,8 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                   <Sparkles className="h-3 w-3" />
                   <span>
                     {isEn
-                      ? 'Admin Only • Expo EAS Build & Google Play v2.0.0'
-                      : 'Tylko Administrator • Expo EAS Build & Google Play v2.0.0'}
+                      ? 'Admin Only • Expo EAS Build & Google Play v3.0.0'
+                      : 'Tylko Administrator • Expo EAS Build & Google Play v3.0.0'}
                   </span>
                 </div>
                 <h2 className="text-base sm:text-xl font-bold text-white mt-1">
@@ -1094,7 +1095,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
           <div className="flex items-center gap-2 text-slate-400">
             <Info className="h-4 w-4 text-indigo-400 shrink-0" />
             <span>
-              {isEn ? 'Package:' : 'Pakiet:'} <strong className="text-slate-200 font-mono">com.fullstackacademy.app</strong> • Expo SDK 52 & TWA v2.0.0
+              {isEn ? 'Package:' : 'Pakiet:'} <strong className="text-slate-200 font-mono">com.fullstackacademy.app</strong> • Expo SDK 54 & TWA v3.0.0
             </span>
           </div>
 

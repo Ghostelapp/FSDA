@@ -2,7 +2,7 @@
   "expo": {
     "name": "Full Stack Academy",
     "slug": "fullstack-academy",
-    "version": "2.0.0",
+    "version": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -15,14 +15,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fullstackacademy.app",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.fullstackacademy.app",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#020617"
@@ -36,7 +36,7 @@
       "./plugins/withFmtConstevalFix.js"
     ],
     "extra": {
-      "appUrl": "https://fsda-phi.vercel.app"
+      "appUrl": "https://fsda.tech"
     }
   }
 }

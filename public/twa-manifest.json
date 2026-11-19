@@ -1,6 +1,6 @@
 {
   "packageId": "com.fullstackacademy.app",
-  "host": "ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app",
+  "host": "fsda.tech",
   "name": "Full Stack Academy",
   "launcherName": "FS Academy",
   "display": "standalone",
@@ -13,43 +13,43 @@
   "backgroundColor": "#020617",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-512x512.png",
-  "maskableIconUrl": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-maskable-512x512.png",
+  "iconUrl": "https://fsda.tech/pwa-512x512.png",
+  "maskableIconUrl": "https://fsda.tech/pwa-maskable-512x512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./android.keystore",
     "alias": "android"
   },
-  "appVersionCode": 2,
-  "appVersionName": "2.0.0",
+  "appVersionCode": 4,
+  "appVersionName": "3.0.0",
   "shortcuts": [
     {
-      "name": "Ścieżka 15 Modułów (91 lekcji)",
-      "shortName": "Moduły",
+      "name": "Interaktywna Mapa Kursu (96 lekcji)",
+      "shortName": "Mapa Kursu",
       "url": "/?tab=modules",
-      "icon": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
+      "icon": "https://fsda.tech/pwa-192x192.png"
     },
     {
       "name": "Piaskownica Kodu",
       "shortName": "Edytor",
       "url": "/?tab=editor",
-      "icon": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
+      "icon": "https://fsda.tech/pwa-192x192.png"
     },
     {
       "name": "Studio Bazy SQL",
       "shortName": "SQL Studio",
       "url": "/?tab=sql_studio",
-      "icon": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
+      "icon": "https://fsda.tech/pwa-192x192.png"
     },
     {
       "name": "Certyfikat Ukończenia",
       "shortName": "Certyfikat",
       "url": "/?tab=certificate",
-      "icon": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/pwa-192x192.png"
+      "icon": "https://fsda.tech/pwa-192x192.png"
     }
   ],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/manifest.webmanifest",
+  "webManifestUrl": "https://fsda.tech/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {
     "locationDelegation": {

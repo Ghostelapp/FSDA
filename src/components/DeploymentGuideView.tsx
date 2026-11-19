@@ -261,8 +261,8 @@ npx @bubblewrap/cli build`;
                 <Smartphone className="h-5 w-5" />
                 <h2 className="text-white">
                   {isEn
-                    ? 'Google Play Store Production Bundle (Admin Only — TWA v2.0.0)'
-                    : 'Pakiet Produkcyjny Google Play Store (Tylko Administrator — TWA v2.0.0)'}
+                    ? 'Google Play Store Production Bundle (Admin Only — TWA v3.0.0)'
+                    : 'Pakiet Produkcyjny Google Play Store (Tylko Administrator — TWA v3.0.0)'}
                 </h2>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">

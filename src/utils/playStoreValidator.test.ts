@@ -24,8 +24,9 @@ test('twa-manifest.json and public/twa-manifest.json are identical and pass Goog
   const validation = validateTwaManifest(rootManifest);
   assert.equal(validation.valid, true, `Errors: ${validation.errors.join(', ')}`);
   assert.equal(rootManifest.packageId, 'com.fullstackacademy.app');
-  assert.equal(rootManifest.appVersionCode, 2);
-  assert.equal(rootManifest.appVersionName, '2.0.0');
+  assert.equal(rootManifest.host, 'fsda.tech');
+  assert.equal(rootManifest.appVersionCode, 4);
+  assert.equal(rootManifest.appVersionName, '3.0.0');
 });
 
 test('public/.well-known/assetlinks.json passes Digital Asset Links SHA-256 verification', () => {

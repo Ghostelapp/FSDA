@@ -155,7 +155,7 @@ export function validateStoreListing(listing: PlayStoreListingMeta): PlayStoreVa
         shortLen <= 80 &&
         fullLen >= 100 &&
         fullLen <= 4000,
-      details: `Pełny opis zawiera ${fullLen}/4000 znaków i obejmuje wszystkie 15 modułów (91 lekcji).`,
+      details: `Pełny opis zawiera ${fullLen}/4000 znaków i obejmuje wszystkie 15 modułów (96 lekcji).`,
     },
     {
       id: 'privacy-policy',

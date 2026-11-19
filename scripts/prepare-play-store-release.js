@@ -207,8 +207,10 @@ fs.writeFileSync(
 // 4. Write ready-to-paste Google Play Store Listing Metadata JSON
 const storeListingData = {
   appId: 'com.fullstackacademy.app',
-  versionName: '1.0.0',
-  versionCode: 1,
+  versionName: '3.0.0',
+  versionCode: 4,
+  targetSdk: 35,
+  minSdk: 21,
   defaultLanguage: 'pl-PL',
   title: 'Full Stack Academy — Kurs IT',
   shortDescription: 'Nauka programowania od zera do Full Stack Developera: HTML, JS, React, SQL i Git',
@@ -230,8 +232,8 @@ Kurs został zaprojektowany zarówno dla osób stawiających pierwsze kroki w br
   category: 'Edukacja (Education)',
   contentRating: 'PEGI 3 / Dla każdego',
   contactEmail: 'zordonzordon1@gmail.com',
-  privacyPolicyUrl: 'https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app/privacy-policy.html',
-  productionAppUrl: 'https://ais-pre-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app',
+  privacyPolicyUrl: 'https://fsda.tech/privacy-policy.html',
+  productionAppUrl: 'https://fsda.tech',
   keystoreInfo: {
     file: 'play-store/android.keystore',
     alias: 'android',
