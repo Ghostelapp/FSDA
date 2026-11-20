@@ -33,6 +33,22 @@ import {
   Terminal,
 } from 'lucide-react';
 
+const getLaneOffsetPx = (laneOffset: MapLessonNode['laneOffset']): number => {
+  switch (laneOffset) {
+    case 'right':
+      return 48;
+    case 'center-right':
+      return 24;
+    case 'left':
+      return -48;
+    case 'center-left':
+      return -24;
+    case 'center':
+    default:
+      return 0;
+  }
+};
+
 export const ModulesView: React.FC = () => {
   const { currentUser, setActiveTab, selectedLessonId, allModules, language } = useApp();
   const isEn = language === 'en';
@@ -387,14 +403,8 @@ export const ModulesView: React.FC = () => {
                     </div>
 
                     {/* Winding Path Track of Lesson Stations */}
-                    <div className="relative px-4 sm:px-8 py-8 bg-slate-950/50">
-                      {/* Central Guide Spine */}
-                      <div
-                        aria-hidden="true"
-                        className="pointer-events-none absolute inset-y-6 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-indigo-500/30 via-slate-800 to-emerald-500/30"
-                      />
-
-                      <div className="relative space-y-5">
+                    <div className="relative px-4 sm:px-8 py-7 bg-slate-950/50">
+                      <div className="relative flex flex-col">
                         {nodes.map((node, nodeIdx) => {
                           const isSelected = activeNode?.lesson.id === node.lesson.id;
                           const isDone = node.status === 'completed';
@@ -543,19 +553,90 @@ export const ModulesView: React.FC = () => {
                                 </div>
                               </div>
 
-                              {/* Connecting SVG Path Segment to Next Station */}
-                              {nextNodeInZone && (
-                                <div
-                                  aria-hidden="true"
-                                  className="h-5 flex items-center justify-center"
-                                >
+                              {/* Smooth Curved SVG Path Connector to Next Station */}
+                              {nextNodeInZone && (() => {
+                                const startX = 224 + getLaneOffsetPx(node.laneOffset);
+                                const endX = 224 + getLaneOffsetPx(nextNodeInZone.laneOffset);
+                                const midX = (startX + endX) / 2;
+                                const isNextActive = isCurrent || nextNodeInZone.status === 'current';
+                                const strokeColor = isDone
+                                  ? '#10b981'
+                                  : isNextActive
+                                  ? '#6366f1'
+                                  : '#334155';
+                                const pathD = `M ${startX} 0 C ${startX} 18, ${endX} 18, ${endX} 36`;
+
+                                return (
                                   <div
-                                    className={`h-full w-0.5 ${
-                                      isDone ? 'bg-emerald-500/60' : 'bg-slate-800'
-                                    }`}
-                                  />
-                                </div>
-                              )}
+                                    aria-hidden="true"
+                                    className="w-full flex items-center justify-center pointer-events-none select-none"
+                                  >
+                                    {/* Desktop/Tablet: true S-curve matching card laneOffset */}
+                                    <svg
+                                      viewBox="0 0 448 36"
+                                      className="hidden sm:block w-full max-w-md h-9 overflow-visible"
+                                    >
+                                      <path
+                                        d={pathD}
+                                        fill="none"
+                                        stroke={strokeColor}
+                                        strokeWidth={isDone || isNextActive ? 2.5 : 2}
+                                        strokeOpacity={isDone ? 0.75 : isNextActive ? 0.75 : 0.65}
+                                        strokeDasharray={isDone ? undefined : '5 5'}
+                                        strokeLinecap="round"
+                                      />
+                                      <circle
+                                        cx={startX}
+                                        cy={1}
+                                        r={3}
+                                        fill={isDone ? '#34d399' : isNextActive ? '#818cf8' : '#475569'}
+                                      />
+                                      <circle
+                                        cx={endX}
+                                        cy={35}
+                                        r={3}
+                                        fill={
+                                          nextNodeInZone.status === 'completed'
+                                            ? '#34d399'
+                                            : nextNodeInZone.status === 'current'
+                                            ? '#fbbf24'
+                                            : '#475569'
+                                        }
+                                      />
+                                      <g transform={`translate(${midX}, 18)`}>
+                                        <circle
+                                          r={7}
+                                          fill="#0f172a"
+                                          stroke={strokeColor}
+                                          strokeWidth={1.5}
+                                          strokeOpacity={0.9}
+                                        />
+                                        <path
+                                          d="M -2.5 -1.2 L 0 1.6 L 2.5 -1.2"
+                                          fill="none"
+                                          stroke={isDone ? '#34d399' : isNextActive ? '#a5b4fc' : '#94a3b8'}
+                                          strokeWidth={1.6}
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </g>
+                                    </svg>
+
+                                    {/* Mobile: clean centered micro-connector without background spine */}
+                                    <div className="sm:hidden h-7 flex flex-col items-center justify-center">
+                                      <div
+                                        className={`h-full border-l-2 ${
+                                          isDone
+                                            ? 'border-emerald-500/70'
+                                            : isNextActive
+                                            ? 'border-dashed border-indigo-400/75'
+                                            : 'border-dashed border-slate-700'
+                                        }`}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           );
                         })}
