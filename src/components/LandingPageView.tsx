@@ -676,11 +676,11 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     ))}
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => setShowBeginnerHint((prev) => !prev)}
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors whitespace-nowrap shrink-0 ${
+                      className={`inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-medium rounded-md border transition-colors whitespace-nowrap shrink-0 ${
                         showBeginnerHint
                           ? 'border-amber-500/50 bg-amber-950/50 text-amber-300'
                           : 'border-white/10 text-[#CBD5E1] hover:text-white'
@@ -698,7 +698,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                         }));
                         setScanTrigger((n) => n + 1);
                       }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-[#CBD5E1] hover:text-white border border-white/10 rounded-md transition-colors whitespace-nowrap shrink-0"
+                      className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-medium text-[#CBD5E1] hover:text-white border border-white/10 rounded-md transition-colors whitespace-nowrap shrink-0"
                       title={isEn ? 'Restore 80% starter scaffold' : 'Przywróć szablon początkowy 80%'}
                     >
                       <RotateCcw className="h-3 w-3 shrink-0" />
@@ -713,7 +713,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                         }));
                         setScanTrigger((n) => n + 1);
                       }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-500/40 rounded-md transition-colors whitespace-nowrap shrink-0"
+                      className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-medium text-indigo-300 hover:text-white bg-indigo-950/60 border border-indigo-500/40 rounded-md transition-colors whitespace-nowrap shrink-0"
                     >
                       <Play className="h-3 w-3 shrink-0" />
                       <span>{isEn ? 'Solution' : 'Wzorzec'}</span>

@@ -132,6 +132,7 @@ import {
   onAuthStateChanged,
   testFirebaseConnection,
   signInWithGoogleFirebase,
+  resolveGoogleRedirectSignIn,
   signUpWithEmailFirebase,
   signInWithEmailFirebase,
   sendPasswordResetFirebase,
@@ -233,6 +234,7 @@ interface AppContextType {
   }>;
   loginWithGoogle: () => Promise<{
     success: boolean;
+    redirecting?: boolean;
     error?: string;
     classification?: GoogleAuthErrorClassification;
   }>;
@@ -867,6 +869,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     let unsubProfile: (() => void) | null = null;
     let unsubAnnouncements: (() => void) | null = null;
     let unsubAllUsers: (() => void) | null = null;
+
+    // Resolve any pending Google OAuth redirect sign-in (mobile TWA / standalone PWA)
+    void resolveGoogleRedirectSignIn()
+      .then((redirectUser) => {
+        if (redirectUser) {
+          trackFirebaseEvent('login', { method: 'google_redirect' });
+          soundManager.playLevelUp();
+          const isEnLang = languageRef.current === 'en';
+          showToast(
+            isEnLang
+              ? `Signed in with Google! Welcome, ${redirectUser.displayName || redirectUser.email || 'Developer'}.`
+              : `Zalogowano przez Google! Witaj, ${redirectUser.displayName || redirectUser.email || 'Programisto'}.`,
+            'badge'
+          );
+          if (activeTab === 'landing') {
+            setActiveTab('dashboard');
+          }
+        }
+      })
+      .catch((err) => {
+        const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+        const classification = classifyGoogleAuthError(err, currentHostname, languageRef.current);
+        showToast(classification.toastMessage, 'danger');
+      });
 
     const unsubAuth = onAuthStateChanged(auth, async (fbUser) => {
       if (unsubProfile) {
@@ -1865,6 +1891,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const loginWithGoogle = async (): Promise<{
     success: boolean;
+    redirecting?: boolean;
     error?: string;
     classification?: GoogleAuthErrorClassification;
   }> => {
@@ -1872,7 +1899,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const lang = languageRef.current;
     try {
       setIsSyncingCloud(true);
-      const fbUser = await signInWithGoogleFirebase();
+      const signInOutcome = await signInWithGoogleFirebase();
+      if (signInOutcome.status === 'redirecting') {
+        return { success: true, redirecting: true };
+      }
+      const fbUser = signInOutcome.user;
       const cloudProfile = await fetchOrCreateCloudUserProfile(fbUser, currentUserRef.current);
       if (cloudProfile.status !== 'active') {
         await signOutFromFirebase();

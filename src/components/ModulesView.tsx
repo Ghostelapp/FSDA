@@ -137,33 +137,33 @@ export const ModulesView: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+    <div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8 space-y-4 sm:space-y-6">
       {/* Header & Interactive View Mode Switcher */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-3.5 sm:gap-6">
+        <div className="space-y-1.5 sm:space-y-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] sm:text-xs text-slate-400">
             <span className="font-semibold text-indigo-400">
               {isEn ? 'Interactive Learning Map' : 'Interaktywna Mapa Ścieżki Nauki'}
             </span>
             <span aria-hidden="true">·</span>
             <span className="font-mono tabular-nums text-slate-300">
               {mapSummary.completedLessonsCount} / {mapSummary.totalLessonsCount}{' '}
-              {isEn ? 'lessons completed' : 'ukończonych lekcji'} ({mapSummary.overallPercent}%)
+              {isEn ? 'lessons' : 'lekcji'} ({mapSummary.overallPercent}%)
             </span>
-            <span aria-hidden="true">·</span>
+            <span aria-hidden="true" className="hidden sm:inline">·</span>
             <span className="font-mono tabular-nums text-emerald-400">
               {mapSummary.completedModulesCount} / {mapSummary.totalModulesCount}{' '}
-              {isEn ? 'modules mastered' : 'zaliczonych modułów'}
+              {isEn ? 'modules' : 'modułów'}
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+          <h1 className="text-xl sm:text-4xl font-extrabold text-white tracking-tight leading-snug">
             {isEn
               ? `Full Stack Developer Roadmap (${allModules.length} Zones)`
               : `Mapa Kursu Full Stack Developera (${allModules.length} Stref)`}
           </h1>
 
-          <p className="text-sm sm:text-base text-slate-300 max-w-3xl leading-relaxed">
+          <p className="text-xs sm:text-base text-slate-300 max-w-3xl leading-relaxed">
             {isEn
               ? 'Navigate from node to node along the interactive skill tree. Click any station to inspect its goals, code examples, and analogy, or jump directly into the hands-on editor.'
               : 'Przechodź ze stacji do stacji wzdłuż interaktywnej mapy umiejętności. Kliknij dowolny węzeł lekcji, aby podejrzeć cele, analogię i zadania, lub od razu wejdź do warsztatu kodu.'}
@@ -225,7 +225,7 @@ export const ModulesView: React.FC = () => {
       </div>
 
       {/* Search & Category Filter Controls */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 space-y-3.5">
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3 sm:p-4 space-y-2.5 sm:space-y-3.5">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
@@ -350,8 +350,8 @@ export const ModulesView: React.FC = () => {
                     className="scroll-mt-24 rounded-2xl border border-slate-800 bg-slate-900/65 overflow-hidden shadow-lg"
                   >
                     {/* Module Checkpoint Header Gate */}
-                    <div className="p-5 sm:p-6 border-b border-slate-800 bg-slate-900/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-start gap-3.5">
+                    <div className="p-3.5 sm:p-6 border-b border-slate-800 bg-slate-900/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                      <div className="flex items-start gap-3">
                         <div
                           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-mono font-extrabold text-base tabular-nums border ${
                             isZoneCompleted
@@ -403,7 +403,7 @@ export const ModulesView: React.FC = () => {
                     </div>
 
                     {/* Winding Path Track of Lesson Stations */}
-                    <div className="relative px-4 sm:px-8 py-7 bg-slate-950/50">
+                    <div className="relative px-2.5 sm:px-8 py-4 sm:py-7 bg-slate-950/50">
                       <div className="relative flex flex-col">
                         {nodes.map((node, nodeIdx) => {
                           const isSelected = activeNode?.lesson.id === node.lesson.id;
@@ -446,7 +446,7 @@ export const ModulesView: React.FC = () => {
                                   }}
                                   aria-label={`${isEn ? 'Station' : 'Stacja'} ${node.globalIndex}: ${node.lesson.title}`}
                                   aria-current={isSelected ? 'step' : undefined}
-                                  className={`group relative rounded-2xl border p-4 transition-all cursor-pointer select-none ${
+                                  className={`group relative rounded-2xl border p-3 sm:p-4 transition-all cursor-pointer select-none ${
                                     isSelected
                                       ? 'border-indigo-400 bg-indigo-950/60 shadow-lg shadow-indigo-950/60 ring-2 ring-indigo-500/40'
                                       : isCurrent
@@ -456,11 +456,11 @@ export const ModulesView: React.FC = () => {
                                       : 'border-slate-800 bg-slate-900/70 hover:border-slate-700 hover:bg-slate-900'
                                   }`}
                                 >
-                                  <div className="flex items-start justify-between gap-3.5">
+                                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2.5 sm:gap-3.5">
                                     {/* Station Medallion */}
-                                    <div className="flex items-start gap-3.5 min-w-0">
+                                    <div className="flex items-start gap-2.5 sm:gap-3.5 min-w-0">
                                       <div
-                                        className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl font-mono text-xs font-extrabold tabular-nums border transition-colors ${
+                                        className={`mt-0.5 flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl font-mono text-xs font-extrabold tabular-nums border transition-colors ${
                                           isDone
                                             ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                                             : isCurrent
@@ -471,7 +471,7 @@ export const ModulesView: React.FC = () => {
                                         }`}
                                       >
                                         {isDone ? (
-                                          <Check className="h-5 w-5 text-emerald-400" />
+                                          <Check className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400" />
                                         ) : node.isMilestoneNode ? (
                                           <Flag className="h-4 w-4 text-amber-400" />
                                         ) : (
@@ -481,8 +481,8 @@ export const ModulesView: React.FC = () => {
                                         )}
                                       </div>
 
-                                      <div className="space-y-1 min-w-0">
-                                        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+                                      <div className="space-y-1 min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-slate-400">
                                           <span className="font-mono font-semibold text-slate-300 tabular-nums">
                                             #{node.globalIndex}
                                           </span>
@@ -540,7 +540,7 @@ export const ModulesView: React.FC = () => {
                                         setActiveTab('lesson', node.lesson.id);
                                       }}
                                       aria-label={`${isEn ? 'Enter lesson' : 'Wejdź do lekcji'}: ${node.lesson.title}`}
-                                      className={`shrink-0 self-center inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
+                                      className={`w-full sm:w-auto shrink-0 sm:self-center inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                                         isDone
                                           ? 'bg-emerald-600/20 hover:bg-emerald-600 text-emerald-200 hover:text-white border border-emerald-500/30'
                                           : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'

@@ -91,7 +91,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
 
   // Verification gates state
   const [editorCodeDraft, setEditorCodeDraft] = useState<{ html: string; css: string; js: string }>(() => {
-    const saved = currentUser.savedCode[lesson.interactiveExercise.id];
+    const saved = currentUser.savedCode?.[lesson.interactiveExercise.id];
     return {
       html: saved?.html ?? lesson.interactiveExercise.starterCode.html,
       css: saved?.css ?? lesson.interactiveExercise.starterCode.css,
@@ -116,7 +116,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
     setShowWalkthroughSteps(false);
     setShowOptionalTasks(false);
 
-    const saved = currentUser.savedCode[lesson.interactiveExercise.id];
+    const saved = currentUser.savedCode?.[lesson.interactiveExercise.id];
     const initialCode = {
       html: saved?.html ?? lesson.interactiveExercise.starterCode.html,
       css: saved?.css ?? lesson.interactiveExercise.starterCode.css,
@@ -124,7 +124,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
     };
     setEditorCodeDraft(initialCode);
 
-    const alreadyCompleted = currentUser.completedLessons.includes(lesson.id);
+    const alreadyCompleted = (currentUser.completedLessons ?? []).includes(lesson.id);
     if (saved) {
       const savedValidation = validateExerciseCode(lesson.interactiveExercise, initialCode, language);
       setLastValidation(savedValidation);
@@ -134,7 +134,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
       setExercisePassed(alreadyCompleted);
     }
 
-    const existingScore = currentUser.quizScores[lesson.id];
+    const existingScore = currentUser.quizScores?.[lesson.id];
     if (existingScore !== undefined) {
       setQuizScore(existingScore);
     }
@@ -344,31 +344,33 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
     (lesson.id.startsWith('html-') ? 'html' : lesson.id.startsWith('css-') ? 'css' : 'javascript');
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-3.5 sm:py-6 space-y-4 sm:space-y-8">
       
       {/* Top Navigation & Reading Comfort Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 sm:pb-3 border-b border-slate-800/80">
         <button
           onClick={() => setActiveTab('modules')}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors bg-slate-900 hover:bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-800 whitespace-nowrap shrink-0"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-white transition-colors bg-slate-900 hover:bg-slate-800 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl border border-slate-800 whitespace-nowrap shrink-0"
         >
-          <ArrowLeft className="h-4 w-4 shrink-0" />
-          <span>{isEn ? 'Back to modules' : 'Powrót do modułów'}</span>
+          <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+          <span className="sm:hidden">{isEn ? 'Modules' : 'Moduły'}</span>
+          <span className="hidden sm:inline">{isEn ? 'Back to modules' : 'Powrót do modułów'}</span>
         </button>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <button
             type="button"
             onClick={() => setComfortTextSize((v) => !v)}
             title={isEn ? 'Toggle reading font size' : 'Przełącz wielkość czcionki'}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+            className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
               comfortTextSize
                 ? 'border-indigo-500/40 bg-indigo-500/10 text-indigo-300'
                 : 'border-slate-800 bg-slate-900 text-slate-400 hover:text-white'
             }`}
           >
             <Type className="h-3.5 w-3.5 shrink-0" />
-            <span>
+            <span className="sm:hidden">{comfortTextSize ? 'A+' : 'A'}</span>
+            <span className="hidden sm:inline">
               {comfortTextSize
                 ? isEn
                   ? 'Large font (Comfort)'
@@ -382,26 +384,27 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
           {!currentUser.isPro && (
             <button
               onClick={() => setIsLivesModalOpen(true)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all whitespace-nowrap shrink-0 tabular-nums ${
+              className={`inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold transition-all whitespace-nowrap shrink-0 tabular-nums ${
                 currentLives > 0
                   ? 'border-rose-500/30 bg-rose-950/30 text-rose-300 hover:bg-rose-950/50'
                   : 'border-rose-500 bg-rose-950/80 text-rose-200 animate-pulse'
               }`}
             >
               <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500 shrink-0" />
-              <span>{isEn ? `Hearts: ${currentLives}/5` : `Życia: {currentLives}/5`.replace('{currentLives}', String(currentLives))}</span>
+              <span className="sm:hidden">{currentLives}/5</span>
+              <span className="hidden sm:inline">{isEn ? `Hearts: ${currentLives}/5` : `Życia: ${currentLives}/5`}</span>
             </button>
           )}
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-bold whitespace-nowrap shrink-0 tabular-nums">
+          <div className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-bold whitespace-nowrap shrink-0 tabular-nums">
             <Sparkles className="h-3.5 w-3.5 text-amber-400 shrink-0" />
             <span>+{lesson.xpReward} XP</span>
           </div>
 
           {isCompleted && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold whitespace-nowrap shrink-0">
+            <span className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold whitespace-nowrap shrink-0">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-              <span>{isEn ? 'Completed' : 'Zaliczone'}</span>
+              <span className="hidden sm:inline">{isEn ? 'Completed' : 'Zaliczone'}</span>
             </span>
           )}
         </div>
@@ -430,21 +433,21 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
             className="space-y-8 will-change-transform"
           >
             {/* Lesson Hero Header */}
-            <header className="rounded-2xl border border-slate-800/90 bg-slate-900/75 p-6 sm:p-8 shadow-xl space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center rounded-md bg-indigo-500/15 px-2.5 py-1 font-bold text-indigo-300 border border-indigo-500/30">
+            <header className="rounded-2xl border border-slate-800/90 bg-slate-900/75 p-4 sm:p-8 shadow-xl space-y-3.5 sm:space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <span className="inline-flex items-center rounded-md bg-indigo-500/15 px-2 sm:px-2.5 py-0.5 sm:py-1 font-bold text-indigo-300 border border-indigo-500/30">
               {isEn ? `Module ${lesson.moduleId}` : `Moduł ${lesson.moduleId}`}: {parentModule?.title || lesson.moduleTitle}
             </span>
             {moduleLessons.length > 0 && (
-              <span className="inline-flex items-center rounded-md bg-slate-800/90 px-2.5 py-1 font-mono text-slate-300 border border-slate-700/70 tabular-nums">
+              <span className="inline-flex items-center rounded-md bg-slate-800/90 px-2 sm:px-2.5 py-0.5 sm:py-1 font-mono text-slate-300 border border-slate-700/70 tabular-nums">
                 {isEn
                   ? `Lesson ${lessonIndexInModule} of ${moduleLessons.length}`
                   : `Lekcja ${lessonIndexInModule} z ${moduleLessons.length}`}
               </span>
             )}
             <span
-              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 font-semibold border ${
+              className={`inline-flex items-center gap-1 rounded-md px-2 sm:px-2.5 py-0.5 sm:py-1 font-semibold border ${
                 beginnerAid.difficultyLabel === 'Start od Zera'
                   ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
                   : beginnerAid.difficultyLabel === 'Podstawy'
@@ -459,25 +462,25 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
             </span>
           </div>
 
-          <div className="flex items-center gap-3 text-slate-400 font-medium tabular-nums">
-            <span className="inline-flex items-center gap-1.5">
+          <div className="flex items-center gap-2.5 text-slate-400 font-medium tabular-nums">
+            <span className="inline-flex items-center gap-1">
               <Clock className="h-3.5 w-3.5 text-slate-400" />
-              <span>{isEn ? `~${estimatedMinutes} min study` : `~${estimatedMinutes} min nauki`}</span>
+              <span>{isEn ? `~${estimatedMinutes} min` : `~${estimatedMinutes} min`}</span>
             </span>
             <span>•</span>
             <span>
               {isEn
-                ? `${theorySections.length} ${theorySections.length === 1 ? 'theory section' : 'theory sections'}`
-                : `${theorySections.length} ${theorySections.length === 1 ? 'część teorii' : 'części teorii'}`}
+                ? `${theorySections.length} ${theorySections.length === 1 ? 'section' : 'sections'}`
+                : `${theorySections.length} ${theorySections.length === 1 ? 'część' : 'części'}`}
             </span>
           </div>
         </div>
 
-        <div className="space-y-2.5">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+        <div className="space-y-2">
+          <h1 className="text-lg sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-snug sm:leading-tight">
             <RichInlineText text={lesson.title} />
           </h1>
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-[72ch]">
+          <p className="text-slate-300 text-xs sm:text-base leading-relaxed max-w-[72ch]">
             <RichInlineText text={lesson.summary} />
           </p>
         </div>
@@ -539,18 +542,23 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
           {/* Unified Lesson Overview Panel (Analogy + Objectives + Mini-Glossary) */}
           <section className="rounded-2xl border border-slate-800/90 bg-slate-900/60 overflow-hidden shadow-lg">
             {/* Top Banner: Simple Analogy */}
-            <div className="p-6 sm:p-7 bg-gradient-to-r from-emerald-950/35 via-slate-900/90 to-slate-900/90 border-b border-slate-800/80">
-              <div className="flex items-start gap-4">
-                <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 shrink-0 mt-0.5">
-                  <Compass className="h-5 w-5" />
+            <div className="p-4 sm:p-7 bg-gradient-to-r from-emerald-950/35 via-slate-900/90 to-slate-900/90 border-b border-slate-800/80">
+              <div className="flex flex-col sm:flex-row items-start gap-2.5 sm:gap-4">
+                <div className="flex items-center gap-2 sm:block shrink-0">
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 shrink-0">
+                    <Compass className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </div>
+                  <span className="sm:hidden text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                    {isEn ? 'Real-world analogy' : 'Analogia z życia'}
+                  </span>
                 </div>
-                <div className="space-y-1.5">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                <div className="space-y-1.5 min-w-0 w-full">
+                  <span className="hidden sm:inline-block text-[11px] font-bold uppercase tracking-wider text-emerald-400">
                     {isEn
                       ? 'Understand it in 30 seconds • Real-world analogy'
                       : 'Zrozum temat w 30 sekund • Analogia z życia'}
                   </span>
-                  <h2 className="text-base sm:text-lg font-bold text-white">
+                  <h2 className="text-base sm:text-lg font-bold text-white leading-snug">
                     <RichInlineText text={beginnerAid.analogyTitle} />
                   </h2>
                   <p className="text-slate-200 text-sm sm:text-[15px] leading-relaxed max-w-[74ch]">
@@ -563,13 +571,13 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
             {/* Two-Column Architectural Grid: Objectives & Key Terms */}
             <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-800/80">
               {/* Left Column: Learning Objectives & Prerequisites */}
-              <div className="lg:col-span-6 p-6 space-y-4">
-                <div className="flex items-center justify-between">
+              <div className="lg:col-span-6 p-4 sm:p-6 space-y-3.5 sm:space-y-4">
+                <div className="flex items-center justify-between gap-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-2">
-                    <ListChecks className="h-4 w-4 text-indigo-400" />
+                    <ListChecks className="h-4 w-4 text-indigo-400 shrink-0" />
                     {isEn ? 'What you will learn in this lesson' : 'Czego nauczysz się w tej lekcji'}
                   </h3>
-                  <span className="text-[11px] font-mono text-slate-400 tabular-nums">
+                  <span className="text-[11px] font-mono text-slate-400 tabular-nums shrink-0">
                     {isEn
                       ? `${lesson.objectives.length} ${lesson.objectives.length === 1 ? 'goal' : 'goals'}`
                       : `${lesson.objectives.length} cele`}
@@ -603,7 +611,7 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
               </div>
 
               {/* Right Column: Mini Glossary of Terms */}
-              <div className="lg:col-span-6 p-6 space-y-4 bg-slate-950/30">
+              <div className="lg:col-span-6 p-4 sm:p-6 space-y-3.5 sm:space-y-4 bg-slate-950/30">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-2">
                     <Lightbulb className="h-4 w-4 text-amber-400" />

@@ -14,6 +14,9 @@ import {
   getRecommendedAuthorizedDomains,
   classifyGoogleAuthError,
   classifyEmailAuthError,
+  resolveFirebaseAuthDomain,
+  shouldPreferGoogleRedirectAuth,
+  shouldFallbackPopupErrorToRedirect,
 } from './authValidation';
 import { User } from '../types';
 
@@ -350,5 +353,85 @@ test('classifyEmailAuthError classifies provider config, credentials, weak passw
   assert.ok(domainErr.userMessage.includes('fsda.tech'));
 });
 
+test('resolveFirebaseAuthDomain switches to same-origin proxy on https://fsda.tech and preserves default elsewhere', () => {
+  assert.equal(
+    resolveFirebaseAuthDomain({
+      defaultAuthDomain: 'fsda-1d673.firebaseapp.com',
+      hostname: 'fsda.tech',
+      protocol: 'https:',
+    }),
+    'fsda.tech'
+  );
+  assert.equal(
+    resolveFirebaseAuthDomain({
+      defaultAuthDomain: 'fsda-1d673.firebaseapp.com',
+      hostname: 'www.fsda.tech',
+      protocol: 'https:',
+    }),
+    'www.fsda.tech'
+  );
+  assert.equal(
+    resolveFirebaseAuthDomain({
+      defaultAuthDomain: 'fsda-1d673.firebaseapp.com',
+      hostname: 'localhost',
+      protocol: 'http:',
+    }),
+    'fsda-1d673.firebaseapp.com'
+  );
+  assert.equal(
+    resolveFirebaseAuthDomain({
+      envAuthDomain: 'custom.auth.domain',
+      defaultAuthDomain: 'fsda-1d673.firebaseapp.com',
+      hostname: 'fsda.tech',
+      protocol: 'https:',
+    }),
+    'custom.auth.domain'
+  );
+});
 
+test('shouldPreferGoogleRedirectAuth and shouldFallbackPopupErrorToRedirect choose redirect for mobile TWA and blocked popups', () => {
+  assert.equal(
+    shouldPreferGoogleRedirectAuth({ isInstalledMobileApp: true, userAgent: 'Mozilla/5.0 Chrome/130' }),
+    true
+  );
+  assert.equal(
+    shouldPreferGoogleRedirectAuth({
+      isInstalledMobileApp: false,
+      userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A505FN; wv) AppleWebKit/537.36',
+    }),
+    true
+  );
+  assert.equal(
+    shouldPreferGoogleRedirectAuth({
+      isInstalledMobileApp: false,
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0.0.0',
+    }),
+    false
+  );
 
+  assert.equal(shouldFallbackPopupErrorToRedirect({ code: 'auth/popup-blocked' }), true);
+  assert.equal(
+    shouldFallbackPopupErrorToRedirect({ code: 'auth/operation-not-supported-in-this-environment' }),
+    true
+  );
+  assert.equal(shouldFallbackPopupErrorToRedirect({ code: 'auth/popup-closed-by-user' }), false);
+});
+
+test('classifyGoogleAuthError handles missing initial state and redirect_uri_mismatch', () => {
+  const stateErr = classifyGoogleAuthError(
+    new Error('Unable to process request due to missing initial state. storage-partitioned browser'),
+    'fsda.tech',
+    'pl'
+  );
+  assert.equal(stateErr.code, 'missing-initial-state');
+  assert.equal(stateErr.recommendEmailAuth, true);
+
+  const uriErr = classifyGoogleAuthError(
+    new Error('Error 400: redirect_uri_mismatch'),
+    'fsda.tech',
+    'pl'
+  );
+  assert.equal(uriErr.code, 'redirect-uri-mismatch');
+  assert.equal(uriErr.isDomainConfigIssue, true);
+  assert.ok(uriErr.recommendedDomains.includes('https://fsda.tech/__/auth/handler'));
+});

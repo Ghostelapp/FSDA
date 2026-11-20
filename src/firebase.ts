@@ -9,6 +9,8 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -58,6 +60,13 @@ import {
   serializeUserProgressForFirestore,
 } from './utils/cloudSync';
 
+import {
+  resolveFirebaseAuthDomain,
+  shouldFallbackPopupErrorToRedirect,
+  shouldPreferGoogleRedirectAuth,
+} from './utils/authValidation';
+import { detectInstalledMobileAppRuntime } from './utils/publicRoutes';
+
 const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env || {};
 
 const USER_FIREBASE_CONFIG = {
@@ -70,9 +79,16 @@ const USER_FIREBASE_CONFIG = {
   measurementId: 'G-MNX8T1X154',
 };
 
+const resolvedAuthDomain = resolveFirebaseAuthDomain({
+  envAuthDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+  defaultAuthDomain: USER_FIREBASE_CONFIG.authDomain,
+  hostname: typeof window !== 'undefined' ? window.location.hostname : undefined,
+  protocol: typeof window !== 'undefined' ? window.location.protocol : undefined,
+});
+
 export const activeFirebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY || USER_FIREBASE_CONFIG.apiKey,
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || USER_FIREBASE_CONFIG.authDomain,
+  authDomain: resolvedAuthDomain,
   projectId: env.VITE_FIREBASE_PROJECT_ID || USER_FIREBASE_CONFIG.projectId,
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || USER_FIREBASE_CONFIG.storageBucket,
   messagingSenderId:
@@ -869,9 +885,36 @@ export function subscribeAllUsersForAdmin(
   );
 }
 
-export async function signInWithGoogleFirebase(): Promise<FirebaseUser> {
-  const result = await signInWithPopup(auth, googleProvider);
-  return result.user;
+export type GoogleSignInResult =
+  | { status: 'signed-in'; user: FirebaseUser }
+  | { status: 'redirecting' };
+
+export async function signInWithGoogleFirebase(): Promise<GoogleSignInResult> {
+  const preferRedirect = shouldPreferGoogleRedirectAuth({
+    isInstalledMobileApp: detectInstalledMobileAppRuntime(),
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+  });
+
+  if (preferRedirect) {
+    await signInWithRedirect(auth, googleProvider);
+    return { status: 'redirecting' };
+  }
+
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return { status: 'signed-in', user: result.user };
+  } catch (err) {
+    if (shouldFallbackPopupErrorToRedirect(err)) {
+      await signInWithRedirect(auth, googleProvider);
+      return { status: 'redirecting' };
+    }
+    throw err;
+  }
+}
+
+export async function resolveGoogleRedirectSignIn(): Promise<FirebaseUser | null> {
+  const result = await getRedirectResult(auth);
+  return result?.user ?? null;
 }
 
 export async function signUpWithEmailFirebase(

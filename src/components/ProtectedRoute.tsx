@@ -84,13 +84,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       data-testid="protected-route-guard"
       role="region"
       aria-label={isEn ? 'ProtectedRoute Access Guard' : 'Zabezpieczenie dostępu ProtectedRoute'}
-      className="mx-auto max-w-2xl px-4 py-12 sm:py-16"
+      className="mx-auto max-w-2xl px-3 py-4 sm:px-4 sm:py-16"
     >
-      <div className="rounded-3xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-2xl space-y-6">
+      <div className="rounded-2xl sm:rounded-3xl border border-slate-800 bg-slate-900/90 p-4 sm:p-8 shadow-2xl space-y-4 sm:space-y-6">
         {/* Icon & Security Header */}
-        <div className="flex flex-col items-center text-center space-y-4">
+        <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4">
           <div
-            className={`flex h-16 w-16 items-center justify-center rounded-2xl border ${
+            className={`flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl border ${
               isStudentAuthGate
                 ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400'
                 : access.reason === 'guest_blocked'
@@ -99,14 +99,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             }`}
           >
             {access.reason === 'guest_blocked' ? (
-              <Lock className="h-8 w-8" />
+              <Lock className="h-6 w-6 sm:h-8 sm:w-8" />
             ) : (
-              <ShieldAlert className="h-8 w-8" />
+              <ShieldAlert className="h-6 w-6 sm:h-8 sm:w-8" />
             )}
           </div>
 
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-400">
+          <div className="space-y-1.5 sm:space-y-2">
+            <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-indigo-400">
               {isStudentAuthGate
                 ? isEn
                   ? 'Student Area · Sign In Required'
@@ -115,7 +115,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
                 ? 'Route Guard · ProtectedRoute'
                 : 'Ochrona Trasy · ProtectedRoute'}
             </p>
-            <h1 className="text-xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-lg sm:text-3xl font-extrabold text-white tracking-tight">
               {fallbackTitle ||
                 (isStudentAuthGate
                   ? isEn
@@ -135,7 +135,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         </div>
 
         {/* Clean Unboxed Diagnostic Metadata */}
-        <div className="border-y border-slate-800/80 py-3.5 px-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-xs text-slate-400">
+        <div className="border-y border-slate-800/80 py-2.5 sm:py-3.5 px-2 sm:px-4 flex flex-col sm:flex-row sm:flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] sm:text-xs text-slate-400 text-center">
           <span>
             {isEn ? 'Session status:' : 'Status sesji:'}{' '}
             <strong className={isGuest ? 'text-amber-300 font-semibold' : 'text-emerald-300 font-semibold'}>
@@ -148,7 +148,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
                 : 'Zalogowany użytkownik'}
             </strong>
           </span>
-          <span aria-hidden="true">·</span>
+          <span aria-hidden="true" className="hidden sm:inline">·</span>
           <span>
             {isEn ? 'Workspace access:' : 'Dostęp do nauki:'}{' '}
             <strong className="text-slate-200 font-semibold">
@@ -157,7 +157,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           </span>
           {requiredRole === 'admin' && (
             <>
-              <span aria-hidden="true">·</span>
+              <span aria-hidden="true" className="hidden sm:inline">·</span>
               <span>
                 {isEn ? 'Required role:' : 'Wymagana rola:'}{' '}
                 <strong className="text-rose-300 font-semibold">

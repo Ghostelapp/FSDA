@@ -47,22 +47,23 @@ export const CookieConsentBanner: React.FC = () => {
     <aside
       data-testid="cookie-consent-banner"
       aria-label={isEn ? 'Cookie & Privacy Settings' : 'Zgoda na pliki cookie i prywatność'}
-      className="fixed bottom-4 left-4 right-4 z-40 mx-auto max-w-4xl rounded-2xl border border-slate-700/80 bg-slate-900/95 px-4 py-4 text-xs text-slate-200 shadow-2xl backdrop-blur-md sm:px-6 print:hidden"
+      className="fixed bottom-[calc(0.5rem+env(safe-area-inset-bottom,0px))] left-2.5 right-2.5 sm:bottom-4 sm:left-4 sm:right-4 z-40 mx-auto max-w-4xl rounded-2xl border border-slate-700/80 bg-slate-900/95 px-3 py-3 sm:px-6 sm:py-4 text-[11px] sm:text-xs text-slate-200 shadow-2xl backdrop-blur-md print:hidden"
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-400">
+      <div className="flex flex-col gap-2.5 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-2.5 sm:gap-3">
+          <div className="mt-0.5 hidden sm:flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-400">
             <Cookie className="h-4 w-4" />
           </div>
-          <div className="space-y-1 leading-relaxed">
-            <p className="font-bold text-slate-100 flex items-center gap-1.5">
-              <span>{isEn ? 'Privacy & Cookies (GDPR / AdSense)' : 'Prywatność i pliki cookie (RODO / AdSense)'}</span>
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+          <div className="space-y-0.5 sm:space-y-1 leading-snug sm:leading-relaxed">
+            <p className="font-bold text-slate-100 flex items-center gap-1.5 text-xs">
+              <Cookie className="h-3.5 w-3.5 text-indigo-400 sm:hidden shrink-0" />
+              <span>{isEn ? 'Privacy & Cookies (GDPR / AdSense)' : 'Prywatność i pliki cookie (RODO)'}</span>
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
             </p>
             <p className="text-slate-300">
               {isEn ? (
                 <>
-                  We use essential storage for your theme, language, and learning session, plus optional Google AdSense cookies to keep the academy 100% free. Read our{' '}
+                  We use essential storage for your session &amp; theme, plus optional AdSense cookies to keep lessons 100% free.{' '}
                   <a
                     href="/polityka-prywatnosci"
                     onClick={(e) => {
@@ -72,13 +73,13 @@ export const CookieConsentBanner: React.FC = () => {
                     }}
                     className="font-semibold text-indigo-400 underline hover:text-indigo-300"
                   >
-                    Privacy &amp; Cookie Policy
+                    Privacy Policy
                   </a>
                   .
                 </>
               ) : (
                 <>
-                  Korzystamy z niezbędnej pamięci lokalnej (motyw, język, sesja nauki) oraz opcjonalnych plików cookie Google AdSense, aby utrzymać w 100% darmowy dostęp do lekcji. Szczegóły w{' '}
+                  Używamy pamięci lokalnej (sesja, motyw) i opcjonalnych cookie AdSense, by kurs był w 100% darmowy.{' '}
                   <a
                     href="/polityka-prywatnosci"
                     onClick={(e) => {
@@ -88,7 +89,7 @@ export const CookieConsentBanner: React.FC = () => {
                     }}
                     className="font-semibold text-indigo-400 underline hover:text-indigo-300"
                   >
-                    Polityce Prywatności
+                    Polityka Prywatności
                   </a>
                   .
                 </>
@@ -97,12 +98,12 @@ export const CookieConsentBanner: React.FC = () => {
           </div>
         </div>
 
-        <div className={`flex shrink-0 flex-wrap items-center gap-2 ${activeTab === 'landing' ? 'sm:pr-2' : ''}`}>
+        <div className={`grid grid-cols-2 sm:flex shrink-0 items-center gap-2 ${activeTab === 'landing' ? 'sm:pr-2' : ''}`}>
           <button
             type="button"
             data-testid="cookie-consent-essential"
             onClick={() => handleChoose('essential')}
-            className="rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-700 cursor-pointer"
+            className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-[11px] sm:text-xs font-semibold text-slate-200 transition-colors hover:bg-slate-700 cursor-pointer text-center"
           >
             {isEn ? 'Essential only' : 'Tylko niezbędne'}
           </button>
@@ -110,9 +111,9 @@ export const CookieConsentBanner: React.FC = () => {
             type="button"
             data-testid="cookie-consent-accept"
             onClick={() => handleChoose('all')}
-            className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-indigo-500 cursor-pointer"
+            className="rounded-xl bg-indigo-600 px-3 py-2 sm:px-4 text-[11px] sm:text-xs font-bold text-white transition-colors hover:bg-indigo-500 cursor-pointer text-center"
           >
-            {isEn ? 'Accept all' : 'Akceptuję wszystkie'}
+            {isEn ? 'Accept all' : 'Akceptuję'}
           </button>
         </div>
       </div>

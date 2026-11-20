@@ -468,8 +468,65 @@ export type GoogleAuthErrorCode =
   | 'popup-closed'
   | 'cancelled'
   | 'operation-not-supported'
+  | 'missing-initial-state'
+  | 'redirect-uri-mismatch'
   | 'network'
   | 'unknown';
+
+export const SAME_ORIGIN_AUTH_PROXY_HOSTS = ['fsda.tech', 'www.fsda.tech'] as const;
+
+export function resolveFirebaseAuthDomain(options: {
+  envAuthDomain?: string;
+  defaultAuthDomain: string;
+  hostname?: string;
+  protocol?: string;
+}): string {
+  const explicit = (options.envAuthDomain || '').trim();
+  if (explicit) return explicit;
+
+  const cleanHost = (options.hostname || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .split('/')[0]
+    .split(':')[0];
+  const protocol = (options.protocol || 'https:').toLowerCase();
+
+  if (
+    protocol === 'https:' &&
+    (SAME_ORIGIN_AUTH_PROXY_HOSTS as readonly string[]).includes(cleanHost)
+  ) {
+    return cleanHost;
+  }
+
+  return options.defaultAuthDomain;
+}
+
+export function shouldPreferGoogleRedirectAuth(options: {
+  isInstalledMobileApp: boolean;
+  userAgent?: string;
+}): boolean {
+  if (options.isInstalledMobileApp) return true;
+  const ua = (options.userAgent || '').toLowerCase();
+  if (ua.includes('wv') || ua.includes('webview') || ua.includes('fullstackacademyexpo')) {
+    return true;
+  }
+  return false;
+}
+
+export function shouldFallbackPopupErrorToRedirect(error: unknown): boolean {
+  const rawCode =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code?: unknown }).code || '')
+      : '';
+  const rawMessage = error instanceof Error ? error.message : String(error || '');
+  const combined = `${rawCode} ${rawMessage}`.toLowerCase();
+  return (
+    combined.includes('popup-blocked') ||
+    combined.includes('operation-not-supported-in-this-environment') ||
+    combined.includes('web-storage-unsupported')
+  );
+}
 
 export interface GoogleAuthErrorClassification {
   code: GoogleAuthErrorCode;
@@ -533,6 +590,49 @@ export function classifyGoogleAuthError(
         : `Logowanie Google wymaga autoryzacji domeny (${cleanHost}). Użyj logowania lub rejestracji e-mailem.`,
       recommendEmailAuth: true,
       isDomainConfigIssue: true,
+      isProviderConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('redirect_uri_mismatch')) {
+    const callbackUrl = `https://${cleanHost}/__/auth/handler`;
+    return {
+      code: 'redirect-uri-mismatch',
+      rawCode: rawCode || 'auth/redirect-uri-mismatch',
+      hostname: cleanHost,
+      recommendedDomains: [callbackUrl, ...recommendedDomains],
+      userTitle: isEn
+        ? 'Google OAuth redirect URI needs to be added'
+        : 'Wymagane dodanie adresu przekierowania Google OAuth',
+      userMessage: isEn
+        ? `Add "${callbackUrl}" to Authorized redirect URIs in Google Cloud Console (OAuth 2.0 Web Client), or sign in with email & password right now.`
+        : `Aby logowanie Google działało w aplikacji mobilnej na domenie „${cleanHost}”, dodaj adres „${callbackUrl}” w Google Cloud Console → OAuth 2.0 Web Client → Authorized redirect URIs. Możesz też od razu zalogować się e-mailem.`,
+      toastMessage: isEn
+        ? `Add ${callbackUrl} to Google Cloud OAuth Authorized redirect URIs.`
+        : `Dodaj ${callbackUrl} w Google Cloud Console (Authorized redirect URIs).`,
+      recommendEmailAuth: true,
+      isDomainConfigIssue: true,
+      isProviderConfigIssue: false,
+    };
+  }
+
+  if (combined.includes('missing initial state') || combined.includes('missing-initial-state') || combined.includes('storage-partitioned')) {
+    return {
+      code: 'missing-initial-state',
+      rawCode: rawCode || 'auth/missing-initial-state',
+      hostname: cleanHost,
+      recommendedDomains,
+      userTitle: isEn
+        ? 'Browser cleared Google sign-in session state'
+        : 'Przeglądarka zablokowała pamięć sesji Google (Storage Partitioning)',
+      userMessage: isEn
+        ? 'Your mobile browser or emulator isolated third-party sessionStorage during Google redirect. Try signing in again, or use Email & Password sign-in (works reliably on every mobile device).'
+        : 'Przeglądarka mobilna (lub emulator) odizolowała pamięć sessionStorage podczas logowania Google. Spróbuj ponownie albo użyj logowania e-mailem i hasłem — działa niezawodnie na każdym telefonie.',
+      toastMessage: isEn
+        ? 'Mobile browser isolated OAuth sessionStorage. Retry or use Email sign-in.'
+        : 'Przeglądarka odizolowała sessionStorage dla Google OAuth. Spróbuj ponownie lub zaloguj się e-mailem.',
+      recommendEmailAuth: true,
+      isDomainConfigIssue: false,
       isProviderConfigIssue: false,
     };
   }

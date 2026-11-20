@@ -59,8 +59,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
   const shortDisplayName = currentUser.name.replace(/\s*\(.*?\)\s*/g, '').trim();
 
   return (
-    <header className="relative z-40 w-full border-b border-slate-800 bg-slate-950/95 transition-colors">
-      <div className="flex h-16 w-full items-center justify-between gap-1 sm:gap-4 px-2.5 sm:px-6">
+    <header className="relative z-40 w-full border-b border-slate-800 bg-slate-950/95 transition-colors pt-[env(safe-area-inset-top,0px)]">
+      <div className="flex h-14 sm:h-16 w-full items-center justify-between gap-1 sm:gap-4 px-2.5 sm:px-6">
         {/* Brand Logo */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
           <button
@@ -314,28 +314,28 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
 
       {/* Mobile & Tablet Drawer Menu (shown below lg) */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-b border-slate-800 bg-slate-900 px-4 py-3 space-y-2 max-h-[85vh] overflow-y-auto">
+        <div className="lg:hidden border-b border-slate-800 bg-slate-900 px-3 sm:px-4 py-2.5 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] space-y-2 max-h-[calc(100dvh-3.5rem-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain">
           {/* Mobile Hearts, Streak & Plan Bar */}
-          <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-slate-800">
+          <div className="grid grid-cols-3 gap-1.5 pb-2 border-b border-slate-800">
             <button
               type="button"
               onClick={() => {
                 setIsLivesModalOpen(true);
                 setMobileMenuOpen(false);
               }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
+              className={`flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl border text-[11px] font-bold transition-all whitespace-nowrap ${
                 isPro
                   ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
                   : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
               }`}
             >
-              <Heart className={`h-4 w-4 ${isPro ? 'fill-amber-400' : 'fill-rose-500'}`} />
-              <span>{isPro ? (isEn ? 'Hearts: ∞ PRO' : 'Serca: ∞ PRO') : `${isEn ? 'Hearts' : 'Serca'}: ${currentLives}/5`}</span>
+              <Heart className={`h-3.5 w-3.5 shrink-0 ${isPro ? 'fill-amber-400' : 'fill-rose-500'}`} />
+              <span>{isPro ? '∞ PRO' : `${currentLives}/5`}</span>
             </button>
 
-            <div className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold shrink-0">
-              <Flame className="h-4 w-4 fill-amber-400 text-amber-400" />
-              <span>{isEn ? 'Streak' : 'Seria'}: {currentUser.streakDays}d</span>
+            <div className="flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-bold whitespace-nowrap">
+              <Flame className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" />
+              <span>{currentUser.streakDays ?? 0}d</span>
             </div>
 
             <button
@@ -344,40 +344,41 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
                 setIsSubModalOpen(true);
                 setMobileMenuOpen(false);
               }}
-              className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold shrink-0"
+              className="flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-[11px] font-bold whitespace-nowrap"
             >
-              <Crown className={`h-4 w-4 ${isPro ? 'text-amber-400 fill-amber-400' : 'text-emerald-400'}`} />
-              <span>{isPro ? (isEn ? 'PRO Active' : 'PRO Aktywne') : (isEn ? 'Plan: Free' : 'Plan: Darmowy')}</span>
+              <Crown className={`h-3.5 w-3.5 shrink-0 ${isPro ? 'text-amber-400 fill-amber-400' : 'text-emerald-400'}`} />
+              <span>{isPro ? 'PRO' : (isEn ? 'Free' : 'Darmowy')}</span>
             </button>
           </div>
 
           {/* Quick Sound FX, Language & 3-Mode Theme Toggle for Mobile */}
-          <div className="space-y-2 py-1.5 border-b border-slate-800">
-            <button
-              type="button"
-              onClick={toggleSound}
-              className="w-full flex items-center justify-center gap-2 py-2 px-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-semibold"
-            >
-              {isSoundMuted ? <VolumeX className="h-4 w-4 text-slate-500" /> : <Volume2 className="h-4 w-4 text-cyan-400 animate-pulse" />}
-              <span>
-                {isSoundMuted
-                  ? isEn
-                    ? 'Sound: Muted'
-                    : 'Dźwięk: Wyłączony'
-                  : isEn
-                  ? 'Sound: On'
-                  : 'Dźwięk: Włączony'}
-              </span>
-            </button>
-
-            <LanguageToggle variant="labeled" />
+          <div className="space-y-1.5 py-1 border-b border-slate-800">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={toggleSound}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-semibold"
+              >
+                {isSoundMuted ? <VolumeX className="h-3.5 w-3.5 text-slate-500" /> : <Volume2 className="h-3.5 w-3.5 text-cyan-400" />}
+                <span>
+                  {isSoundMuted
+                    ? isEn
+                      ? 'Sound: Off'
+                      : 'Dźwięk: Wył.'
+                    : isEn
+                    ? 'Sound: On'
+                    : 'Dźwięk: Wł.'}
+                </span>
+              </button>
+              <LanguageToggle variant="compact" />
+            </div>
 
             <ThemeToggle variant="labeled" />
           </div>
 
           {/* Mobile Android / Play Store Install Action */}
           <div className="py-1 border-b border-slate-800">
-            <PWAInstallButton variant="full" className="w-full justify-center py-2.5" />
+            <PWAInstallButton variant="full" className="w-full justify-center py-2" />
           </div>
 
           {/* Primary Navigation */}

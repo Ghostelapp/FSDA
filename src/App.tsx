@@ -84,7 +84,7 @@ const MainContent: React.FC = () => {
 
       {/* Toast Notification Banner */}
       {toast && (
-        <div className="fixed top-20 right-4 sm:right-6 z-50 max-w-md animate-in slide-in-from-top-3 duration-300 print:hidden">
+        <div className="fixed top-[calc(4.5rem+env(safe-area-inset-top,0px))] left-3 right-3 sm:left-auto sm:right-6 z-50 sm:max-w-md animate-in slide-in-from-top-3 duration-300 print:hidden">
           <div className={`flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-md ${
             toast.type === 'badge'
               ? 'bg-amber-950/90 border-amber-500/50 text-amber-200'
@@ -199,7 +199,7 @@ const MainContent: React.FC = () => {
 
       {/* Global Footer */}
       <footer
-        className={`border-t px-4 py-10 text-xs print:hidden ${
+        className={`border-t px-3 sm:px-4 pt-8 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:py-10 text-xs print:hidden ${
           isPublicTab(activeTab)
             ? 'border-slate-800/80 bg-[#05070D] text-slate-400'
             : 'border-slate-900 bg-slate-950 text-slate-400'

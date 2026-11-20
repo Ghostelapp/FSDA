@@ -177,7 +177,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialMo
     setSuccessMessage('');
     const res = await loginWithGoogle();
     if (res.success) {
-      onClose();
+      if (!res.redirecting) {
+        onClose();
+      }
     } else {
       if (res.classification) {
         setGoogleAuthIssue(res.classification);

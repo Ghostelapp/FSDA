@@ -88,13 +88,13 @@ export const LessonMapNavigatorBar: React.FC<LessonMapNavigatorBarProps> = ({
       className="rounded-2xl border border-slate-800/90 bg-slate-900/80 shadow-xl overflow-hidden"
     >
       {/* Row 1: Zone Header, Prev/Next Station Hop, and 96-Station Atlas Toggle */}
-      <div className="p-4 sm:px-6 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="p-3 sm:px-6 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
         {/* Left: Back to Map & Full Zone Title */}
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={onOpenFullMap}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-200 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-200 hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             <MapIcon className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
             <span>{isEn ? 'Course Map' : 'Mapa kursu'}</span>
