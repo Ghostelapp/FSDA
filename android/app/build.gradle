@@ -8,7 +8,7 @@ android {
         applicationId "com.fullstackacademy.app"
         minSdk 21
         targetSdk 35
-        versionCode 4
+        versionCode 5
         versionName "3.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

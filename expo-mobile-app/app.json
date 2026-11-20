@@ -3,7 +3,7 @@
     "name": "Full Stack Academy",
     "slug": "fullstack-academy",
     "version": "3.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "newArchEnabled": false,
@@ -43,7 +43,7 @@
     },
     "android": {
       "package": "com.fullstackacademy.app",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#020617"

@@ -20,7 +20,7 @@
     "path": "./android.keystore",
     "alias": "android"
   },
-  "appVersionCode": 4,
+  "appVersionCode": 5,
   "appVersionName": "3.0.0",
   "shortcuts": [
     {
@@ -64,5 +64,5 @@
   },
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
-  "orientation": "portrait-primary"
+  "orientation": "any"
 }
