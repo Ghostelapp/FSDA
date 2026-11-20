@@ -128,10 +128,10 @@ import {
   buildVisitorEventWritePayload,
   buildVisitorPresenceWritePayload,
 } from '../utils/visitorAnalytics';
+import { shouldSkipTelemetryInEnvironment } from '../utils/cloudSync';
 import {
   auth,
   onAuthStateChanged,
-  testFirebaseConnection,
   signInWithGoogleFirebase,
   resolveGoogleRedirectSignIn,
   isGoogleRedirectPending,
@@ -162,6 +162,7 @@ import {
   upsertVisitorPresenceToCloud,
   saveAnnouncementToCloud,
   deleteAnnouncementFromCloud,
+  isFirestoreQuotaCircuitOpen,
 } from '../firebase';
 
 export type AppTab = 
@@ -929,7 +930,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       if (fbUser) {
-        void testFirebaseConnection();
         setFirebaseUid(fbUser.uid);
         setIsCloudConnected(true);
         setIsSyncingCloud(true);
@@ -1016,21 +1016,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               setAnnouncements(remoteAnns);
             }
           });
-
-          if (cloudProfile.role === 'admin') {
-            unsubAllUsers = subscribeAllUsersForAdmin((remoteUsers) => {
-              if (remoteUsers.length === 0) return;
-              setAllUsers((prev) => {
-                const byId = new Map<string, User>();
-                for (const u of prev) byId.set(u.id, u);
-                for (const ru of remoteUsers) {
-                  const existing = byId.get(ru.id);
-                  byId.set(ru.id, existing ? { ...existing, ...ru } : ru);
-                }
-                return Array.from(byId.values());
-              });
-            });
-          }
         } catch (err) {
           console.error('Failed to initialize cloud user profile:', err);
           // Even if Firestore temporarily fails, honor the verified Firebase Auth session
@@ -1056,14 +1041,49 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, []);
 
+  // Lazy-subscribe to all users list ONLY when an authenticated admin opens the Admin Panel
+  useEffect(() => {
+    if (
+      !isAuthenticated ||
+      !isCloudConnected ||
+      currentUser.role !== 'admin' ||
+      activeTab !== 'admin' ||
+      isFirestoreQuotaCircuitOpen()
+    ) {
+      return;
+    }
+
+    const unsub = subscribeAllUsersForAdmin((remoteUsers) => {
+      if (remoteUsers.length === 0) return;
+      setAllUsers((prev) => {
+        const byId = new Map<string, User>();
+        for (const u of prev) byId.set(u.id, u);
+        for (const ru of remoteUsers) {
+          const existing = byId.get(ru.id);
+          byId.set(ru.id, existing ? { ...existing, ...ru } : ru);
+        }
+        return Array.from(byId.values());
+      });
+    });
+
+    return () => unsub();
+  }, [isAuthenticated, isCloudConnected, currentUser.role, activeTab]);
+
   // Automatic real visitor telemetry & active presence tracking (Firestore, anonymized, zero PII)
   const lastTrackedVisitRef = useRef<{ key: string | null; atMs: number }>({
     key: null,
     atMs: 0,
   });
+  const lastPresenceSentAtRef = useRef<number>(0);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (
+      shouldSkipTelemetryInEnvironment(window.location.hostname || '', navigator.userAgent || '') ||
+      isFirestoreQuotaCircuitOpen()
+    ) {
+      return;
+    }
 
     const resolveVisitorTokens = () => {
       let visitorId = '';
@@ -1148,8 +1168,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       void recordVisitorEventToCloud(eventPayload);
     }
 
-    const sendPresence = () => {
-      if (document.visibilityState === 'hidden') return;
+    if (document.visibilityState !== 'hidden' && nowMs - lastPresenceSentAtRef.current >= 300_000) {
+      lastPresenceSentAtRef.current = nowMs;
       const presencePayload = buildVisitorPresenceWritePayload({
         sessionId,
         visitorId,
@@ -1162,16 +1182,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         isAuthenticated,
       });
       void upsertVisitorPresenceToCloud(presencePayload);
-    };
-
-    sendPresence();
-    const heartbeatId = window.setInterval(sendPresence, 60_000);
-    return () => window.clearInterval(heartbeatId);
+    }
   }, [activeTab, selectedLessonId, language, isAuthenticated]);
 
   // Automatically sync currentUser changes to Cloud Firestore when connected via Firebase Auth
   useEffect(() => {
-    if (!firebaseUid || !isCloudConnected || currentUser.id !== firebaseUid) return;
+    if (
+      !firebaseUid ||
+      !isCloudConnected ||
+      currentUser.id !== firebaseUid ||
+      isFirestoreQuotaCircuitOpen()
+    ) {
+      return;
+    }
 
     const currentHash = JSON.stringify({
       xp: currentUser.xp,
@@ -1199,9 +1222,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const timer = setTimeout(async () => {
       setIsSyncingCloud(true);
-      await saveUserProfileToCloud(firebaseUid, currentUser);
+      await saveUserProfileToCloud(firebaseUid, currentUser, true);
       setIsSyncingCloud(false);
-    }, 350);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [currentUser, firebaseUid, isCloudConnected]);

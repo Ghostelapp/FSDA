@@ -40,6 +40,8 @@ import {
   Timestamp,
   writeBatch,
   Unsubscribe,
+  disableNetwork,
+  setLogLevel,
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import {
@@ -58,6 +60,8 @@ import {
   buildAdminRefillLivesPayload,
   buildAdminStatusUpdatePayload,
   classifyCloudCallableError,
+  isFirestoreQuotaExhaustedError,
+  isQuotaCircuitOpen,
   serializeUserProfileFields,
   serializeUserProgressForFirestore,
 } from './utils/cloudSync';
@@ -140,6 +144,58 @@ export const db = activeFirebaseConfig.firestoreDatabaseId
       experimentalForceLongPolling: true,
       ignoreUndefinedProperties: true,
     });
+
+// Prevent internal @firebase/firestore WebChannel transport retry logs from spamming console.error when daily free-tier quota is reached
+try {
+  setLogLevel('silent');
+} catch {
+  // Ignore if setLogLevel is unavailable in test mocks
+}
+
+const QUOTA_CIRCUIT_STORAGE_KEY = 'fsda_firestore_quota_exhausted_at_v1';
+let quotaExhaustedAtMs: number | null = null;
+let hasLoggedQuotaWarning = false;
+
+function readStoredQuotaExhaustedAt(): number | null {
+  if (quotaExhaustedAtMs !== null) return quotaExhaustedAtMs;
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(QUOTA_CIRCUIT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = Number(raw);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      quotaExhaustedAtMs = parsed;
+      return parsed;
+    }
+  } catch {
+    // Ignore storage access errors
+  }
+  return null;
+}
+
+export function isFirestoreQuotaCircuitOpen(): boolean {
+  return isQuotaCircuitOpen(readStoredQuotaExhaustedAt(), Date.now());
+}
+
+export function markFirestoreQuotaExhausted(): void {
+  const now = Date.now();
+  quotaExhaustedAtMs = now;
+  if (typeof window !== 'undefined') {
+    try {
+      window.sessionStorage.setItem(QUOTA_CIRCUIT_STORAGE_KEY, String(now));
+    } catch {
+      // Ignore storage access errors
+    }
+  }
+  void disableNetwork(db).catch(() => {
+    // Ignore network disable errors
+  });
+}
+
+if (typeof window !== 'undefined' && isFirestoreQuotaCircuitOpen()) {
+  void disableNetwork(db).catch(() => {});
+}
+
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
@@ -336,6 +392,14 @@ export interface FirestoreErrorInfo {
   };
 }
 
+export function isQuotaExhaustedError(error: unknown): boolean {
+  return isFirestoreQuotaExhaustedError(error);
+}
+
+export function isFirestoreQuotaExhausted(): boolean {
+  return isFirestoreQuotaCircuitOpen();
+}
+
 function isTransientOfflineError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
   const code = (error as { code?: string })?.code || '';
@@ -371,7 +435,16 @@ export function handleFirestoreError(
     operationType,
     path,
   };
-  if (isTransientOfflineError(error)) {
+  if (isFirestoreQuotaExhaustedError(error)) {
+    markFirestoreQuotaExhausted();
+    if (!hasLoggedQuotaWarning) {
+      hasLoggedQuotaWarning = true;
+      console.warn(
+        'Firestore: Przekroczono dzienny limit zapytań (Spark quota exceeded). Aplikacja wstrzymała telemetrię i działa na lokalnej pamięci podręcznej do resetu limitu.',
+        errInfo.path
+      );
+    }
+  } else if (isTransientOfflineError(error)) {
     console.warn('Firestore działa tymczasowo w trybie offline (dane zostaną zsynchronizowane automatycznie po przywróceniu połączenia):', errInfo.path);
   } else {
     console.error('Firestore Error: ', JSON.stringify(errInfo));
@@ -381,10 +454,15 @@ export function handleFirestoreError(
 
 // Validate connection to Firestore when authenticated
 export async function testFirebaseConnection(): Promise<boolean> {
+  if (isFirestoreQuotaCircuitOpen()) return false;
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
     return true;
   } catch (error) {
+    if (isFirestoreQuotaExhaustedError(error)) {
+      handleFirestoreError(error, OperationType.GET, 'test/connection');
+      return false;
+    }
     if (isTransientOfflineError(error)) {
       return false;
     }
@@ -400,14 +478,19 @@ export function serializeUserForFirestore(uid: string, user: User): Record<strin
   return serializeUserProfileFields(uid, user);
 }
 
-export async function saveUserProfileToCloud(uid: string, user: User): Promise<boolean> {
+export async function saveUserProfileToCloud(
+  uid: string,
+  user: User,
+  isKnownExisting = false
+): Promise<boolean> {
+  if (isFirestoreQuotaCircuitOpen()) return false;
   const path = `users/${uid}`;
   try {
     const profileRef = doc(db, 'users', uid);
     const progressPayload = serializeUserProgressForFirestore(uid, user);
     const profileOnlyPayload = serializeUserProfileFields(uid, user);
-    const existing = await getDoc(profileRef);
-    if (existing.exists()) {
+    const exists = isKnownExisting ? true : (await getDoc(profileRef)).exists();
+    if (exists) {
       try {
         await setDoc(profileRef, progressPayload, { merge: true });
       } catch (writeErr) {
@@ -507,6 +590,10 @@ export async function fetchOrCreateCloudUserProfile(
     createdAt: new Date().toISOString().split('T')[0],
   };
 
+  if (isFirestoreQuotaCircuitOpen()) {
+    return initialUser;
+  }
+
   try {
     const snap = await getDoc(doc(db, 'users', uid));
     if (snap.exists()) {
@@ -558,18 +645,16 @@ export async function fetchOrCreateCloudUserProfile(
       };
 
       if (resolvedName !== data.name || resolvedBio !== data.bio) {
-        void saveUserProfileToCloud(uid, hydratedUser);
+        void saveUserProfileToCloud(uid, hydratedUser, true);
       }
 
       return hydratedUser;
     }
 
-    await saveUserProfileToCloud(uid, initialUser);
+    await saveUserProfileToCloud(uid, initialUser, false);
     return initialUser;
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, path);
-    // Do not block login if Firestore is temporarily in offline mode — return the authenticated user and sync in background
-    void saveUserProfileToCloud(uid, initialUser);
     return initialUser;
   }
 }
@@ -578,6 +663,9 @@ export function subscribeToUserProfile(
   uid: string,
   onUpdate: (user: User) => void
 ): Unsubscribe {
+  if (isFirestoreQuotaCircuitOpen()) {
+    return () => {};
+  }
   const path = `users/${uid}`;
   return onSnapshot(
     doc(db, 'users', uid),
@@ -624,6 +712,9 @@ export function subscribeToUserProfile(
 export function subscribeToCloudAnnouncements(
   onUpdate: (announcements: Announcement[]) => void
 ): Unsubscribe {
+  if (isFirestoreQuotaCircuitOpen()) {
+    return () => {};
+  }
   const path = 'announcements';
   return onSnapshot(
     collection(db, 'announcements'),
@@ -719,6 +810,7 @@ function parseVisitorPresenceSnapshot(data: Record<string, unknown>, docId: stri
 }
 
 export async function recordVisitorEventToCloud(payload: VisitorEventWritePayload): Promise<boolean> {
+  if (isFirestoreQuotaCircuitOpen()) return false;
   const path = `visitor_events/${payload.id}`;
   try {
     await setDoc(doc(db, 'visitor_events', payload.id), {
@@ -733,6 +825,7 @@ export async function recordVisitorEventToCloud(payload: VisitorEventWritePayloa
 }
 
 export async function upsertVisitorPresenceToCloud(payload: VisitorPresenceWritePayload): Promise<boolean> {
+  if (isFirestoreQuotaCircuitOpen()) return false;
   const path = `visitor_presence/${payload.sessionId}`;
   try {
     await setDoc(doc(db, 'visitor_presence', payload.sessionId), {
@@ -747,12 +840,15 @@ export async function upsertVisitorPresenceToCloud(payload: VisitorPresenceWrite
 }
 
 export async function fetchVisitorAnalyticsFromCloud(
-  maxEvents = 1500
+  maxEvents = 250
 ): Promise<{ events: VisitorEventRecord[]; presences: VisitorPresenceRecord[] }> {
+  if (isFirestoreQuotaCircuitOpen()) {
+    return { events: [], presences: [] };
+  }
   try {
     const [eventsSnap, presenceSnap] = await Promise.all([
       getDocs(query(collection(db, 'visitor_events'), orderBy('createdAt', 'desc'), limit(maxEvents))),
-      getDocs(query(collection(db, 'visitor_presence'), orderBy('lastSeen', 'desc'), limit(250))),
+      getDocs(query(collection(db, 'visitor_presence'), orderBy('lastSeen', 'desc'), limit(50))),
     ]);
 
     const events: VisitorEventRecord[] = [];
@@ -768,6 +864,9 @@ export async function fetchVisitorAnalyticsFromCloud(
     return { events, presences };
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, 'visitor_events');
+    if (isFirestoreQuotaExhaustedError(error)) {
+      return { events: [], presences: [] };
+    }
     throw error;
   }
 }
@@ -776,8 +875,11 @@ export function subscribeVisitorAnalyticsForAdmin(
   onEvents: (events: VisitorEventRecord[]) => void,
   onPresence: (presences: VisitorPresenceRecord[]) => void,
   onError?: (err: unknown) => void,
-  maxEvents = 1500
+  maxEvents = 250
 ): Unsubscribe {
+  if (isFirestoreQuotaCircuitOpen()) {
+    return () => {};
+  }
   const eventsQuery = query(
     collection(db, 'visitor_events'),
     orderBy('createdAt', 'desc'),
@@ -786,7 +888,7 @@ export function subscribeVisitorAnalyticsForAdmin(
   const presenceQuery = query(
     collection(db, 'visitor_presence'),
     orderBy('lastSeen', 'desc'),
-    limit(250)
+    limit(50)
   );
 
   const unsubEvents = onSnapshot(
@@ -829,6 +931,9 @@ export async function clearVisitorTelemetryByAdmin(
   eventIds: string[],
   presenceIds: string[]
 ): Promise<number> {
+  if (isFirestoreQuotaCircuitOpen()) {
+    return 0;
+  }
   const targets: { col: 'visitor_events' | 'visitor_presence'; id: string }[] = [
     ...eventIds.map((id) => ({ col: 'visitor_events' as const, id })),
     ...presenceIds.map((id) => ({ col: 'visitor_presence' as const, id })),
@@ -855,9 +960,12 @@ export async function clearVisitorTelemetryByAdmin(
 export function subscribeAllUsersForAdmin(
   onUpdate: (users: User[]) => void
 ): Unsubscribe {
+  if (isFirestoreQuotaCircuitOpen()) {
+    return () => {};
+  }
   const path = 'users';
   return onSnapshot(
-    query(collection(db, 'users'), limit(500)),
+    query(collection(db, 'users'), limit(250)),
     (snap) => {
       const usersList: User[] = [];
       snap.forEach((docSnap) => {

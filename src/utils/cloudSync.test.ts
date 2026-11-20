@@ -1,12 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  FIRESTORE_QUOTA_COOLDOWN_MS,
   buildAdminProUpdatePayload,
   buildAdminRefillLivesPayload,
   buildAdminStatusUpdatePayload,
   classifyCloudCallableError,
+  isFirestoreQuotaExhaustedError,
+  isQuotaCircuitOpen,
   serializeUserProfileFields,
   serializeUserProgressForFirestore,
+  shouldSkipTelemetryInEnvironment,
 } from './cloudSync';
 import { User } from '../types';
 
@@ -143,4 +147,45 @@ test('buildAdminStatusUpdatePayload and buildAdminRefillLivesPayload validate fi
     updatedAt: '2026-11-20T08:00:00.000Z',
   });
 });
+
+test('isFirestoreQuotaExhaustedError and isQuotaCircuitOpen detect resource-exhausted errors and enforce cooldown', () => {
+  assert.equal(
+    isFirestoreQuotaExhaustedError({ code: 'resource-exhausted', message: 'Quota exceeded.' }),
+    true
+  );
+  assert.equal(
+    isFirestoreQuotaExhaustedError(new Error('FirebaseError: [code=resource-exhausted]: Quota exceeded.')),
+    true
+  );
+  assert.equal(
+    isFirestoreQuotaExhaustedError(new Error('Using maximum backoff delay to prevent overloading the backend.')),
+    true
+  );
+  assert.equal(isFirestoreQuotaExhaustedError(new Error('Permission denied')), false);
+
+  const now = 1_700_000_000_000;
+  assert.equal(isQuotaCircuitOpen(null, now), false);
+  assert.equal(isQuotaCircuitOpen(now - 5_000, now), true);
+  assert.equal(isQuotaCircuitOpen(now - FIRESTORE_QUOTA_COOLDOWN_MS - 1, now), false);
+});
+
+test('shouldSkipTelemetryInEnvironment skips preview, localhost, and headless browsers while allowing production fsda.tech', () => {
+  assert.equal(shouldSkipTelemetryInEnvironment('localhost', 'Mozilla/5.0'), true);
+  assert.equal(
+    shouldSkipTelemetryInEnvironment(
+      'ais-dev-4ucmmlowc42fnc3g36cfl7-601573615813.europe-west3.run.app',
+      'Mozilla/5.0'
+    ),
+    true
+  );
+  assert.equal(
+    shouldSkipTelemetryInEnvironment('fsda.tech', 'Mozilla/5.0 HeadlessChrome/131.0'),
+    true
+  );
+  assert.equal(
+    shouldSkipTelemetryInEnvironment('fsda.tech', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0'),
+    false
+  );
+});
+
 

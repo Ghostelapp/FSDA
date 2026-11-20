@@ -97,7 +97,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
   const [visitorEvents, setVisitorEvents] = useState<VisitorEventRecord[]>([]);
   const [visitorPresences, setVisitorPresences] = useState<VisitorPresenceRecord[]>([]);
   const [isLoadingTraffic, setIsLoadingTraffic] = useState(false);
-  const [isTrafficLive, setIsTrafficLive] = useState(true);
+  const [isTrafficLive, setIsTrafficLive] = useState(false);
   const [trafficLastSyncedMs, setTrafficLastSyncedMs] = useState<number | null>(null);
   const [trafficError, setTrafficError] = useState<string | null>(null);
 
@@ -109,7 +109,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
     setIsLoadingTraffic(true);
     setTrafficError(null);
     try {
-      const result = await fetchVisitorAnalyticsFromCloud(1500);
+      const result = await fetchVisitorAnalyticsFromCloud(300);
       setVisitorEvents(result.events);
       setVisitorPresences(result.presences);
       setTrafficLastSyncedMs(Date.now());
@@ -121,7 +121,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
   }, [canReadAdminCloudTelemetry]);
 
   useEffect(() => {
-    if (!canReadAdminCloudTelemetry) return;
+    if (!canReadAdminCloudTelemetry || adminTab !== 'traffic') return;
     if (!isTrafficLive) {
       void refreshVisitorAnalytics();
       return;
@@ -144,11 +144,11 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
         setTrafficError(err instanceof Error ? err.message : String(err));
         setIsLoadingTraffic(false);
       },
-      1500
+      300
     );
 
     return () => unsub();
-  }, [canReadAdminCloudTelemetry, isTrafficLive, refreshVisitorAnalytics]);
+  }, [canReadAdminCloudTelemetry, adminTab, isTrafficLive, refreshVisitorAnalytics]);
 
   const handleClearVisitorTelemetry = async () => {
     if (!canReadAdminCloudTelemetry) return;

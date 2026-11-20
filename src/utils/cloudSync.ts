@@ -175,3 +175,68 @@ export function buildAdminRefillLivesPayload(
   };
 }
 
+export const FIRESTORE_QUOTA_COOLDOWN_MS = 15 * 60 * 1000; // 15 minutes
+
+export function isFirestoreQuotaExhaustedError(error: unknown): boolean {
+  const code =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code?: unknown }).code || '').trim().toLowerCase()
+      : '';
+  const message =
+    error instanceof Error
+      ? error.message.trim().toLowerCase()
+      : String(error || '').trim().toLowerCase();
+
+  return (
+    code === 'resource-exhausted' ||
+    code === 'firestore/resource-exhausted' ||
+    code === 'functions/resource-exhausted' ||
+    message.includes('resource-exhausted') ||
+    message.includes('quota exceeded') ||
+    message.includes('maximum backoff delay')
+  );
+}
+
+export function isQuotaCircuitOpen(
+  exhaustedAtMs: number | null | undefined,
+  nowMs: number = Date.now(),
+  cooldownMs: number = FIRESTORE_QUOTA_COOLDOWN_MS
+): boolean {
+  if (typeof exhaustedAtMs !== 'number' || !Number.isFinite(exhaustedAtMs) || exhaustedAtMs <= 0) {
+    return false;
+  }
+  const elapsed = nowMs - exhaustedAtMs;
+  return elapsed >= 0 && elapsed < cooldownMs;
+}
+
+export function shouldSkipTelemetryInEnvironment(
+  hostname: string = '',
+  userAgent: string = ''
+): boolean {
+  const host = hostname.trim().toLowerCase();
+  const ua = userAgent.trim().toLowerCase();
+
+  if (
+    !host ||
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host.endsWith('.run.app') ||
+    host.endsWith('.webcontainer.io') ||
+    host.endsWith('.local')
+  ) {
+    return true;
+  }
+
+  if (
+    ua.includes('headlesschrome') ||
+    ua.includes('playwright') ||
+    ua.includes('puppeteer') ||
+    ua.includes('lighthouse')
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+
