@@ -545,6 +545,14 @@ test('expo-mobile-app/App.tsx keeps all Google OAuth domains inside WebView with
     expoAppSource.includes("navState.url === 'about:blank'"),
     'Expo WebView must recover automatically if an auth page closes to about:blank'
   );
+  assert.ok(
+    expoAppSource.includes("request.url.startsWith('intent://')"),
+    'Expo WebView must block Android intent:// OAuth handoff into external Chrome'
+  );
+  assert.ok(
+    expoAppSource.includes('isGoogleOrAuthHost'),
+    'Expo WebView must allow all regional Google country TLDs inside WebView'
+  );
   assert.equal(
     expoAppSource.includes('FullStackAcademyExpo/'),
     false,

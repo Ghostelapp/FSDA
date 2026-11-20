@@ -83,7 +83,7 @@ const EXPO_APP_JSON = JSON.stringify(
       },
       android: {
         package: 'com.fullstackacademy.app',
-        versionCode: 6,
+        versionCode: 7,
         adaptiveIcon: {
           foregroundImage: './assets/adaptive-icon.png',
           backgroundColor: '#020617',
@@ -219,17 +219,29 @@ const ALLOWED_IN_APP_HOSTS = [
   'googleapis.com',
   'googleusercontent.com',
   'gstatic.com',
+  'youtube.com',
   'accounts.youtube.com',
+  'withgoogle.com',
+  'g.co',
   'firebaseapp.com',
   'web.app',
 ];
 
+function isGoogleOrAuthHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  if (ALLOWED_IN_APP_HOSTS.some((allowed) => host === allowed || host.endsWith(\`.\${allowed}\`))) {
+    return true;
+  }
+  return /(^|\\.)google\\.[a-z]{2,3}(\\.[a-z]{2})?$/.test(host);
+}
+
 function shouldKeepInWebView(url: string): boolean {
   if (!url || url.startsWith('about:') || url.startsWith('blob:') || url.startsWith('data:')) return true;
+  if (url.startsWith('intent://')) return false;
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
-    return ALLOWED_IN_APP_HOSTS.some((host) => parsed.hostname === host || parsed.hostname.endsWith(\`.\${host}\`));
+    return isGoogleOrAuthHost(parsed.hostname);
   } catch {
     return true;
   }
@@ -426,7 +438,7 @@ android {
         applicationId "com.fullstackacademy.app"
         minSdk 21
         targetSdk 35
-        versionCode 6
+        versionCode 7
         versionName "3.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

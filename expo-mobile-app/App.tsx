@@ -29,10 +29,24 @@ const ALLOWED_IN_APP_HOSTS = [
   'googleapis.com',
   'googleusercontent.com',
   'gstatic.com',
+  'youtube.com',
   'accounts.youtube.com',
+  'withgoogle.com',
+  'g.co',
   'firebaseapp.com',
   'web.app',
 ];
+
+function isGoogleOrAuthHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  if (
+    ALLOWED_IN_APP_HOSTS.some((allowed) => host === allowed || host.endsWith(`.${allowed}`))
+  ) {
+    return true;
+  }
+  // Keep all regional Google country domains (e.g. accounts.google.de, google.co.uk, google.nl) inside WebView
+  return /(^|\.)google\.[a-z]{2,3}(\.[a-z]{2})?$/.test(host);
+}
 
 function shouldKeepInWebView(url: string): boolean {
   if (!url) return true;
@@ -44,9 +58,7 @@ function shouldKeepInWebView(url: string): boolean {
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
       return false;
     }
-    return ALLOWED_IN_APP_HOSTS.some(
-      (host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`)
-    );
+    return isGoogleOrAuthHost(parsed.hostname);
   } catch {
     return true;
   }
@@ -127,6 +139,10 @@ export default function App() {
               // Required on Android so react-native-webview injects window.ReactNativeWebView
             }}
             onShouldStartLoadWithRequest={(request) => {
+              // Prevent Android intent:// handoff from splitting Google OAuth into external Chrome (causes 400 Malformed)
+              if (request.url.startsWith('intent://')) {
+                return false;
+              }
               if (shouldKeepInWebView(request.url)) {
                 return true;
               }
