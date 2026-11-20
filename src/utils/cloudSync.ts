@@ -239,4 +239,39 @@ export function shouldSkipTelemetryInEnvironment(
   return false;
 }
 
+export const CLOUD_PROFILE_FETCH_TIMEOUT_MS = 2500;
+export const GOOGLE_REDIRECT_RESULT_TIMEOUT_MS = 5000;
+
+export async function raceWithTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  fallbackValue: T
+): Promise<{ value: T; timedOut: boolean }> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let settled = false;
+
+  return new Promise<{ value: T; timedOut: boolean }>((resolve, reject) => {
+    timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      resolve({ value: fallbackValue, timedOut: true });
+    }, timeoutMs);
+
+    promise.then(
+      (value) => {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        resolve({ value, timedOut: false });
+      },
+      (err) => {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 

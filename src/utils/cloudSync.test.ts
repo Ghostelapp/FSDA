@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   FIRESTORE_QUOTA_COOLDOWN_MS,
   buildAdminProUpdatePayload,
@@ -8,6 +10,7 @@ import {
   classifyCloudCallableError,
   isFirestoreQuotaExhaustedError,
   isQuotaCircuitOpen,
+  raceWithTimeout,
   serializeUserProfileFields,
   serializeUserProgressForFirestore,
   shouldSkipTelemetryInEnvironment,
@@ -185,6 +188,40 @@ test('shouldSkipTelemetryInEnvironment skips preview, localhost, and headless br
   assert.equal(
     shouldSkipTelemetryInEnvironment('fsda.tech', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0'),
     false
+  );
+});
+
+test('raceWithTimeout resolves fast values, returns fallback on slow hangs, and propagates rejections', async () => {
+  const fast = await raceWithTimeout(Promise.resolve('ok'), 200, 'fallback');
+  assert.deepEqual(fast, { value: 'ok', timedOut: false });
+
+  const hanging = new Promise<string>(() => {
+    // never resolves
+  });
+  const slow = await raceWithTimeout(hanging, 30, 'fallback');
+  assert.deepEqual(slow, { value: 'fallback', timedOut: true });
+
+  await assert.rejects(
+    () => raceWithTimeout(Promise.reject(new Error('boom')), 200, 'fallback'),
+    /boom/
+  );
+});
+
+test('signInWithGoogleFirebase invokes signInWithPopup without prior await setPersistence and protects redirect/profile calls with timeouts', () => {
+  const firebaseSrc = fs.readFileSync(path.resolve('src/firebase.ts'), 'utf-8');
+  const fnStart = firebaseSrc.indexOf('export async function signInWithGoogleFirebase');
+  const fnEnd = firebaseSrc.indexOf('export async function resolveGoogleRedirectSignIn');
+  assert.ok(fnStart > -1 && fnEnd > fnStart);
+  const fnBody = firebaseSrc.slice(fnStart, fnEnd);
+  assert.equal(
+    fnBody.includes('await setPersistence'),
+    false,
+    'signInWithGoogleFirebase must not await setPersistence before signInWithPopup (breaks desktop popup gesture on 1st click)'
+  );
+  assert.ok(
+    firebaseSrc.includes('CLOUD_PROFILE_FETCH_TIMEOUT_MS') &&
+      firebaseSrc.includes('GOOGLE_REDIRECT_RESULT_TIMEOUT_MS'),
+    'firebase.ts must guard profile fetch and redirect result with explicit timeouts'
   );
 });
 

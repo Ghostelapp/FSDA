@@ -55,13 +55,16 @@ import {
   VisitorPresenceWritePayload,
 } from './utils/visitorAnalytics';
 import {
+  CLOUD_PROFILE_FETCH_TIMEOUT_MS,
   CloudCallableResult,
+  GOOGLE_REDIRECT_RESULT_TIMEOUT_MS,
   buildAdminProUpdatePayload,
   buildAdminRefillLivesPayload,
   buildAdminStatusUpdatePayload,
   classifyCloudCallableError,
   isFirestoreQuotaExhaustedError,
   isQuotaCircuitOpen,
+  raceWithTimeout,
   serializeUserProfileFields,
   serializeUserProgressForFirestore,
 } from './utils/cloudSync';
@@ -197,6 +200,11 @@ if (typeof window !== 'undefined' && isFirestoreQuotaCircuitOpen()) {
 }
 
 export const auth = getAuth(app);
+if (typeof window !== 'undefined') {
+  void setPersistence(auth, browserLocalPersistence).catch(() => {
+    // Non-fatal: continue with default persistence when browser blocks local persistence API
+  });
+}
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 const cloudFunctions = getFunctions(app, 'us-central1');
@@ -535,127 +543,196 @@ export async function saveUserProfileToCloud(
   }
 }
 
+const inFlightProfileFetches = new Map<string, Promise<User>>();
+
 export async function fetchOrCreateCloudUserProfile(
   fbUser: FirebaseUser,
   fallbackLocalUser?: User,
   profileOverrides?: { name?: string; bio?: string }
 ): Promise<User> {
   const uid = fbUser.uid;
-  const path = `users/${uid}`;
-  const isAdminEmail =
-    Boolean(fbUser.emailVerified) &&
-    (fbUser.email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com';
-
-  const isGuestFallback = !fallbackLocalUser || fallbackLocalUser.id === 'user-guest';
-  const overrideName = profileOverrides?.name?.trim();
-  const overrideBio = profileOverrides?.bio?.trim();
-
-  const initialUser: User = {
-    id: uid,
-    name:
-      overrideName ||
-      fbUser.displayName ||
-      (!isGuestFallback ? fallbackLocalUser?.name : undefined) ||
-      'Kursant Akademii',
-    email: fbUser.email || 'kursant@gmail.com',
-    role: isAdminEmail ? 'admin' : 'student',
-    status: 'active',
-    antiBotVerified: true,
-    antiBotScore: 100,
-    avatar:
-      fbUser.photoURL ||
-      `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(overrideName || uid)}`,
-    xp: 0,
-    level: 1,
-    streakDays: 0,
-    lastActiveDate: new Date().toISOString().split('T')[0],
-    weeklyGoalMinutes: fallbackLocalUser?.weeklyGoalMinutes || 180,
-    weeklySpentMinutes: 0,
-    completedLessons: [],
-    completedProjects: [],
-    unlockedBadges: [],
-    claimedRewards: [],
-    quizScores: {},
-    savedCode: fallbackLocalUser?.savedCode || {},
-    githubIntegration: fallbackLocalUser?.githubIntegration,
-    lives: 5,
-    maxLives: 5,
-    isPro: false,
-    proPlan: null,
-    streakFreezes: 0,
-    bio: isAdminEmail
-      ? 'Główny Administrator i Architekt Akademii Full Stack Developer (Chmura Firebase).'
-      : overrideBio ||
-        'Kursant Full Stack Developer Academy (Synchronizacja z chmurą Firestore).',
-    createdAt: new Date().toISOString().split('T')[0],
-  };
-
-  if (isFirestoreQuotaCircuitOpen()) {
-    return initialUser;
+  const existingFetch = inFlightProfileFetches.get(uid);
+  if (existingFetch) {
+    return existingFetch;
   }
 
-  try {
-    const snap = await getDoc(doc(db, 'users', uid));
-    if (snap.exists()) {
-      const data = snap.data() as Partial<User>;
-      const resolvedName =
-        overrideName && (!data.name || data.name === 'Kursant Akademii')
-          ? overrideName
-          : data.name || fbUser.displayName || overrideName || 'Kursant Google';
-      const resolvedBio =
-        overrideBio &&
-        (!data.bio || data.bio.startsWith('Kursant Full Stack Developer Academy'))
-          ? overrideBio
-          : data.bio || 'Zalogowano przez Firebase Auth (Chmura Firestore).';
+  const fetchPromise = (async (): Promise<User> => {
+    const path = `users/${uid}`;
+    const cleanFbEmail = (fbUser.email || '').trim().toLowerCase();
+    const isAdminEmail =
+      Boolean(fbUser.emailVerified) && cleanFbEmail === 'zordonzordon1@gmail.com';
 
-      const hydratedUser: User = {
-        id: data.id || uid,
-        name: resolvedName,
-        email: data.email || fbUser.email || 'user@gmail.com',
-        role: isAdminEmail ? 'admin' : 'student',
-        status: data.status || 'active',
-        antiBotVerified: true,
-        antiBotScore: 100,
-        avatar:
-          data.avatar ||
-          fbUser.photoURL ||
-          `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(resolvedName || uid)}`,
-        xp: typeof data.xp === 'number' ? data.xp : 0,
-        level: typeof data.level === 'number' ? data.level : 1,
-        streakDays: typeof data.streakDays === 'number' ? data.streakDays : 1,
-        lastActiveDate: data.lastActiveDate || new Date().toISOString().split('T')[0],
-        weeklyGoalMinutes: data.weeklyGoalMinutes || 180,
-        weeklySpentMinutes: data.weeklySpentMinutes || 0,
-        completedLessons: Array.isArray(data.completedLessons) ? data.completedLessons : [],
-        completedProjects: Array.isArray(data.completedProjects) ? data.completedProjects : [],
-        unlockedBadges: Array.isArray(data.unlockedBadges) ? data.unlockedBadges : [],
-        claimedRewards: Array.isArray(data.claimedRewards) ? data.claimedRewards : [],
-        quizScores: data.quizScores || {},
-        savedCode: data.savedCode || {},
-        githubIntegration: data.githubIntegration || fallbackLocalUser?.githubIntegration,
-        lives: typeof data.lives === 'number' ? data.lives : 5,
-        maxLives: typeof data.maxLives === 'number' ? data.maxLives : 5,
-        lastPracticeRewardDate: data.lastPracticeRewardDate,
-        lastFlashcardRewardDate: data.lastFlashcardRewardDate,
-        isPro: isAdminEmail ? true : Boolean(data.isPro),
-        proPlan: isAdminEmail ? 'lifetime' : data.proPlan,
-        streakFreezes: typeof data.streakFreezes === 'number' ? data.streakFreezes : 1,
-        bio: resolvedBio,
-        createdAt: data.createdAt || new Date().toISOString().split('T')[0],
-      };
+    const isMatchingLocalProfile = Boolean(
+      fallbackLocalUser &&
+        fallbackLocalUser.id !== 'user-guest' &&
+        (fallbackLocalUser.id === uid ||
+          (cleanFbEmail && fallbackLocalUser.email.trim().toLowerCase() === cleanFbEmail))
+    );
+    const overrideName = profileOverrides?.name?.trim();
+    const overrideBio = profileOverrides?.bio?.trim();
 
-      if (resolvedName !== data.name || resolvedBio !== data.bio) {
-        void saveUserProfileToCloud(uid, hydratedUser, true);
-      }
+    const initialUser: User = {
+      id: uid,
+      name:
+        overrideName ||
+        fbUser.displayName ||
+        (isMatchingLocalProfile ? fallbackLocalUser?.name : undefined) ||
+        'Kursant Akademii',
+      email: fbUser.email || 'kursant@gmail.com',
+      role: isAdminEmail ? 'admin' : 'student',
+      status: 'active',
+      antiBotVerified: true,
+      antiBotScore: 100,
+      avatar:
+        fbUser.photoURL ||
+        (isMatchingLocalProfile ? fallbackLocalUser?.avatar : undefined) ||
+        `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(overrideName || uid)}`,
+      xp: isMatchingLocalProfile && typeof fallbackLocalUser?.xp === 'number' ? fallbackLocalUser.xp : 0,
+      level: isMatchingLocalProfile && typeof fallbackLocalUser?.level === 'number' ? fallbackLocalUser.level : 1,
+      streakDays:
+        isMatchingLocalProfile && typeof fallbackLocalUser?.streakDays === 'number'
+          ? fallbackLocalUser.streakDays
+          : 0,
+      lastActiveDate:
+        (isMatchingLocalProfile ? fallbackLocalUser?.lastActiveDate : undefined) ||
+        new Date().toISOString().split('T')[0],
+      weeklyGoalMinutes: fallbackLocalUser?.weeklyGoalMinutes || 180,
+      weeklySpentMinutes:
+        isMatchingLocalProfile && typeof fallbackLocalUser?.weeklySpentMinutes === 'number'
+          ? fallbackLocalUser.weeklySpentMinutes
+          : 0,
+      completedLessons:
+        isMatchingLocalProfile && Array.isArray(fallbackLocalUser?.completedLessons)
+          ? fallbackLocalUser.completedLessons
+          : [],
+      completedProjects:
+        isMatchingLocalProfile && Array.isArray(fallbackLocalUser?.completedProjects)
+          ? fallbackLocalUser.completedProjects
+          : [],
+      unlockedBadges:
+        isMatchingLocalProfile && Array.isArray(fallbackLocalUser?.unlockedBadges)
+          ? fallbackLocalUser.unlockedBadges
+          : [],
+      claimedRewards:
+        isMatchingLocalProfile && Array.isArray(fallbackLocalUser?.claimedRewards)
+          ? fallbackLocalUser.claimedRewards
+          : [],
+      quizScores:
+        isMatchingLocalProfile && fallbackLocalUser?.quizScores ? fallbackLocalUser.quizScores : {},
+      savedCode: fallbackLocalUser?.savedCode || {},
+      githubIntegration: fallbackLocalUser?.githubIntegration,
+      lives: isMatchingLocalProfile && typeof fallbackLocalUser?.lives === 'number' ? fallbackLocalUser.lives : 5,
+      maxLives:
+        isMatchingLocalProfile && typeof fallbackLocalUser?.maxLives === 'number'
+          ? fallbackLocalUser.maxLives
+          : 5,
+      isPro: isAdminEmail ? true : isMatchingLocalProfile ? Boolean(fallbackLocalUser?.isPro) : false,
+      proPlan: isAdminEmail
+        ? 'lifetime'
+        : isMatchingLocalProfile
+        ? (fallbackLocalUser?.proPlan ?? null)
+        : null,
+      streakFreezes:
+        isMatchingLocalProfile && typeof fallbackLocalUser?.streakFreezes === 'number'
+          ? fallbackLocalUser.streakFreezes
+          : 0,
+      bio: isAdminEmail
+        ? 'Główny Administrator i Architekt Akademii Full Stack Developer (Chmura Firebase).'
+        : overrideBio ||
+          (isMatchingLocalProfile ? fallbackLocalUser?.bio : undefined) ||
+          'Kursant Full Stack Developer Academy (Synchronizacja z chmurą Firestore).',
+      createdAt:
+        (isMatchingLocalProfile ? fallbackLocalUser?.createdAt : undefined) ||
+        new Date().toISOString().split('T')[0],
+    };
 
-      return hydratedUser;
+    if (isFirestoreQuotaCircuitOpen()) {
+      return initialUser;
     }
 
-    await saveUserProfileToCloud(uid, initialUser, false);
-    return initialUser;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.GET, path);
-    return initialUser;
+    try {
+      const { value: snap, timedOut } = await raceWithTimeout(
+        getDoc(doc(db, 'users', uid)),
+        CLOUD_PROFILE_FETCH_TIMEOUT_MS,
+        null
+      );
+
+      if (timedOut || !snap) {
+        return initialUser;
+      }
+
+      if (snap.exists()) {
+        const data = snap.data() as Partial<User>;
+        const resolvedName =
+          overrideName && (!data.name || data.name === 'Kursant Akademii')
+            ? overrideName
+            : data.name || fbUser.displayName || overrideName || 'Kursant Google';
+        const resolvedBio =
+          overrideBio &&
+          (!data.bio || data.bio.startsWith('Kursant Full Stack Developer Academy'))
+            ? overrideBio
+            : data.bio || 'Zalogowano przez Firebase Auth (Chmura Firestore).';
+
+        const hydratedUser: User = {
+          id: data.id || uid,
+          name: resolvedName,
+          email: data.email || fbUser.email || 'user@gmail.com',
+          role: isAdminEmail ? 'admin' : 'student',
+          status: data.status || 'active',
+          antiBotVerified: true,
+          antiBotScore: 100,
+          avatar:
+            data.avatar ||
+            fbUser.photoURL ||
+            `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(resolvedName || uid)}`,
+          xp: typeof data.xp === 'number' ? data.xp : 0,
+          level: typeof data.level === 'number' ? data.level : 1,
+          streakDays: typeof data.streakDays === 'number' ? data.streakDays : 1,
+          lastActiveDate: data.lastActiveDate || new Date().toISOString().split('T')[0],
+          weeklyGoalMinutes: data.weeklyGoalMinutes || 180,
+          weeklySpentMinutes: data.weeklySpentMinutes || 0,
+          completedLessons: Array.isArray(data.completedLessons) ? data.completedLessons : [],
+          completedProjects: Array.isArray(data.completedProjects) ? data.completedProjects : [],
+          unlockedBadges: Array.isArray(data.unlockedBadges) ? data.unlockedBadges : [],
+          claimedRewards: Array.isArray(data.claimedRewards) ? data.claimedRewards : [],
+          quizScores: data.quizScores || {},
+          savedCode: data.savedCode || {},
+          githubIntegration: data.githubIntegration || fallbackLocalUser?.githubIntegration,
+          lives: typeof data.lives === 'number' ? data.lives : 5,
+          maxLives: typeof data.maxLives === 'number' ? data.maxLives : 5,
+          lastPracticeRewardDate: data.lastPracticeRewardDate,
+          lastFlashcardRewardDate: data.lastFlashcardRewardDate,
+          isPro: isAdminEmail ? true : Boolean(data.isPro),
+          proPlan: isAdminEmail ? 'lifetime' : data.proPlan,
+          streakFreezes: typeof data.streakFreezes === 'number' ? data.streakFreezes : 1,
+          bio: resolvedBio,
+          createdAt: data.createdAt || new Date().toISOString().split('T')[0],
+        };
+
+        if (resolvedName !== data.name || resolvedBio !== data.bio) {
+          void saveUserProfileToCloud(uid, hydratedUser, true);
+        }
+
+        return hydratedUser;
+      }
+
+      void raceWithTimeout(
+        saveUserProfileToCloud(uid, initialUser, false),
+        CLOUD_PROFILE_FETCH_TIMEOUT_MS,
+        false
+      ).catch(() => {});
+      return initialUser;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, path);
+      return initialUser;
+    }
+  })();
+
+  inFlightProfileFetches.set(uid, fetchPromise);
+  try {
+    return await fetchPromise;
+  } finally {
+    inFlightProfileFetches.delete(uid);
   }
 }
 
@@ -1099,12 +1176,6 @@ export function buildVerifiedFallbackUser(fbUser: FirebaseUser): User {
 }
 
 export async function signInWithGoogleFirebase(): Promise<GoogleSignInResult> {
-  try {
-    await setPersistence(auth, browserLocalPersistence);
-  } catch {
-    // Non-fatal: continue with default persistence when browser blocks local persistence API
-  }
-
   const win = typeof window !== 'undefined'
     ? (window as unknown as { ReactNativeWebView?: unknown; __FSDA_MOBILE_APP__?: boolean })
     : undefined;
@@ -1125,6 +1196,7 @@ export async function signInWithGoogleFirebase(): Promise<GoogleSignInResult> {
   }
 
   try {
+    // Invoke signInWithPopup synchronously inside the user's click gesture (no prior await)
     const result = await signInWithPopup(auth, googleProvider);
     clearGoogleRedirectPending();
     return { status: 'signed-in', user: result.user };
@@ -1140,7 +1212,11 @@ export async function signInWithGoogleFirebase(): Promise<GoogleSignInResult> {
 
 export async function resolveGoogleRedirectSignIn(): Promise<FirebaseUser | null> {
   try {
-    const result = await getRedirectResult(auth);
+    const { value: result } = await raceWithTimeout(
+      getRedirectResult(auth),
+      GOOGLE_REDIRECT_RESULT_TIMEOUT_MS,
+      null
+    );
     clearGoogleRedirectPending();
     return result?.user ?? null;
   } catch (err) {

@@ -728,6 +728,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     currentUserRef.current = currentUser;
   }, [currentUser]);
+  const allUsersRef = useRef<User[]>(allUsers);
+  useEffect(() => {
+    allUsersRef.current = allUsers;
+  }, [allUsers]);
 
   const [isSoundMuted, setIsSoundMuted] = useState<boolean>(() => soundManager.getIsMuted());
 
@@ -883,12 +887,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Resolve any pending Google OAuth redirect sign-in (mobile TWA / Expo WebView / standalone PWA)
     const hadPendingGoogleRedirect = isGoogleRedirectPending();
+    let redirectSafetyTimer: ReturnType<typeof setTimeout> | null = null;
     if (hadPendingGoogleRedirect) {
       setIsSyncingCloud(true);
+      redirectSafetyTimer = setTimeout(() => {
+        clearGoogleRedirectPending();
+        setIsSyncingCloud(false);
+      }, 6000);
     }
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted && !auth.currentUser) {
+        clearGoogleRedirectPending();
+        setIsSyncingCloud(false);
+      }
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pageshow', handlePageShow);
+    }
+
+    const findCachedLocalProfile = (fbUser: { uid: string; email?: string | null }): User => {
+      const cleanEmail = (fbUser.email || '').trim().toLowerCase();
+      const matched = allUsersRef.current.find(
+        (u) =>
+          u.id !== 'user-guest' &&
+          (u.id === fbUser.uid || (cleanEmail && u.email.trim().toLowerCase() === cleanEmail))
+      );
+      return matched || currentUserRef.current;
+    };
 
     void resolveGoogleRedirectSignIn()
       .then((redirectUser) => {
+        if (redirectSafetyTimer) {
+          clearTimeout(redirectSafetyTimer);
+          redirectSafetyTimer = null;
+        }
         if (redirectUser) {
           trackFirebaseEvent('login', { method: 'google_redirect' });
           soundManager.playLevelUp();
@@ -902,11 +935,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           if (activeTabRef.current === 'landing') {
             setActiveTab('dashboard');
           }
-        } else if (hadPendingGoogleRedirect && !auth.currentUser) {
+        } else if (!auth.currentUser) {
           setIsSyncingCloud(false);
         }
       })
       .catch((err) => {
+        if (redirectSafetyTimer) {
+          clearTimeout(redirectSafetyTimer);
+          redirectSafetyTimer = null;
+        }
         if (!auth.currentUser) {
           setIsSyncingCloud(false);
         }
@@ -930,13 +967,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       if (fbUser) {
+        if (redirectSafetyTimer) {
+          clearTimeout(redirectSafetyTimer);
+          redirectSafetyTimer = null;
+        }
         setFirebaseUid(fbUser.uid);
         setIsCloudConnected(true);
         setIsSyncingCloud(true);
         try {
           const cloudProfile = await fetchOrCreateCloudUserProfile(
             fbUser,
-            currentUserRef.current,
+            findCachedLocalProfile(fbUser),
             pendingCloudProfileRef.current ?? undefined
           );
           if (cloudProfile.status && cloudProfile.status !== 'active') {
@@ -1030,10 +1071,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } else {
         setFirebaseUid(null);
         setIsCloudConnected(false);
+        if (!isGoogleRedirectPending()) {
+          setIsSyncingCloud(false);
+        }
       }
     });
 
     return () => {
+      if (redirectSafetyTimer) {
+        clearTimeout(redirectSafetyTimer);
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('pageshow', handlePageShow);
+      }
       unsubAuth();
       if (unsubProfile) unsubProfile();
       if (unsubAnnouncements) unsubAnnouncements();
@@ -1948,14 +1998,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }> => {
     const isEn = languageRef.current === 'en';
     const lang = languageRef.current;
+    let isRedirecting = false;
     try {
       setIsSyncingCloud(true);
       const signInOutcome = await signInWithGoogleFirebase();
       if (signInOutcome.status === 'redirecting') {
+        isRedirecting = true;
+        // Safety net in case mobile browser blocks or cancels the redirect without reloading
+        setTimeout(() => {
+          if (!auth.currentUser) {
+            clearGoogleRedirectPending();
+            setIsSyncingCloud(false);
+          }
+        }, 6000);
         return { success: true, redirecting: true };
       }
       const fbUser = signInOutcome.user;
-      const cloudProfile = await fetchOrCreateCloudUserProfile(fbUser, currentUserRef.current);
+      const cleanEmail = (fbUser.email || '').trim().toLowerCase();
+      const cachedLocal =
+        allUsersRef.current.find(
+          (u) =>
+            u.id !== 'user-guest' &&
+            (u.id === fbUser.uid || (cleanEmail && u.email.trim().toLowerCase() === cleanEmail))
+        ) || currentUserRef.current;
+      const cloudProfile = await fetchOrCreateCloudUserProfile(fbUser, cachedLocal);
       if (cloudProfile.status !== 'active') {
         await signOutFromFirebase();
         const blockedMsg = isEn
@@ -1989,6 +2055,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       );
       return { success: true };
     } catch (err) {
+      clearGoogleRedirectPending();
       const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
       const classification = classifyGoogleAuthError(err, currentHostname, lang);
 
@@ -1999,7 +2066,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         classification,
       };
     } finally {
-      setIsSyncingCloud(false);
+      if (!isRedirecting) {
+        setIsSyncingCloud(false);
+      }
     }
   };
 
