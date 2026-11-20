@@ -55,8 +55,19 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             build
 
+      - name: Sprawdź dostępność klucza EXPO_TOKEN
+        id: ios-config
+        env:
+          EXPO_TOKEN_VAL: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -n "$EXPO_TOKEN_VAL" ]; then
+            echo "has_expo_token=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_expo_token=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Zbuduj podpisany plik .IPA w Expo EAS Cloud (gdy ustawiono EXPO_TOKEN)
-        if: ${{ github.event.inputs.mode == 'eas-cloud' && secrets.EXPO_TOKEN != '' }}
+        if: github.event.inputs.mode == 'eas-cloud' && steps.ios-config.outputs.has_expo_token == 'true'
         working-directory: ./expo-mobile-app
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

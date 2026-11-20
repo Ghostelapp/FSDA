@@ -173,3 +173,51 @@ test('iOS App Store config, Privacy Manifest, Universal Links, PNG specs, and iO
   assert.ok(iosZip.length > 400_000, 'iOS ZIP archive should include Expo project, App Store 1290x2796 screenshots, and 1024x1024 icon');
 });
 
+test('GitHub Actions workflows avoid invalid secrets in step if-conditions and Android TWA manifest resources exist', () => {
+  for (const wfPath of [
+    '.github/workflows/google-play-publish.yml',
+    '.github/workflows/ios-app-store-publish.yml',
+  ]) {
+    const content = fs.readFileSync(path.resolve(wfPath), 'utf-8');
+    // GitHub Actions rejects `secrets.*` inside step `if:` at parse time
+    const badIfMatches = content.match(/^\s*if:.*secrets\./gm);
+    assert.equal(
+      badIfMatches,
+      null,
+      `${wfPath} must not reference secrets.* inside step if: conditions`
+    );
+  }
+
+  const androidWorkflow = fs.readFileSync(
+    path.resolve('.github/workflows/google-play-publish.yml'),
+    'utf-8'
+  );
+  assert.ok(
+    androidWorkflow.includes('gradle/actions/setup-gradle@v4'),
+    'google-play-publish.yml must pin Gradle version via setup-gradle@v4'
+  );
+
+  const manifest = fs.readFileSync(
+    path.resolve('android/app/src/main/AndroidManifest.xml'),
+    'utf-8'
+  );
+  assert.ok(
+    !manifest.includes('@mipmap/ic_launcher_round'),
+    'AndroidManifest.xml must not reference missing @mipmap/ic_launcher_round resource'
+  );
+  assert.ok(
+    manifest.includes('android:resource="@string/asset_statements"'),
+    'AndroidManifest.xml must reference @string/asset_statements via android:resource'
+  );
+
+  const stringsXml = fs.readFileSync(
+    path.resolve('android/app/src/main/res/values/strings.xml'),
+    'utf-8'
+  );
+  assert.ok(
+    stringsXml.includes('name="asset_statements"') && stringsXml.includes('https://fsda.tech'),
+    'strings.xml must define asset_statements pointing to https://fsda.tech'
+  );
+});
+
+

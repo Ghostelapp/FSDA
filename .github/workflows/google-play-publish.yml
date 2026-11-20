@@ -33,6 +33,11 @@ jobs:
       - name: Konfiguracja Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Konfiguracja Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
       - name: Instalacja zależności i budowa PWA
         run: |
           npm install
@@ -41,7 +46,7 @@ jobs:
       - name: Budowanie pakietu Android App Bundle (.aab) oraz APK
         working-directory: ./android
         run: |
-          gradle bundleRelease assembleRelease
+          gradle bundleRelease assembleRelease --no-daemon
 
       - name: Udostępnij gotowe pliki APK i AAB do pobrania (Artifacts)
         uses: actions/upload-artifact@v4
@@ -53,8 +58,19 @@ jobs:
             public/play-store/*
             public/.well-known/assetlinks.json
 
+      - name: Sprawdź dostępność klucza Google Play Console
+        id: play-config
+        env:
+          PLAY_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$PLAY_JSON" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Automatyczna publikacja w Google Play Console (gdy podano klucz PLAY_SERVICE_ACCOUNT_JSON)
-        if: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
+        if: steps.play-config.outputs.enabled == 'true'
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}

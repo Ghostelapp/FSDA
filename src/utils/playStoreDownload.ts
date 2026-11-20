@@ -423,8 +423,8 @@ allprojects {
     }
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
 }
 `;
 
@@ -446,8 +446,7 @@ android {
         manifestPlaceholders = [
             hostName: "${PRODUCTION_HOST}",
             defaultUrl: "https://${PRODUCTION_HOST}/app",
-            launcherName: "@string/launcher_name",
-            assetStatements: '[{ "relation": ["delegate_permission/common.handle_all_urls"], "target": { "namespace": "android_app", "package_name": "com.fullstackacademy.app", "sha256_cert_fingerprints": ["${SHA256_FINGERPRINT}"] } }]'
+            launcherName: "@string/launcher_name"
         ]
     }
 
@@ -592,7 +591,7 @@ export async function downloadVerifiedPlayStoreZip(): Promise<void> {
     { path: 'android/settings.gradle', data: `rootProject.name = "FullStackAcademy"\ninclude ':app'\n` },
     {
       path: 'android/gradle.properties',
-      data: `org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.enableJetifier=true\nandroid.nonTransitiveRClass=true\n`,
+      data: `org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\nandroid.nonTransitiveRClass=true\n`,
     },
     { path: 'android/app/build.gradle', data: ANDROID_APP_BUILD_GRADLE },
     { path: 'android/app/proguard-rules.pro', data: PROGUARD_RULES },
