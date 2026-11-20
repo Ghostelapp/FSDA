@@ -6,6 +6,8 @@ import {
   buildPublicPath,
   isPublicTab,
   isInstalledMobileAppRuntime,
+  isEmbeddedWebViewRuntime,
+  shouldSyncBrowserHistoryUrl,
   getPublicRouteSeoMetadata,
 } from './publicRoutes';
 
@@ -158,6 +160,54 @@ test('isInstalledMobileAppRuntime detects Android TWA, iOS PWA, and Expo WebView
     }),
     true
   );
+  assert.equal(
+    isInstalledMobileAppRuntime({ hasReactNativeWebView: true }),
+    true
+  );
+});
+
+test('isEmbeddedWebViewRuntime and shouldSyncBrowserHistoryUrl prevent pushState hangs in Expo Android WebView', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+
+  // Normal browsers MUST keep syncing browser URL history
+  assert.equal(
+    isEmbeddedWebViewRuntime({
+      userAgent: 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 Chrome/131.0.0.0 Mobile Safari/537.36',
+      hasReactNativeWebView: false,
+    }),
+    false
+  );
+  assert.equal(
+    shouldSyncBrowserHistoryUrl({
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36',
+      hasReactNativeWebView: false,
+    }),
+    true
+  );
+
+  // Expo WebView (custom UA, ReactNativeWebView bridge, or Android wv marker) skips pushState
+  assert.equal(
+    shouldSyncBrowserHistoryUrl({
+      userAgent: 'Mozilla/5.0 (Linux; Android 15; Pixel 8) Chrome/131.0.0.0 Mobile Safari/537.36 FullStackAcademyExpo/3.0.0',
+    }),
+    false
+  );
+  assert.equal(
+    shouldSyncBrowserHistoryUrl({ hasReactNativeWebView: true }),
+    false
+  );
+  assert.equal(
+    shouldSyncBrowserHistoryUrl({
+      userAgent: 'Mozilla/5.0 (Linux; Android 11; SM-A505FN; wv) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36',
+    }),
+    false
+  );
+
+  // Native Expo wrapper must not re-enable blocking loading overlay on every onLoadStart
+  const expoApp = fs.readFileSync(path.resolve('expo-mobile-app/App.tsx'), 'utf8');
+  assert.doesNotMatch(expoApp, /onLoadStart=\{\(\)\s*=>\s*setIsLoading\(true\)\}/);
+  assert.match(expoApp, /hasLoadedInitialPage/);
 });
 
 

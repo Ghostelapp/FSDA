@@ -214,8 +214,14 @@ const MOBILE_BROWSER_UA =
 export default function App() {
   const webViewRef = useRef<WebView>(null);
   const [canGoBack, setCanGoBack] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadedInitialPage, setHasLoadedInitialPage] = useState(false);
   const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    if (hasLoadedInitialPage) return;
+    const timeout = setTimeout(() => setHasLoadedInitialPage(true), 8000);
+    return () => clearTimeout(timeout);
+  }, [hasLoadedInitialPage]);
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
@@ -240,7 +246,7 @@ export default function App() {
             style={styles.retryButton}
             onPress={() => {
               setHasError(false);
-              setIsLoading(true);
+              setHasLoadedInitialPage(false);
               webViewRef.current?.reload();
             }}
           >
@@ -258,19 +264,21 @@ export default function App() {
             thirdPartyCookiesEnabled={true}
             sharedCookiesEnabled={true}
             allowsInlineMediaPlayback={true}
-            startInLoadingState={true}
             userAgent={MOBILE_BROWSER_UA}
             applicationNameForUserAgent="FullStackAcademyExpo/3.0.0"
-            onNavigationStateChange={(nav) => setCanGoBack(nav.canGoBack)}
-            onLoadStart={() => setIsLoading(true)}
-            onLoadEnd={() => setIsLoading(false)}
+            onNavigationStateChange={(nav) => {
+              setCanGoBack(nav.canGoBack);
+              if (!nav.loading) setHasLoadedInitialPage(true);
+            }}
+            onLoad={() => setHasLoadedInitialPage(true)}
+            onLoadEnd={() => setHasLoadedInitialPage(true)}
             onError={() => {
-              setIsLoading(false);
+              setHasLoadedInitialPage(true);
               setHasError(true);
             }}
           />
-          {isLoading && (
-            <View style={styles.loadingOverlay}>
+          {!hasLoadedInitialPage && (
+            <View style={styles.loadingOverlay} pointerEvents="none">
               <ActivityIndicator size="large" color="#6366f1" />
               <Text style={styles.loadingText}>Uruchamianie Full Stack Academy...</Text>
             </View>
@@ -282,7 +290,11 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#020617' },
+  container: {
+    flex: 1,
+    backgroundColor: '#020617',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0,
+  },
   webviewWrapper: { flex: 1, backgroundColor: '#020617' },
   webview: { flex: 1, backgroundColor: '#020617' },
   loadingOverlay: {

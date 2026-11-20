@@ -40,16 +40,62 @@ export interface MobileAppRuntimeSignals {
   navigatorStandalone?: boolean;
   referrer?: string;
   userAgent?: string;
+  hasReactNativeWebView?: boolean;
+}
+
+export interface EmbeddedWebViewSignals {
+  userAgent?: string;
+  hasReactNativeWebView?: boolean;
 }
 
 export const ANDROID_TWA_PACKAGE_ID = 'com.fullstackacademy.app';
+
+/**
+ * Detects an embedded React Native / Android WebView container (such as the
+ * Expo APK wrapper). Calling `history.pushState`/`replaceState` inside
+ * react-native-webview on Android fires `onLoadStart` without a matching
+ * `onLoadEnd`, which can leave a native splash/loading overlay stuck forever.
+ */
+export function isEmbeddedWebViewRuntime(signals: EmbeddedWebViewSignals): boolean {
+  if (signals.hasReactNativeWebView) {
+    return true;
+  }
+
+  const ua = (signals.userAgent || '').trim().toLowerCase();
+  if (!ua) return false;
+  if (ua.includes('fullstackacademyexpo')) {
+    return true;
+  }
+  if (ua.includes('; wv)')) {
+    return true;
+  }
+  return false;
+}
+
+export function detectEmbeddedWebViewRuntime(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const win = window as unknown as { ReactNativeWebView?: unknown };
+    return isEmbeddedWebViewRuntime({
+      userAgent: window.navigator?.userAgent || '',
+      hasReactNativeWebView: typeof win.ReactNativeWebView !== 'undefined',
+    });
+  } catch {
+    return false;
+  }
+}
+
+export function shouldSyncBrowserHistoryUrl(signals: EmbeddedWebViewSignals): boolean {
+  return !isEmbeddedWebViewRuntime(signals);
+}
 
 export function isInstalledMobileAppRuntime(signals: MobileAppRuntimeSignals): boolean {
   if (
     signals.displayModeStandalone ||
     signals.displayModeFullscreen ||
     signals.displayModeMinimalUi ||
-    signals.navigatorStandalone
+    signals.navigatorStandalone ||
+    signals.hasReactNativeWebView
   ) {
     return true;
   }
@@ -72,6 +118,7 @@ export function detectInstalledMobileAppRuntime(): boolean {
   try {
     const match = (query: string) => Boolean(window.matchMedia?.(query)?.matches);
     const nav = window.navigator as Navigator & { standalone?: boolean };
+    const win = window as unknown as { ReactNativeWebView?: unknown };
     return isInstalledMobileAppRuntime({
       displayModeStandalone: match('(display-mode: standalone)'),
       displayModeFullscreen: match('(display-mode: fullscreen)'),
@@ -79,6 +126,7 @@ export function detectInstalledMobileAppRuntime(): boolean {
       navigatorStandalone: nav.standalone === true,
       referrer: typeof document !== 'undefined' ? document.referrer : '',
       userAgent: nav.userAgent || '',
+      hasReactNativeWebView: typeof win.ReactNativeWebView !== 'undefined',
     });
   } catch {
     return false;

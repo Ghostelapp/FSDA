@@ -61,6 +61,7 @@ import {
 } from '../utils/theme';
 import {
   buildPublicPath,
+  detectEmbeddedWebViewRuntime,
   detectInstalledMobileAppRuntime,
   getPublicRouteSeoMetadata,
   isPublicTab,
@@ -597,10 +598,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       if (normalizedPath === '/' && detectInstalledMobileAppRuntime()) {
-        try {
-          window.history.replaceState(null, '', '/app');
-        } catch {
-          // ignore history errors
+        if (!detectEmbeddedWebViewRuntime()) {
+          try {
+            window.history.replaceState(null, '', '/app');
+          } catch {
+            // ignore history errors
+          }
         }
         return 'dashboard';
       }
@@ -1690,26 +1693,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (lessonId) setSelectedLessonId(lessonId);
     if (projectId) setSelectedProjectId(projectId);
 
-    try {
-      const host = (window.location.hostname || '').toLowerCase();
-      const isAppSubdomain = host.startsWith('app.') || host.startsWith('app-');
-      const resolvedLessonId = lessonId || selectedLessonId;
-      const publicPath = buildPublicPath(tab, resolvedLessonId);
-      let nextUrl = '/';
-      if (isAppSubdomain) {
-        nextUrl = tab === 'dashboard' ? '/' : `/?tab=${tab}`;
-      } else if (publicPath) {
-        nextUrl = publicPath;
-      } else if (tab === 'dashboard') {
-        nextUrl = '/app';
-      } else {
-        nextUrl = `/app?tab=${tab}`;
+    if (!detectEmbeddedWebViewRuntime()) {
+      try {
+        const host = (window.location.hostname || '').toLowerCase();
+        const isAppSubdomain = host.startsWith('app.') || host.startsWith('app-');
+        const resolvedLessonId = lessonId || selectedLessonId;
+        const publicPath = buildPublicPath(tab, resolvedLessonId);
+        let nextUrl = '/';
+        if (isAppSubdomain) {
+          nextUrl = tab === 'dashboard' ? '/' : `/?tab=${tab}`;
+        } else if (publicPath) {
+          nextUrl = publicPath;
+        } else if (tab === 'dashboard') {
+          nextUrl = '/app';
+        } else {
+          nextUrl = `/app?tab=${tab}`;
+        }
+        if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
+          window.history.pushState({ tab, lessonId: resolvedLessonId }, '', nextUrl);
+        }
+      } catch {
+        // ignore history API errors in sandboxed iframes
       }
-      if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
-        window.history.pushState({ tab, lessonId: resolvedLessonId }, '', nextUrl);
-      }
-    } catch {
-      // ignore history API errors in sandboxed iframes
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });

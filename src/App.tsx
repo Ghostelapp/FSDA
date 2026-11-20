@@ -12,7 +12,7 @@ import { KnowledgeBaseView } from './components/KnowledgeBaseView';
 import { PublicLessonView } from './components/PublicLessonView';
 import { PublicInfoPageView } from './components/PublicInfoPageView';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
-import { isPublicTab } from './utils/publicRoutes';
+import { detectEmbeddedWebViewRuntime, isPublicTab } from './utils/publicRoutes';
 import { AuthModalMode } from './utils/authValidation';
 import { Sparkles, Trophy, X, Code2, AlertTriangle } from 'lucide-react';
 
@@ -118,7 +118,9 @@ const MainContent: React.FC = () => {
           <React.Suspense fallback={<div className="py-12 text-center text-sm text-slate-400">Ładowanie...</div>}>
             <PromoAssetsPanel
               onClose={() => {
-                window.history.pushState(null, '', '/');
+                if (!detectEmbeddedWebViewRuntime()) {
+                  window.history.pushState(null, '', '/');
+                }
                 setActiveTab('landing');
               }}
             />

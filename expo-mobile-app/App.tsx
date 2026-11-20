@@ -49,8 +49,15 @@ function shouldKeepInWebView(url: string): boolean {
 export default function App() {
   const webViewRef = useRef<WebView>(null);
   const [canGoBack, setCanGoBack] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadedInitialPage, setHasLoadedInitialPage] = useState(false);
   const [hasError, setHasError] = useState(false);
+
+  // Zabezpieczenie: ekran startowy nigdy nie może zablokować aplikacji na stałe
+  useEffect(() => {
+    if (hasLoadedInitialPage) return;
+    const timeout = setTimeout(() => setHasLoadedInitialPage(true), 8000);
+    return () => clearTimeout(timeout);
+  }, [hasLoadedInitialPage]);
 
   // Obsługa fizycznego przycisku "Wstecz" w systemie Android (na iOS działa gest przesunięcia krawędzi)
   useEffect(() => {
@@ -70,7 +77,7 @@ export default function App() {
 
   const handleRetry = () => {
     setHasError(false);
-    setIsLoading(true);
+    setHasLoadedInitialPage(false);
     webViewRef.current?.reload();
   };
 
@@ -101,7 +108,6 @@ export default function App() {
             sharedCookiesEnabled={true}
             allowsInlineMediaPlayback={true}
             mediaPlaybackRequiresUserAction={false}
-            startInLoadingState={true}
             allowsBackForwardNavigationGestures={true}
             contentInsetAdjustmentBehavior="automatic"
             pullToRefreshEnabled={true}
@@ -116,17 +122,20 @@ export default function App() {
             }}
             onNavigationStateChange={(navState) => {
               setCanGoBack(navState.canGoBack);
+              if (!navState.loading) {
+                setHasLoadedInitialPage(true);
+              }
             }}
-            onLoadStart={() => setIsLoading(true)}
-            onLoadEnd={() => setIsLoading(false)}
+            onLoad={() => setHasLoadedInitialPage(true)}
+            onLoadEnd={() => setHasLoadedInitialPage(true)}
             onError={() => {
-              setIsLoading(false);
+              setHasLoadedInitialPage(true);
               setHasError(true);
             }}
           />
 
-          {isLoading && (
-            <View style={styles.loadingOverlay}>
+          {!hasLoadedInitialPage && (
+            <View style={styles.loadingOverlay} pointerEvents="none">
               <ActivityIndicator size="large" color="#6366f1" />
               <Text style={styles.loadingText}>Uruchamianie Full Stack Academy...</Text>
             </View>
@@ -141,6 +150,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#020617',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0,
   },
   webviewWrapper: {
     flex: 1,
