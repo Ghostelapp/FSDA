@@ -509,7 +509,19 @@ export function shouldPreferGoogleRedirectAuth(options: {
 }): boolean {
   if (options.isInstalledMobileApp || options.hasReactNativeWebView) return true;
   const ua = (options.userAgent || '').toLowerCase();
-  if (ua.includes('; wv)') || ua.includes('webview') || ua.includes('fullstackacademyexpo')) {
+  if (
+    ua.includes('; wv)') ||
+    ua.includes('webview') ||
+    ua.includes('fullstackacademyexpo') ||
+    ua.includes('android') ||
+    ua.includes('iphone') ||
+    ua.includes('ipad') ||
+    ua.includes('ipod') ||
+    ua.includes('mobile') ||
+    ua.includes('samsungbrowser') ||
+    ua.includes('crios') ||
+    ua.includes('fxios')
+  ) {
     return true;
   }
   return false;

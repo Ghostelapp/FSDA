@@ -345,10 +345,71 @@ const MainContent: React.FC = () => {
   );
 };
 
+interface AppErrorBoundaryState {
+  hasError: boolean;
+  errorMessage: string;
+}
+
+class AppErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  AppErrorBoundaryState
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, errorMessage: '' };
+  }
+
+  static getDerivedStateFromError(error: Error): AppErrorBoundaryState {
+    return {
+      hasError: true,
+      errorMessage: error?.message || 'Nieoczekiwany błąd renderowania widoku.',
+    };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('AppErrorBoundary caught render error:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
+          <div className="max-w-md w-full rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center space-y-4 shadow-2xl">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <h1 className="text-lg font-extrabold text-white">
+              Wystąpił problem z wyświetleniem widoku
+            </h1>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Aplikacja wykryła nieoczekiwany błąd interfejsu i zatrzymała renderowanie, aby uniknąć zawieszenia.
+            </p>
+            {this.state.errorMessage && (
+              <p className="rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-[11px] font-mono text-rose-300 break-words">
+                {this.state.errorMessage}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => window.location.assign('/app')}
+              className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 px-4 py-2.5 text-xs font-bold text-white transition-colors"
+            >
+              Odśwież aplikację
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <AppProvider>
-      <MainContent />
-    </AppProvider>
+    <AppErrorBoundary>
+      <AppProvider>
+        <MainContent />
+      </AppProvider>
+    </AppErrorBoundary>
   );
 }

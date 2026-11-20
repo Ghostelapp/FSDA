@@ -57,7 +57,7 @@ export const DashboardView: React.FC = () => {
   ).length;
 
   const isGuest = !isAuthenticated || currentUser.id === 'user-guest';
-  const displayName = currentUser.name.replace(/\s*\(.*?\)\s*/g, '').trim();
+  const displayName = (currentUser.name || (isEn ? 'Developer' : 'Programisto')).replace(/\s*\(.*?\)\s*/g, '').trim();
 
   const getShortModuleLabel = (modId: number) => {
     if (modId === 1) return isEn ? 'Start Zero' : 'Start od zera';

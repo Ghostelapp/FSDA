@@ -293,13 +293,30 @@ export default function App() {
             javaScriptCanOpenWindowsAutomatically={true}
             allowsInlineMediaPlayback={true}
             userAgent={MOBILE_BROWSER_UA}
+            injectedJavaScriptBeforeContentLoaded="window.__FSDA_MOBILE_APP__ = true; true;"
+            onMessage={() => {}}
             onShouldStartLoadWithRequest={(req) => shouldKeepInWebView(req.url)}
             onNavigationStateChange={(nav) => {
               setCanGoBack(nav.canGoBack);
-              if (!nav.loading) setHasLoadedInitialPage(true);
+              if (!nav.loading) {
+                setHasLoadedInitialPage(true);
+                if (nav.url === 'about:blank' && webViewRef.current) {
+                  webViewRef.current.injectJavaScript(
+                    \`window.location.replace(\${JSON.stringify(ACADEMY_URL)}); true;\`
+                  );
+                }
+              }
             }}
             onLoad={() => setHasLoadedInitialPage(true)}
             onLoadEnd={() => setHasLoadedInitialPage(true)}
+            onRenderProcessGone={() => {
+              setHasLoadedInitialPage(true);
+              webViewRef.current?.reload();
+            }}
+            onContentProcessDidTerminate={() => {
+              setHasLoadedInitialPage(true);
+              webViewRef.current?.reload();
+            }}
             onError={() => {
               setHasLoadedInitialPage(true);
               setHasError(true);

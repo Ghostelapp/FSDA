@@ -583,10 +583,24 @@ export function subscribeToUserProfile(
     doc(db, 'users', uid),
     (snap) => {
       if (snap.exists()) {
-        const data = snap.data() as User;
+        const data = snap.data() as Partial<User>;
         onUpdate({
           ...data,
           id: uid,
+          name: typeof data.name === 'string' && data.name.trim() ? data.name : auth.currentUser?.displayName || 'Kursant',
+          email: typeof data.email === 'string' && data.email.trim() ? data.email : auth.currentUser?.email || 'user@gmail.com',
+          role: data.role === 'admin' ? 'admin' : 'student',
+          status: data.status || 'active',
+          antiBotVerified: data.antiBotVerified ?? true,
+          xp: typeof data.xp === 'number' ? data.xp : 0,
+          level: typeof data.level === 'number' ? data.level : 1,
+          streakDays: typeof data.streakDays === 'number' ? data.streakDays : 0,
+          streakFreezes: typeof data.streakFreezes === 'number' ? data.streakFreezes : 0,
+          weeklyGoalMinutes: typeof data.weeklyGoalMinutes === 'number' ? data.weeklyGoalMinutes : 180,
+          weeklySpentMinutes: typeof data.weeklySpentMinutes === 'number' ? data.weeklySpentMinutes : 0,
+          lastActiveDate: data.lastActiveDate || new Date().toISOString().split('T')[0],
+          createdAt: data.createdAt || new Date().toISOString().split('T')[0],
+          bio: typeof data.bio === 'string' ? data.bio : '',
           isPro: Boolean(data.isPro),
           proPlan: data.proPlan ?? null,
           lives: typeof data.lives === 'number' ? data.lives : 5,
@@ -983,9 +997,12 @@ export async function signInWithGoogleFirebase(): Promise<GoogleSignInResult> {
     // Non-fatal: continue with default persistence when browser blocks local persistence API
   }
 
-  const hasReactNativeWebView =
-    typeof window !== 'undefined' &&
-    typeof (window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView !== 'undefined';
+  const win = typeof window !== 'undefined'
+    ? (window as unknown as { ReactNativeWebView?: unknown; __FSDA_MOBILE_APP__?: boolean })
+    : undefined;
+  const hasReactNativeWebView = Boolean(
+    win && (typeof win.ReactNativeWebView !== 'undefined' || win.__FSDA_MOBILE_APP__ === true)
+  );
 
   const preferRedirect = shouldPreferGoogleRedirectAuth({
     isInstalledMobileApp: detectInstalledMobileAppRuntime(),

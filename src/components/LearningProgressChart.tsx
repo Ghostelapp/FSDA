@@ -46,12 +46,14 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
 
   const totalModulesCount = modules.length || 15;
 
+  const safeCompletedLessons = currentUser.completedLessons ?? [];
+
   // Calculate actually completed modules for current user
   const currentCompletedModulesCount = useMemo(() => {
-    return calculateCompletedModulesCount(modules, currentUser.completedLessons);
-  }, [modules, currentUser.completedLessons]);
+    return calculateCompletedModulesCount(modules, safeCompletedLessons);
+  }, [modules, safeCompletedLessons]);
 
-  const currentCompletedLessonsCount = currentUser.completedLessons.length;
+  const currentCompletedLessonsCount = safeCompletedLessons.length;
 
   // Generate continuous timeline data for the past 30 days ending today
   const full30DaysData = useMemo<DayProgressPoint[]>(() => {

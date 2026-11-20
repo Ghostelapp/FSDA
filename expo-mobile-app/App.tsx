@@ -122,6 +122,10 @@ export default function App() {
             contentInsetAdjustmentBehavior="automatic"
             pullToRefreshEnabled={true}
             userAgent={MOBILE_BROWSER_UA}
+            injectedJavaScriptBeforeContentLoaded="window.__FSDA_MOBILE_APP__ = true; true;"
+            onMessage={() => {
+              // Required on Android so react-native-webview injects window.ReactNativeWebView
+            }}
             onShouldStartLoadWithRequest={(request) => {
               if (shouldKeepInWebView(request.url)) {
                 return true;
@@ -133,10 +137,23 @@ export default function App() {
               setCanGoBack(navState.canGoBack);
               if (!navState.loading) {
                 setHasLoadedInitialPage(true);
+                if (navState.url === 'about:blank' && webViewRef.current) {
+                  webViewRef.current.injectJavaScript(
+                    `window.location.replace(${JSON.stringify(ACADEMY_URL)}); true;`
+                  );
+                }
               }
             }}
             onLoad={() => setHasLoadedInitialPage(true)}
             onLoadEnd={() => setHasLoadedInitialPage(true)}
+            onRenderProcessGone={() => {
+              setHasLoadedInitialPage(true);
+              webViewRef.current?.reload();
+            }}
+            onContentProcessDidTerminate={() => {
+              setHasLoadedInitialPage(true);
+              webViewRef.current?.reload();
+            }}
             onError={() => {
               setHasLoadedInitialPage(true);
               setHasError(true);

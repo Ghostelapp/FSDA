@@ -438,7 +438,7 @@ test('classifyGoogleAuthError handles missing initial state and redirect_uri_mis
   assert.ok(uriErr.recommendedDomains.includes('https://fsda.tech/__/auth/handler'));
 });
 
-test('shouldPreferGoogleRedirectAuth respects ReactNativeWebView bridge and internal-error fallback', () => {
+test('shouldPreferGoogleRedirectAuth respects ReactNativeWebView bridge, mobile Android/iOS UAs, and internal-error fallback', () => {
   assert.equal(
     shouldPreferGoogleRedirectAuth({
       isInstalledMobileApp: false,
@@ -447,6 +447,38 @@ test('shouldPreferGoogleRedirectAuth respects ReactNativeWebView bridge and inte
         'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.135 Mobile Safari/537.36',
     }),
     true
+  );
+
+  // Even without window.ReactNativeWebView (e.g. already-installed Expo APK or mobile Chrome/Safari),
+  // mobile Android & iOS user agents MUST use redirect flow so WebView never hijacks a popup into a black screen
+  assert.equal(
+    shouldPreferGoogleRedirectAuth({
+      isInstalledMobileApp: false,
+      hasReactNativeWebView: false,
+      userAgent:
+        'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36',
+    }),
+    true
+  );
+  assert.equal(
+    shouldPreferGoogleRedirectAuth({
+      isInstalledMobileApp: false,
+      hasReactNativeWebView: false,
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+    }),
+    true
+  );
+
+  // Desktop browsers continue to use popup flow
+  assert.equal(
+    shouldPreferGoogleRedirectAuth({
+      isInstalledMobileApp: false,
+      hasReactNativeWebView: false,
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    }),
+    false
   );
 
   assert.equal(shouldFallbackPopupErrorToRedirect({ code: 'auth/internal-error' }), true);
@@ -488,7 +520,7 @@ test('Firebase auth proxy and static init.json are configured cleanly for fsda.t
   );
 });
 
-test('expo-mobile-app/App.tsx keeps all Google OAuth domains inside WebView with clean mobile User-Agent', () => {
+test('expo-mobile-app/App.tsx keeps all Google OAuth domains inside WebView with clean mobile User-Agent and bridge', () => {
   const expoAppPath = path.resolve(process.cwd(), 'expo-mobile-app/App.tsx');
   const expoAppSource = fs.readFileSync(expoAppPath, 'utf8');
 
@@ -500,6 +532,18 @@ test('expo-mobile-app/App.tsx keeps all Google OAuth domains inside WebView with
   assert.ok(
     expoAppSource.includes('setSupportMultipleWindows={false}'),
     'Expo WebView must keep OAuth redirects in the same WebView window'
+  );
+  assert.ok(
+    expoAppSource.includes('onMessage={'),
+    'Expo WebView must pass onMessage so Android injects window.ReactNativeWebView'
+  );
+  assert.ok(
+    expoAppSource.includes('__FSDA_MOBILE_APP__'),
+    'Expo WebView must inject __FSDA_MOBILE_APP__ before content loads'
+  );
+  assert.ok(
+    expoAppSource.includes("navState.url === 'about:blank'"),
+    'Expo WebView must recover automatically if an auth page closes to about:blank'
   );
   assert.equal(
     expoAppSource.includes('FullStackAcademyExpo/'),

@@ -53,10 +53,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isEn = language === 'en';
-  const levelInfo = calculateLevel(currentUser.xp, language);
-  const isPro = currentUser.isPro;
+  const levelInfo = calculateLevel(currentUser.xp ?? 0, language);
+  const isPro = Boolean(currentUser.isPro);
   const currentLives = isPro ? 5 : (livesInfo.currentLives ?? currentUser.lives ?? 5);
-  const shortDisplayName = currentUser.name.replace(/\s*\(.*?\)\s*/g, '').trim();
+  const shortDisplayName = (currentUser.name || (isEn ? 'Student' : 'Kursant')).replace(/\s*\(.*?\)\s*/g, '').trim();
 
   return (
     <header className="relative z-40 w-full border-b border-slate-800 bg-slate-950/95 transition-colors pt-[env(safe-area-inset-top,0px)]">

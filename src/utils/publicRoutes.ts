@@ -75,10 +75,14 @@ export function isEmbeddedWebViewRuntime(signals: EmbeddedWebViewSignals): boole
 export function detectEmbeddedWebViewRuntime(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    const win = window as unknown as { ReactNativeWebView?: unknown };
+    const win = window as unknown as {
+      ReactNativeWebView?: unknown;
+      __FSDA_MOBILE_APP__?: boolean;
+    };
     return isEmbeddedWebViewRuntime({
       userAgent: window.navigator?.userAgent || '',
-      hasReactNativeWebView: typeof win.ReactNativeWebView !== 'undefined',
+      hasReactNativeWebView:
+        typeof win.ReactNativeWebView !== 'undefined' || win.__FSDA_MOBILE_APP__ === true,
     });
   } catch {
     return false;
@@ -118,7 +122,10 @@ export function detectInstalledMobileAppRuntime(): boolean {
   try {
     const match = (query: string) => Boolean(window.matchMedia?.(query)?.matches);
     const nav = window.navigator as Navigator & { standalone?: boolean };
-    const win = window as unknown as { ReactNativeWebView?: unknown };
+    const win = window as unknown as {
+      ReactNativeWebView?: unknown;
+      __FSDA_MOBILE_APP__?: boolean;
+    };
     return isInstalledMobileAppRuntime({
       displayModeStandalone: match('(display-mode: standalone)'),
       displayModeFullscreen: match('(display-mode: fullscreen)'),
@@ -126,7 +133,8 @@ export function detectInstalledMobileAppRuntime(): boolean {
       navigatorStandalone: nav.standalone === true,
       referrer: typeof document !== 'undefined' ? document.referrer : '',
       userAgent: nav.userAgent || '',
-      hasReactNativeWebView: typeof win.ReactNativeWebView !== 'undefined',
+      hasReactNativeWebView:
+        typeof win.ReactNativeWebView !== 'undefined' || win.__FSDA_MOBILE_APP__ === true,
     });
   } catch {
     return false;
