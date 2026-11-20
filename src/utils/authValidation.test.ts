@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   validateEmailFormat,
   getPasswordStrength,
@@ -435,3 +437,74 @@ test('classifyGoogleAuthError handles missing initial state and redirect_uri_mis
   assert.equal(uriErr.isDomainConfigIssue, true);
   assert.ok(uriErr.recommendedDomains.includes('https://fsda.tech/__/auth/handler'));
 });
+
+test('shouldPreferGoogleRedirectAuth respects ReactNativeWebView bridge and internal-error fallback', () => {
+  assert.equal(
+    shouldPreferGoogleRedirectAuth({
+      isInstalledMobileApp: false,
+      hasReactNativeWebView: true,
+      userAgent:
+        'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.135 Mobile Safari/537.36',
+    }),
+    true
+  );
+
+  assert.equal(shouldFallbackPopupErrorToRedirect({ code: 'auth/internal-error' }), true);
+});
+
+test('Firebase auth proxy and static init.json are configured cleanly for fsda.tech', () => {
+  const initJsonPath = path.resolve(process.cwd(), 'public/__/firebase/init.json');
+  assert.ok(fs.existsSync(initJsonPath), 'public/__/firebase/init.json must exist');
+  const initConfig = JSON.parse(fs.readFileSync(initJsonPath, 'utf8'));
+  assert.equal(initConfig.projectId, 'fsda-1d673');
+  assert.equal(initConfig.authDomain, 'fsda.tech');
+  assert.ok(typeof initConfig.apiKey === 'string' && initConfig.apiKey.length > 10);
+
+  const vercelJsonPath = path.resolve(process.cwd(), 'vercel.json');
+  const vercelConfig = JSON.parse(fs.readFileSync(vercelJsonPath, 'utf8'));
+  const rewrites: Array<{ source: string; destination: string }> = vercelConfig.rewrites || [];
+  assert.ok(
+    rewrites.some(
+      (r) =>
+        r.source === '/__/auth/:path*' &&
+        r.destination === 'https://fsda-1d673.firebaseapp.com/__/auth/:path*'
+    ),
+    'vercel.json must proxy /__/auth/:path* to fsda-1d673.firebaseapp.com'
+  );
+  assert.equal(
+    rewrites.some((r) => r.source === '/__/firebase/init.json'),
+    false,
+    'vercel.json must not rewrite /__/firebase/init.json to missing Firebase Hosting'
+  );
+
+  const headers: Array<{ source: string; headers: Array<{ key: string; value: string }> }> =
+    vercelConfig.headers || [];
+  const initHeaderRule = headers.find((h) => h.source === '/__/firebase/init.json');
+  assert.ok(initHeaderRule, 'vercel.json must set explicit headers for /__/firebase/init.json');
+  assert.ok(
+    initHeaderRule.headers.some(
+      (h) => h.key.toLowerCase() === 'content-type' && h.value.includes('application/json')
+    )
+  );
+});
+
+test('expo-mobile-app/App.tsx keeps all Google OAuth domains inside WebView with clean mobile User-Agent', () => {
+  const expoAppPath = path.resolve(process.cwd(), 'expo-mobile-app/App.tsx');
+  const expoAppSource = fs.readFileSync(expoAppPath, 'utf8');
+
+  assert.ok(expoAppSource.includes("'google.pl'"), 'Expo WebView must allow regional google.pl OAuth hops');
+  assert.ok(
+    expoAppSource.includes("'accounts.youtube.com'"),
+    'Expo WebView must allow accounts.youtube.com session sync hops'
+  );
+  assert.ok(
+    expoAppSource.includes('setSupportMultipleWindows={false}'),
+    'Expo WebView must keep OAuth redirects in the same WebView window'
+  );
+  assert.equal(
+    expoAppSource.includes('FullStackAcademyExpo/'),
+    false,
+    'Expo WebView must not append custom app token to User-Agent (avoids Google disallowed_useragent)'
+  );
+});
+

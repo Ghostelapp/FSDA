@@ -208,8 +208,32 @@ import { WebView } from 'react-native-webview';
 const ACADEMY_URL = 'https://${PRODUCTION_HOST}/app';
 const MOBILE_BROWSER_UA =
   Platform.OS === 'android'
-    ? 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 FullStackAcademyExpo/3.0.0'
-    : undefined;
+    ? 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'
+    : 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+
+const ALLOWED_IN_APP_HOSTS = [
+  '${PRODUCTION_HOST}',
+  'www.${PRODUCTION_HOST}',
+  'google.com',
+  'google.pl',
+  'googleapis.com',
+  'googleusercontent.com',
+  'gstatic.com',
+  'accounts.youtube.com',
+  'firebaseapp.com',
+  'web.app',
+];
+
+function shouldKeepInWebView(url: string): boolean {
+  if (!url || url.startsWith('about:') || url.startsWith('blob:') || url.startsWith('data:')) return true;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+    return ALLOWED_IN_APP_HOSTS.some((host) => parsed.hostname === host || parsed.hostname.endsWith(\`.\${host}\`));
+  } catch {
+    return true;
+  }
+}
 
 export default function App() {
   const webViewRef = useRef<WebView>(null);
@@ -263,9 +287,13 @@ export default function App() {
             domStorageEnabled={true}
             thirdPartyCookiesEnabled={true}
             sharedCookiesEnabled={true}
+            incognito={false}
+            cacheEnabled={true}
+            setSupportMultipleWindows={false}
+            javaScriptCanOpenWindowsAutomatically={true}
             allowsInlineMediaPlayback={true}
             userAgent={MOBILE_BROWSER_UA}
-            applicationNameForUserAgent="FullStackAcademyExpo/3.0.0"
+            onShouldStartLoadWithRequest={(req) => shouldKeepInWebView(req.url)}
             onNavigationStateChange={(nav) => {
               setCanGoBack(nav.canGoBack);
               if (!nav.loading) setHasLoadedInitialPage(true);

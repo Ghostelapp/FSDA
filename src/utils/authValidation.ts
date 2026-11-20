@@ -505,10 +505,11 @@ export function resolveFirebaseAuthDomain(options: {
 export function shouldPreferGoogleRedirectAuth(options: {
   isInstalledMobileApp: boolean;
   userAgent?: string;
+  hasReactNativeWebView?: boolean;
 }): boolean {
-  if (options.isInstalledMobileApp) return true;
+  if (options.isInstalledMobileApp || options.hasReactNativeWebView) return true;
   const ua = (options.userAgent || '').toLowerCase();
-  if (ua.includes('wv') || ua.includes('webview') || ua.includes('fullstackacademyexpo')) {
+  if (ua.includes('; wv)') || ua.includes('webview') || ua.includes('fullstackacademyexpo')) {
     return true;
   }
   return false;
@@ -524,7 +525,8 @@ export function shouldFallbackPopupErrorToRedirect(error: unknown): boolean {
   return (
     combined.includes('popup-blocked') ||
     combined.includes('operation-not-supported-in-this-environment') ||
-    combined.includes('web-storage-unsupported')
+    combined.includes('web-storage-unsupported') ||
+    combined.includes('auth/internal-error')
   );
 }
 

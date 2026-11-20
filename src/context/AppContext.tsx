@@ -134,6 +134,9 @@ import {
   testFirebaseConnection,
   signInWithGoogleFirebase,
   resolveGoogleRedirectSignIn,
+  isGoogleRedirectPending,
+  clearGoogleRedirectPending,
+  buildVerifiedFallbackUser,
   signUpWithEmailFirebase,
   signInWithEmailFirebase,
   sendPasswordResetFirebase,
@@ -614,6 +617,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return 'landing';
     }
   });
+  const activeTabRef = useRef<AppTab>(activeTab);
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(() => {
     try {
       const parsedPublic = parsePublicLocation(window.location.pathname || '/');
@@ -873,7 +880,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     let unsubAnnouncements: (() => void) | null = null;
     let unsubAllUsers: (() => void) | null = null;
 
-    // Resolve any pending Google OAuth redirect sign-in (mobile TWA / standalone PWA)
+    // Resolve any pending Google OAuth redirect sign-in (mobile TWA / Expo WebView / standalone PWA)
+    const hadPendingGoogleRedirect = isGoogleRedirectPending();
+    if (hadPendingGoogleRedirect) {
+      setIsSyncingCloud(true);
+    }
+
     void resolveGoogleRedirectSignIn()
       .then((redirectUser) => {
         if (redirectUser) {
@@ -886,12 +898,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               : `Zalogowano przez Google! Witaj, ${redirectUser.displayName || redirectUser.email || 'Programisto'}.`,
             'badge'
           );
-          if (activeTab === 'landing') {
+          if (activeTabRef.current === 'landing') {
             setActiveTab('dashboard');
           }
+        } else if (hadPendingGoogleRedirect && !auth.currentUser) {
+          setIsSyncingCloud(false);
         }
       })
       .catch((err) => {
+        if (!auth.currentUser) {
+          setIsSyncingCloud(false);
+        }
         const currentHostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
         const classification = classifyGoogleAuthError(err, currentHostname, languageRef.current);
         showToast(classification.toastMessage, 'danger');
@@ -1016,7 +1033,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
         } catch (err) {
           console.error('Failed to initialize cloud user profile:', err);
+          // Even if Firestore temporarily fails, honor the verified Firebase Auth session
+          const fallbackProfile = buildVerifiedFallbackUser(fbUser);
+          setCurrentUser(fallbackProfile);
+          setIsAuthenticated(true);
+          setLivesInfo(calculateRegeneratedLives(fallbackProfile));
         } finally {
+          clearGoogleRedirectPending();
           setIsSyncingCloud(false);
         }
       } else {

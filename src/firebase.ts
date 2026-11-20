@@ -7,6 +7,8 @@ import {
 } from 'firebase/analytics';
 import {
   getAuth,
+  browserLocalPersistence,
+  setPersistence,
   GoogleAuthProvider,
   signInWithPopup,
   signInWithRedirect,
@@ -889,22 +891,121 @@ export type GoogleSignInResult =
   | { status: 'signed-in'; user: FirebaseUser }
   | { status: 'redirecting' };
 
+const GOOGLE_REDIRECT_PENDING_KEY = 'fsda_google_redirect_pending_ts_v1';
+const GOOGLE_REDIRECT_PENDING_TTL_MS = 3 * 60 * 1000;
+
+export function markGoogleRedirectPending(): void {
+  if (typeof window === 'undefined') return;
+  const now = String(Date.now());
+  try {
+    window.sessionStorage.setItem(GOOGLE_REDIRECT_PENDING_KEY, now);
+  } catch {
+    // ignore storage quota/privacy errors
+  }
+  try {
+    window.localStorage.setItem(GOOGLE_REDIRECT_PENDING_KEY, now);
+  } catch {
+    // ignore storage quota/privacy errors
+  }
+}
+
+export function isGoogleRedirectPending(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw =
+      window.sessionStorage.getItem(GOOGLE_REDIRECT_PENDING_KEY) ||
+      window.localStorage.getItem(GOOGLE_REDIRECT_PENDING_KEY);
+    if (!raw) return false;
+    const ts = Number(raw);
+    if (!Number.isFinite(ts)) return false;
+    return Date.now() - ts >= 0 && Date.now() - ts <= GOOGLE_REDIRECT_PENDING_TTL_MS;
+  } catch {
+    return false;
+  }
+}
+
+export function clearGoogleRedirectPending(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
+  } catch {
+    // ignore
+  }
+  try {
+    window.localStorage.removeItem(GOOGLE_REDIRECT_PENDING_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+export function buildVerifiedFallbackUser(fbUser: FirebaseUser): User {
+  const email = (fbUser.email || '').trim().toLowerCase();
+  const isAdminEmail = email === 'zordonzordon1@gmail.com';
+  const displayName = fbUser.displayName || (email ? email.split('@')[0] : 'Kursant');
+  const today = new Date().toISOString().split('T')[0];
+  return {
+    id: fbUser.uid,
+    name: displayName,
+    email: fbUser.email || 'user@gmail.com',
+    role: isAdminEmail ? 'admin' : 'student',
+    status: 'active',
+    antiBotVerified: true,
+    antiBotScore: 100,
+    avatar:
+      fbUser.photoURL ||
+      `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(displayName || fbUser.uid)}`,
+    xp: 0,
+    level: 1,
+    streakDays: 1,
+    lastActiveDate: today,
+    weeklyGoalMinutes: 180,
+    weeklySpentMinutes: 0,
+    completedLessons: [],
+    completedProjects: [],
+    quizScores: {},
+    unlockedBadges: [],
+    claimedRewards: [],
+    savedCode: {},
+    lives: 5,
+    maxLives: 5,
+    isPro: isAdminEmail,
+    proPlan: isAdminEmail ? 'lifetime' : undefined,
+    streakFreezes: 1,
+    bio: 'Zalogowano przez Google Firebase Auth.',
+    createdAt: today,
+  };
+}
+
 export async function signInWithGoogleFirebase(): Promise<GoogleSignInResult> {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch {
+    // Non-fatal: continue with default persistence when browser blocks local persistence API
+  }
+
+  const hasReactNativeWebView =
+    typeof window !== 'undefined' &&
+    typeof (window as unknown as { ReactNativeWebView?: unknown }).ReactNativeWebView !== 'undefined';
+
   const preferRedirect = shouldPreferGoogleRedirectAuth({
     isInstalledMobileApp: detectInstalledMobileAppRuntime(),
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+    hasReactNativeWebView,
   });
 
   if (preferRedirect) {
+    markGoogleRedirectPending();
     await signInWithRedirect(auth, googleProvider);
     return { status: 'redirecting' };
   }
 
   try {
     const result = await signInWithPopup(auth, googleProvider);
+    clearGoogleRedirectPending();
     return { status: 'signed-in', user: result.user };
   } catch (err) {
     if (shouldFallbackPopupErrorToRedirect(err)) {
+      markGoogleRedirectPending();
       await signInWithRedirect(auth, googleProvider);
       return { status: 'redirecting' };
     }
@@ -913,8 +1014,14 @@ export async function signInWithGoogleFirebase(): Promise<GoogleSignInResult> {
 }
 
 export async function resolveGoogleRedirectSignIn(): Promise<FirebaseUser | null> {
-  const result = await getRedirectResult(auth);
-  return result?.user ?? null;
+  try {
+    const result = await getRedirectResult(auth);
+    clearGoogleRedirectPending();
+    return result?.user ?? null;
+  } catch (err) {
+    clearGoogleRedirectPending();
+    throw err;
+  }
 }
 
 export async function signUpWithEmailFirebase(

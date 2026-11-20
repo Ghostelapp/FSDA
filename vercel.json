@@ -6,10 +6,6 @@
       "destination": "https://fsda-1d673.firebaseapp.com/__/auth/:path*"
     },
     {
-      "source": "/__/firebase/init.json",
-      "destination": "https://fsda-1d673.firebaseapp.com/__/firebase/init.json"
-    },
-    {
       "source": "/app",
       "destination": "/app/index.html"
     },
@@ -62,6 +58,19 @@
         {
           "key": "Content-Type",
           "value": "application/json"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    },
+    {
+      "source": "/__/firebase/init.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json; charset=utf-8"
         },
         {
           "key": "Cache-Control",
