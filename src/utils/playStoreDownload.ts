@@ -48,7 +48,7 @@ const EXPO_APP_JSON = JSON.stringify(
       name: 'Full Stack Academy',
       slug: 'fullstack-academy',
       version: '3.0.0',
-      orientation: 'portrait',
+      orientation: 'default',
       icon: './assets/icon.png',
       userInterfaceStyle: 'dark',
       newArchEnabled: false,
@@ -83,7 +83,7 @@ const EXPO_APP_JSON = JSON.stringify(
       },
       android: {
         package: 'com.fullstackacademy.app',
-        versionCode: 4,
+        versionCode: 6,
         adaptiveIcon: {
           foregroundImage: './assets/adaptive-icon.png',
           backgroundColor: '#020617',
@@ -92,7 +92,7 @@ const EXPO_APP_JSON = JSON.stringify(
       },
       plugins: ['./plugins/withFmtConstevalFix.js'],
       extra: {
-        appUrl: `https://${PRODUCTION_HOST}`,
+        appUrl: `https://${PRODUCTION_HOST}/app`,
       },
     },
   },
@@ -205,7 +205,7 @@ import {
 import { registerRootComponent } from 'expo';
 import { WebView } from 'react-native-webview';
 
-const ACADEMY_URL = 'https://${PRODUCTION_HOST}';
+const ACADEMY_URL = 'https://${PRODUCTION_HOST}/app';
 const MOBILE_BROWSER_UA =
   Platform.OS === 'android'
     ? 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 FullStackAcademyExpo/3.0.0'
@@ -369,14 +369,14 @@ android {
         applicationId "com.fullstackacademy.app"
         minSdk 21
         targetSdk 35
-        versionCode 4
+        versionCode 6
         versionName "3.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         manifestPlaceholders = [
             hostName: "${PRODUCTION_HOST}",
-            defaultUrl: "https://${PRODUCTION_HOST}/",
+            defaultUrl: "https://${PRODUCTION_HOST}/app",
             launcherName: "@string/launcher_name",
             assetStatements: '[{ "relation": ["delegate_permission/common.handle_all_urls"], "target": { "namespace": "android_app", "package_name": "com.fullstackacademy.app", "sha256_cert_fingerprints": ["${SHA256_FINGERPRINT}"] } }]'
         ]

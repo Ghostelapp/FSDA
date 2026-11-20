@@ -30,8 +30,8 @@ export default defineConfig(() => {
           theme_color: '#4f46e5',
           background_color: '#020617',
           display: 'standalone',
-          orientation: 'portrait-primary',
-          start_url: '/',
+          orientation: 'any',
+          start_url: '/app',
           scope: '/',
           categories: ['education', 'developer tools'],
           icons: [

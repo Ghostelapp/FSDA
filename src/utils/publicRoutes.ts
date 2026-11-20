@@ -33,6 +33,58 @@ export function normalizePathname(pathname: string): string {
   return collapsed.length > 1 && collapsed.endsWith('/') ? collapsed.slice(0, -1) : collapsed;
 }
 
+export interface MobileAppRuntimeSignals {
+  displayModeStandalone?: boolean;
+  displayModeFullscreen?: boolean;
+  displayModeMinimalUi?: boolean;
+  navigatorStandalone?: boolean;
+  referrer?: string;
+  userAgent?: string;
+}
+
+export const ANDROID_TWA_PACKAGE_ID = 'com.fullstackacademy.app';
+
+export function isInstalledMobileAppRuntime(signals: MobileAppRuntimeSignals): boolean {
+  if (
+    signals.displayModeStandalone ||
+    signals.displayModeFullscreen ||
+    signals.displayModeMinimalUi ||
+    signals.navigatorStandalone
+  ) {
+    return true;
+  }
+
+  const referrer = (signals.referrer || '').trim().toLowerCase();
+  if (referrer.startsWith(`android-app://${ANDROID_TWA_PACKAGE_ID}`)) {
+    return true;
+  }
+
+  const ua = (signals.userAgent || '').trim().toLowerCase();
+  if (ua.includes('fullstackacademyexpo')) {
+    return true;
+  }
+
+  return false;
+}
+
+export function detectInstalledMobileAppRuntime(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const match = (query: string) => Boolean(window.matchMedia?.(query)?.matches);
+    const nav = window.navigator as Navigator & { standalone?: boolean };
+    return isInstalledMobileAppRuntime({
+      displayModeStandalone: match('(display-mode: standalone)'),
+      displayModeFullscreen: match('(display-mode: fullscreen)'),
+      displayModeMinimalUi: match('(display-mode: minimal-ui)'),
+      navigatorStandalone: nav.standalone === true,
+      referrer: typeof document !== 'undefined' ? document.referrer : '',
+      userAgent: nav.userAgent || '',
+    });
+  } catch {
+    return false;
+  }
+}
+
 export function parsePublicLocation(
   pathname: string,
   validLessonIds?: Set<string>

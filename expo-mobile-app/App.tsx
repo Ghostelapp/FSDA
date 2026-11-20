@@ -14,7 +14,7 @@ import {
 import { registerRootComponent } from 'expo';
 import { WebView } from 'react-native-webview';
 
-const ACADEMY_URL = 'https://fsda.tech';
+const ACADEMY_URL = 'https://fsda.tech/app';
 const MOBILE_BROWSER_UA =
   Platform.OS === 'android'
     ? 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36 FullStackAcademyExpo/3.0.0'

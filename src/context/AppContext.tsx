@@ -61,8 +61,10 @@ import {
 } from '../utils/theme';
 import {
   buildPublicPath,
+  detectInstalledMobileAppRuntime,
   getPublicRouteSeoMetadata,
   isPublicTab,
+  normalizePathname,
   parsePublicLocation,
   SITE_BASE_URL,
 } from '../utils/publicRoutes';
@@ -580,13 +582,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       const host = (window.location.hostname || '').toLowerCase();
       const path = window.location.pathname || '/';
+      const normalizedPath = normalizePathname(path);
       const isAppSubdomainOrPath =
         host.startsWith('app.') ||
         host.startsWith('app-') ||
-        path.toLowerCase() === '/app' ||
-        path.toLowerCase().startsWith('/app/');
+        normalizedPath.toLowerCase() === '/app' ||
+        normalizedPath.toLowerCase().startsWith('/app/');
 
       if (isAppSubdomainOrPath) {
+        return 'dashboard';
+      }
+
+      if (normalizedPath === '/' && detectInstalledMobileAppRuntime()) {
+        try {
+          window.history.replaceState(null, '', '/app');
+        } catch {
+          // ignore history errors
+        }
         return 'dashboard';
       }
 
@@ -1541,13 +1553,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
         const host = (window.location.hostname || '').toLowerCase();
         const path = window.location.pathname || '/';
+        const normalizedPath = normalizePathname(path);
         const isAppSubdomainOrPath =
           host.startsWith('app.') ||
           host.startsWith('app-') ||
-          path.toLowerCase() === '/app' ||
-          path.toLowerCase().startsWith('/app/');
+          normalizedPath.toLowerCase() === '/app' ||
+          normalizedPath.toLowerCase().startsWith('/app/');
 
         if (isAppSubdomainOrPath) {
+          setActiveTabState('dashboard');
+          return;
+        }
+
+        if (normalizedPath === '/' && detectInstalledMobileAppRuntime()) {
           setActiveTabState('dashboard');
           return;
         }

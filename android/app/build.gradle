@@ -8,7 +8,7 @@ android {
         applicationId "com.fullstackacademy.app"
         minSdk 21
         targetSdk 35
-        versionCode 5
+        versionCode 6
         versionName "3.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -16,7 +16,7 @@ android {
         // Web app host configuration
         manifestPlaceholders = [
             hostName: "fsda.tech",
-            defaultUrl: "https://fsda.tech/",
+            defaultUrl: "https://fsda.tech/app",
             launcherName: "@string/launcher_name",
             assetStatements: '[{ "relation": ["delegate_permission/common.handle_all_urls"], "target": { "namespace": "android_app", "package_name": "com.fullstackacademy.app", "sha256_cert_fingerprints": ["A6:5D:54:DB:3F:7C:C1:DF:CF:E4:45:1D:26:21:41:15:B8:49:58:D4:D2:D8:93:9D:AF:81:34:4F:81:23:86:23"] } }]'
         ]

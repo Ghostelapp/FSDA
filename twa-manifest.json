@@ -12,7 +12,7 @@
   "navigationDividerColorDark": "#1E293B",
   "backgroundColor": "#020617",
   "enableNotifications": true,
-  "startUrl": "/",
+  "startUrl": "/app",
   "iconUrl": "https://fsda.tech/pwa-512x512.png",
   "maskableIconUrl": "https://fsda.tech/pwa-maskable-512x512.png",
   "splashScreenFadeOutDuration": 300,
@@ -20,7 +20,7 @@
     "path": "./android.keystore",
     "alias": "android"
   },
-  "appVersionCode": 5,
+  "appVersionCode": 6,
   "appVersionName": "3.0.0",
   "shortcuts": [
     {

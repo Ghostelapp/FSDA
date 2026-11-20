@@ -43,7 +43,7 @@
     },
     "android": {
       "package": "com.fullstackacademy.app",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#020617"
@@ -57,7 +57,7 @@
       "./plugins/withFmtConstevalFix.js"
     ],
     "extra": {
-      "appUrl": "https://fsda.tech"
+      "appUrl": "https://fsda.tech/app"
     }
   }
 }

@@ -29,7 +29,8 @@ test('twa-manifest.json and public/twa-manifest.json are identical and pass Goog
   assert.equal(validation.valid, true, `Errors: ${validation.errors.join(', ')}`);
   assert.equal(rootManifest.packageId, 'com.fullstackacademy.app');
   assert.equal(rootManifest.host, 'fsda.tech');
-  assert.equal(rootManifest.appVersionCode, 4);
+  assert.equal(rootManifest.startUrl, '/app');
+  assert.equal(rootManifest.appVersionCode, 6);
   assert.equal(rootManifest.appVersionName, '3.0.0');
 });
 

@@ -5,6 +5,7 @@ import {
   parsePublicLocation,
   buildPublicPath,
   isPublicTab,
+  isInstalledMobileAppRuntime,
   getPublicRouteSeoMetadata,
 } from './publicRoutes';
 
@@ -111,5 +112,53 @@ test('index.html and generate-seo-pages hide static crawler HTML during JS boot 
   assert.match(seoGen, /<div class="fsda-seo-fallback">/);
   assert.match(seoGen, /FSDA_ROOT_START/);
 });
+
+test('isInstalledMobileAppRuntime detects Android TWA, iOS PWA, and Expo WebView without affecting web browsers', () => {
+  // Normal desktop & mobile browsers stay on public landing page
+  assert.equal(
+    isInstalledMobileAppRuntime({
+      displayModeStandalone: false,
+      navigatorStandalone: false,
+      referrer: 'https://www.google.com/',
+      userAgent: 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 Chrome/131.0.0.0 Mobile Safari/537.36',
+    }),
+    false
+  );
+
+  // Links clicked from Gmail / Telegram on Android must NOT falsely trigger standalone app mode
+  assert.equal(
+    isInstalledMobileAppRuntime({
+      displayModeStandalone: false,
+      referrer: 'android-app://com.google.android.gm/',
+      userAgent: 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 Chrome/131.0.0.0 Mobile Safari/537.36',
+    }),
+    false
+  );
+
+  // Android TWA (Google Play app) via standalone display mode or package referrer
+  assert.equal(
+    isInstalledMobileAppRuntime({ displayModeStandalone: true }),
+    true
+  );
+  assert.equal(
+    isInstalledMobileAppRuntime({ referrer: 'android-app://com.fullstackacademy.app/' }),
+    true
+  );
+
+  // iOS home screen PWA
+  assert.equal(
+    isInstalledMobileAppRuntime({ navigatorStandalone: true }),
+    true
+  );
+
+  // Expo mobile WebView app
+  assert.equal(
+    isInstalledMobileAppRuntime({
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0) AppleWebKit/605.1.15 FullStackAcademyExpo/3.0.0',
+    }),
+    true
+  );
+});
+
 
 
