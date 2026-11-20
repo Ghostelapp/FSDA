@@ -22,6 +22,7 @@ import {
   initializeFirestore,
   doc,
   setDoc,
+  updateDoc,
   getDoc,
   getDocs,
   getDocFromServer,
@@ -49,6 +50,9 @@ import {
 } from './utils/visitorAnalytics';
 import {
   CloudCallableResult,
+  buildAdminProUpdatePayload,
+  buildAdminRefillLivesPayload,
+  buildAdminStatusUpdatePayload,
   classifyCloudCallableError,
   serializeUserProfileFields,
   serializeUserProgressForFirestore,
@@ -205,22 +209,85 @@ export async function updateLivesInCloud(
   targetUid?: string,
   proof?: Record<string, unknown>
 ): Promise<CloudCallableResult<void>> {
-  return invokeCloudCallable('updateLives', { action, targetUid, proof });
+  const callableRes = await invokeCloudCallable<
+    { action: CloudLifeAction; targetUid?: string; proof?: Record<string, unknown> },
+    void
+  >('updateLives', { action, targetUid, proof });
+  if (callableRes.status === 'ok' || callableRes.status === 'rejected') {
+    return callableRes;
+  }
+
+  if (action === 'admin-refill' && targetUid) {
+    const path = `users/${targetUid}`;
+    try {
+      await updateDoc(doc(db, 'users', targetUid), buildAdminRefillLivesPayload());
+      return { status: 'ok' };
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+      return { status: 'rejected', error };
+    }
+  }
+
+  return callableRes;
 }
 
 export async function setUserStatusInCloud(
   targetUid: string,
-  status: string
+  status: string,
+  banReason?: string
 ): Promise<CloudCallableResult<void>> {
-  return invokeCloudCallable('setUserStatus', { targetUid, status });
+  const callableRes = await invokeCloudCallable<{ targetUid: string; status: string }, void>(
+    'setUserStatus',
+    { targetUid, status }
+  );
+  if (callableRes.status === 'ok' || callableRes.status === 'rejected') {
+    return callableRes;
+  }
+
+  const path = `users/${targetUid}`;
+  try {
+    await updateDoc(doc(db, 'users', targetUid), buildAdminStatusUpdatePayload(status, banReason));
+    return { status: 'ok' };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+    return { status: 'rejected', error };
+  }
 }
 
 export async function setUserProStatusInCloud(
   targetUid: string,
   enabled: boolean,
-  plan: 'monthly' | 'yearly'
+  plan: 'monthly' | 'yearly' = 'yearly'
 ): Promise<CloudCallableResult<void>> {
-  return invokeCloudCallable('setUserProStatus', { targetUid, enabled, plan });
+  const callableRes = await invokeCloudCallable<
+    { targetUid: string; enabled: boolean; plan: 'monthly' | 'yearly' },
+    void
+  >('setUserProStatus', { targetUid, enabled, plan });
+  if (callableRes.status === 'ok' || callableRes.status === 'rejected') {
+    return callableRes;
+  }
+
+  const path = `users/${targetUid}`;
+  try {
+    await updateDoc(doc(db, 'users', targetUid), buildAdminProUpdatePayload(enabled, plan));
+    return { status: 'ok' };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+    return { status: 'rejected', error };
+  }
+}
+
+export async function deleteUserProfileFromCloud(
+  targetUid: string
+): Promise<CloudCallableResult<void>> {
+  const path = `users/${targetUid}`;
+  try {
+    await deleteDoc(doc(db, 'users', targetUid));
+    return { status: 'ok' };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+    return { status: 'rejected', error };
+  }
 }
 
 export enum OperationType {
@@ -501,7 +568,11 @@ export function subscribeToUserProfile(
         const data = snap.data() as User;
         onUpdate({
           ...data,
-          id: data.id || uid,
+          id: uid,
+          isPro: Boolean(data.isPro),
+          proPlan: data.proPlan ?? null,
+          lives: typeof data.lives === 'number' ? data.lives : 5,
+          maxLives: typeof data.maxLives === 'number' ? data.maxLives : 5,
           completedLessons: Array.isArray(data.completedLessons) ? data.completedLessons : [],
           completedProjects: Array.isArray(data.completedProjects) ? data.completedProjects : [],
           unlockedBadges: Array.isArray(data.unlockedBadges) ? data.unlockedBadges : [],
@@ -760,7 +831,7 @@ export function subscribeAllUsersForAdmin(
       snap.forEach((docSnap) => {
         const data = docSnap.data() as Partial<User>;
         usersList.push({
-          id: data.id || docSnap.id,
+          id: docSnap.id,
           name: data.name || 'Kursant Google',
           email: data.email || 'user@gmail.com',
           role: data.role === 'admin' ? 'admin' : 'student',

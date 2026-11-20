@@ -148,6 +148,7 @@ import {
   updateLivesInCloud,
   setUserStatusInCloud,
   setUserProStatusInCloud,
+  deleteUserProfileFromCloud,
   CloudLifeAction,
   subscribeToUserProfile,
   subscribeToCloudAnnouncements,
@@ -908,6 +909,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             lastActiveDate: cloudProfile.lastActiveDate,
             lives: cloudProfile.lives,
             isPro: cloudProfile.isPro,
+            proPlan: cloudProfile.proPlan ?? null,
             name: cloudProfile.name,
             bio: cloudProfile.bio,
             avatar: cloudProfile.avatar,
@@ -940,6 +942,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               lastActiveDate: remoteUser.lastActiveDate,
               lives: remoteUser.lives,
               isPro: remoteUser.isPro,
+              proPlan: remoteUser.proPlan ?? null,
               name: remoteUser.name,
               bio: remoteUser.bio,
               avatar: remoteUser.avatar,
@@ -955,6 +958,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             if (remoteHash !== lastCloudSyncHashRef.current) {
               lastCloudSyncHashRef.current = remoteHash;
               setCurrentUser(remoteUser);
+              setLivesInfo(calculateRegeneratedLives(remoteUser));
               setAllUsers((prev) =>
                 prev.map((u) => (u.id === remoteUser.id ? remoteUser : u))
               );
@@ -2145,6 +2149,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     }
 
+    if (firebaseUid && isCloudConnected) {
+      void deleteUserProfileFromCloud(userId).then((res) => {
+        if (res.status === 'ok') {
+          showToast(
+            isEn
+              ? `Account ${userToDelete.name} deleted from Firestore.`
+              : `Konto ${userToDelete.name} zostało usunięte z bazy Firestore.`,
+            'info'
+          );
+        } else {
+          setAllUsers((prev) => (prev.some((u) => u.id === userToDelete.id) ? prev : [...prev, userToDelete]));
+          showToast(
+            isEn
+              ? 'Failed to delete user document from Firestore.'
+              : 'Nie udało się usunąć konta użytkownika z bazy Firestore.',
+            'danger'
+          );
+        }
+      });
+      return;
+    }
+
     showToast(
       isEn ? `Account ${userToDelete.name} deleted.` : `Konto ${userToDelete.name} zostało usunięte z bazy danych.`,
       'info'
@@ -2158,6 +2184,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       showToast(isEn ? 'Administrator permission required.' : 'Brak uprawnień administratora.', 'danger');
       return;
     }
+    const previousUser = allUsers.find((u) => u.id === userId) || null;
     setAllUsers((prev) =>
       prev.map((u) => {
         if (u.id === userId) {
@@ -2166,14 +2193,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return u;
       })
     );
-    if (firebaseUid && isCloudConnected) {
-      void setUserStatusInCloud(userId, status).then((res) => {
-        if (res.status === 'rejected') {
-          showToast(isEn ? 'Failed to update account status in cloud.' : 'Nie udało się zmienić statusu konta w chmurze.', 'danger');
-        }
-      });
-    }
-
     if (currentUser.id === userId && status !== 'active') {
       setIsAuthenticated(false);
       setCurrentUser(createGuestUser(lang));
@@ -2195,6 +2214,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       : status === 'suspended'
       ? 'zawieszone'
       : 'zablokowane';
+
+    if (firebaseUid && isCloudConnected) {
+      void setUserStatusInCloud(userId, status, reason).then((res) => {
+        if (res.status === 'ok') {
+          showToast(
+            isEn ? `Account status saved: ${actionText}.` : `Zapisano status konta w bazie: ${actionText}.`,
+            status === 'active' ? 'success' : 'danger'
+          );
+        } else {
+          if (previousUser) {
+            setAllUsers((prev) => prev.map((u) => (u.id === userId ? previousUser : u)));
+            if (currentUser.id === userId) {
+              setCurrentUser(previousUser);
+            }
+          }
+          showToast(
+            isEn ? 'Failed to update account status in Firestore.' : 'Nie udało się zapisać statusu konta w bazie Firestore.',
+            'danger'
+          );
+        }
+      });
+      return;
+    }
+
     showToast(
       isEn ? `Account status updated: ${actionText}.` : `Status konta został zmieniony: ${actionText}.`,
       status === 'active' ? 'success' : 'danger'
@@ -2262,11 +2305,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       showToast(isEn ? 'Administrator permission required.' : 'Brak uprawnień administratora.', 'danger');
       return;
     }
+    const previousUser = allUsers.find((u) => u.id === userId) || null;
     setAllUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, antiBotVerified: true, antiBotScore: 100, status: 'active' } : u))
     );
     if (currentUser.id === userId) {
       setCurrentUser((prev) => ({ ...prev, antiBotVerified: true, antiBotScore: 100, status: 'active' }));
+    }
+    if (firebaseUid && isCloudConnected) {
+      void setUserStatusInCloud(userId, 'active').then((res) => {
+        if (res.status === 'ok') {
+          showToast(
+            isEn
+              ? 'Account verified and saved in Firestore.'
+              : 'Konto zostało zweryfikowane i zapisane w bazie Firestore.',
+            'success'
+          );
+        } else {
+          if (previousUser) {
+            setAllUsers((prev) => prev.map((u) => (u.id === userId ? previousUser : u)));
+          }
+          showToast(
+            isEn
+              ? 'Failed to save verification status in Firestore.'
+              : 'Nie udało się zapisać weryfikacji konta w bazie Firestore.',
+            'danger'
+          );
+        }
+      });
+      return;
     }
     showToast(
       isEn
@@ -2282,12 +2349,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       showToast(isEn ? 'Administrator permission required.' : 'Brak uprawnień administratora.', 'danger');
       return;
     }
+    const previousUser = allUsers.find((u) => u.id === userId) || null;
     setAllUsers((prev) =>
       prev.map((u) => {
         if (u.id === userId) {
           const updated = setProStatus(u, isPro, plan);
           if (currentUser.id === userId) {
             setCurrentUser(updated);
+            setLivesInfo(calculateRegeneratedLives(updated));
           }
           return updated;
         }
@@ -2296,10 +2365,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
     if (firebaseUid && isCloudConnected) {
       void setUserProStatusInCloud(userId, isPro, plan).then((res) => {
-        if (res.status === 'rejected') {
-          showToast(isEn ? 'Failed to update PRO status in cloud.' : 'Nie udało się zmienić uprawnień PRO w chmurze.', 'danger');
+        if (res.status === 'ok') {
+          showToast(
+            isEn
+              ? isPro
+                ? 'PRO subscription granted and saved in Firestore.'
+                : 'PRO subscription revoked and saved in Firestore.'
+              : isPro
+              ? 'Nadano subskrypcję PRO i zapisano w bazie Firestore.'
+              : 'Odebrano subskrypcję PRO i zapisano w bazie Firestore.',
+            'badge'
+          );
+        } else {
+          if (previousUser) {
+            setAllUsers((prev) => prev.map((u) => (u.id === userId ? previousUser : u)));
+            if (currentUser.id === userId) {
+              setCurrentUser(previousUser);
+              setLivesInfo(calculateRegeneratedLives(previousUser));
+            }
+          }
+          showToast(
+            isEn
+              ? 'Failed to persist PRO status in Firestore. Verify admin permissions or that the account exists in cloud.'
+              : 'Nie udało się zapisać uprawnień PRO w bazie Firestore. Sprawdź uprawnienia admina lub czy konto istnieje w chmurze.',
+            'danger'
+          );
         }
       });
+      return;
     }
     showToast(
       isEn ? 'Updated user PRO subscription status.' : 'Zaktualizowano uprawnienia PRO dla użytkownika.',
@@ -2313,12 +2406,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       showToast(isEn ? 'Administrator permission required.' : 'Brak uprawnień administratora.', 'danger');
       return;
     }
+    const previousUser = allUsers.find((u) => u.id === userId) || null;
     setAllUsers((prev) =>
       prev.map((u) => {
         if (u.id === userId) {
           const updated = refillAllLives(u);
           if (currentUser.id === userId) {
             setCurrentUser(updated);
+            setLivesInfo(calculateRegeneratedLives(updated));
           }
           return updated;
         }
@@ -2327,10 +2422,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
     if (firebaseUid && isCloudConnected) {
       void updateLivesInCloud('admin-refill', userId).then((res) => {
-        if (res.status === 'rejected') {
-          showToast(isEn ? 'Failed to refill hearts in cloud.' : 'Nie udało się uzupełnić serc w chmurze.', 'danger');
+        if (res.status === 'ok') {
+          showToast(
+            isEn
+              ? 'User hearts refilled to maximum (5/5) and saved in Firestore.'
+              : 'Uzupełniono serca użytkownika (5/5) i zapisano w bazie Firestore.',
+            'success'
+          );
+        } else {
+          if (previousUser) {
+            setAllUsers((prev) => prev.map((u) => (u.id === userId ? previousUser : u)));
+            if (currentUser.id === userId) {
+              setCurrentUser(previousUser);
+              setLivesInfo(calculateRegeneratedLives(previousUser));
+            }
+          }
+          showToast(
+            isEn ? 'Failed to refill hearts in Firestore.' : 'Nie udało się zapisać uzupełnienia serc w bazie Firestore.',
+            'danger'
+          );
         }
       });
+      return;
     }
     showToast(
       isEn ? 'User hearts refilled to maximum (5/5).' : 'Serca użytkownika zostały uzupełnione do maksimum (5/5).',

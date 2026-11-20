@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildAdminProUpdatePayload,
+  buildAdminRefillLivesPayload,
+  buildAdminStatusUpdatePayload,
   classifyCloudCallableError,
   serializeUserProfileFields,
   serializeUserProgressForFirestore,
@@ -100,3 +103,44 @@ test('serializeUserProfileFields only exposes profile fields for hardened rule f
   assert.equal('xp' in payload, false);
   assert.equal('completedLessons' in payload, false);
 });
+
+test('buildAdminProUpdatePayload builds Firestore-rule-compliant grant and revoke payloads', () => {
+  const granted = buildAdminProUpdatePayload(true, 'yearly', '2026-11-20T08:00:00.000Z');
+  assert.deepEqual(granted, {
+    isPro: true,
+    proPlan: 'yearly',
+    lives: 5,
+    maxLives: 5,
+    updatedAt: '2026-11-20T08:00:00.000Z',
+  });
+
+  const grantedMonthly = buildAdminProUpdatePayload(true, 'monthly', '2026-11-20T08:00:00.000Z');
+  assert.equal(grantedMonthly.isPro, true);
+  assert.equal(grantedMonthly.proPlan, 'monthly');
+
+  const revoked = buildAdminProUpdatePayload(false, 'yearly', '2026-11-20T08:00:00.000Z');
+  assert.deepEqual(revoked, {
+    isPro: false,
+    proPlan: null,
+    updatedAt: '2026-11-20T08:00:00.000Z',
+  });
+});
+
+test('buildAdminStatusUpdatePayload and buildAdminRefillLivesPayload validate fields cleanly', () => {
+  const banned = buildAdminStatusUpdatePayload('banned', 'Spam', '2026-11-20T08:00:00.000Z');
+  assert.deepEqual(banned, {
+    status: 'banned',
+    banReason: 'Spam',
+    updatedAt: '2026-11-20T08:00:00.000Z',
+  });
+
+  assert.throws(() => buildAdminStatusUpdatePayload('invalid_status'));
+
+  const refilled = buildAdminRefillLivesPayload('2026-11-20T08:00:00.000Z');
+  assert.deepEqual(refilled, {
+    lives: 5,
+    maxLives: 5,
+    updatedAt: '2026-11-20T08:00:00.000Z',
+  });
+});
+

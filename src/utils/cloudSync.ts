@@ -124,3 +124,54 @@ export function serializeUserProgressForFirestore(uid: string, user: User): Reco
       : {}),
   };
 }
+
+const VALID_ADMIN_STATUSES = new Set(['active', 'suspended', 'banned', 'pending_verification']);
+
+export function buildAdminProUpdatePayload(
+  enabled: boolean,
+  plan: 'monthly' | 'yearly' = 'yearly',
+  nowIso: string = new Date().toISOString()
+): Record<string, unknown> {
+  const safeEnabled = Boolean(enabled);
+  const safePlan = plan === 'monthly' ? 'monthly' : 'yearly';
+  if (safeEnabled) {
+    return {
+      isPro: true,
+      proPlan: safePlan,
+      lives: 5,
+      maxLives: 5,
+      updatedAt: nowIso.slice(0, 60),
+    };
+  }
+  return {
+    isPro: false,
+    proPlan: null,
+    updatedAt: nowIso.slice(0, 60),
+  };
+}
+
+export function buildAdminStatusUpdatePayload(
+  status: string,
+  banReason?: string,
+  nowIso: string = new Date().toISOString()
+): Record<string, unknown> {
+  if (!VALID_ADMIN_STATUSES.has(status)) {
+    throw new Error(`Invalid user status: ${status}`);
+  }
+  return {
+    status,
+    ...(banReason ? { banReason: banReason.slice(0, 300) } : {}),
+    updatedAt: nowIso.slice(0, 60),
+  };
+}
+
+export function buildAdminRefillLivesPayload(
+  nowIso: string = new Date().toISOString()
+): Record<string, unknown> {
+  return {
+    lives: 5,
+    maxLives: 5,
+    updatedAt: nowIso.slice(0, 60),
+  };
+}
+
