@@ -205,7 +205,7 @@ export const DashboardView: React.FC = () => {
             </div>
           </div>
           <p className="mt-2 sm:mt-3 text-xl sm:text-2xl font-black text-white">
-            {currentUser.xp} <span className="text-xs font-normal text-slate-400">XP</span>
+            {currentUser.xp ?? 0} <span className="text-xs font-normal text-slate-400">XP</span>
           </p>
           <p className="mt-1 text-[10px] sm:text-[11px] text-emerald-400 flex items-center gap-1 font-medium truncate">
             <TrendingUp className="h-3 w-3 shrink-0" />

@@ -143,26 +143,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
           <div
             title={
               isEn
-                ? `Your learning streak: ${currentUser.streakDays} days in a row!`
-                : `Twoja seria nauki: ${currentUser.streakDays} dni z rzędu!`
+                ? `Your learning streak: ${currentUser.streakDays ?? 0} days in a row!`
+                : `Twoja seria nauki: ${currentUser.streakDays ?? 0} dni z rzędu!`
             }
             className="hidden sm:flex items-center gap-1 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2 py-1 text-xs font-semibold text-amber-400 whitespace-nowrap shrink-0"
           >
             <Flame className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-            <span>{currentUser.streakDays}d</span>
+            <span>{currentUser.streakDays ?? 0}d</span>
           </div>
 
           {/* XP & Level Indicator */}
           <div
             title={
               isEn
-                ? `Level ${levelInfo.level}: ${levelInfo.title} (${currentUser.xp} XP)`
-                : `Poziom ${levelInfo.level}: ${levelInfo.title} (${currentUser.xp} XP)`
+                ? `Level ${levelInfo.level}: ${levelInfo.title} (${currentUser.xp ?? 0} XP)`
+                : `Poziom ${levelInfo.level}: ${levelInfo.title} (${currentUser.xp ?? 0} XP)`
             }
             className="hidden sm:flex items-center gap-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 text-xs whitespace-nowrap shrink-0"
           >
             <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
-            <span className="font-bold text-indigo-300 tabular-nums">{currentUser.xp} XP</span>
+            <span className="font-bold text-indigo-300 tabular-nums">{currentUser.xp ?? 0} XP</span>
           </div>
 
           {/* Sound FX Toggle (desktop / tablet) */}

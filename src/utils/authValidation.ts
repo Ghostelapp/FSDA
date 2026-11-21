@@ -356,6 +356,125 @@ export function createGuestUser(language: AppLanguage = 'pl'): User {
   };
 }
 
+export function sanitizeSafeAvatarUrl(rawUrl: unknown, fallbackSeed: string): string {
+  const fallback = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fallbackSeed || 'Student')}`;
+  if (typeof rawUrl !== 'string') return fallback;
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return fallback;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      return parsed.toString();
+    }
+  } catch {
+    // Reject relative/malformed/non-HTTP(S) schemes such as javascript: or data:
+  }
+  return fallback;
+}
+
+function toSafeNonNegativeInt(value: unknown, fallback: number, min = 0, max = 1_000_000): number {
+  const num = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(min, Math.min(max, Math.floor(num)));
+}
+
+/**
+ * Safely normalizes any User payload hydrated from localStorage, Firestore, or backups
+ * so numeric stats and array collections are always valid and never render NaN/undefined.
+ */
+export function normalizeUserProfile(
+  rawUser: Partial<User>,
+  options?: { language?: AppLanguage; stripPassword?: boolean }
+): User {
+  const todayDate = new Date().toISOString().split('T')[0];
+  const safeName =
+    typeof rawUser.name === 'string' && rawUser.name.trim()
+      ? rawUser.name.trim()
+      : options?.language === 'en'
+      ? 'Academy Student'
+      : 'Kursant Akademii';
+  const safeId =
+    typeof rawUser.id === 'string' && rawUser.id.trim() ? rawUser.id.trim() : `user-${Date.now()}`;
+  const safeEmail =
+    typeof rawUser.email === 'string' && rawUser.email.trim()
+      ? rawUser.email.trim()
+      : 'kursant@akademia.pl';
+
+  const safeXp = toSafeNonNegativeInt(rawUser.xp, 0);
+  const safeMaxLives = toSafeNonNegativeInt(rawUser.maxLives, 5, 1, 10);
+  const safeLives = toSafeNonNegativeInt(rawUser.lives, safeMaxLives, 0, safeMaxLives);
+  const safeWeeklyGoal = toSafeNonNegativeInt(rawUser.weeklyGoalMinutes, 180, 15, 10_080);
+  const safeWeeklySpent = toSafeNonNegativeInt(rawUser.weeklySpentMinutes, 0, 0, 100_000);
+  const safeTodaySpent =
+    rawUser.todaySpentMinutes !== undefined
+      ? toSafeNonNegativeInt(rawUser.todaySpentMinutes, 0, 0, 1_440)
+      : undefined;
+
+  const normalized: User = {
+    ...rawUser,
+    id: safeId,
+    name: safeName,
+    email: safeEmail,
+    role: rawUser.role === 'admin' ? 'admin' : 'student',
+    status:
+      rawUser.status === 'active' ||
+      rawUser.status === 'suspended' ||
+      rawUser.status === 'pending_verification' ||
+      rawUser.status === 'banned'
+        ? rawUser.status
+        : 'active',
+    antiBotVerified: typeof rawUser.antiBotVerified === 'boolean' ? rawUser.antiBotVerified : true,
+    antiBotScore: toSafeNonNegativeInt(rawUser.antiBotScore, 100, 0, 100),
+    avatar: sanitizeSafeAvatarUrl(rawUser.avatar, safeName || safeId),
+    xp: safeXp,
+    level: toSafeNonNegativeInt(rawUser.level, Math.max(1, Math.floor(safeXp / 500) + 1), 1, 999),
+    streakDays: toSafeNonNegativeInt(rawUser.streakDays, 0, 0, 36_500),
+    lastActiveDate:
+      typeof rawUser.lastActiveDate === 'string' && rawUser.lastActiveDate.trim()
+        ? rawUser.lastActiveDate.trim()
+        : todayDate,
+    weeklyGoalMinutes: safeWeeklyGoal,
+    weeklySpentMinutes: safeWeeklySpent,
+    ...(safeTodaySpent !== undefined ? { todaySpentMinutes: safeTodaySpent } : {}),
+    completedLessons: Array.isArray(rawUser.completedLessons)
+      ? rawUser.completedLessons.filter((item): item is string => typeof item === 'string')
+      : [],
+    completedProjects: Array.isArray(rawUser.completedProjects)
+      ? rawUser.completedProjects.filter((item): item is string => typeof item === 'string')
+      : [],
+    unlockedBadges: Array.isArray(rawUser.unlockedBadges)
+      ? rawUser.unlockedBadges.filter((item): item is string => typeof item === 'string')
+      : [],
+    claimedRewards: Array.isArray(rawUser.claimedRewards)
+      ? rawUser.claimedRewards.filter((item): item is string => typeof item === 'string')
+      : [],
+    quizScores:
+      rawUser.quizScores && typeof rawUser.quizScores === 'object' && !Array.isArray(rawUser.quizScores)
+        ? rawUser.quizScores
+        : {},
+    savedCode:
+      rawUser.savedCode && typeof rawUser.savedCode === 'object' && !Array.isArray(rawUser.savedCode)
+        ? rawUser.savedCode
+        : {},
+    lives: safeLives,
+    maxLives: safeMaxLives,
+    isPro: Boolean(rawUser.isPro),
+    proPlan: rawUser.proPlan ?? null,
+    streakFreezes: toSafeNonNegativeInt(rawUser.streakFreezes, 0, 0, 100),
+    bio: typeof rawUser.bio === 'string' ? rawUser.bio : '',
+    createdAt:
+      typeof rawUser.createdAt === 'string' && rawUser.createdAt.trim()
+        ? rawUser.createdAt.trim()
+        : todayDate,
+  };
+
+  if (options?.stripPassword) {
+    delete normalized.password;
+  }
+
+  return normalized;
+}
+
 export interface ProtectedRouteOptions {
   requiredRole?: UserRole;
   allowGuests?: boolean;

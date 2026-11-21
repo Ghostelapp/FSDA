@@ -99,7 +99,22 @@ export const Sidebar: React.FC = () => {
         { id: 'deployment', label: 'Przewodnik Wdrożenia', icon: BookMarked },
       ];
 
-  const weeklyPercent = Math.min(100, Math.round((currentUser.weeklySpentMinutes / (currentUser.weeklyGoalMinutes || 180)) * 100));
+  const safeCompletedLessonsCount = Array.isArray(currentUser.completedLessons)
+    ? currentUser.completedLessons.length
+    : 0;
+  const safeWeeklyGoalMinutes =
+    typeof currentUser.weeklyGoalMinutes === 'number' &&
+    Number.isFinite(currentUser.weeklyGoalMinutes) &&
+    currentUser.weeklyGoalMinutes > 0
+      ? currentUser.weeklyGoalMinutes
+      : 180;
+  const safeWeeklySpentMinutes =
+    typeof currentUser.weeklySpentMinutes === 'number' &&
+    Number.isFinite(currentUser.weeklySpentMinutes) &&
+    currentUser.weeklySpentMinutes >= 0
+      ? currentUser.weeklySpentMinutes
+      : 0;
+  const weeklyPercent = Math.min(100, Math.round((safeWeeklySpentMinutes / safeWeeklyGoalMinutes) * 100));
 
   const renderNavGroup = (title: string, items: SidebarNavItem[]) => (
     <div className="space-y-1 pt-2">
@@ -202,13 +217,13 @@ export const Sidebar: React.FC = () => {
         <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400">
           <span>{isEn ? 'Completed' : 'Ukończono'}</span>
           <span className="font-mono text-indigo-300 font-bold">
-            {currentUser.completedLessons.length} / {allLessons.length} {isEn ? 'lessons' : 'lekcji'}
+            {safeCompletedLessonsCount} / {allLessons.length} {isEn ? 'lessons' : 'lekcji'}
           </span>
         </div>
         <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(100, Math.round((currentUser.completedLessons.length / (allLessons.length || 96)) * 100))}%` }}
+            style={{ width: `${Math.min(100, Math.round((safeCompletedLessonsCount / (allLessons.length || 96)) * 100))}%` }}
           />
         </div>
         <button
@@ -229,7 +244,7 @@ export const Sidebar: React.FC = () => {
             <span>{isEn ? 'Weekly goal' : 'Cel tygodniowy'}</span>
           </div>
           <span className="font-mono text-[11px] font-semibold text-slate-400">
-            {currentUser.weeklySpentMinutes} / {currentUser.weeklyGoalMinutes} min
+            {safeWeeklySpentMinutes} / {safeWeeklyGoalMinutes} min
           </span>
         </div>
         <div className="mt-2 h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
@@ -244,8 +259,8 @@ export const Sidebar: React.FC = () => {
               ? 'Goal achieved! Amazing work.'
               : 'Cel zrealizowany! Wspaniała robota.'
             : isEn
-            ? `${Math.max(0, currentUser.weeklyGoalMinutes - currentUser.weeklySpentMinutes)} min left to reach your goal`
-            : `Pozostało ${Math.max(0, currentUser.weeklyGoalMinutes - currentUser.weeklySpentMinutes)} min do osiągnięcia celu`}
+            ? `${Math.max(0, safeWeeklyGoalMinutes - safeWeeklySpentMinutes)} min left to reach your goal`
+            : `Pozostało ${Math.max(0, safeWeeklyGoalMinutes - safeWeeklySpentMinutes)} min do osiągnięcia celu`}
         </p>
       </div>
 

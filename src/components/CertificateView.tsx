@@ -7,6 +7,7 @@ import {
   CertificateVerificationResult,
 } from '../utils/developerSimulators';
 import { isGuestUser } from '../utils/authValidation';
+import { SITE_BASE_URL } from '../utils/publicRoutes';
 import { 
   Award, 
   Printer, 
@@ -36,7 +37,7 @@ export const CertificateView: React.FC = () => {
     currentUser.role === 'admin' || (lessonsCount >= 3 && projectsCount >= 1);
 
   const verificationCode = generateCertificateCode(currentUser);
-  const verificationUrl = `https://academy.fullstack.dev/verify/${verificationCode}`;
+  const verificationUrl = `${SITE_BASE_URL}/verify/${verificationCode}`;
 
   const [lookupInput, setLookupInput] = useState(verificationCode);
   const [lookupResult, setLookupResult] = useState<CertificateVerificationResult | null>(() =>
@@ -44,7 +45,8 @@ export const CertificateView: React.FC = () => {
   );
 
   useEffect(() => {
-    setLookupResult(verifyCertificateCode(lookupInput, allUsers, currentUser, language));
+    setLookupInput(verificationCode);
+    setLookupResult(verifyCertificateCode(verificationCode, allUsers, currentUser, language));
   }, [language, verificationCode]);
 
   const handlePrint = () => {

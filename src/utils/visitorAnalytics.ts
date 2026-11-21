@@ -612,6 +612,15 @@ export function aggregateRealQuizAnalytics(
   };
 }
 
+function sanitizeAnalyticsCsvField(value: string, forceQuote = false): string {
+  const safe = /^[\t\r ]*[=+\-@]/.test(value) ? `'${value}` : value;
+  const escaped = safe.replace(/"/g, '""');
+  if (forceQuote || /[",\n\r]/.test(safe) || safe.startsWith("'")) {
+    return `"${escaped}"`;
+  }
+  return escaped;
+}
+
 export function exportVisitorAnalyticsCsv(events: VisitorEventRecord[]): string {
   const headers = [
     'id',
@@ -629,18 +638,18 @@ export function exportVisitorAnalyticsCsv(events: VisitorEventRecord[]): string 
   ];
 
   const rows = events.map((ev) => [
-    ev.id,
-    ev.dateKey,
+    sanitizeAnalyticsCsvField(ev.id),
+    sanitizeAnalyticsCsvField(ev.dateKey),
     new Date(ev.createdAtMs).toISOString(),
-    `"${ev.path.replace(/"/g, '""')}"`,
-    ev.tab,
-    `"${ev.referrerHost.replace(/"/g, '""')}"`,
-    `"${ev.utmSource.replace(/"/g, '""')}"`,
+    sanitizeAnalyticsCsvField(ev.path, true),
+    sanitizeAnalyticsCsvField(ev.tab),
+    sanitizeAnalyticsCsvField(ev.referrerHost, true),
+    sanitizeAnalyticsCsvField(ev.utmSource, true),
     ev.deviceType,
     ev.language,
     ev.isAuthenticated ? 'true' : 'false',
-    ev.visitorId,
-    ev.sessionId,
+    sanitizeAnalyticsCsvField(ev.visitorId),
+    sanitizeAnalyticsCsvField(ev.sessionId),
   ]);
 
   return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');

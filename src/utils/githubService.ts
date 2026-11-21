@@ -228,6 +228,21 @@ export function getGithubSyncStatusPresentation(
   }
 }
 
+export function sanitizeHttpUrl(rawUrl: unknown, fallback = ''): string {
+  if (typeof rawUrl !== 'string') return fallback;
+  const trimmed = rawUrl.trim().slice(0, 1024);
+  if (!trimmed) return fallback;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      return parsed.toString();
+    }
+  } catch {
+    // Reject malformed URLs or unsafe schemes (e.g. javascript:, data:, vbscript:)
+  }
+  return fallback;
+}
+
 export function sanitizeGithubIntegrationForPersistence(
   integration?: GitHubIntegrationState
 ): GitHubIntegrationState | undefined {
@@ -245,7 +260,7 @@ export function sanitizeGithubIntegrationForPersistence(
         id: Number(r.id) || 0,
         name: String(r.name || '').slice(0, 120),
         fullName: String(r.fullName || '').slice(0, 200),
-        htmlUrl: String(r.htmlUrl || '').slice(0, 512),
+        htmlUrl: sanitizeHttpUrl(r.htmlUrl).slice(0, 512),
         description: r.description ? String(r.description).slice(0, 300) : '',
         language: r.language ? String(r.language).slice(0, 60) : '',
         defaultBranch: String(r.defaultBranch || 'main').slice(0, 100),
@@ -265,7 +280,7 @@ export function sanitizeGithubIntegrationForPersistence(
         safeSubmissions[key] = {
           projectId: String(sub.projectId || key).slice(0, 64),
           repoFullName: String(sub.repoFullName || '').slice(0, 200),
-          repoUrl: String(sub.repoUrl || '').slice(0, 512),
+          repoUrl: sanitizeHttpUrl(sub.repoUrl).slice(0, 512),
           branch: String(sub.branch || 'main').slice(0, 100),
           commitSha: String(sub.commitSha || '').slice(0, 64),
           commitMessage: String(sub.commitMessage || '').slice(0, 200),
@@ -290,8 +305,10 @@ export function sanitizeGithubIntegrationForPersistence(
   };
 
   if (integration.username) sanitized.username = String(integration.username).slice(0, 100);
-  if (integration.profileUrl) sanitized.profileUrl = String(integration.profileUrl).slice(0, 512);
-  if (integration.avatarUrl) sanitized.avatarUrl = String(integration.avatarUrl).slice(0, 1024);
+  const safeProfileUrl = sanitizeHttpUrl(integration.profileUrl).slice(0, 512);
+  if (safeProfileUrl) sanitized.profileUrl = safeProfileUrl;
+  const safeAvatarUrl = sanitizeHttpUrl(integration.avatarUrl).slice(0, 1024);
+  if (safeAvatarUrl) sanitized.avatarUrl = safeAvatarUrl;
   if (integration.lastSyncedAt) sanitized.lastSyncedAt = String(integration.lastSyncedAt).slice(0, 64);
   if (integration.lastSyncError) sanitized.lastSyncError = String(integration.lastSyncError).slice(0, 500);
   if (typeof integration.reposCount === 'number') {

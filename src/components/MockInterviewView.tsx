@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { soundManager } from '../utils/audioFx';
+import { compileSandboxedChallengeFunction } from '../utils/developerSimulators';
 import { 
   Briefcase, 
   Play, 
@@ -297,9 +298,13 @@ Write debounce(fn, delayMs) which delays invoking fn until delayMs milliseconds 
 
     try {
       if (currentTask.id === 'task-brackets') {
-        // Execute code safely
-        // eslint-disable-next-line no-new-func
-        const fn = new Function(`${userCode}; return isValidBrackets;`)();
+        const fn = compileSandboxedChallengeFunction(
+          userCode,
+          'isValidBrackets',
+          [],
+          [],
+          language
+        );
         
         results.push({
           passed: fn('()[]{}') === true,
@@ -322,10 +327,15 @@ Write debounce(fn, delayMs) which delays invoking fn until delayMs milliseconds 
           message: isEn ? 'Test 5 (Hidden Edge Case): empty string -> expected true' : 'Test 5 (Ukryty Edge Case): pusty string -> oczekiwano true',
         });
       } else if (currentTask.id === 'task-groupby') {
-        // eslint-disable-next-line no-new-func
-        const fn = new Function(`${userCode}; return groupSpendingByPlan;`)();
-        const res1 = fn([{ plan: 'monthly', amount: 49 }, { plan: 'monthly', amount: 49 }]);
-        const res2 = fn([{ plan: 'monthly', amount: 50 }, { plan: 'yearly', amount: 100 }]);
+        const fn = compileSandboxedChallengeFunction(
+          userCode,
+          'groupSpendingByPlan',
+          [],
+          [],
+          language
+        );
+        const res1 = fn([{ plan: 'monthly', amount: 49 }, { plan: 'monthly', amount: 49 }]) as Record<string, number> | null | undefined;
+        const res2 = fn([{ plan: 'monthly', amount: 50 }, { plan: 'yearly', amount: 100 }]) as Record<string, number> | null | undefined;
 
         results.push({
           passed: res1?.monthly === 98,
@@ -347,17 +357,18 @@ Write debounce(fn, delayMs) which delays invoking fn until delayMs milliseconds 
         const mockClearTimeout = () => {
           clearedCount++;
         };
-        // eslint-disable-next-line no-new-func
-        const fn = new Function(
-          'setTimeout',
-          'clearTimeout',
-          `${userCode}; return debounce;`
-        )(mockSetTimeout, mockClearTimeout);
+        const fn = compileSandboxedChallengeFunction(
+          userCode,
+          'debounce',
+          ['setTimeout', 'clearTimeout'],
+          [mockSetTimeout, mockClearTimeout],
+          language
+        );
 
         let receivedArg = '';
         const d = fn((val: string) => {
           receivedArg = val;
-        }, 100);
+        }, 100) as ((...args: unknown[]) => unknown) | unknown;
 
         results.push({
           passed: typeof d === 'function',
@@ -519,40 +530,43 @@ Write debounce(fn, delayMs) which delays invoking fn until delayMs milliseconds 
           </div>
 
           {/* Test Cases Feedback Box */}
-          {testResults && (
-            <div className={`p-4 rounded-2xl border ${
-              isCompleted
-                ? 'bg-emerald-950/30 border-emerald-500/40'
-                : 'bg-rose-950/30 border-rose-500/40'
-            } space-y-2`}>
-              <div className="flex items-center justify-between">
-                <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-                  isCompleted ? 'text-emerald-300' : 'text-rose-300'
-                }`}>
-                  {isCompleted ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <AlertCircle className="h-4 w-4 text-rose-400" />}
-                  <span>
-                    {isCompleted
-                      ? isEn ? 'All Tests Passed!' : 'Wszystkie Testy Zaliczone!'
-                      : isEn ? 'Some tests failed' : 'Niektóre testy nie przeszły pomyślnie'}
+          {testResults && (() => {
+            const allTestsPassed = testResults.length > 0 && testResults.every((t) => t.passed);
+            return (
+              <div className={`p-4 rounded-2xl border ${
+                allTestsPassed
+                  ? 'bg-emerald-950/30 border-emerald-500/40'
+                  : 'bg-rose-950/30 border-rose-500/40'
+              } space-y-2`}>
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                    allTestsPassed ? 'text-emerald-300' : 'text-rose-300'
+                  }`}>
+                    {allTestsPassed ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <AlertCircle className="h-4 w-4 text-rose-400" />}
+                    <span>
+                      {allTestsPassed
+                        ? isEn ? 'All Tests Passed!' : 'Wszystkie Testy Zaliczone!'
+                        : isEn ? 'Some tests failed' : 'Niektóre testy nie przeszły pomyślnie'}
+                    </span>
                   </span>
-                </span>
-                {isCompleted && (
-                  <span className="text-xs font-mono font-bold text-amber-300">
-                    +{currentTask.xpReward} XP {isEn ? 'Unlocked!' : 'Odblokowane!'}
-                  </span>
-                )}
-              </div>
+                  {allTestsPassed && (
+                    <span className="text-xs font-mono font-bold text-amber-300">
+                      +{currentTask.xpReward} XP {isEn ? 'Unlocked!' : 'Odblokowane!'}
+                    </span>
+                  )}
+                </div>
 
-              <div className="space-y-1 text-xs font-mono pt-1">
-                {testResults.map((t, i) => (
-                  <div key={i} className={`flex items-center gap-2 ${t.passed ? 'text-emerald-300' : 'text-rose-300'}`}>
-                    <span>{t.passed ? '✓' : '✗'}</span>
-                    <span>{t.message}</span>
-                  </div>
-                ))}
+                <div className="space-y-1 text-xs font-mono pt-1">
+                  {testResults.map((t, i) => (
+                    <div key={i} className={`flex items-center gap-2 ${t.passed ? 'text-emerald-300' : 'text-rose-300'}`}>
+                      <span>{t.passed ? '✓' : '✗'}</span>
+                      <span>{t.message}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
         </div>
 

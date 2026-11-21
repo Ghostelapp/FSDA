@@ -7,6 +7,7 @@ import { getProjectInteractiveExercise, ValidationSummary } from '../utils/codeR
 import {
   formatGithubSyncTimestamp,
   getGithubSyncStatusPresentation,
+  sanitizeHttpUrl,
 } from '../utils/githubService';
 import {
   buildProjectLivePreviewHtml,
@@ -805,7 +806,12 @@ export const ProjectsView: React.FC = () => {
                     <div className="flex items-center gap-2 min-w-0">
                       <GitCommitHorizontal className="h-4 w-4 text-emerald-400 shrink-0" />
                       <a
-                        href={activeSubmission.repoUrl}
+                        href={sanitizeHttpUrl(
+                          activeSubmission.repoUrl,
+                          activeSubmission.repoFullName
+                            ? `https://github.com/${activeSubmission.repoFullName}`
+                            : 'https://github.com'
+                        )}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs font-bold text-white hover:text-cyan-300 inline-flex items-center gap-1 truncate font-mono"

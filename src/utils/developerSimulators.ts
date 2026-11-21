@@ -1,5 +1,7 @@
 import { User } from '../types';
 import type { AppLanguage } from './i18n';
+import { sanitizeSafeAvatarUrl } from './authValidation';
+import { sanitizeGithubIntegrationForPersistence } from './githubService';
 import {
   EXTRA_DAILY_CHALLENGES,
   EXTRA_DAILY_CHALLENGES_EN,
@@ -973,6 +975,66 @@ export interface ChallengeEvalResult {
   error?: string;
 }
 
+const BLOCKED_CHALLENGE_PATTERNS =
+  /\b(?:window|document|globalThis|self|top|parent|localStorage|sessionStorage|indexedDB|cookieStore|XMLHttpRequest|fetch|WebSocket|navigator|location|eval|Function|constructor|__proto__|prototype)\b|\bimport\s*\(/;
+
+const SHADOWED_GLOBALS = [
+  'window',
+  'document',
+  'globalThis',
+  'self',
+  'top',
+  'parent',
+  'localStorage',
+  'sessionStorage',
+  'indexedDB',
+  'cookieStore',
+  'XMLHttpRequest',
+  'fetch',
+  'WebSocket',
+  'navigator',
+  'location',
+  'Function',
+] as const;
+
+export function compileSandboxedChallengeFunction(
+  userCode: string,
+  returnIdentifier: string,
+  extraArgNames: string[] = [],
+  extraArgValues: unknown[] = [],
+  language: AppLanguage = 'pl'
+): (...args: unknown[]) => unknown {
+  const isEn = language === 'en';
+  const strippedCode = (userCode || '').replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '');
+  if (BLOCKED_CHALLENGE_PATTERNS.test(strippedCode)) {
+    throw new Error(
+      isEn
+        ? 'Blocked restricted browser/global API in challenge code. Use pure JavaScript logic only.'
+        : 'Zablokowano niedozwolone API przeglądarki lub obiekt globalny w kodzie zadania. Użyj czystego JavaScript.'
+    );
+  }
+  const safeIdentifier = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(returnIdentifier)
+    ? returnIdentifier
+    : 'solve';
+  const shadowedNames = SHADOWED_GLOBALS.filter((g) => !extraArgNames.includes(g));
+  const argNames = [...shadowedNames, ...extraArgNames];
+  const argValues = [...shadowedNames.map(() => undefined), ...extraArgValues];
+  // eslint-disable-next-line no-new-func
+  const factory = new Function(
+    ...argNames,
+    `'use strict';\n${userCode}\nreturn typeof ${safeIdentifier} === 'function' ? ${safeIdentifier} : null;`
+  );
+  const compiled = factory(...argValues);
+  if (typeof compiled !== 'function') {
+    throw new Error(
+      isEn
+        ? `Function ${safeIdentifier}() was not found.`
+        : `Nie znaleziono funkcji o nazwie ${safeIdentifier}().`
+    );
+  }
+  return compiled as (...args: unknown[]) => unknown;
+}
+
 export function evaluateDailyChallenge(
   challenge: DailyChallengeSpec,
   userCode: string,
@@ -982,17 +1044,7 @@ export function evaluateDailyChallenge(
   try {
     const fnMatch = challenge.starterCode.match(/function\s+([a-zA-Z0-9_]+)/);
     const fnName = fnMatch ? fnMatch[1] : 'solve';
-    const runner = new Function(`${userCode}\nreturn typeof ${fnName} === 'function' ? ${fnName} : null;`);
-    const fn = runner();
-    if (typeof fn !== 'function') {
-      return {
-        passedAll: false,
-        results: [],
-        error: isEn
-          ? `Function ${fnName}() was not found.`
-          : `Nie znaleziono funkcji o nazwie ${fnName}().`,
-      };
-    }
+    const fn = compileSandboxedChallengeFunction(userCode, fnName, [], [], language);
 
     const results = challenge.testCases.map((tc) => {
       const actualVal = fn(...tc.args);
@@ -1486,25 +1538,35 @@ export function validateBackupPayload(
           ? candidate.status
           : 'active',
       antiBotVerified: typeof candidate.antiBotVerified === 'boolean' ? candidate.antiBotVerified : true,
-      antiBotScore: typeof candidate.antiBotScore === 'number' ? candidate.antiBotScore : 100,
-      avatar:
-        typeof candidate.avatar === 'string' && candidate.avatar.trim()
-          ? candidate.avatar
-          : `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(candidate.name.trim())}`,
+      antiBotScore:
+        typeof candidate.antiBotScore === 'number' && Number.isFinite(candidate.antiBotScore)
+          ? Math.max(0, Math.min(100, Math.floor(candidate.antiBotScore)))
+          : 100,
+      avatar: sanitizeSafeAvatarUrl(candidate.avatar, candidate.name.trim()),
       xp: safeXp,
-      level: typeof candidate.level === 'number' && candidate.level >= 1 ? candidate.level : Math.max(1, Math.floor(safeXp / 500) + 1),
-      streakDays: typeof candidate.streakDays === 'number' && candidate.streakDays >= 0 ? candidate.streakDays : 1,
+      level:
+        typeof candidate.level === 'number' && Number.isFinite(candidate.level) && candidate.level >= 1
+          ? Math.floor(candidate.level)
+          : Math.max(1, Math.floor(safeXp / 500) + 1),
+      streakDays:
+        typeof candidate.streakDays === 'number' && Number.isFinite(candidate.streakDays) && candidate.streakDays >= 0
+          ? Math.floor(candidate.streakDays)
+          : 1,
       lastActiveDate:
         typeof candidate.lastActiveDate === 'string' && candidate.lastActiveDate
           ? candidate.lastActiveDate
           : new Date().toISOString().split('T')[0],
       weeklyGoalMinutes:
-        typeof candidate.weeklyGoalMinutes === 'number' && candidate.weeklyGoalMinutes >= 30
-          ? candidate.weeklyGoalMinutes
+        typeof candidate.weeklyGoalMinutes === 'number' &&
+        Number.isFinite(candidate.weeklyGoalMinutes) &&
+        candidate.weeklyGoalMinutes >= 30
+          ? Math.floor(candidate.weeklyGoalMinutes)
           : 180,
       weeklySpentMinutes:
-        typeof candidate.weeklySpentMinutes === 'number' && candidate.weeklySpentMinutes >= 0
-          ? candidate.weeklySpentMinutes
+        typeof candidate.weeklySpentMinutes === 'number' &&
+        Number.isFinite(candidate.weeklySpentMinutes) &&
+        candidate.weeklySpentMinutes >= 0
+          ? Math.floor(candidate.weeklySpentMinutes)
           : 0,
       completedLessons: safeLessons,
       completedProjects: safeProjects,
@@ -1518,11 +1580,21 @@ export function validateBackupPayload(
         candidate.savedCode && typeof candidate.savedCode === 'object' && !Array.isArray(candidate.savedCode)
           ? candidate.savedCode
           : {},
-      lives: typeof candidate.lives === 'number' ? Math.max(0, Math.min(5, candidate.lives)) : 5,
-      maxLives: typeof candidate.maxLives === 'number' && candidate.maxLives > 0 ? candidate.maxLives : 5,
+      githubIntegration: sanitizeGithubIntegrationForPersistence(candidate.githubIntegration),
+      lives:
+        typeof candidate.lives === 'number' && Number.isFinite(candidate.lives)
+          ? Math.max(0, Math.min(5, Math.floor(candidate.lives)))
+          : 5,
+      maxLives:
+        typeof candidate.maxLives === 'number' && Number.isFinite(candidate.maxLives) && candidate.maxLives > 0
+          ? Math.max(1, Math.min(10, Math.floor(candidate.maxLives)))
+          : 5,
       isPro: Boolean(candidate.isPro),
       proPlan: candidate.proPlan || null,
-      streakFreezes: typeof candidate.streakFreezes === 'number' && candidate.streakFreezes >= 0 ? candidate.streakFreezes : 1,
+      streakFreezes:
+        typeof candidate.streakFreezes === 'number' && Number.isFinite(candidate.streakFreezes) && candidate.streakFreezes >= 0
+          ? Math.floor(candidate.streakFreezes)
+          : 1,
       bio: typeof candidate.bio === 'string' ? candidate.bio : undefined,
       createdAt:
         typeof candidate.createdAt === 'string' && candidate.createdAt

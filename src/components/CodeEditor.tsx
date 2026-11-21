@@ -90,11 +90,18 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // Listen to messages from the sandboxed iframe
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data && event.data.source === 'fsda-sandbox') {
+      if (!iframeRef.current?.contentWindow || event.source !== iframeRef.current.contentWindow) {
+        return;
+      }
+      const payload = event.data;
+      if (payload && typeof payload === 'object' && payload.source === 'fsda-sandbox') {
+        const logType: 'log' | 'error' | 'warn' =
+          payload.type === 'error' || payload.type === 'warn' ? payload.type : 'log';
+        const text = String(payload.data ?? '').slice(0, 2000);
         const time = new Date().toLocaleTimeString();
         setConsoleLogs((prev) => [
           ...prev.slice(-30),
-          { type: event.data.type, text: event.data.data, time },
+          { type: logType, text, time },
         ]);
       }
     };

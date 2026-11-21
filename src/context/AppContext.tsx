@@ -77,6 +77,7 @@ import {
   canResetUserPassword,
   sanitizeImportedUser,
   createGuestUser,
+  normalizeUserProfile,
   classifyGoogleAuthError,
   classifyEmailAuthError,
   GoogleAuthErrorClassification,
@@ -517,9 +518,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         ) {
           return createGuestUser(initialLang);
         }
-        return parsed.role === 'admin' && !hasVerifiedFirebaseAdmin
-          ? { ...parsed, role: 'student' }
-          : parsed;
+        const safeRoleUser =
+          parsed.role === 'admin' && !hasVerifiedFirebaseAdmin
+            ? { ...parsed, role: 'student' as const }
+            : parsed;
+        return normalizeUserProfile(safeRoleUser, { language: initialLang, stripPassword: true });
       }
       return createGuestUser(initialLang);
     } catch {
@@ -846,10 +849,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return currentUser;
   }, [currentUser, language]);
 
-  // Sync to localStorage
+  // Sync to localStorage (never persist plaintext passwords in active session cache)
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(currentUser));
+      const { password: _omittedPassword, ...safeSessionUser } = currentUser;
+      localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(safeSessionUser));
     } catch (e) {
       console.warn('Storage sync error', e);
     }
@@ -1043,11 +1047,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               quizScores: remoteUser.quizScores,
             });
             if (remoteHash !== lastCloudSyncHashRef.current) {
+              const normalizedRemote = normalizeUserProfile(remoteUser, {
+                language: languageRef.current,
+                stripPassword: true,
+              });
               lastCloudSyncHashRef.current = remoteHash;
-              setCurrentUser(remoteUser);
-              setLivesInfo(calculateRegeneratedLives(remoteUser));
+              setCurrentUser(normalizedRemote);
+              setLivesInfo(calculateRegeneratedLives(normalizedRemote));
               setAllUsers((prev) =>
-                prev.map((u) => (u.id === remoteUser.id ? remoteUser : u))
+                prev.map((u) => (u.id === normalizedRemote.id ? normalizedRemote : u))
               );
             }
           });
@@ -2726,7 +2734,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const todayStr = new Date().toISOString().split('T')[0];
       const localTodayKey = formatLocalDateKey();
       const streakInfo = updateStreak(prev.lastActiveDate, prev.streakDays, todayStr);
-      const prevTodayMinutes = prev.lastGoalDate === localTodayKey ? (prev.todaySpentMinutes ?? 15) : 0;
+      const prevTodayMinutes = prev.lastGoalDate === localTodayKey ? (prev.todaySpentMinutes ?? 0) : 0;
 
       const updatedUser: User = {
         ...prev,
@@ -3269,9 +3277,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const localTodayKey = formatLocalDateKey();
   const todaySpentMinutes =
     currentUser.lastGoalDate === localTodayKey
-      ? (currentUser.todaySpentMinutes ?? 15)
+      ? (currentUser.todaySpentMinutes ?? 0)
       : currentUser.lastActiveDate === new Date().toISOString().split('T')[0]
-      ? (currentUser.todaySpentMinutes ?? 15)
+      ? (currentUser.todaySpentMinutes ?? 0)
       : 0;
   const dailyGoalMinutes = reminderSettings.dailyGoalMinutes || 30;
 

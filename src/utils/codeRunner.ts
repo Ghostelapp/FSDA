@@ -921,6 +921,9 @@ export function generateSandboxDocument(
   const runtimeErrPrefix = isEn ? 'Runtime Error (line ' : 'Runtime Error (linia ';
   const scriptErrPrefix = isEn ? 'Script execution error: ' : 'Błąd wykonania skryptu: ';
   // Wrap in a secure, self-reporting HTML document with script error and console interceptors
+  const safeCss = (css || '').replace(/<\/style/gi, '<\\/style');
+  const safeJs = (js || '').replace(/<\/script/gi, '<\\/script');
+
   return `<!DOCTYPE html>
 <html lang="${language}">
 <head>
@@ -937,7 +940,7 @@ export function generateSandboxDocument(
       background-color: #ffffff;
       line-height: 1.5;
     }
-    ${css}
+    ${safeCss}
   </style>
   <script>
     (function() {
@@ -992,7 +995,7 @@ export function generateSandboxDocument(
 
   <script>
     try {
-      ${js}
+      ${safeJs}
     } catch(err) {
       console.error('${scriptErrPrefix}' + (err.message || err));
     }

@@ -283,8 +283,8 @@ export const LearningProgressChart: React.FC<LearningProgressChartProps> = ({
           </div>
           <p className="text-[11px] text-amber-400/90 mt-1 font-medium truncate">
             {isEn
-              ? `Streak: ${formatDaysLabel(currentUser.streakDays, language)}`
-              : `Seria: ${formatDaysLabel(currentUser.streakDays, language)} nauki`}
+              ? `Streak: ${formatDaysLabel(currentUser.streakDays ?? 0, language)}`
+              : `Seria: ${formatDaysLabel(currentUser.streakDays ?? 0, language)} nauki`}
           </p>
         </div>
       </div>

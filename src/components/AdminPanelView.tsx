@@ -7,7 +7,7 @@ import {
   VisitorEventRecord,
   VisitorPresenceRecord,
 } from '../types';
-import { filterAndSortUsers } from '../utils/userFilters';
+import { escapeCsvCell, filterAndSortUsers } from '../utils/userFilters';
 import {
   aggregateRealQuizAnalytics,
   aggregateVisitorAnalytics,
@@ -232,30 +232,31 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
       ? ['ID', 'Name', 'Email', 'Role', 'Status', 'AntiBot', 'PRO', 'XP', 'Streak Days', 'Completed Lessons', 'Created At']
       : ['ID', 'Imię', 'Email', 'Rola', 'Status', 'AntyBot', 'PRO', 'XP', 'Seria Dni', 'Ukończone Lekcje', 'Data Utworzenia'];
     const rows = filteredUsers.map((u) => [
-      u.id,
-      `"${u.name}"`,
-      u.email,
-      u.role,
-      u.status,
-      u.antiBotVerified ? (isEn ? 'Verified' : 'Zweryfikowany') : (isEn ? 'Unverified' : 'Niezweryfikowany'),
-      u.isPro ? 'PRO' : 'Free',
-      u.xp,
-      u.streakDays,
-      u.completedLessons.length,
-      u.createdAt || '',
+      escapeCsvCell(u.id),
+      escapeCsvCell(u.name),
+      escapeCsvCell(u.email),
+      escapeCsvCell(u.role),
+      escapeCsvCell(u.status),
+      escapeCsvCell(
+        u.antiBotVerified ? (isEn ? 'Verified' : 'Zweryfikowany') : (isEn ? 'Unverified' : 'Niezweryfikowany')
+      ),
+      escapeCsvCell(u.isPro ? 'PRO' : 'Free'),
+      escapeCsvCell(u.xp ?? 0),
+      escapeCsvCell(u.streakDays ?? 0),
+      escapeCsvCell(u.completedLessons?.length ?? 0),
+      escapeCsvCell(u.createdAt || ''),
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvText = [headers.map(escapeCsvCell).join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute(
-      'download',
-      `${isEn ? 'students_directory_fullstack' : 'baza_kursantow_fullstack'}_${new Date().toISOString().split('T')[0]}.csv`
-    );
+    link.href = url;
+    link.download = `${isEn ? 'students_directory_fullstack' : 'baza_kursantow_fullstack'}_${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleConfirmBan = () => {
@@ -278,9 +279,9 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
     setNewContent('');
   };
 
-  const totalXP = allUsers.reduce((sum, u) => sum + u.xp, 0);
+  const totalXP = allUsers.reduce((sum, u) => sum + (u.xp ?? 0), 0);
   const avgXP = Math.round(totalXP / (allUsers.length || 1));
-  const totalCompletedLessons = allUsers.reduce((sum, u) => sum + u.completedLessons.length, 0);
+  const totalCompletedLessons = allUsers.reduce((sum, u) => sum + (u.completedLessons?.length ?? 0), 0);
 
   return (
     <ProtectedRoute
@@ -766,7 +767,7 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
                           {/* XP Column */}
                           <td className="p-4">
                             <div className="font-mono font-bold text-indigo-300 text-sm">
-                              {user.xp} XP
+                              {user.xp ?? 0} XP
                             </div>
                             <span className="text-[11px] text-slate-400">{isEn ? 'Level' : 'Poziom'} {user.level || 1}</span>
                           </td>
@@ -774,10 +775,10 @@ export const AdminPanelView: React.FC<AdminPanelViewProps> = ({ onOpenAuthModal 
                           {/* Progress Column */}
                           <td className="p-4">
                             <div className="text-amber-400 font-semibold text-xs flex items-center gap-1">
-                              <span>🔥 {user.streakDays} {isEn ? 'days' : 'dni'}</span>
+                              <span>🔥 {user.streakDays ?? 0} {isEn ? 'days' : 'dni'}</span>
                             </div>
                             <span className="text-[11px] text-slate-300">
-                              {user.completedLessons.length} {isEn ? 'lessons' : 'lekcji'} • {user.completedProjects.length} {isEn ? 'proj.' : 'proj.'}
+                              {user.completedLessons?.length ?? 0} {isEn ? 'lessons' : 'lekcji'} • {user.completedProjects?.length ?? 0} {isEn ? 'proj.' : 'proj.'}
                             </span>
                           </td>
 

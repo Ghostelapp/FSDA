@@ -5,6 +5,7 @@ import {
   formatRelativeSyncTime,
   getGithubSyncStatusPresentation,
   getSessionGithubToken,
+  sanitizeHttpUrl,
 } from '../utils/githubService';
 import {
   Github,
@@ -149,9 +150,9 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
         <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
-              {gh.avatarUrl ? (
+              {sanitizeHttpUrl(gh.avatarUrl) ? (
                 <img
-                  src={gh.avatarUrl}
+                  src={sanitizeHttpUrl(gh.avatarUrl)}
                   alt={isEn ? `GitHub avatar ${gh.username}` : `Awatar GitHub ${gh.username}`}
                   className="h-9 w-9 rounded-lg object-cover border border-slate-700 shrink-0"
                 />
@@ -163,7 +164,7 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <a
-                    href={gh.profileUrl || `https://github.com/${gh.username}`}
+                    href={sanitizeHttpUrl(gh.profileUrl, `https://github.com/${encodeURIComponent(gh.username || '')}`)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs font-bold text-white hover:text-indigo-300 inline-flex items-center gap-1 truncate"
@@ -278,10 +279,15 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
                 )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {reposPreview.map((repo) => (
+                {reposPreview.map((repo) => {
+                  const safeRepoUrl = sanitizeHttpUrl(
+                    repo.htmlUrl,
+                    repo.fullName ? `https://github.com/${repo.fullName}` : 'https://github.com'
+                  );
+                  return (
                   <a
                     key={repo.id}
-                    href={repo.htmlUrl}
+                    href={safeRepoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950/70 hover:border-indigo-500/40 px-2.5 py-1.5 text-[11px] transition-colors"
@@ -291,7 +297,8 @@ export const GithubSyncCard: React.FC<GithubSyncCardProps> = ({ compact = false 
                       {repo.language || repo.defaultBranch}
                     </span>
                   </a>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

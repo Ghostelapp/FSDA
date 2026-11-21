@@ -54,6 +54,7 @@ import {
   VisitorEventWritePayload,
   VisitorPresenceWritePayload,
 } from './utils/visitorAnalytics';
+import { sanitizeGithubIntegrationForPersistence } from './utils/githubService';
 import {
   CLOUD_PROFILE_FETCH_TIMEOUT_MS,
   CloudCallableResult,
@@ -511,7 +512,10 @@ export async function saveUserProfileToCloud(
       }
     } else {
       const email = (user.email || 'kursant@akademia.pl').slice(0, 254);
-      const isAdminEmail = email.trim().toLowerCase() === 'zordonzordon1@gmail.com';
+      const isAdminEmail =
+        Boolean(auth.currentUser?.emailVerified) &&
+        (auth.currentUser?.email || '').trim().toLowerCase() === 'zordonzordon1@gmail.com' &&
+        email.trim().toLowerCase() === 'zordonzordon1@gmail.com';
       await setDoc(profileRef, {
         uid,
         id: uid,
@@ -757,26 +761,32 @@ export function subscribeToUserProfile(
           role: data.role === 'admin' ? 'admin' : 'student',
           status: data.status || 'active',
           antiBotVerified: data.antiBotVerified ?? true,
-          xp: typeof data.xp === 'number' ? data.xp : 0,
-          level: typeof data.level === 'number' ? data.level : 1,
-          streakDays: typeof data.streakDays === 'number' ? data.streakDays : 0,
-          streakFreezes: typeof data.streakFreezes === 'number' ? data.streakFreezes : 0,
-          weeklyGoalMinutes: typeof data.weeklyGoalMinutes === 'number' ? data.weeklyGoalMinutes : 180,
-          weeklySpentMinutes: typeof data.weeklySpentMinutes === 'number' ? data.weeklySpentMinutes : 0,
+          xp: typeof data.xp === 'number' && Number.isFinite(data.xp) ? data.xp : 0,
+          level: typeof data.level === 'number' && Number.isFinite(data.level) ? data.level : 1,
+          streakDays: typeof data.streakDays === 'number' && Number.isFinite(data.streakDays) ? data.streakDays : 0,
+          streakFreezes: typeof data.streakFreezes === 'number' && Number.isFinite(data.streakFreezes) ? data.streakFreezes : 0,
+          weeklyGoalMinutes:
+            typeof data.weeklyGoalMinutes === 'number' && Number.isFinite(data.weeklyGoalMinutes) && data.weeklyGoalMinutes > 0
+              ? data.weeklyGoalMinutes
+              : 180,
+          weeklySpentMinutes:
+            typeof data.weeklySpentMinutes === 'number' && Number.isFinite(data.weeklySpentMinutes)
+              ? data.weeklySpentMinutes
+              : 0,
           lastActiveDate: data.lastActiveDate || new Date().toISOString().split('T')[0],
           createdAt: data.createdAt || new Date().toISOString().split('T')[0],
           bio: typeof data.bio === 'string' ? data.bio : '',
           isPro: Boolean(data.isPro),
           proPlan: data.proPlan ?? null,
-          lives: typeof data.lives === 'number' ? data.lives : 5,
-          maxLives: typeof data.maxLives === 'number' ? data.maxLives : 5,
+          lives: typeof data.lives === 'number' && Number.isFinite(data.lives) ? data.lives : 5,
+          maxLives: typeof data.maxLives === 'number' && Number.isFinite(data.maxLives) && data.maxLives > 0 ? data.maxLives : 5,
           completedLessons: Array.isArray(data.completedLessons) ? data.completedLessons : [],
           completedProjects: Array.isArray(data.completedProjects) ? data.completedProjects : [],
           unlockedBadges: Array.isArray(data.unlockedBadges) ? data.unlockedBadges : [],
           claimedRewards: Array.isArray(data.claimedRewards) ? data.claimedRewards : [],
           quizScores: data.quizScores || {},
           savedCode: data.savedCode || {},
-          githubIntegration: data.githubIntegration,
+          githubIntegration: sanitizeGithubIntegrationForPersistence(data.githubIntegration),
         });
       }
     },
@@ -1139,7 +1149,7 @@ export function clearGoogleRedirectPending(): void {
 
 export function buildVerifiedFallbackUser(fbUser: FirebaseUser): User {
   const email = (fbUser.email || '').trim().toLowerCase();
-  const isAdminEmail = email === 'zordonzordon1@gmail.com';
+  const isAdminEmail = Boolean(fbUser.emailVerified) && email === 'zordonzordon1@gmail.com';
   const displayName = fbUser.displayName || (email ? email.split('@')[0] : 'Kursant');
   const today = new Date().toISOString().split('T')[0];
   return {

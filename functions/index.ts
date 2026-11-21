@@ -49,7 +49,8 @@ function getUserRef(uid: string) {
 
 async function requireAdmin(uid: string, token: Record<string, unknown> | undefined): Promise<void> {
   if (
-    token?.email === 'zordonzordon1@gmail.com' &&
+    typeof token?.email === 'string' &&
+    token.email.trim().toLowerCase() === 'zordonzordon1@gmail.com' &&
     token.email_verified === true
   ) return;
   const profile = await getUserRef(uid).get();

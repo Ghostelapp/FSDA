@@ -17,9 +17,9 @@ export function filterAndSortUsers(users: User[], filters: UserFilters): { filte
   const filteredUsers = users.filter((u) => {
     // 1. Search Query
     if (query) {
-      const matchName = u.name.toLowerCase().includes(query);
-      const matchEmail = u.email.toLowerCase().includes(query);
-      const matchId = u.id.toLowerCase().includes(query);
+      const matchName = (u.name || '').toLowerCase().includes(query);
+      const matchEmail = (u.email || '').toLowerCase().includes(query);
+      const matchId = (u.id || '').toLowerCase().includes(query);
       if (!matchName && !matchEmail && !matchId) {
         return false;
       }
@@ -62,15 +62,15 @@ export function filterAndSortUsers(users: User[], filters: UserFilters): { filte
   filteredUsers.sort((a, b) => {
     switch (filters.sortBy) {
       case 'xp_desc':
-        return b.xp - a.xp;
+        return (b.xp ?? 0) - (a.xp ?? 0);
       case 'xp_asc':
-        return a.xp - b.xp;
+        return (a.xp ?? 0) - (b.xp ?? 0);
       case 'streak_desc':
-        return b.streakDays - a.streakDays;
+        return (b.streakDays ?? 0) - (a.streakDays ?? 0);
       case 'lessons_desc':
-        return b.completedLessons.length - a.completedLessons.length;
+        return (b.completedLessons?.length ?? 0) - (a.completedLessons?.length ?? 0);
       case 'name_asc':
-        return a.name.localeCompare(b.name, 'pl');
+        return (a.name || '').localeCompare(b.name || '', 'pl');
       case 'created_desc':
       default:
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
@@ -89,4 +89,23 @@ export function filterAndSortUsers(users: User[], filters: UserFilters): { filte
   };
 
   return { filteredUsers, stats };
+}
+
+const CSV_FORMULA_PREFIX_RE = /^[\t\r ]*[=+\-@]/;
+
+/**
+ * Escapes a single CSV cell according to RFC 4180 and neutralizes spreadsheet formula prefixes
+ * (=, +, -, @, tab, CR) so exported CSV files cannot execute formulas in Excel/Sheets.
+ */
+export function escapeCsvCell(value: unknown): string {
+  const raw = value === null || value === undefined ? '' : String(value);
+  const neutralized = CSV_FORMULA_PREFIX_RE.test(raw) ? `'${raw}` : raw;
+  const needsQuotes =
+    neutralized.includes(',') ||
+    neutralized.includes('"') ||
+    neutralized.includes('\n') ||
+    neutralized.includes('\r') ||
+    neutralized.startsWith("'");
+  if (!needsQuotes) return neutralized;
+  return `"${neutralized.replace(/"/g, '""')}"`;
 }
