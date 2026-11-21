@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Download, Archive, Eye, X, Copy, Check, Image as ImageIcon, Film } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Download, Archive, Eye, X, Copy, Check, Image as ImageIcon, Film, Volume2, VolumeX } from 'lucide-react';
 
 interface PromoItem {
   id: string;
@@ -67,6 +67,8 @@ export const PromoAssetsPanel: React.FC<PromoAssetsPanelProps> = ({ onClose }) =
   const [previewData, setPreviewData] = useState<{ title: string; filename: string; dataUrl: string } | null>(null);
   const [copiedPost, setCopiedPost] = useState(false);
   const [videoLang, setVideoLang] = useState<'pl' | 'en'>('pl');
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const downloadViaBlob = async (url: string, filename: string, id: string) => {
     setDownloadingId(id);
@@ -126,6 +128,28 @@ export const PromoAssetsPanel: React.FC<PromoAssetsPanelProps> = ({ onClose }) =
   const activeVideoUrl = videoLang === 'en' ? '/promo/fsda-promo-15s-en.mp4' : '/promo/fsda-promo-15s.mp4';
   const activeVideoFilename = videoLang === 'en' ? 'fsda-promo-15s-en.mp4' : 'fsda-promo-15s.mp4';
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = isMuted;
+    if (!isMuted && video.volume === 0) {
+      video.volume = 0.85;
+    }
+  }, [isMuted, activeVideoUrl]);
+
+  const handleToggleMute = () => {
+    const video = videoRef.current;
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    if (video) {
+      video.muted = nextMuted;
+      if (!nextMuted) {
+        if (video.volume === 0) video.volume = 0.85;
+        void video.play().catch(() => {});
+      }
+    }
+  };
+
   return (
     <div className="space-y-6 rounded-2xl border border-slate-800 bg-slate-900/90 p-5 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
@@ -135,7 +159,7 @@ export const PromoAssetsPanel: React.FC<PromoAssetsPanelProps> = ({ onClose }) =
             <span>Wideo Promo 15s (HD) oraz Grafiki Wykop / Social</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Odtwórz dynamiczne wideo 15s (edytor kodu + metodyka 80% + symulatory) lub pobierz pliki JPG / MP4 / ZIP.
+            Odtwórz dynamiczne wideo 15s z muzyką w tle (edytor kodu + metodyka 80% + symulatory) lub pobierz pliki JPG / MP4 / ZIP.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -163,17 +187,30 @@ export const PromoAssetsPanel: React.FC<PromoAssetsPanelProps> = ({ onClose }) =
 
       {/* 15s Promo Video Showcase */}
       <div className="rounded-2xl border border-indigo-500/30 bg-slate-950/90 p-4 sm:p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="min-w-0">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Film className="h-4 w-4 text-cyan-400" />
-              <span>Wideo Promocyjne 15s (1280×720 HD · 30 fps · H.264 MP4)</span>
+              <Film className="h-4 w-4 text-cyan-400 shrink-0" />
+              <span>Wideo Promocyjne 15s (1280×720 HD · 30 fps · H.264 MP4 + Muzyka AAC)</span>
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Pokazuje metodykę 80% Ready Code, animowane wpisywanie w edytorze + podgląd na żywo oraz montaż symulatorów Git, SQL i REST API.
+              Z wbudowaną ścieżką muzyczną stereo zsynchronizowaną ze scenami — gotowe do wrzucenia na YouTube, Wykop, X, TikToka i LinkedIna.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleToggleMute}
+              aria-pressed={!isMuted}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors cursor-pointer ${
+                isMuted
+                  ? 'border-indigo-500/50 bg-indigo-600/20 text-indigo-200 hover:bg-indigo-600/35'
+                  : 'border-cyan-500/50 bg-cyan-500/20 text-cyan-200 hover:bg-cyan-500/30'
+              }`}
+            >
+              {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+              <span>{isMuted ? 'Włącz muzykę' : 'Wycisz muzykę'}</span>
+            </button>
             <div className="inline-flex rounded-lg border border-slate-700 bg-slate-900 p-0.5 text-xs font-bold">
               <button
                 type="button"
@@ -207,13 +244,18 @@ export const PromoAssetsPanel: React.FC<PromoAssetsPanelProps> = ({ onClose }) =
         </div>
 
         <video
+          ref={videoRef}
           key={activeVideoUrl}
           src={activeVideoUrl}
           controls
           autoPlay
-          muted
+          muted={isMuted}
           loop
           playsInline
+          onVolumeChange={(e) => {
+            const el = e.currentTarget;
+            setIsMuted(el.muted || el.volume === 0);
+          }}
           className="w-full max-w-4xl mx-auto rounded-xl border border-slate-800 bg-black aspect-video"
         />
       </div>
