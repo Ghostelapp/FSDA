@@ -1,10 +1,13 @@
 import { Project } from '../types';
 import { PROJECT_SOURCES_PART_1 } from './projectSourcesPart1';
 import { PROJECT_SOURCES_PART_2 } from './projectSourcesPart2';
+import { PROJECT_SOURCES_PART_3 } from './projectSourcesPart3';
+import { buildFileTreeFromSources, getProjectFolderSlug } from '../utils/projectPackager';
 
 const ALL_PROJECT_SOURCES = {
   ...PROJECT_SOURCES_PART_1,
   ...PROJECT_SOURCES_PART_2,
+  ...PROJECT_SOURCES_PART_3,
 };
 
 const RAW_PROJECTS_DATA: Project[] = [
@@ -442,7 +445,17 @@ h1 { margin: 0 0 10px 0; font-size: 2.2rem; }`,
   },
 ];
 
-export const PROJECTS_DATA: Project[] = RAW_PROJECTS_DATA.map((project) => ({
-  ...project,
-  sourceFiles: ALL_PROJECT_SOURCES[project.id] || project.sourceFiles || [],
-}));
+export const PROJECTS_DATA: Project[] = RAW_PROJECTS_DATA.map((project) => {
+  const sourceFiles = ALL_PROJECT_SOURCES[project.id] || project.sourceFiles || [];
+  return {
+    ...project,
+    sourceFiles,
+    fileStructure:
+      sourceFiles.length > 0
+        ? buildFileTreeFromSources(
+            getProjectFolderSlug(project.id, project.number),
+            sourceFiles
+          )
+        : project.fileStructure,
+  };
+});

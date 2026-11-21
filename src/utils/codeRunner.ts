@@ -526,7 +526,7 @@ const PROJECT_VERIFICATION_SPECS: Record<string, InteractiveExercise> = {
     id: 'verify-proj-7',
     title: 'Weryfikacja Projektu #7: SecureGate — System Uwierzytelniania JWT & RBAC',
     instructions: 'Zaimplementuj logikę zabezpieczeń backendu: haszowanie haseł (bcrypt), generowanie/weryfikację tokena JWT oraz konfigurację bezpiecznego ciasteczka HttpOnly.',
-    task: 'W kodzie JS zaimplementuj obsługę bcrypt, jwt oraz flagi безопасности httpOnly.',
+    task: 'W kodzie JS zaimplementuj obsługę bcrypt, jwt oraz flagi bezpieczeństwa httpOnly.',
     starterCode: {
       html: `<div class="security-panel">\n  <h2>SecureGate Auth Inspector</h2>\n  <p>Status modułu autoryzacji JWT + RBAC</p>\n</div>`,
       css: `.security-panel { padding: 16px; background: #0f172a; color: #e2e8f0; border-radius: 8px; }`,

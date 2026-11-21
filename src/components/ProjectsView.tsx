@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { CodeEditor } from './CodeEditor';
 import { CodeBlock } from './CodeBlock';
@@ -8,6 +8,11 @@ import {
   formatGithubSyncTimestamp,
   getGithubSyncStatusPresentation,
 } from '../utils/githubService';
+import {
+  buildProjectLivePreviewHtml,
+  createProjectZipBytes,
+  getProjectFolderSlug,
+} from '../utils/projectPackager';
 import {
   FolderGit2,
   Sparkles,
@@ -30,6 +35,9 @@ import {
   RefreshCw,
   AlertTriangle,
   UploadCloud,
+  Download,
+  Play,
+  PackageCheck,
 } from 'lucide-react';
 
 export const ProjectsView: React.FC = () => {
@@ -51,6 +59,9 @@ export const ProjectsView: React.FC = () => {
     selectedProjectId || allProjects[0]?.id || 'proj-1'
   );
   const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
+  const [explorerMode, setExplorerMode] = useState<'code' | 'preview'>('code');
+  const [previewNonce, setPreviewNonce] = useState<number>(0);
+  const [zipDownloaded, setZipDownloaded] = useState<boolean>(false);
   const [projectValidation, setProjectValidation] = useState<ValidationSummary | null>(null);
   const [repoInput, setRepoInput] = useState<string>('');
   const [githubSubmitFeedback, setGithubSubmitFeedback] = useState<{
@@ -75,6 +86,9 @@ export const ProjectsView: React.FC = () => {
   useEffect(() => {
     setProjectValidation(null);
     setActiveFileIndex(0);
+    setExplorerMode('code');
+    setPreviewNonce(0);
+    setZipDownloaded(false);
     setGithubSubmitFeedback(null);
     if (activeSubmission?.repoFullName) {
       setRepoInput(activeSubmission.repoFullName);
@@ -92,6 +106,27 @@ export const ProjectsView: React.FC = () => {
   const sourceFiles = activeProject.sourceFiles || [];
   const activeSourceFile = sourceFiles[activeFileIndex] || sourceFiles[0];
   const totalSourceLines = sourceFiles.reduce((sum, f) => sum + f.code.split('\n').length, 0);
+  const livePreviewHtml = useMemo(
+    () => buildProjectLivePreviewHtml(sourceFiles),
+    [sourceFiles]
+  );
+
+  const handleDownloadProjectZip = () => {
+    if (sourceFiles.length === 0) return;
+    const folderSlug = getProjectFolderSlug(activeProject.id, activeProject.number);
+    const zipBytes = createProjectZipBytes(folderSlug, sourceFiles);
+    const blob = new Blob([zipBytes], { type: 'application/zip' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${folderSlug}.zip`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setZipDownloaded(true);
+    window.setTimeout(() => setZipDownloaded(false), 2500);
+  };
 
   const isCompleted = currentUser.completedProjects.includes(activeProject.id);
   const projectExercise = getProjectInteractiveExercise(activeProject, language);
@@ -182,12 +217,15 @@ export const ProjectsView: React.FC = () => {
             {allProjects.map((proj) => {
               const isDone = currentUser.completedProjects.includes(proj.id);
               const isSelected = activeProject.id === proj.id;
+              const filesCount = proj.sourceFiles?.length ?? 0;
 
               return (
-                <div
+                <button
                   key={proj.id}
+                  type="button"
                   onClick={() => setActiveProjectId(proj.id)}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer text-left ${
+                  aria-pressed={isSelected}
+                  className={`w-full p-3.5 rounded-2xl border transition-all cursor-pointer text-left ${
                     isSelected
                       ? 'border-indigo-500 bg-indigo-950/40 shadow-md ring-1 ring-indigo-500/50'
                       : 'border-slate-800 bg-slate-900/60 hover:bg-slate-800/80'
@@ -206,10 +244,14 @@ export const ProjectsView: React.FC = () => {
                     {proj.title}
                   </h3>
 
-                  <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                  <div className="mt-2.5 flex items-center justify-between gap-2 text-[11px] text-slate-400 font-mono">
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {proj.estimatedHours}h
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-emerald-300/90">
+                      <FileCode className="h-3 w-3" />
+                      {filesCount} {isEn ? 'files' : 'plików'}
                     </span>
                     <span className="text-indigo-300 font-semibold">
                       +{proj.xpReward} XP
@@ -236,7 +278,7 @@ export const ProjectsView: React.FC = () => {
                       )}
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -249,12 +291,20 @@ export const ProjectsView: React.FC = () => {
             {/* Project Header */}
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-800 pb-5">
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-mono font-bold text-indigo-400">
                     {isEn ? `Project #${activeProject.number}` : `Projekt #${activeProject.number}`}
                   </span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${difficultyColors[activeProject.difficulty]}`}>
                     {activeProject.displayDifficulty}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                    <PackageCheck className="h-3 w-3" />
+                    <span>
+                      {isEn
+                        ? `Complete project · ${sourceFiles.length} files`
+                        : `Kompletny projekt · ${sourceFiles.length} plików`}
+                    </span>
                   </span>
                 </div>
                 <h2 className="text-xl sm:text-2xl font-extrabold text-white">{activeProject.title}</h2>
@@ -340,10 +390,10 @@ export const ProjectsView: React.FC = () => {
               </div>
             </div>
 
-            {/* Full Source Code Explorer (Complete multi-file implementation) */}
+            {/* Full Source Code Explorer & Live Preview (Complete multi-file implementation) */}
             {sourceFiles.length > 0 && activeSourceFile && (
               <div id="project-full-source" className="space-y-3 pt-2 border-t border-slate-800">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
                       <Code2 className="h-4 w-4 text-cyan-400" />
@@ -354,62 +404,164 @@ export const ProjectsView: React.FC = () => {
                       </span>
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {isEn
-                        ? 'Complete, working implementation of all project modules — inspect files, study architecture, and copy production-ready code.'
-                        : 'Kompletna, działająca implementacja wszystkich modułów projektu — przeglądaj pliki, analizuj architekturę i kopiuj gotowy kod.'}
+                      {livePreviewHtml
+                        ? isEn
+                          ? 'Complete multi-file codebase — inspect every file, test the live interactive app in your browser, or download a ready-to-run .ZIP.'
+                          : 'Kompletna baza kodu — przeglądaj wszystkie pliki, uruchom interaktywny podgląd na żywo lub pobierz gotową paczkę .ZIP.'
+                        : isEn
+                          ? 'Complete production codebase (config, schemas, backend, frontend, README) — inspect all files or download as a ready-to-run .ZIP.'
+                          : 'Kompletna baza produkcyjna (konfiguracja, schematy, backend, frontend, README) — przeglądaj pliki lub pobierz gotową paczkę .ZIP.'}
                     </p>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
-                    <FolderOpen className="h-3.5 w-3.5" />
-                    <span>{isEn ? 'File Explorer' : 'Eksplorator Plików'}</span>
-                  </span>
-                </div>
 
-                {/* File Switcher Tabs */}
-                <div className="flex flex-wrap gap-1.5 rounded-xl bg-slate-950/90 p-2 border border-slate-800">
-                  {sourceFiles.map((file, idx) => {
-                    const isFileActive = idx === activeFileIndex;
-                    const linesCount = file.code.split('\n').length;
-                    return (
-                      <button
-                        key={file.path}
-                        type="button"
-                        onClick={() => setActiveFileIndex(idx)}
-                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
-                          isFileActive
-                            ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                            : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800'
-                        }`}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {livePreviewHtml && (
+                      <div
+                        role="tablist"
+                        aria-label={isEn ? 'Project view mode' : 'Tryb podglądu projektu'}
+                        className="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800"
                       >
-                        <FileCode className="h-3.5 w-3.5 shrink-0 opacity-80" />
-                        <span>{file.path}</span>
-                        <span className={`text-[10px] tabular-nums ${isFileActive ? 'text-indigo-200' : 'text-slate-500'}`}>
-                          ({linesCount}L)
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={explorerMode === 'code'}
+                          onClick={() => setExplorerMode('code')}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                            explorerMode === 'code'
+                              ? 'bg-indigo-600 text-white shadow-sm'
+                              : 'text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          <FolderOpen className="h-3.5 w-3.5" />
+                          <span>{isEn ? 'Source code' : 'Kod źródłowy'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={explorerMode === 'preview'}
+                          onClick={() => setExplorerMode('preview')}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                            explorerMode === 'preview'
+                              ? 'bg-emerald-600 text-white shadow-sm'
+                              : 'text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          <Play className="h-3.5 w-3.5" />
+                          <span>{isEn ? 'Live preview' : 'Podgląd na żywo'}</span>
+                        </button>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleDownloadProjectZip}
+                      data-testid="download-project-zip-btn"
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        zipDownloaded
+                          ? 'bg-emerald-600/20 text-emerald-300 border-emerald-500/40'
+                          : 'bg-cyan-600 hover:bg-cyan-500 text-white border-cyan-500/40 shadow-sm'
+                      }`}
+                    >
+                      {zipDownloaded ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                      <span>
+                        {zipDownloaded
+                          ? isEn
+                            ? 'Downloaded .ZIP!'
+                            : 'Pobrano .ZIP!'
+                          : isEn
+                          ? 'Download project (.ZIP)'
+                          : 'Pobierz projekt (.ZIP)'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {explorerMode === 'preview' && livePreviewHtml ? (
+                  <div className="space-y-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-500/30 bg-emerald-950/20 px-4 py-2 text-xs text-emerald-200">
+                      <span className="flex items-center gap-2">
+                        <Play className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                        <span>
+                          {isEn
+                            ? `Running bundled live app from ${sourceFiles.length} project files inside an isolated sandbox.`
+                            : `Uruchomiona na żywo aplikacja skompilowana z ${sourceFiles.length} plików projektu w izolowanej piaskownicy.`}
                         </span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewNonce((n) => n + 1)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-slate-200 cursor-pointer"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        <span>{isEn ? 'Reload preview' : 'Odśwież podgląd'}</span>
                       </button>
-                    );
-                  })}
-                </div>
+                    </div>
+                    <iframe
+                      key={`${activeProject.id}-${previewNonce}`}
+                      title={
+                        isEn
+                          ? `Live preview — ${activeProject.title}`
+                          : `Podgląd na żywo — ${activeProject.title}`
+                      }
+                      data-testid="project-live-preview-iframe"
+                      srcDoc={livePreviewHtml}
+                      sandbox="allow-scripts allow-forms allow-modals allow-downloads"
+                      className="w-full h-[560px] rounded-xl border border-slate-700 bg-slate-950"
+                    />
+                  </div>
+                ) : (
+                  <>
+                    {/* File Switcher Tabs */}
+                    <div className="flex flex-wrap gap-1.5 rounded-xl bg-slate-950/90 p-2 border border-slate-800">
+                      {sourceFiles.map((file, idx) => {
+                        const isFileActive = idx === activeFileIndex;
+                        const linesCount = file.code.split('\n').length;
+                        return (
+                          <button
+                            key={file.path}
+                            type="button"
+                            onClick={() => setActiveFileIndex(idx)}
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors cursor-pointer ${
+                              isFileActive
+                                ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                                : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800'
+                            }`}
+                          >
+                            <FileCode className="h-3.5 w-3.5 shrink-0 opacity-80" />
+                            <span>{file.path}</span>
+                            <span className={`text-[10px] tabular-nums ${isFileActive ? 'text-indigo-200' : 'text-slate-500'}`}>
+                              ({linesCount}L)
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
 
-                {/* Active File Description */}
-                <div className="rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-2.5 text-xs text-slate-300 flex items-start gap-2">
-                  <ChevronRight className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
-                  <span>
-                    <strong className="text-white font-mono">{activeSourceFile.path}:</strong>{' '}
-                    <RichInlineText text={activeSourceFile.description} />
-                  </span>
-                </div>
+                    {/* Active File Description */}
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-2.5 text-xs text-slate-300 flex items-start gap-2">
+                      <ChevronRight className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
+                      <span>
+                        <strong className="text-white font-mono">{activeSourceFile.path}:</strong>{' '}
+                        <RichInlineText text={activeSourceFile.description} />
+                      </span>
+                    </div>
 
-                {/* Active File Code Block with Line Numbers & Copy Button */}
-                <CodeBlock
-                  key={`${activeProject.id}-${activeSourceFile.path}`}
-                  code={activeSourceFile.code}
-                  language={activeSourceFile.language}
-                  title={activeSourceFile.path}
-                  badge={isEn ? 'Full code' : 'Pełny kod'}
-                  badgeColor="indigo"
-                  maxHeightClass="max-h-[520px]"
-                />
+                    {/* Active File Code Block with Line Numbers & Copy Button */}
+                    <CodeBlock
+                      key={`${activeProject.id}-${activeSourceFile.path}`}
+                      code={activeSourceFile.code}
+                      language={activeSourceFile.language}
+                      title={activeSourceFile.path}
+                      badge={isEn ? 'Full code' : 'Pełny kod'}
+                      badgeColor="indigo"
+                      maxHeightClass="max-h-[520px]"
+                    />
+                  </>
+                )}
               </div>
             )}
 
