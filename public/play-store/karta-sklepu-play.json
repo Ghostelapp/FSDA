@@ -3,7 +3,7 @@
   "versionName": "3.1.0",
   "versionCode": 8,
   "targetSdk": 35,
-  "minSdk": 21,
+  "minSdk": 24,
   "defaultLanguage": "pl-PL",
   "title": "Full Stack Academy — Kurs IT",
   "shortDescription": "Nauka programowania od zera do Full Stack Developera: HTML, JS, React, SQL i Git",

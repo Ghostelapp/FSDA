@@ -34,6 +34,7 @@ test('twa-manifest.json and public/twa-manifest.json are identical and pass Goog
   assert.equal(rootManifest.appVersionName, '3.1.0');
 
   const appGradle = fs.readFileSync(path.resolve('android/app/build.gradle'), 'utf-8');
+  assert.ok(appGradle.includes('minSdk 24'), 'android/app/build.gradle must declare minSdk 24 for Google Play Automatic Protection');
   assert.ok(appGradle.includes('versionCode 8'), 'android/app/build.gradle must declare versionCode 8');
   assert.ok(appGradle.includes('versionName "3.1.0"'), 'android/app/build.gradle must declare versionName "3.1.0"');
 

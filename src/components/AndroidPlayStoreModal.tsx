@@ -137,7 +137,7 @@ const LISTING_META_CONFIG: PlayStoreListingMeta = {
   privacyPolicyUrl: PRIVACY_POLICY_URL,
   contactEmail: 'zordonzordon1@gmail.com',
   targetSdk: 35,
-  minSdk: 21,
+  minSdk: 24,
   assets: {
     icon512: '/pwa-512x512.png',
     maskable512: '/pwa-maskable-512x512.png',

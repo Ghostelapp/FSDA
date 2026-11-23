@@ -437,7 +437,7 @@ android {
 
     defaultConfig {
         applicationId "com.fullstackacademy.app"
-        minSdk 21
+        minSdk 24
         targetSdk 35
         versionCode 8
         versionName "3.1.0"
