@@ -14,9 +14,9 @@ fs.copyFileSync(path.join(rootDir, 'public/pwa-512x512.png'), path.join(expoAsse
 fs.copyFileSync(path.join(rootDir, 'public/pwa-maskable-512x512.png'), path.join(expoAssetsDir, 'adaptive-icon.png'));
 
 const QUICK_START_TXT = `========================================================================
-  FULL STACK ACADEMY — PAKIET PUBLIKACJI GOOGLE PLAY & EXPO APK (v3.1.0)
+  FULL STACK ACADEMY — PAKIET PUBLIKACJI GOOGLE PLAY & EXPO APK (v3.1.1)
   Pakiet Android: com.fullstackacademy.app | Target SDK: 35 (Android 15)
-  Domena Produkcyjna: https://fsda.tech | Wersja: 3.1.0 (versionCode 8)
+  Domena Produkcyjna: https://fsda.tech | Wersja: 3.1.1 (versionCode 9)
 ========================================================================
 
 SPOSÓB 1 — NAJSZYBSZY: GENEROWANIE .APK PRZEZ EXPO (EAS BUILD W CHMURZE)

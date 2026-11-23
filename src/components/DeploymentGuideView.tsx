@@ -29,8 +29,8 @@ export const DeploymentGuideView: React.FC = () => {
     setIsDownloadingAab(true);
     try {
       await downloadVerifiedAssetFile(
-        '/play-store/fullstack-academy-v3.1.0-vc8.aab',
-        'fullstack-academy-v3.1.0-vc8.aab',
+        '/play-store/fullstack-academy-v3.1.1-vc9.aab',
+        'fullstack-academy-v3.1.1-vc9.aab',
         'application/octet-stream'
       );
     } finally {
@@ -286,8 +286,8 @@ npx @bubblewrap/cli build`;
                 <Smartphone className="h-5 w-5" />
                 <h2 className="text-white">
                   {isEn
-                    ? 'Google Play & Apple App Store Production Bundles (Admin Only — v3.1.0)'
-                    : 'Pakiety Produkcyjne Google Play & Apple App Store (Tylko Admin — v3.1.0)'}
+                    ? 'Google Play & Apple App Store Production Bundles (Admin Only — v3.1.1)'
+                    : 'Pakiety Produkcyjne Google Play & Apple App Store (Tylko Admin — v3.1.1)'}
                 </h2>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
@@ -313,7 +313,7 @@ npx @bubblewrap/cli build`;
                 <span>
                   {isDownloadingAab
                     ? isEn ? 'Downloading...' : 'Pobieranie...'
-                    : isEn ? 'Signed .AAB (v3.1.0)' : 'Gotowe .AAB (v3.1.0)'}
+                    : isEn ? 'Signed .AAB (v3.1.1)' : 'Gotowe .AAB (v3.1.1)'}
                 </span>
               </button>
               <button
