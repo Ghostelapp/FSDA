@@ -453,7 +453,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       <div className="grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x divide-slate-800 min-h-[420px]">
         
         {/* LEFT COLUMN: Code Tabs & Interactive Syntax-Colored Editor */}
-        <div className="flex flex-col bg-slate-950">
+        <div className="fsda-keep-dark flex flex-col bg-slate-950">
           
           {/* File Tabs & Highlight Toggle */}
           <div className="flex items-center justify-between border-b border-slate-800/80 bg-slate-900/70 px-3">

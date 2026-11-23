@@ -241,7 +241,7 @@ html.light ::-webkit-scrollbar-thumb:hover {
 }
 
 html.light header.z-40,
-html.light aside,
+html.light aside:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light footer {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
@@ -251,43 +251,58 @@ html.light .brand-logo-wordmark {
   color: #0f172a !important;
 }
 
+/* Modal & drawer dark translucent scrims -> clean frosted slate scrim */
+html.light .fixed.inset-0.bg-black\/80,
+html.light .fixed.inset-0.bg-black\/85,
+html.light .fixed.inset-0.bg-slate-950\/80,
+html.light .fixed.inset-0.bg-slate-950\/85,
+html.light .fixed.inset-0.bg-slate-950\/90 {
+  background-color: rgba(15, 23, 42, 0.55) !important;
+}
+
 /* Primary page shell dark hex backgrounds -> Light slate canvas */
-html.light .bg-\[\#06080E\],
-html.light .bg-\[\#06080E\]\/90,
-html.light .bg-\[\#06080E\]\/85,
-html.light .bg-\[\#05070D\],
-html.light .bg-\[\#04060B\],
-html.light .bg-\[\#090D16\] {
+html.light .bg-\[\#06080E\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#06080E\]\/90:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#06080E\]\/85:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#05070D\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#04060B\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#090D16\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#0E1422\]:not(.fsda-keep-dark, .fsda-keep-dark *) {
   background-color: #f8fafc !important;
 }
 
-/* Dark Slate backgrounds -> Crisp Light surfaces */
-html.light .bg-slate-950,
-html.light .bg-slate-950\/95,
-html.light .bg-slate-950\/90,
-html.light .bg-slate-950\/80,
-html.light .bg-slate-950\/75,
-html.light .bg-slate-950\/70,
-html.light .bg-slate-950\/60,
-html.light .bg-slate-950\/50,
-html.light .bg-slate-950\/40,
+/* Recessed panels, inputs, course-map tracks -> Soft light slate surface */
+html.light .bg-slate-950:not(.fsda-keep-dark, .fsda-keep-dark *):not(.fixed.inset-0),
+html.light .bg-slate-950\/95:not(.fsda-keep-dark, .fsda-keep-dark *):not(.fixed.inset-0),
+html.light .bg-slate-950\/90:not(.fsda-keep-dark, .fsda-keep-dark *):not(.fixed.inset-0),
+html.light .bg-slate-950\/85:not(.fsda-keep-dark, .fsda-keep-dark *):not(.fixed.inset-0),
+html.light .bg-slate-950\/80:not(.fsda-keep-dark, .fsda-keep-dark *):not(.fixed.inset-0),
+html.light .bg-slate-950\/75:not(.fsda-keep-dark, .fsda-keep-dark *):not(.fixed.inset-0),
+html.light .bg-slate-950\/70:not(.fsda-keep-dark, .fsda-keep-dark *):not(.fixed.inset-0),
+html.light .bg-slate-950\/60:not(.fsda-keep-dark, .fsda-keep-dark *):not(.fixed.inset-0),
+html.light .bg-slate-950\/50:not(.fsda-keep-dark, .fsda-keep-dark *):not(.fixed.inset-0),
+html.light .bg-slate-950\/40:not(.fsda-keep-dark, .fsda-keep-dark *):not(.fixed.inset-0),
+html.light .bg-slate-950\/30:not(.fsda-keep-dark, .fsda-keep-dark *):not(.fixed.inset-0),
 html.light .bg-\[\#060911\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#070A12\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#070B13\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#080C15\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#090E1A\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#0A131F\]:not(.fsda-keep-dark, .fsda-keep-dark *) {
   background-color: #f1f5f9 !important;
 }
 
-html.light .bg-slate-900,
-html.light .bg-slate-900\/95,
-html.light .bg-slate-900\/90,
-html.light .bg-slate-900\/80,
-html.light .bg-slate-900\/75,
-html.light .bg-slate-900\/70,
-html.light .bg-slate-900\/60,
-html.light .bg-slate-900\/50,
-html.light .bg-slate-900\/40,
+/* Elevated dark cards & interactive surfaces -> Crisp pure white */
+html.light .bg-slate-900:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-900\/95:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-900\/90:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-900\/80:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-900\/75:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-900\/70:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-900\/65:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-900\/60:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-900\/50:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-900\/40:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#0b101b\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#0B101B\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#0B101B\]\/90:not(.fsda-keep-dark, .fsda-keep-dark *),
@@ -297,91 +312,284 @@ html.light .bg-\[\#0D1526\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#0E111B\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#0E1523\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#0F1624\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#0F1626\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#0F172A\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#101726\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-\[\#101726\]\/80:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#10172A\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#111827\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .bg-\[\#11192E\]:not(.fsda-keep-dark, .fsda-keep-dark *) {
   background-color: #ffffff !important;
 }
 
+/* Secondary slate buttons, badges & subtle glass overlays -> Soft light slate */
+html.light .bg-slate-800:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-800\/95:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-800\/90:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-800\/85:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-800\/80:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-800\/60:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-800\/40:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-slate-700:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-white\/10:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #e2e8f0 !important;
+}
+
+html.light .bg-white\/\[0\.02\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-white\/\[0\.04\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-white\/\[0\.06\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-white\/\[0\.12\]:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #f1f5f9 !important;
+}
+
+/* Subtle vertical/horizontal connectors that used bg-white/10 */
+html.light .w-0\.5.bg-white\/10:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .w-px.bg-white\/10:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .h-px.bg-white\/10:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #cbd5e1 !important;
+}
+
+/* Dark Colored Tints (bg-*-900 / bg-*-950) -> Clean Soft Pastel Light Tints */
+html.light .bg-indigo-950\/20:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-indigo-950\/25:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-indigo-950\/30:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-indigo-950\/40:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #eef2ff !important;
+}
+
+html.light .bg-indigo-900:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-indigo-950\/50:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-indigo-950\/60:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-indigo-950\/80:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-indigo-950\/90:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #e0e7ff !important;
+}
+
+html.light .bg-emerald-950\/15:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-emerald-950\/20:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-emerald-950\/25:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-emerald-950\/30:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-emerald-950\/35:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-emerald-950\/40:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #ecfdf5 !important;
+}
+
+html.light .bg-emerald-950\/50:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-emerald-950\/60:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-emerald-950\/70:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-emerald-950\/80:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #d1fae5 !important;
+}
+
+html.light .bg-rose-950\/20:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-rose-950\/25:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-rose-950\/30:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-rose-950\/35:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-rose-950\/40:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #fff1f2 !important;
+}
+
+html.light .bg-rose-950\/50:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-rose-950\/60:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-rose-950\/70:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-rose-950\/80:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-rose-950\/90:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #ffe4e6 !important;
+}
+
+html.light .bg-amber-950\/20:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-amber-950\/25:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-amber-950\/30:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-amber-950\/40:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #fffbeb !important;
+}
+
+html.light .bg-amber-950\/50:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-amber-950\/55:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-amber-950\/90:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #fef3c7 !important;
+}
+
+html.light .bg-orange-950\/65:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #fff7ed !important;
+}
+
+html.light .bg-cyan-950\/15:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-cyan-950\/20:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-cyan-950\/30:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-cyan-950\/60:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .bg-cyan-950\/80:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #ecfeff !important;
+}
+
+html.light .bg-sky-950\/50:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  background-color: #f0f9ff !important;
+}
+
 /* Dark gradient panels -> Soft Light surfaces in Light Mode */
-html.light .from-\[\#0B101B\]:not(.fsda-keep-dark),
-html.light .from-slate-950:not(.fsda-keep-dark),
-html.light .from-slate-900:not(.fsda-keep-dark),
-html.light .from-slate-850:not(.fsda-keep-dark) {
+html.light .from-\[\#0B101B\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .from-\[\#0B1120\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .from-slate-950:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .from-slate-900:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .from-slate-850:not(.fsda-keep-dark, .fsda-keep-dark *) {
   --tw-gradient-from: #ffffff !important;
 }
 
-html.light .from-indigo-950:not(.fsda-keep-dark),
-html.light .from-indigo-950\/70:not(.fsda-keep-dark),
-html.light .from-indigo-950\/60:not(.fsda-keep-dark),
-html.light .from-indigo-950\/50:not(.fsda-keep-dark),
-html.light .from-indigo-950\/30:not(.fsda-keep-dark) {
+html.light .from-indigo-950:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .from-indigo-950\/70:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .from-indigo-950\/60:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .from-indigo-950\/50:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .from-indigo-950\/30:not(.fsda-keep-dark, .fsda-keep-dark *) {
   --tw-gradient-from: #eef2ff !important;
 }
 
-html.light .from-emerald-950\/35:not(.fsda-keep-dark) {
+html.light .from-emerald-950\/35:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .from-emerald-950\/50:not(.fsda-keep-dark, .fsda-keep-dark *) {
   --tw-gradient-from: #ecfdf5 !important;
 }
 
-html.light .from-rose-950\/70:not(.fsda-keep-dark),
-html.light .from-rose-950\/30:not(.fsda-keep-dark) {
+html.light .from-rose-950\/70:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .from-rose-950\/30:not(.fsda-keep-dark, .fsda-keep-dark *) {
   --tw-gradient-from: #fff1f2 !important;
 }
 
-html.light .via-slate-900:not(.fsda-keep-dark),
-html.light .via-slate-900\/90:not(.fsda-keep-dark) {
-  --tw-gradient-via: #ffffff !important;
+html.light .from-sky-950\/60:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  --tw-gradient-from: #f0f9ff !important;
 }
 
-html.light .to-slate-950:not(.fsda-keep-dark),
-html.light .to-slate-900:not(.fsda-keep-dark),
-html.light .to-slate-900\/90:not(.fsda-keep-dark) {
+html.light .via-\[\#0B101B\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .via-\[\#0B101B\]\/45:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .via-\[\#131C31\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .via-slate-900:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .via-slate-900\/90:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  --tw-gradient-via: #f8fafc !important;
+}
+
+html.light .to-\[\#06080E\]:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .to-slate-950:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .to-slate-900:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .to-slate-900\/90:not(.fsda-keep-dark, .fsda-keep-dark *) {
   --tw-gradient-to: #f1f5f9 !important;
 }
 
-html.light .to-indigo-950\/70:not(.fsda-keep-dark),
-html.light .to-indigo-950\/30:not(.fsda-keep-dark) {
+html.light .to-indigo-950\/70:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .to-indigo-950\/30:not(.fsda-keep-dark, .fsda-keep-dark *) {
   --tw-gradient-to: #eef2ff !important;
 }
 
 /* Accent text gradients inside Light Mode */
-html.light .bg-clip-text.from-indigo-400:not(.fsda-keep-dark *) {
+html.light .bg-clip-text.from-indigo-400:not(.fsda-keep-dark, .fsda-keep-dark *) {
   --tw-gradient-from: #4338ca !important;
 }
 
-html.light .bg-clip-text.to-cyan-400:not(.fsda-keep-dark *) {
+html.light .bg-clip-text.to-cyan-400:not(.fsda-keep-dark, .fsda-keep-dark *) {
   --tw-gradient-to: #0e7490 !important;
 }
 
-html.light .bg-slate-800,
-html.light .bg-slate-800\/90,
-html.light .bg-slate-800\/80,
-html.light .bg-slate-800\/60,
-html.light .bg-white\/\[0\.04\]:not(.fsda-keep-dark, .fsda-keep-dark *),
-html.light .bg-white\/\[0\.06\]:not(.fsda-keep-dark, .fsda-keep-dark *) {
-  background-color: #e2e8f0 !important;
+/* Hover States in Light Mode (prevent dark-charcoal flashes on hover) */
+html.light .hover\:bg-\[\#0B101B\]:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-\[\#0F1626\]:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-slate-950:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-slate-950\/50:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-slate-900:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-white\/\[0\.02\]:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-white\/\[0\.04\]:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-white\/\[0\.12\]:not(.fsda-keep-dark, .fsda-keep-dark *):hover {
+  background-color: #f1f5f9 !important;
 }
 
-html.light .border-slate-900,
-html.light .border-slate-800,
-html.light .border-slate-800\/80,
-html.light .border-slate-800\/60,
-html.light .border-slate-700,
+html.light .hover\:bg-slate-800:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-slate-800\/40:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-slate-800\/60:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-slate-800\/80:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-slate-800\/90:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-slate-700:not(.fsda-keep-dark, .fsda-keep-dark *):hover {
+  background-color: #cbd5e1 !important;
+}
+
+html.light .hover\:bg-indigo-950\/30:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-indigo-900\/40:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-indigo-900\/80:not(.fsda-keep-dark, .fsda-keep-dark *):hover {
+  background-color: #e0e7ff !important;
+}
+
+html.light .hover\:bg-emerald-950\/60:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-emerald-900\/40:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-emerald-900\/50:not(.fsda-keep-dark, .fsda-keep-dark *):hover {
+  background-color: #d1fae5 !important;
+}
+
+html.light .hover\:bg-rose-950\/30:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-rose-950\/40:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-rose-950\/50:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-rose-950\/60:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-rose-900\/40:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-rose-900\/50:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:bg-rose-900\/60:not(.fsda-keep-dark, .fsda-keep-dark *):hover {
+  background-color: #ffe4e6 !important;
+}
+
+html.light .hover\:bg-amber-900\/40:not(.fsda-keep-dark, .fsda-keep-dark *):hover {
+  background-color: #fef3c7 !important;
+}
+
+html.light .hover\:text-white:not(.bg-indigo-600, .bg-indigo-500, .bg-indigo-700, .bg-emerald-600, .bg-emerald-500, .bg-rose-600, .bg-rose-500, .bg-cyan-600, .bg-amber-600, .bg-sky-600, .bg-violet-600, .bg-\[\#0077b5\], .fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:text-\[\#F8FAFC\]:not(.fsda-keep-dark, .fsda-keep-dark *):hover,
+html.light .hover\:text-\[\#CBD5E1\]:not(.fsda-keep-dark, .fsda-keep-dark *):hover {
+  color: #0f172a !important;
+}
+
+/* Soften dark-navy colored shadows in Light Mode */
+html.light .shadow-indigo-950\/60:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .shadow-indigo-950\/40:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  --tw-shadow-color: rgba(79, 70, 229, 0.16) !important;
+}
+
+html.light .shadow-emerald-950\/40:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  --tw-shadow-color: rgba(5, 150, 105, 0.16) !important;
+}
+
+/* Borders & Dividers in Light Mode */
+html.light .border-slate-900:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-slate-800:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-slate-800\/90:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-slate-800\/80:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-slate-800\/70:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-slate-800\/60:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-slate-800\/50:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-slate-800\/40:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-slate-700:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-slate-700\/80:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-slate-700\/70:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .border-white\/\[0\.06\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .border-white\/\[0\.08\]:not(.fsda-keep-dark, .fsda-keep-dark *),
 html.light .border-white\/10:not(.fsda-keep-dark, .fsda-keep-dark *),
-html.light .border-white\/15:not(.fsda-keep-dark, .fsda-keep-dark *) {
+html.light .border-white\/15:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-white\/25:not(.fsda-keep-dark, .fsda-keep-dark *) {
   border-color: #cbd5e1 !important;
 }
 
-html.light .divide-white\/\[0\.08\]:not(.fsda-keep-dark, .fsda-keep-dark *) > :not(:last-child) {
+html.light .border-amber-900\/40:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  border-color: #fcd34d !important;
+}
+
+html.light .border-emerald-800\/40:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  border-color: #6ee7b7 !important;
+}
+
+html.light .border-rose-800\/50:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-rose-900\/30:not(.fsda-keep-dark, .fsda-keep-dark *),
+html.light .border-rose-900\/40:not(.fsda-keep-dark, .fsda-keep-dark *) {
+  border-color: #fda4af !important;
+}
+
+html.light .divide-white\/\[0\.08\]:not(.fsda-keep-dark, .fsda-keep-dark *) > :not(:last-child),
+html.light .divide-slate-800:not(.fsda-keep-dark, .fsda-keep-dark *) > :not(:last-child) {
   border-color: #cbd5e1 !important;
 }
 
 /* Typography contrast in Light Mode */
-html.light .text-white:not(.bg-indigo-600 *):not(.bg-emerald-600 *):not(.bg-rose-600 *):not(.bg-cyan-600 *):not(.bg-amber-600 *):not(.bg-indigo-600):not(.bg-emerald-600):not(.bg-rose-600):not(.bg-cyan-600):not(.bg-amber-600):not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *):not(code),
+html.light .text-white:not(.bg-indigo-600 *):not(.bg-indigo-500 *):not(.bg-indigo-700 *):not(.bg-emerald-600 *):not(.bg-emerald-500 *):not(.bg-rose-600 *):not(.bg-rose-500 *):not(.bg-cyan-600 *):not(.bg-amber-600 *):not(.bg-sky-600 *):not(.bg-violet-600 *):not(.bg-\[\#0077b5\] *):not(.bg-indigo-600):not(.bg-indigo-500):not(.bg-indigo-700):not(.bg-emerald-600):not(.bg-emerald-500):not(.bg-rose-600):not(.bg-rose-500):not(.bg-cyan-600):not(.bg-amber-600):not(.bg-sky-600):not(.bg-violet-600):not(.bg-\[\#0077b5\]):not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *):not(code),
 html.light .text-\[\#F8FAFC\]:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-indigo-600 *):not(pre *) {
   color: #0f172a !important;
 }
@@ -397,28 +605,77 @@ html.light .text-\[\#CBD5E1\]:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *)
   color: #334155 !important;
 }
 
-html.light .text-slate-400:not(.fsda-keep-dark *):not(pre *),
-html.light .text-slate-500:not(.fsda-keep-dark *):not(pre *),
-html.light .text-\[\#94A3B8\]:not(.fsda-keep-dark *):not(pre *),
-html.light .text-\[\#64748B\]:not(.fsda-keep-dark *):not(pre *),
-html.light .text-\[\#475569\]:not(.fsda-keep-dark *):not(pre *) {
+html.light .text-slate-400:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *),
+html.light .text-slate-500:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *),
+html.light .text-\[\#94A3B8\]:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *),
+html.light .text-\[\#64748B\]:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *),
+html.light .text-\[\#475569\]:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *) {
   color: #475569 !important;
 }
 
-/* Accent label readability in Light Mode */
-html.light .text-indigo-300:not(.fsda-keep-dark *):not(.bg-indigo-600 *),
-html.light .text-indigo-400:not(.fsda-keep-dark *):not(.bg-indigo-600 *) {
+/* High-contrast Accent Labels in Light Mode (WCAG AA/AAA on light surfaces) */
+html.light .text-indigo-100:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-indigo-600 *):not(pre *),
+html.light .text-indigo-200:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-indigo-600 *):not(pre *),
+html.light .text-indigo-300:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-indigo-600 *):not(pre *),
+html.light .text-indigo-400:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-indigo-600 *):not(pre *),
+html.light .text-indigo-400\/80:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-indigo-600 *):not(pre *) {
   color: #4338ca !important;
 }
 
-html.light .text-emerald-300:not(.fsda-keep-dark *):not(.bg-emerald-600 *),
-html.light .text-emerald-400:not(.fsda-keep-dark *):not(.bg-emerald-600 *) {
+html.light .text-emerald-100:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-emerald-600 *):not(pre *),
+html.light .text-emerald-200:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-emerald-600 *):not(pre *),
+html.light .text-emerald-300:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-emerald-600 *):not(pre *),
+html.light .text-emerald-300\/90:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-emerald-600 *):not(pre *),
+html.light .text-emerald-400:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-emerald-600 *):not(pre *) {
   color: #047857 !important;
 }
 
-html.light .text-amber-300:not(.fsda-keep-dark *):not(.bg-amber-600 *),
-html.light .text-amber-400:not(.fsda-keep-dark *):not(.bg-amber-600 *) {
+html.light .text-amber-100:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-amber-600 *):not(pre *),
+html.light .text-amber-100\/90:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-amber-600 *):not(pre *),
+html.light .text-amber-200:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-amber-600 *):not(pre *),
+html.light .text-amber-300:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-amber-600 *):not(pre *),
+html.light .text-amber-400:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-amber-600 *):not(pre *),
+html.light .text-amber-400\/90:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-amber-600 *):not(pre *),
+html.light .text-yellow-400:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-amber-600 *):not(pre *) {
   color: #b45309 !important;
+}
+
+html.light .text-rose-200:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-rose-600 *):not(pre *),
+html.light .text-rose-300:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-rose-600 *):not(pre *),
+html.light .text-rose-300\/90:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-rose-600 *):not(pre *),
+html.light .text-rose-400:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-rose-600 *):not(pre *) {
+  color: #be123c !important;
+}
+
+html.light .text-cyan-200:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-cyan-600 *):not(pre *),
+html.light .text-cyan-300:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-cyan-600 *):not(pre *),
+html.light .text-cyan-400:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-cyan-600 *):not(pre *) {
+  color: #0e7490 !important;
+}
+
+html.light .text-sky-200:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-sky-600 *):not(pre *),
+html.light .text-sky-300:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-sky-600 *):not(pre *),
+html.light .text-sky-400:not(.fsda-keep-dark, .fsda-keep-dark *):not(.bg-sky-600 *):not(pre *) {
+  color: #0369a1 !important;
+}
+
+html.light .text-blue-400:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *) {
+  color: #1d4ed8 !important;
+}
+
+html.light .text-violet-400:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *),
+html.light .text-purple-300:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *),
+html.light .text-purple-400:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *) {
+  color: #6d28d9 !important;
+}
+
+html.light .text-orange-200:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *),
+html.light .text-orange-400:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *) {
+  color: #c2410c !important;
+}
+
+html.light .text-teal-300:not(.fsda-keep-dark, .fsda-keep-dark *):not(pre *) {
+  color: #0f766e !important;
 }
 
 /* High-contrast inline code tokens in Light Mode */
@@ -452,13 +709,23 @@ html.light code.fsda-token-general:not(.fsda-keep-dark *) {
   color: #1e293b !important;
 }
 
-/* Keep code editors, terminals, and IDE showcase cards dark in Light Mode */
+/* Keep code editors, terminals, and IDE showcase cards cleanly dark in Light Mode */
 html.light .bg-\[\#0d1117\],
 html.light .bg-\[\#161b22\],
+html.light .bg-\[\#161b22\]\/80,
 html.light pre.bg-slate-950,
 html.light .fsda-keep-dark {
   background-color: #0b101b !important;
   color: #e2e8f0 !important;
+}
+
+html.light .fsda-keep-dark .bg-\[\#0d1117\] {
+  background-color: #0d1117 !important;
+}
+
+html.light .fsda-keep-dark .bg-\[\#161b22\],
+html.light .fsda-keep-dark .bg-\[\#161b22\]\/80 {
+  background-color: #161b22 !important;
 }
 
 /* =========================================================

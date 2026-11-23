@@ -1007,6 +1007,44 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                     </button>
                   </div>
                 </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 border-t border-emerald-500/20 text-[11px]">
+                  <span className="text-slate-300">
+                    {isEn ? (
+                      <>
+                        Play Console says wrong upload key? Upload <code>upload_certificate.pem</code> in <strong>App signing → Request upload key reset</strong>.
+                      </>
+                    ) : (
+                      <>
+                        Play Console zgłasza inny klucz podpisu? Wgraj <code>upload_certificate.pem</code> w <strong>Podpisywanie aplikacji → Poproś o zresetowanie klucza przesyłania</strong>.
+                      </>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDownloadSingle(
+                        'upload_pem',
+                        '/play-store/upload_certificate.pem',
+                        'upload_certificate.pem',
+                        'application/x-pem-file'
+                      )
+                    }
+                    className="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 font-bold flex items-center justify-center gap-1.5 shrink-0 transition-colors cursor-pointer"
+                  >
+                    {downloadedSuccessId === 'upload_pem' ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>{isEn ? 'Downloaded .PEM!' : 'Pobrano .PEM!'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <KeyRound className="h-3.5 w-3.5" />
+                        <span>{isEn ? 'Download upload_certificate.pem' : 'Pobierz upload_certificate.pem'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Primary 1-Click Verified ZIP Download Bundle Card */}

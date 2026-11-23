@@ -39,7 +39,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   }[badgeColor];
 
   return (
-    <div className={`rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl ${className}`}>
+    <div className={`fsda-keep-dark rounded-2xl border border-slate-800 bg-slate-950 overflow-hidden shadow-2xl ${className}`}>
       {/* Code Header Bar with Top-Right Copy Button */}
       <div className="flex items-center justify-between gap-3 border-b border-slate-800/80 bg-slate-900/90 px-4 py-2.5">
         <div className="flex items-center gap-2 min-w-0">

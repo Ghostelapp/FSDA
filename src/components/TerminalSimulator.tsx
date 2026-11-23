@@ -735,7 +735,7 @@ Content-Length: 48
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Terminal Window (2 cols) */}
-        <div className="lg:col-span-2 rounded-2xl border border-slate-800 bg-[#0d1117] shadow-2xl overflow-hidden flex flex-col h-[440px] sm:h-[560px] max-w-full">
+        <div className="fsda-keep-dark lg:col-span-2 rounded-2xl border border-slate-800 bg-[#0d1117] shadow-2xl overflow-hidden flex flex-col h-[440px] sm:h-[560px] max-w-full">
           
           {/* Terminal Window Top Bar */}
           <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-[#161b22] border-b border-slate-800 flex items-center justify-between">
