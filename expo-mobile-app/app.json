@@ -2,7 +2,7 @@
   "expo": {
     "name": "Full Stack Academy",
     "slug": "fullstack-academy",
-    "version": "3.0.0",
+    "version": "3.1.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -43,7 +43,7 @@
     },
     "android": {
       "package": "com.fullstackacademy.app",
-      "versionCode": 7,
+      "versionCode": 8,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#020617"

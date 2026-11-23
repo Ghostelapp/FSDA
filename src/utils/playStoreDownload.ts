@@ -7,7 +7,7 @@ const PRODUCTION_HOST = 'fsda.tech';
 const EXPO_PACKAGE_JSON = JSON.stringify(
   {
     name: 'fullstack-academy-expo',
-    version: '3.0.0',
+    version: '3.1.0',
     private: true,
     main: 'App.tsx',
     scripts: {
@@ -47,7 +47,7 @@ const EXPO_APP_JSON = JSON.stringify(
     expo: {
       name: 'Full Stack Academy',
       slug: 'fullstack-academy',
-      version: '3.0.0',
+      version: '3.1.0',
       orientation: 'default',
       icon: './assets/icon.png',
       userInterfaceStyle: 'dark',
@@ -83,7 +83,7 @@ const EXPO_APP_JSON = JSON.stringify(
       },
       android: {
         package: 'com.fullstackacademy.app',
-        versionCode: 7,
+        versionCode: 8,
         adaptiveIcon: {
           foregroundImage: './assets/adaptive-icon.png',
           backgroundColor: '#020617',
@@ -371,8 +371,9 @@ registerRootComponent(App);
 `;
 
 const QUICK_START_TXT = `========================================================================
-  FULL STACK ACADEMY — PAKIET PUBLIKACJI GOOGLE PLAY & EXPO APK (v3.0.0)
+  FULL STACK ACADEMY — PAKIET PUBLIKACJI GOOGLE PLAY & EXPO APK (v3.1.0)
   Pakiet Android: com.fullstackacademy.app | Target SDK: 35 (Android 15)
+  Wersja: 3.1.0 (versionCode 8)
 ========================================================================
 
 SPOSÓB 1 — NAJSZYBSZY: GENEROWANIE .APK PRZEZ EXPO (EAS BUILD W CHMURZE)
@@ -412,7 +413,7 @@ const ANDROID_BUILD_GRADLE = `buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.5.2'
+        classpath 'com.android.tools.build:gradle:8.7.3'
     }
 }
 
@@ -438,8 +439,8 @@ android {
         applicationId "com.fullstackacademy.app"
         minSdk 21
         targetSdk 35
-        versionCode 7
-        versionName "3.0.0"
+        versionCode 8
+        versionName "3.1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 

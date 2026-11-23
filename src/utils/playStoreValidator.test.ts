@@ -30,8 +30,15 @@ test('twa-manifest.json and public/twa-manifest.json are identical and pass Goog
   assert.equal(rootManifest.packageId, 'com.fullstackacademy.app');
   assert.equal(rootManifest.host, 'fsda.tech');
   assert.equal(rootManifest.startUrl, '/app');
-  assert.equal(rootManifest.appVersionCode, 6);
-  assert.equal(rootManifest.appVersionName, '3.0.0');
+  assert.equal(rootManifest.appVersionCode, 8);
+  assert.equal(rootManifest.appVersionName, '3.1.0');
+
+  const appGradle = fs.readFileSync(path.resolve('android/app/build.gradle'), 'utf-8');
+  assert.ok(appGradle.includes('versionCode 8'), 'android/app/build.gradle must declare versionCode 8');
+  assert.ok(appGradle.includes('versionName "3.1.0"'), 'android/app/build.gradle must declare versionName "3.1.0"');
+
+  const rootGradle = fs.readFileSync(path.resolve('android/build.gradle'), 'utf-8');
+  assert.ok(rootGradle.includes('com.android.tools.build:gradle:8.7.3'), 'android/build.gradle must use AGP 8.7.3 for compileSdk 35');
 });
 
 test('public/.well-known/assetlinks.json passes Digital Asset Links SHA-256 verification', () => {
@@ -112,6 +119,18 @@ test('buildZipArchive produces valid PKZIP and public/fullstack-academy-google-p
   const easConfig = JSON.parse(fs.readFileSync(path.resolve('expo-mobile-app/eas.json'), 'utf-8'));
   assert.equal(easConfig.build.preview.android.buildType, 'apk');
   assert.equal(easConfig.build.production.android.buildType, 'app-bundle');
+
+  const releaseAab = new Uint8Array(
+    fs.readFileSync(path.resolve('public/play-store/fullstack-academy-v3.1.0-vc8.aab'))
+  );
+  assert.equal(isValidZipBuffer(releaseAab), true, 'Signed Google Play .aab must be a valid PKZIP bundle');
+  assert.ok(releaseAab.length > 1_000_000, 'Signed .aab bundle should be > 1 MB');
+
+  const releaseApk = new Uint8Array(
+    fs.readFileSync(path.resolve('public/play-store/fullstack-academy-v3.1.0-vc8.apk'))
+  );
+  assert.equal(isValidZipBuffer(releaseApk), true, 'Signed Android .apk must be a valid PKZIP archive');
+  assert.ok(releaseApk.length > 1_000_000, 'Signed .apk should be > 1 MB');
 });
 
 test('iOS App Store config, Privacy Manifest, Universal Links, PNG specs, and iOS ZIP archive are valid', () => {

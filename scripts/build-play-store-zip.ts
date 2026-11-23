@@ -14,9 +14,9 @@ fs.copyFileSync(path.join(rootDir, 'public/pwa-512x512.png'), path.join(expoAsse
 fs.copyFileSync(path.join(rootDir, 'public/pwa-maskable-512x512.png'), path.join(expoAssetsDir, 'adaptive-icon.png'));
 
 const QUICK_START_TXT = `========================================================================
-  FULL STACK ACADEMY — PAKIET PUBLIKACJI GOOGLE PLAY & EXPO APK (v3.0.0)
+  FULL STACK ACADEMY — PAKIET PUBLIKACJI GOOGLE PLAY & EXPO APK (v3.1.0)
   Pakiet Android: com.fullstackacademy.app | Target SDK: 35 (Android 15)
-  Domena Produkcyjna: https://fsda.tech | Wersja: 3.0.0 (versionCode 4)
+  Domena Produkcyjna: https://fsda.tech | Wersja: 3.1.0 (versionCode 8)
 ========================================================================
 
 SPOSÓB 1 — NAJSZYBSZY: GENEROWANIE .APK PRZEZ EXPO (EAS BUILD W CHMURZE)
@@ -54,7 +54,7 @@ function collectDirectoryFiles(dirPath: string, entries: ZipEntryInput[], baseDi
   if (!fs.existsSync(dirPath)) return;
   const items = fs.readdirSync(dirPath, { withFileTypes: true });
   for (const item of items) {
-    if (item.name === 'node_modules' || item.name === '.expo') continue;
+    if (item.name === 'node_modules' || item.name === '.expo' || item.name === 'build' || item.name === '.gradle') continue;
     const fullPath = path.join(dirPath, item.name);
     if (item.isDirectory()) {
       collectDirectoryFiles(fullPath, entries, baseDir);

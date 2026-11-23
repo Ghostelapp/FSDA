@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { CodeBlock } from './CodeBlock';
 import { AndroidPlayStoreModal } from './AndroidPlayStoreModal';
-import { downloadVerifiedIosZip, downloadVerifiedPlayStoreZip } from '../utils/playStoreDownload';
+import { downloadVerifiedAssetFile, downloadVerifiedIosZip, downloadVerifiedPlayStoreZip } from '../utils/playStoreDownload';
 import { useApp } from '../context/AppContext';
 
 export const DeploymentGuideView: React.FC = () => {
@@ -22,7 +22,21 @@ export const DeploymentGuideView: React.FC = () => {
   const isAdmin = isAuthenticated && currentUser.role === 'admin';
   const [isPlayStoreModalOpen, setIsPlayStoreModalOpen] = useState(false);
   const [isDownloadingZip, setIsDownloadingZip] = useState(false);
+  const [isDownloadingAab, setIsDownloadingAab] = useState(false);
   const [isDownloadingIosZip, setIsDownloadingIosZip] = useState(false);
+
+  const handleDownloadAab = async () => {
+    setIsDownloadingAab(true);
+    try {
+      await downloadVerifiedAssetFile(
+        '/play-store/fullstack-academy-v3.1.0-vc8.aab',
+        'fullstack-academy-v3.1.0-vc8.aab',
+        'application/octet-stream'
+      );
+    } finally {
+      setIsDownloadingAab(false);
+    }
+  };
 
   const handleDownloadZip = async () => {
     setIsDownloadingZip(true);
@@ -272,8 +286,8 @@ npx @bubblewrap/cli build`;
                 <Smartphone className="h-5 w-5" />
                 <h2 className="text-white">
                   {isEn
-                    ? 'Google Play & Apple App Store Production Bundles (Admin Only — v3.0.0)'
-                    : 'Pakiety Produkcyjne Google Play & Apple App Store (Tylko Admin — v3.0.0)'}
+                    ? 'Google Play & Apple App Store Production Bundles (Admin Only — v3.1.0)'
+                    : 'Pakiety Produkcyjne Google Play & Apple App Store (Tylko Admin — v3.1.0)'}
                 </h2>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
@@ -291,9 +305,22 @@ npx @bubblewrap/cli build`;
             <div className="flex flex-wrap items-center gap-2 shrink-0">
               <button
                 type="button"
+                onClick={handleDownloadAab}
+                disabled={isDownloadingAab}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 disabled:opacity-60 text-white text-xs font-extrabold flex items-center gap-1.5 transition-colors shadow-md shadow-emerald-600/25 cursor-pointer"
+              >
+                <Download className="h-4 w-4" />
+                <span>
+                  {isDownloadingAab
+                    ? isEn ? 'Downloading...' : 'Pobieranie...'
+                    : isEn ? 'Signed .AAB (v3.1.0)' : 'Gotowe .AAB (v3.1.0)'}
+                </span>
+              </button>
+              <button
+                type="button"
                 onClick={handleDownloadZip}
                 disabled={isDownloadingZip}
-                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-md shadow-emerald-600/20 cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-md shadow-indigo-600/20 cursor-pointer"
               >
                 <Download className="h-4 w-4" />
                 <span>

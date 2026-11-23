@@ -103,11 +103,11 @@ const TWA_MANIFEST_CONFIG: TwaManifestConfig = {
   display: 'standalone',
   themeColor: '#4F46E5',
   backgroundColor: '#020617',
-  startUrl: '/',
+  startUrl: '/app',
   iconUrl: `https://${PRODUCTION_HOST}/pwa-512x512.png`,
   maskableIconUrl: `https://${PRODUCTION_HOST}/pwa-maskable-512x512.png`,
-  appVersionCode: 4,
-  appVersionName: '3.0.0',
+  appVersionCode: 8,
+  appVersionName: '3.1.0',
   signingKey: {
     path: './android.keystore',
     alias: 'android',
@@ -128,8 +128,8 @@ const ASSET_LINKS_CONFIG: AssetLinkEntry[] = [
 
 const LISTING_META_CONFIG: PlayStoreListingMeta = {
   appId: 'com.fullstackacademy.app',
-  versionName: '3.0.0',
-  versionCode: 4,
+  versionName: '3.1.0',
+  versionCode: 8,
   defaultLanguage: 'pl-PL',
   title: STORE_TITLE,
   shortDescription: STORE_SHORT_DESC,
@@ -263,8 +263,8 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
         passed: twaRes.valid,
         details: twaRes.valid
           ? isEn
-            ? 'Configured com.fullstackacademy.app v3.0.0 (versionCode 4), android.keystore signature, and 4 launcher shortcuts.'
-            : 'Skonfigurowano com.fullstackacademy.app v3.0.0 (versionCode 4), podpis android.keystore i 4 skróty ekranu głównego.'
+            ? 'Configured com.fullstackacademy.app v3.1.0 (versionCode 8), android.keystore signature, and 4 launcher shortcuts.'
+            : 'Skonfigurowano com.fullstackacademy.app v3.1.0 (versionCode 8), podpis android.keystore i 4 skróty ekranu głównego.'
           : twaRes.errors.join(' '),
       },
       {
@@ -382,8 +382,8 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                   <Sparkles className="h-3 w-3" />
                   <span>
                     {isEn
-                      ? 'Admin Only • Expo EAS Build • Google Play & Apple App Store v3.0.0'
-                      : 'Tylko Administrator • Expo EAS Build • Google Play & App Store v3.0.0'}
+                      ? 'Admin Only • Signed AAB Ready • Google Play & Apple App Store v3.1.0'
+                      : 'Tylko Administrator • Gotowe AAB • Google Play & App Store v3.1.0'}
                   </span>
                 </div>
                 <h2 className="text-base sm:text-xl font-bold text-white mt-1">
@@ -928,6 +928,87 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
 
           {activeTab === 'release_pack' && (
             <div className="space-y-4">
+              {/* Direct Compiled & Signed Google Play .AAB + .APK Download Card */}
+              <div className="rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-950 p-4 sm:p-5 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                      {isEn
+                        ? 'Compiled & Signed Release Artifacts • v3.1.0 (versionCode 8) • Target SDK 35'
+                        : 'Skompilowane i Podpisane Pliki Wydania • v3.1.0 (versionCode 8) • Target SDK 35'}
+                    </span>
+                    <h3 className="text-base sm:text-lg font-extrabold text-white">
+                      {isEn
+                        ? 'Ready-to-Upload Google Play Bundle (.aab) & Installer (.apk)'
+                        : 'Gotowa Paczka Google Play (.aab) i Instalator (.apk)'}
+                    </h3>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      {isEn
+                        ? 'Signed with android.keystore (SHA-256 verified against /.well-known/assetlinks.json). Upload the .aab file directly in Google Play Console.'
+                        : 'Podpisane kluczem android.keystore (SHA-256 zgodny z /.well-known/assetlinks.json). Wgraj plik .aab bezpośrednio w Google Play Console.'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDownloadSingle(
+                          'signed_aab',
+                          '/play-store/fullstack-academy-v3.1.0-vc8.aab',
+                          'fullstack-academy-v3.1.0-vc8.aab',
+                          'application/octet-stream'
+                        )
+                      }
+                      disabled={downloadingId === 'signed_aab'}
+                      className="px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 disabled:opacity-60 text-white text-xs font-extrabold transition-all shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {downloadedSuccessId === 'signed_aab' ? (
+                        <>
+                          <Check className="h-4 w-4 text-emerald-100" />
+                          <span>{isEn ? 'Downloaded .AAB!' : 'Pobrano .AAB!'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-4 w-4" />
+                          <span>
+                            {downloadingId === 'signed_aab'
+                              ? isEn ? 'Downloading...' : 'Pobieranie...'
+                              : isEn ? 'Download .AAB (Play Store)' : 'Pobierz .AAB (Sklep Play)'}
+                          </span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDownloadSingle(
+                          'signed_apk',
+                          '/play-store/fullstack-academy-v3.1.0-vc8.apk',
+                          'fullstack-academy-v3.1.0-vc8.apk',
+                          'application/vnd.android.package-archive'
+                        )
+                      }
+                      disabled={downloadingId === 'signed_apk'}
+                      className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 disabled:opacity-60 text-slate-100 text-xs font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {downloadedSuccessId === 'signed_apk' ? (
+                        <>
+                          <Check className="h-4 w-4 text-emerald-400" />
+                          <span>{isEn ? 'Downloaded .APK!' : 'Pobrano .APK!'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Smartphone className="h-4 w-4 text-cyan-400" />
+                          <span>{isEn ? 'Download .APK' : 'Pobierz .APK'}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Primary 1-Click Verified ZIP Download Bundle Card */}
               <div className="rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-950 p-4 sm:p-5 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1491,7 +1572,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
           <div className="flex items-center gap-2 text-slate-400">
             <Info className="h-4 w-4 text-indigo-400 shrink-0" />
             <span>
-              {isEn ? 'Package:' : 'Pakiet:'} <strong className="text-slate-200 font-mono">com.fullstackacademy.app</strong> • Expo SDK 54 & TWA v3.0.0
+              {isEn ? 'Package:' : 'Pakiet:'} <strong className="text-slate-200 font-mono">com.fullstackacademy.app</strong> • Expo SDK 54 & TWA v3.1.0 (vc 8)
             </span>
           </div>
 
