@@ -25,7 +25,6 @@ const CertificateView = React.lazy(() => import('./components/CertificateView').
 const ReviewCenterView = React.lazy(() => import('./components/ReviewCenterView').then(({ ReviewCenterView }) => ({ default: ReviewCenterView })));
 const AdminPanelView = React.lazy(() => import('./components/AdminPanelView').then(({ AdminPanelView }) => ({ default: AdminPanelView })));
 const PromoAssetsPanel = React.lazy(() => import('./components/PromoAssetsPanel').then(({ PromoAssetsPanel }) => ({ default: PromoAssetsPanel })));
-const DeploymentGuideView = React.lazy(() => import('./components/DeploymentGuideView').then(({ DeploymentGuideView }) => ({ default: DeploymentGuideView })));
 const TerminalSimulator = React.lazy(() => import('./components/TerminalSimulator').then(({ TerminalSimulator }) => ({ default: TerminalSimulator })));
 const SqlStudioView = React.lazy(() => import('./components/SqlStudioView').then(({ SqlStudioView }) => ({ default: SqlStudioView })));
 const MockInterviewView = React.lazy(() => import('./components/MockInterviewView').then(({ MockInterviewView }) => ({ default: MockInterviewView })));
@@ -191,7 +190,6 @@ const MainContent: React.FC = () => {
                   {activeTab === 'leaderboard' && <LeaderboardChallengeView />}
                   {activeTab === 'flashcards' && <FlashcardsCheatSheetView />}
                   {activeTab === 'career' && <CareerBackupView />}
-                  {activeTab === 'deployment' && <DeploymentGuideView />}
                 </ProtectedRoute>
               )}
             </React.Suspense>

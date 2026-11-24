@@ -181,8 +181,7 @@ export type AppTab =
   | 'projects' 
   | 'reviews' 
   | 'certificate' 
-  | 'admin' 
-  | 'deployment'
+  | 'admin'
   | 'terminal'
   | 'sql_studio'
   | 'interview'
@@ -583,7 +582,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         'flashcards',
         'career',
         'admin',
-        'deployment',
       ];
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AppTab | null;
@@ -1680,7 +1678,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           'flashcards',
           'career',
           'admin',
-          'deployment',
         ];
         const params = new URLSearchParams(window.location.search);
         const tabParam = params.get('tab') as AppTab | null;

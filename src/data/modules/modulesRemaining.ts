@@ -1007,9 +1007,9 @@ jobs:
           },
         ],
         practicalTask: {
-          title: 'Przegląd instrukcji wdrożenia',
-          brief: 'Przejdź do zakładki "Przewodnik Wdrożenia" w aplikacji i przeanalizuj konfigurację Nginx oraz darmowego certyfikatu SSL Certbot.',
-          steps: ['Otwórz przewodnik wdrożenia', 'Zbadaj konfigurację Reverse Proxy Nginx', 'Zobacz komendę certbota'],
+          title: 'Przegląd konfiguracji wdrożenia na VPS',
+          brief: 'Przejdź do kolejnej lekcji Modułu 13 (Serwer VPS Linux, Nginx i Certbot) i przeanalizuj konfigurację Reverse Proxy oraz darmowego certyfikatu SSL.',
+          steps: ['Otwórz kolejną lekcję w Module 13', 'Zbadaj konfigurację Reverse Proxy Nginx', 'Przeanalizuj komendę certbota do włączenia HTTPS'],
           deliverable: 'Kompletna wiedza o wdrażaniu na serwer VPS Linux.',
         },
         completionCriteria: [

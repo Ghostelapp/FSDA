@@ -495,17 +495,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onOpenCommandPa
               <Sparkles className="h-4 w-4 text-rose-400" />
               <span>{isEn ? 'Review Center' : 'Centrum Powtórek'}</span>
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveTab('deployment');
-                setMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-left text-slate-200 hover:bg-slate-800"
-            >
-              <Code2 className="h-4 w-4 text-blue-400" />
-              <span>{isEn ? 'Deployment & DevOps Guide' : 'Przewodnik Wdrożenia & DevOps'}</span>
-            </button>
             {currentUser.role === 'admin' && isAuthenticated && (
               <button
                 type="button"

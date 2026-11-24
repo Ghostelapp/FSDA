@@ -11,7 +11,6 @@ import {
   Award, 
   ShieldCheck, 
   Lock,
-  BookMarked,
   CheckCircle2,
   Clock,
   Sparkles,
@@ -85,7 +84,6 @@ export const Sidebar: React.FC = () => {
           icon: RotateCcw,
           count: weakAreas.length > 0 ? weakAreas.length : undefined,
         },
-        { id: 'deployment', label: 'Deployment Guide', icon: BookMarked },
       ]
     : [
         { id: 'flashcards', label: 'Fiszki SM-2 & Ściągi', icon: Brain },
@@ -96,7 +94,6 @@ export const Sidebar: React.FC = () => {
           icon: RotateCcw,
           count: weakAreas.length > 0 ? weakAreas.length : undefined,
         },
-        { id: 'deployment', label: 'Przewodnik Wdrożenia', icon: BookMarked },
       ];
 
   const safeCompletedLessonsCount = Array.isArray(currentUser.completedLessons)
