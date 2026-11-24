@@ -4,6 +4,7 @@ import { Lesson } from '../types';
 import { useApp } from '../context/AppContext';
 import { CodeBlock } from './CodeBlock';
 import { CodeEditor } from './CodeEditor';
+import { LessonAudioNarrator } from './LessonAudioNarrator';
 import { RichInlineText, renderInlineTokens } from './RichInlineText';
 import {
   LessonMapNavigatorBar,
@@ -522,6 +523,13 @@ export const LessonDetailView: React.FC<LessonDetailViewProps> = ({ lesson }) =>
           </div>
         </div>
       </header>
+
+      {/* Built-in Web Speech API Lesson Audio Narrator (persists across Theory/Examples/Editor tabs) */}
+      <LessonAudioNarrator
+        lesson={lesson}
+        beginnerAid={beginnerAid}
+        language={language}
+      />
 
       <AnimatePresence mode="wait" custom={stepDirection} initial={false}>
         <motion.div

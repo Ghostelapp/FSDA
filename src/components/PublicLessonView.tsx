@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { PublicHeader } from './PublicHeader';
 import { RichInlineText } from './RichInlineText';
 import { CodeBlock } from './CodeBlock';
+import { LessonAudioNarrator } from './LessonAudioNarrator';
 import {
   LessonMapNavigatorBar,
   LessonRouteTransitionCard,
@@ -159,6 +160,13 @@ export const PublicLessonView: React.FC<PublicLessonViewProps> = ({
             <RichInlineText text={lesson.summary} />
           </p>
         </header>
+
+        {/* Built-in Web Speech API Lesson Audio Narrator */}
+        <LessonAudioNarrator
+          lesson={lesson}
+          beginnerAid={beginnerAid}
+          language={language}
+        />
 
         {/* Everyday Life Analogy */}
         <section
