@@ -85,19 +85,34 @@
         </button>
       </header>
 
+      <section class="card" style="margin-bottom:24px;padding:18px;border-color:rgba(56,189,248,0.4)">
+        <div class="card-body" style="padding:0 0 14px">
+          <div>
+            <h2 class="card-title">Wideo Promocyjne #2 — 30s (1280×720 HD · 30 fps · H.264 MP4 + Muzyka 124 BPM)</h2>
+            <p class="card-meta">Rozszerzony 6-scenowy filmik: Hook &amp; Stack → Interaktywna Mapa + Lektor Audio → Edytor 80% Ready Code + XP → 6 Symulatorów → 12 Projektów &amp; Certyfikat → CTA 0 zł.</p>
+          </div>
+          <div class="actions">
+            <button id="soundToggleBtn30" class="btn btn-secondary" type="button" onclick="togglePromoSound('promoVideo30', 'soundToggleBtn30')">Włącz muzykę</button>
+            <button class="btn" type="button" onclick="downloadBlob('/promo/fsda-promo-30s.mp4', 'fsda-promo-30s.mp4')">Pobierz 30s MP4 (PL)</button>
+            <button class="btn btn-secondary" type="button" onclick="downloadBlob('/promo/fsda-promo-30s-en.mp4', 'fsda-promo-30s-en.mp4')">Pobierz 30s MP4 (EN)</button>
+          </div>
+        </div>
+        <video id="promoVideo30" src="/promo/fsda-promo-30s.mp4" controls autoplay muted loop playsinline onvolumechange="syncSoundBtn('promoVideo30', 'soundToggleBtn30')" style="width:100%;border-radius:10px;aspect-ratio:16/9;background:#000"></video>
+      </section>
+
       <section class="card" style="margin-bottom:28px;padding:18px">
         <div class="card-body" style="padding:0 0 14px">
           <div>
-            <h2 class="card-title">Wideo Promocyjne 15s (1280×720 HD · 30 fps · H.264 MP4 + Muzyka AAC)</h2>
-            <p class="card-meta">Dynamiczna prezentacja edytora kodu, metodyki „80% Ready Code” i symulatorów Git / SQL / REST API z wbudowaną ścieżką muzyczną stereo.</p>
+            <h2 class="card-title">Wideo Promocyjne #1 — 15s (1280×720 HD · 30 fps · H.264 MP4 + Muzyka AAC)</h2>
+            <p class="card-meta">Szybki 15-sekundowy spot prezentujący edytor kodu, metodykę „80% Ready Code” i symulatory Git / SQL / REST API z muzyką stereo.</p>
           </div>
           <div class="actions">
-            <button id="soundToggleBtn" class="btn btn-secondary" type="button" onclick="togglePromoSound()">Włącz muzykę</button>
-            <button class="btn" type="button" onclick="downloadBlob('/promo/fsda-promo-15s.mp4', 'fsda-promo-15s.mp4')">Pobierz MP4 (PL)</button>
-            <button class="btn btn-secondary" type="button" onclick="downloadBlob('/promo/fsda-promo-15s-en.mp4', 'fsda-promo-15s-en.mp4')">Pobierz MP4 (EN)</button>
+            <button id="soundToggleBtn" class="btn btn-secondary" type="button" onclick="togglePromoSound('promoVideo', 'soundToggleBtn')">Włącz muzykę</button>
+            <button class="btn" type="button" onclick="downloadBlob('/promo/fsda-promo-15s.mp4', 'fsda-promo-15s.mp4')">Pobierz 15s MP4 (PL)</button>
+            <button class="btn btn-secondary" type="button" onclick="downloadBlob('/promo/fsda-promo-15s-en.mp4', 'fsda-promo-15s-en.mp4')">Pobierz 15s MP4 (EN)</button>
           </div>
         </div>
-        <video id="promoVideo" src="/promo/fsda-promo-15s.mp4" controls autoplay muted loop playsinline onvolumechange="syncSoundBtn()" style="width:100%;border-radius:10px;aspect-ratio:16/9;background:#000"></video>
+        <video id="promoVideo" src="/promo/fsda-promo-15s.mp4" controls muted loop playsinline onvolumechange="syncSoundBtn('promoVideo', 'soundToggleBtn')" style="width:100%;border-radius:10px;aspect-ratio:16/9;background:#000"></video>
       </section>
 
       <div class="grid">
@@ -207,21 +222,21 @@
       function closePreview() {
         document.getElementById('modal').classList.remove('open');
       }
-      function syncSoundBtn() {
-        var v = document.getElementById('promoVideo');
-        var btn = document.getElementById('soundToggleBtn');
+      function syncSoundBtn(videoId, btnId) {
+        var v = document.getElementById(videoId || 'promoVideo');
+        var btn = document.getElementById(btnId || 'soundToggleBtn');
         if (!v || !btn) return;
         btn.textContent = (v.muted || v.volume === 0) ? 'Włącz muzykę' : 'Wycisz muzykę';
       }
-      function togglePromoSound() {
-        var v = document.getElementById('promoVideo');
+      function togglePromoSound(videoId, btnId) {
+        var v = document.getElementById(videoId || 'promoVideo');
         if (!v) return;
         v.muted = !v.muted;
         if (!v.muted) {
           if (v.volume === 0) v.volume = 0.85;
           v.play().catch(function () {});
         }
-        syncSoundBtn();
+        syncSoundBtn(videoId, btnId);
       }
     </script>
   </body>
