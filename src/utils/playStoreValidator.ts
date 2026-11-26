@@ -141,9 +141,9 @@ export function validateStoreListing(listing: PlayStoreListingMeta): PlayStoreVa
     },
     {
       id: 'target-sdk',
-      title: `Zgodność z wymogami Google Play API Level (targetSdk ${listing.targetSdk} / Android 15)`,
-      passed: listing.targetSdk >= 34 && listing.minSdk >= 24,
-      details: `Skonfigurowano targetSdk ${listing.targetSdk} (wymagane min. 34/35 w Google Play Console) oraz minSdk ${listing.minSdk} (wymagane min. 24 dla Automatycznej ochrony Google Play).`,
+      title: `Zgodność z wymogami Google Play API Level (targetSdk ${listing.targetSdk} / Android 16)`,
+      passed: listing.targetSdk >= 36 && listing.minSdk >= 24,
+      details: `Skonfigurowano targetSdk ${listing.targetSdk} (wymagane min. 36 w Google Play Console 2026) oraz minSdk ${listing.minSdk} (wymagane min. 24 dla Automatycznej ochrony Google Play).`,
     },
     {
       id: 'store-texts',

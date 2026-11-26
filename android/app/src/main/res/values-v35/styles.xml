@@ -1,0 +1,11 @@
+<resources>
+    <style name="Theme.FullStackAcademy" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="Theme.LauncherActivity" parent="Theme.FullStackAcademy">
+        <item name="android:windowBackground">@color/splashBackgroundColor</item>
+    </style>
+</resources>

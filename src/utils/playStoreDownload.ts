@@ -7,7 +7,7 @@ const PRODUCTION_HOST = 'fsda.tech';
 const EXPO_PACKAGE_JSON = JSON.stringify(
   {
     name: 'fullstack-academy-expo',
-    version: '3.1.1',
+    version: '3.2.0',
     private: true,
     main: 'App.tsx',
     scripts: {
@@ -47,7 +47,7 @@ const EXPO_APP_JSON = JSON.stringify(
     expo: {
       name: 'Full Stack Academy',
       slug: 'fullstack-academy',
-      version: '3.1.1',
+      version: '3.2.0',
       orientation: 'default',
       icon: './assets/icon.png',
       userInterfaceStyle: 'dark',
@@ -83,7 +83,7 @@ const EXPO_APP_JSON = JSON.stringify(
       },
       android: {
         package: 'com.fullstackacademy.app',
-        versionCode: 9,
+        versionCode: 10,
         adaptiveIcon: {
           foregroundImage: './assets/adaptive-icon.png',
           backgroundColor: '#020617',
@@ -371,9 +371,9 @@ registerRootComponent(App);
 `;
 
 const QUICK_START_TXT = `========================================================================
-  FULL STACK ACADEMY — PAKIET PUBLIKACJI GOOGLE PLAY & EXPO APK (v3.1.1)
-  Pakiet Android: com.fullstackacademy.app | Target SDK: 35 (Android 15)
-  Wersja: 3.1.1 (versionCode 9)
+  FULL STACK ACADEMY — PAKIET PUBLIKACJI GOOGLE PLAY & EXPO APK (v3.2.0)
+  Pakiet Android: com.fullstackacademy.app | Target SDK: 36 (Android 16)
+  Wersja: 3.2.0 (versionCode 10)
 ========================================================================
 
 SPOSÓB 1 — NAJSZYBSZY: GENEROWANIE .APK PRZEZ EXPO (EAS BUILD W CHMURZE)
@@ -413,7 +413,7 @@ const ANDROID_BUILD_GRADLE = `buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.7.3'
+        classpath 'com.android.tools.build:gradle:8.9.1'
     }
 }
 
@@ -433,14 +433,14 @@ const ANDROID_APP_BUILD_GRADLE = `apply plugin: 'com.android.application'
 
 android {
     namespace "com.fullstackacademy.app"
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.fullstackacademy.app"
         minSdk 24
-        targetSdk 35
-        versionCode 9
-        versionName "3.1.1"
+        targetSdk 36
+        versionCode 10
+        versionName "3.2.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 

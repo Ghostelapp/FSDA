@@ -207,10 +207,10 @@ fs.writeFileSync(
 // 4. Write ready-to-paste Google Play Store Listing Metadata JSON
 const storeListingData = {
   appId: 'com.fullstackacademy.app',
-  versionName: '3.0.0',
-  versionCode: 4,
-  targetSdk: 35,
-  minSdk: 21,
+  versionName: '3.2.0',
+  versionCode: 10,
+  targetSdk: 36,
+  minSdk: 24,
   defaultLanguage: 'pl-PL',
   title: 'Full Stack Academy — Kurs IT',
   shortDescription: 'Nauka programowania od zera do Full Stack Developera: HTML, JS, React, SQL i Git',

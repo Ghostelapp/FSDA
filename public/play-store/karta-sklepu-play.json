@@ -1,8 +1,8 @@
 {
   "appId": "com.fullstackacademy.app",
-  "versionName": "3.1.1",
-  "versionCode": 9,
-  "targetSdk": 35,
+  "versionName": "3.2.0",
+  "versionCode": 10,
+  "targetSdk": 36,
   "minSdk": 24,
   "defaultLanguage": "pl-PL",
   "title": "Full Stack Academy — Kurs IT",
