@@ -106,8 +106,8 @@ const TWA_MANIFEST_CONFIG: TwaManifestConfig = {
   startUrl: '/app',
   iconUrl: `https://${PRODUCTION_HOST}/pwa-512x512.png`,
   maskableIconUrl: `https://${PRODUCTION_HOST}/pwa-maskable-512x512.png`,
-  appVersionCode: 10,
-  appVersionName: '3.2.0',
+  appVersionCode: 11,
+  appVersionName: '3.2.1',
   signingKey: {
     path: './android.keystore',
     alias: 'android',
@@ -128,8 +128,8 @@ const ASSET_LINKS_CONFIG: AssetLinkEntry[] = [
 
 const LISTING_META_CONFIG: PlayStoreListingMeta = {
   appId: 'com.fullstackacademy.app',
-  versionName: '3.2.0',
-  versionCode: 10,
+  versionName: '3.2.1',
+  versionCode: 11,
   defaultLanguage: 'pl-PL',
   title: STORE_TITLE,
   shortDescription: STORE_SHORT_DESC,
@@ -263,8 +263,8 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
         passed: twaRes.valid,
         details: twaRes.valid
           ? isEn
-            ? 'Configured com.fullstackacademy.app v3.2.0 (versionCode 10, Target SDK 36), android.keystore signature, and 4 launcher shortcuts.'
-            : 'Skonfigurowano com.fullstackacademy.app v3.2.0 (versionCode 10, Target SDK 36), podpis android.keystore i 4 skróty ekranu głównego.'
+            ? 'Configured com.fullstackacademy.app v3.2.1 (versionCode 11, Target SDK 36), android.keystore signature, and 4 launcher shortcuts.'
+            : 'Skonfigurowano com.fullstackacademy.app v3.2.1 (versionCode 11, Target SDK 36), podpis android.keystore i 4 skróty ekranu głównego.'
           : twaRes.errors.join(' '),
       },
       {
@@ -382,8 +382,8 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                   <Sparkles className="h-3 w-3" />
                   <span>
                     {isEn
-                      ? 'Admin Only • Signed AAB Ready • Google Play & Apple App Store v3.2.0'
-                      : 'Tylko Administrator • Gotowe AAB • Google Play & App Store v3.2.0'}
+                      ? 'Admin Only • Signed AAB Ready • Google Play & Apple App Store v3.2.1'
+                      : 'Tylko Administrator • Gotowe AAB • Google Play & App Store v3.2.1'}
                   </span>
                 </div>
                 <h2 className="text-base sm:text-xl font-bold text-white mt-1">
@@ -934,8 +934,8 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                   <div className="space-y-1">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
                       {isEn
-                        ? 'Compiled & Signed Release Artifacts • v3.2.0 (versionCode 10) • Target SDK 36 (Android 16)'
-                        : 'Skompilowane i Podpisane Pliki Wydania • v3.2.0 (versionCode 10) • Target SDK 36 (Android 16)'}
+                        ? 'Compiled & Signed Release Artifacts • v3.2.1 (versionCode 11) • Target SDK 36 (Android 16)'
+                        : 'Skompilowane i Podpisane Pliki Wydania • v3.2.1 (versionCode 11) • Target SDK 36 (Android 16)'}
                     </span>
                     <h3 className="text-base sm:text-lg font-extrabold text-white">
                       {isEn
@@ -955,8 +955,8 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                       onClick={() =>
                         handleDownloadSingle(
                           'signed_aab',
-                          '/play-store/fullstack-academy-v3.2.0-vc10.aab',
-                          'fullstack-academy-v3.2.0-vc10.aab',
+                          '/play-store/fullstack-academy-v3.2.1-vc11.aab',
+                          'fullstack-academy-v3.2.1-vc11.aab',
                           'application/octet-stream'
                         )
                       }
@@ -985,8 +985,8 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
                       onClick={() =>
                         handleDownloadSingle(
                           'signed_apk',
-                          '/play-store/fullstack-academy-v3.2.0-vc10.apk',
-                          'fullstack-academy-v3.2.0-vc10.apk',
+                          '/play-store/fullstack-academy-v3.2.1-vc11.apk',
+                          'fullstack-academy-v3.2.1-vc11.apk',
                           'application/vnd.android.package-archive'
                         )
                       }
@@ -1610,7 +1610,7 @@ export const AndroidPlayStoreModal: React.FC<AndroidPlayStoreModalProps> = ({
           <div className="flex items-center gap-2 text-slate-400">
             <Info className="h-4 w-4 text-indigo-400 shrink-0" />
             <span>
-              {isEn ? 'Package:' : 'Pakiet:'} <strong className="text-slate-200 font-mono">com.fullstackacademy.app</strong> • Expo SDK 54 & TWA v3.2.0 (vc 10 · API 36)
+              {isEn ? 'Package:' : 'Pakiet:'} <strong className="text-slate-200 font-mono">com.fullstackacademy.app</strong> • Expo SDK 54 & TWA v3.2.1 (vc 11 · API 36)
             </span>
           </div>
 

@@ -20,8 +20,8 @@
     "path": "./android.keystore",
     "alias": "android"
   },
-  "appVersionCode": 10,
-  "appVersionName": "3.2.0",
+  "appVersionCode": 11,
+  "appVersionName": "3.2.1",
   "shortcuts": [
     {
       "name": "Interaktywna Mapa Kursu (96 lekcji)",

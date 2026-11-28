@@ -207,8 +207,8 @@ fs.writeFileSync(
 // 4. Write ready-to-paste Google Play Store Listing Metadata JSON
 const storeListingData = {
   appId: 'com.fullstackacademy.app',
-  versionName: '3.2.0',
-  versionCode: 10,
+  versionName: '3.2.1',
+  versionCode: 11,
   targetSdk: 36,
   minSdk: 24,
   defaultLanguage: 'pl-PL',
