@@ -12,46 +12,75 @@ import {
 } from './publicRoutes';
 
 const SAMPLE_IDS = new Set(['html-7', 'css-1', 'js-1', 'db-1']);
+const SAMPLE_GUIDE_SLUGS = new Set([
+  'jak-zostac-full-stack-developerem-plan-nauki',
+  'javascript-event-loop-async-await-kompendium',
+]);
 
 test('normalizePathname strips trailing slashes and query/hash fragments', () => {
   assert.equal(normalizePathname('/'), '/');
   assert.equal(normalizePathname('/baza-wiedzy/'), '/baza-wiedzy');
+  assert.equal(normalizePathname('/poradniki/'), '/poradniki');
   assert.equal(normalizePathname('/o-nas///?ref=footer#top'), '/o-nas');
   assert.equal(normalizePathname('/baza-wiedzy/html-7/'), '/baza-wiedzy/html-7');
 });
 
 test('parsePublicLocation resolves public routes without authentication walls', () => {
-  assert.deepEqual(parsePublicLocation('/', SAMPLE_IDS), { tab: 'landing' });
-  assert.deepEqual(parsePublicLocation('/baza-wiedzy', SAMPLE_IDS), { tab: 'knowledge_base' });
-  assert.deepEqual(parsePublicLocation('/baza-wiedzy/html-7', SAMPLE_IDS), {
+  assert.deepEqual(parsePublicLocation('/', SAMPLE_IDS, SAMPLE_GUIDE_SLUGS), { tab: 'landing' });
+  assert.deepEqual(parsePublicLocation('/baza-wiedzy', SAMPLE_IDS, SAMPLE_GUIDE_SLUGS), { tab: 'knowledge_base' });
+  assert.deepEqual(parsePublicLocation('/baza-wiedzy/html-7', SAMPLE_IDS, SAMPLE_GUIDE_SLUGS), {
     tab: 'public_lesson',
     lessonId: 'html-7',
   });
-  assert.deepEqual(parsePublicLocation('/baza-wiedzy/unknown-id', SAMPLE_IDS), {
+  assert.deepEqual(parsePublicLocation('/baza-wiedzy/unknown-id', SAMPLE_IDS, SAMPLE_GUIDE_SLUGS), {
     tab: 'knowledge_base',
   });
-  assert.deepEqual(parsePublicLocation('/o-nas', SAMPLE_IDS), { tab: 'about' });
-  assert.deepEqual(parsePublicLocation('/kontakt', SAMPLE_IDS), { tab: 'contact' });
-  assert.deepEqual(parsePublicLocation('/regulamin', SAMPLE_IDS), { tab: 'terms' });
-  assert.deepEqual(parsePublicLocation('/polityka-prywatnosci', SAMPLE_IDS), { tab: 'privacy' });
-  assert.equal(parsePublicLocation('/app', SAMPLE_IDS), null);
-  assert.equal(parsePublicLocation('/app/dashboard', SAMPLE_IDS), null);
+  assert.deepEqual(parsePublicLocation('/poradniki', SAMPLE_IDS, SAMPLE_GUIDE_SLUGS), {
+    tab: 'guides',
+  });
+  assert.deepEqual(
+    parsePublicLocation(
+      '/poradniki/javascript-event-loop-async-await-kompendium',
+      SAMPLE_IDS,
+      SAMPLE_GUIDE_SLUGS
+    ),
+    {
+      tab: 'guide_detail',
+      guideSlug: 'javascript-event-loop-async-await-kompendium',
+    }
+  );
+  assert.deepEqual(parsePublicLocation('/poradniki/nieznany-artykul', SAMPLE_IDS, SAMPLE_GUIDE_SLUGS), {
+    tab: 'guides',
+  });
+  assert.deepEqual(parsePublicLocation('/o-nas', SAMPLE_IDS, SAMPLE_GUIDE_SLUGS), { tab: 'about' });
+  assert.deepEqual(parsePublicLocation('/kontakt', SAMPLE_IDS, SAMPLE_GUIDE_SLUGS), { tab: 'contact' });
+  assert.deepEqual(parsePublicLocation('/regulamin', SAMPLE_IDS, SAMPLE_GUIDE_SLUGS), { tab: 'terms' });
+  assert.deepEqual(parsePublicLocation('/polityka-prywatnosci', SAMPLE_IDS, SAMPLE_GUIDE_SLUGS), { tab: 'privacy' });
+  assert.equal(parsePublicLocation('/app', SAMPLE_IDS, SAMPLE_GUIDE_SLUGS), null);
+  assert.equal(parsePublicLocation('/app/dashboard', SAMPLE_IDS, SAMPLE_GUIDE_SLUGS), null);
 });
 
 test('buildPublicPath and isPublicTab return canonical URLs cleanly', () => {
   assert.equal(isPublicTab('knowledge_base'), true);
   assert.equal(isPublicTab('public_lesson'), true);
+  assert.equal(isPublicTab('guides'), true);
+  assert.equal(isPublicTab('guide_detail'), true);
   assert.equal(isPublicTab('dashboard'), false);
 
   assert.equal(buildPublicPath('landing'), '/');
   assert.equal(buildPublicPath('knowledge_base'), '/baza-wiedzy');
   assert.equal(buildPublicPath('public_lesson', 'html-7'), '/baza-wiedzy/html-7');
+  assert.equal(buildPublicPath('guides'), '/poradniki');
+  assert.equal(
+    buildPublicPath('guide_detail', 'javascript-event-loop-async-await-kompendium'),
+    '/poradniki/javascript-event-loop-async-await-kompendium'
+  );
   assert.equal(buildPublicPath('about'), '/o-nas');
   assert.equal(buildPublicPath('privacy'), '/polityka-prywatnosci');
   assert.equal(buildPublicPath('dashboard'), null);
 });
 
-test('getPublicRouteSeoMetadata produces lesson-specific metadata and canonical paths', () => {
+test('getPublicRouteSeoMetadata produces lesson-specific and guide-specific metadata and canonical paths', () => {
   const meta = getPublicRouteSeoMetadata('public_lesson', {
     id: 'html-7',
     title: 'Pierwsze znaczniki HTML',
@@ -61,6 +90,21 @@ test('getPublicRouteSeoMetadata produces lesson-specific metadata and canonical 
   assert.equal(meta.canonicalPath, '/baza-wiedzy/html-7');
   assert.match(meta.title, /Pierwsze znaczniki HTML/);
   assert.equal(meta.description, 'Dowiedz się, jak działają nagłówki i akapity.');
+
+  const guidesMeta = getPublicRouteSeoMetadata('guides');
+  assert.equal(guidesMeta.canonicalPath, '/poradniki');
+  assert.match(guidesMeta.title, /Poradniki Eksperckie/);
+
+  const guideDetailMeta = getPublicRouteSeoMetadata('guide_detail', null, 'pl', {
+    slug: 'javascript-event-loop-async-await-kompendium',
+    title: 'JavaScript Event Loop, Promise i async/await',
+    titleEn: 'JavaScript Event Loop, Promises & async/await',
+    metaDescription: 'Kompletne kompendium asynchroniczności w JS.',
+    category: 'JavaScript & TypeScript',
+  });
+  assert.equal(guideDetailMeta.canonicalPath, '/poradniki/javascript-event-loop-async-await-kompendium');
+  assert.match(guideDetailMeta.title, /JavaScript Event Loop/);
+  assert.equal(guideDetailMeta.description, 'Kompletne kompendium asynchroniczności w JS.');
 });
 
 test('all 96 lessons across 15 modules (including 14 HTML5 lessons) have valid interactive exercises', async () => {

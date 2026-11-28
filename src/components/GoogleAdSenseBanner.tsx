@@ -19,7 +19,7 @@ export const GoogleAdSenseBanner: React.FC<GoogleAdSenseBannerProps> = ({
   variant = 'horizontal',
   className = '',
 }) => {
-  const { currentUser, isAuthenticated, adSenseConfig, setIsSubModalOpen, language, allLessons, allModules, allProjects } = useApp();
+  const { currentUser, isAuthenticated, adSenseConfig, setIsSubModalOpen, language } = useApp();
   const isEn = language === 'en';
   const insRef = useRef<HTMLModElement | null>(null);
   const pushedSlotRef = useRef<string>('');
@@ -49,7 +49,8 @@ export const GoogleAdSenseBanner: React.FC<GoogleAdSenseBannerProps> = ({
     return () => clearTimeout(timer);
   }, [shouldRender, dismissedInView, hasRealSlotUnit, clientId, slotId, placement]);
 
-  if (!shouldRender || dismissedInView) {
+  // Never render placeholder/coming-soon ad containers before real AdSense slots are configured
+  if (!shouldRender || dismissedInView || !hasRealSlotUnit) {
     return null;
   }
 
@@ -62,15 +63,7 @@ export const GoogleAdSenseBanner: React.FC<GoogleAdSenseBannerProps> = ({
         <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400">
           <span className="inline-flex items-center gap-1 font-mono uppercase tracking-wider text-slate-400">
             <Info className="h-3 w-3 text-emerald-400 shrink-0" />
-            <span>
-              {hasRealSlotUnit
-                ? isEn
-                  ? 'Ad • AdSense'
-                  : 'Reklama • AdSense'
-                : isEn
-                  ? 'Open Edition'
-                  : 'Edycja Otwarta'}
-            </span>
+            <span>{isEn ? 'Ad · AdSense' : 'Reklama · AdSense'}</span>
           </span>
           <button
             type="button"
@@ -81,59 +74,36 @@ export const GoogleAdSenseBanner: React.FC<GoogleAdSenseBannerProps> = ({
           </button>
         </div>
 
-        {hasRealSlotUnit ? (
-          <div className="overflow-hidden rounded-lg">
-            <ins
-              ref={insRef}
-              className="adsbygoogle block"
-              data-ad-client={clientId}
-              data-ad-slot={slotId}
-              data-ad-format="auto"
-              data-full-width-responsive="true"
-            />
-          </div>
-        ) : (
-          <div className="space-y-1.5 pt-0.5">
-            <p className="text-xs font-bold text-white leading-snug">
-              {isEn ? '100% Free Access (AdSense)' : '100% Darmowy dostęp (AdSense)'}
-            </p>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              {isEn
-                ? `All ${allModules.length} modules and ${allProjects.length} projects are free thanks to Google AdSense.`
-                : `Wszystkie ${allModules.length} modułów i ${allProjects.length} projektów są bezpłatne dzięki Google AdSense.`}
-            </p>
-          </div>
-        )}
+        <div className="overflow-hidden rounded-lg">
+          <ins
+            ref={insRef}
+            className="adsbygoogle block"
+            data-ad-client={clientId}
+            data-ad-slot={slotId}
+            data-ad-format="auto"
+            data-full-width-responsive="true"
+          />
+        </div>
       </div>
     );
   }
 
   return (
     <aside
-      aria-label={
-        isEn
-          ? 'Information about free access funded by Google AdSense'
-          : 'Informacja o darmowym dostępie finansowanym przez Google AdSense'
-      }
+      aria-label={isEn ? 'Google AdSense Advertisement' : 'Reklama Google AdSense'}
       data-testid={`adsense-banner-${placement}`}
       className={`rounded-2xl border border-slate-800/90 bg-slate-900/50 overflow-hidden shadow-md print:hidden ${className}`}
     >
       <div className="px-4 py-2 bg-slate-950/80 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px]">
         <div className="flex items-center gap-2 text-slate-400">
-          <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px] font-bold uppercase tracking-wider">
-            {hasRealSlotUnit
-              ? isEn
-                ? 'Google AdSense Ad'
-                : 'Reklama Google AdSense'
-              : isEn
-                ? 'Open Edition · AdSense'
-                : 'Edycja Otwarta · AdSense'}
+          <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-300">
+            {isEn ? 'Google AdSense Ad' : 'Reklama Google AdSense'}
           </span>
-          <span className="hidden sm:inline text-slate-500">•</span>
+          <span className="hidden sm:inline text-slate-500">·</span>
           <span className="hidden sm:inline text-slate-400">
             {isEn
-              ? '100% free learning supported by Google AdSense ads'
-              : '100% darmowa nauka wspierana przez reklamy Google AdSense'}
+              ? 'Supports 100% free access to all lessons and simulators'
+              : 'Wspiera 100% bezpłatny dostęp do wszystkich lekcji i symulatorów'}
           </span>
         </div>
 
@@ -149,7 +119,7 @@ export const GoogleAdSenseBanner: React.FC<GoogleAdSenseBannerProps> = ({
           <button
             type="button"
             onClick={() => setDismissedInView(true)}
-            title={isEn ? 'Hide this notice in this view' : 'Ukryj tę informację w tym widoku'}
+            title={isEn ? 'Hide this ad container in this view' : 'Ukryj tę sekcję w tym widoku'}
             className="p-0.5 rounded text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
           >
             <X className="h-3.5 w-3.5" />
@@ -157,33 +127,16 @@ export const GoogleAdSenseBanner: React.FC<GoogleAdSenseBannerProps> = ({
         </div>
       </div>
 
-      {hasRealSlotUnit ? (
-        <div className="px-4 py-2">
-          <ins
-            ref={insRef}
-            className="adsbygoogle block"
-            data-ad-client={clientId}
-            data-ad-slot={slotId}
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          />
-        </div>
-      ) : (
-        <div className="px-4 py-3 sm:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/40">
-          <p className="text-xs text-slate-300 leading-relaxed">
-            {isEn
-              ? `You are using the full free version of Full Stack Developer Academy (${allLessons.length} lessons, 6 simulators and ${allProjects.length} projects for $0). An ad-free PRO plan will launch in a future stage.`
-              : `Korzystasz z pełnej, darmowej wersji Full Stack Developer Academy (${allLessons.length} lekcji, 6 symulatorów i ${allProjects.length} projektów za 0 zł). Plan PRO bez reklam pojawi się w kolejnym etapie.`}
-          </p>
-          <button
-            type="button"
-            onClick={() => setIsSubModalOpen(true)}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold shrink-0 transition-colors cursor-pointer"
-          >
-            {isEn ? 'Access details' : 'Szczegóły dostępu'}
-          </button>
-        </div>
-      )}
+      <div className="px-4 py-2">
+        <ins
+          ref={insRef}
+          className="adsbygoogle block"
+          data-ad-client={clientId}
+          data-ad-slot={slotId}
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        />
+      </div>
     </aside>
   );
 };

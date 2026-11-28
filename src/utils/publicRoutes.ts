@@ -1,10 +1,13 @@
 import { Lesson } from '../types';
 import { AppLanguage } from './i18n';
+import type { EditorialGuide } from './guides';
 
 export type PublicTab =
   | 'landing'
   | 'knowledge_base'
   | 'public_lesson'
+  | 'guides'
+  | 'guide_detail'
   | 'about'
   | 'contact'
   | 'terms'
@@ -14,6 +17,8 @@ export const PUBLIC_TABS: readonly PublicTab[] = [
   'landing',
   'knowledge_base',
   'public_lesson',
+  'guides',
+  'guide_detail',
   'about',
   'contact',
   'terms',
@@ -143,8 +148,9 @@ export function detectInstalledMobileAppRuntime(): boolean {
 
 export function parsePublicLocation(
   pathname: string,
-  validLessonIds?: Set<string>
-): { tab: PublicTab; lessonId?: string } | null {
+  validLessonIds?: Set<string>,
+  validGuideSlugs?: Set<string>
+): { tab: PublicTab; lessonId?: string; guideSlug?: string } | null {
   const normalized = normalizePathname(pathname);
   const lower = normalized.toLowerCase();
 
@@ -155,7 +161,10 @@ export function parsePublicLocation(
   if (lower === '/') {
     return { tab: 'landing' };
   }
-  if (lower === '/baza-wiedzy' || lower === '/lekcje' || lower === '/poradniki') {
+  if (lower === '/poradniki') {
+    return { tab: 'guides' };
+  }
+  if (lower === '/baza-wiedzy' || lower === '/lekcje') {
     return { tab: 'knowledge_base' };
   }
   if (lower === '/o-nas' || lower === '/o-akademii') {
@@ -171,7 +180,16 @@ export function parsePublicLocation(
     return { tab: 'privacy' };
   }
 
-  const lessonPrefixMatch = normalized.match(/^\/(?:baza-wiedzy|lekcje|poradniki)\/([^/]+)$/i);
+  const guidePrefixMatch = normalized.match(/^\/poradniki\/([^/]+)$/i);
+  if (guidePrefixMatch) {
+    const rawSlug = decodeURIComponent(guidePrefixMatch[1]).trim();
+    if (!validGuideSlugs || validGuideSlugs.has(rawSlug)) {
+      return { tab: 'guide_detail', guideSlug: rawSlug };
+    }
+    return { tab: 'guides' };
+  }
+
+  const lessonPrefixMatch = normalized.match(/^\/(?:baza-wiedzy|lekcje)\/([^/]+)$/i);
   if (lessonPrefixMatch) {
     const rawId = decodeURIComponent(lessonPrefixMatch[1]).trim();
     if (!validLessonIds || validLessonIds.has(rawId)) {
@@ -183,14 +201,18 @@ export function parsePublicLocation(
   return { tab: 'landing' };
 }
 
-export function buildPublicPath(tab: string, lessonId?: string | null): string | null {
+export function buildPublicPath(tab: string, idOrSlug?: string | null): string | null {
   switch (tab) {
     case 'landing':
       return '/';
     case 'knowledge_base':
       return '/baza-wiedzy';
     case 'public_lesson':
-      return lessonId ? `/baza-wiedzy/${encodeURIComponent(lessonId)}` : '/baza-wiedzy';
+      return idOrSlug ? `/baza-wiedzy/${encodeURIComponent(idOrSlug)}` : '/baza-wiedzy';
+    case 'guides':
+      return '/poradniki';
+    case 'guide_detail':
+      return idOrSlug ? `/poradniki/${encodeURIComponent(idOrSlug)}` : '/poradniki';
     case 'about':
       return '/o-nas';
     case 'contact':
@@ -207,7 +229,8 @@ export function buildPublicPath(tab: string, lessonId?: string | null): string |
 export function getPublicRouteSeoMetadata(
   tab: PublicTab,
   lesson?: Pick<Lesson, 'id' | 'title' | 'summary' | 'moduleTitle'> | null,
-  language: AppLanguage = 'pl'
+  language: AppLanguage = 'pl',
+  guide?: Pick<EditorialGuide, 'slug' | 'title' | 'titleEn' | 'metaDescription' | 'category'> | null
 ): {
   title: string;
   description: string;
@@ -215,6 +238,26 @@ export function getPublicRouteSeoMetadata(
 } {
   if (language === 'en') {
     switch (tab) {
+      case 'guides':
+        return {
+          title: 'Engineering Guides — In-Depth Full Stack Articles | Full Stack Academy',
+          description:
+            'In-depth editorial programming guides covering HTML5, WCAG accessibility, CSS Flexbox & Grid, JavaScript Event Loop, TypeScript, React 19, REST APIs, PostgreSQL, OWASP security, Docker, testing, and IT recruitment.',
+          canonicalPath: '/poradniki',
+        };
+      case 'guide_detail':
+        if (guide) {
+          return {
+            title: `${guide.titleEn || guide.title} | Full Stack Academy`,
+            description: guide.metaDescription,
+            canonicalPath: `/poradniki/${encodeURIComponent(guide.slug)}`,
+          };
+        }
+        return {
+          title: 'Engineering Guide | Full Stack Academy',
+          description: 'In-depth programming guide with production code examples, architecture checklists, and FAQs.',
+          canonicalPath: '/poradniki',
+        };
       case 'knowledge_base':
         return {
           title: 'Open Knowledge Base — 96 Free Coding Lessons | Full Stack Academy',
@@ -266,15 +309,36 @@ export function getPublicRouteSeoMetadata(
       case 'landing':
       default:
         return {
-          title: 'Full Stack Developer Academy — Interactive Coding Academy',
+          title: 'Full Stack Developer Academy — Free Coding Course & Engineering Guides',
           description:
-            'Interactive coding platform taking you from zero to Full Stack Developer with an in-browser code editor, commercial projects, and an open 96-lesson knowledge base.',
+            'Interactive coding platform taking you from zero to Full Stack Developer with an in-browser code editor, commercial projects, in-depth guides, and an open 96-lesson knowledge base.',
           canonicalPath: '/',
         };
     }
   }
 
   switch (tab) {
+    case 'guides':
+      return {
+        title: 'Poradniki Eksperckie — Programowanie Full Stack | Full Stack Academy',
+        description:
+          'Długie, merytoryczne poradniki programistyczne z przykładami kodu produkcyjnego: HTML5 i WCAG, CSS Flexbox vs Grid, JavaScript Event Loop, TypeScript, React 19, REST API, PostgreSQL, OWASP, Docker, testy i rekrutacja IT.',
+        canonicalPath: '/poradniki',
+      };
+    case 'guide_detail':
+      if (guide) {
+        return {
+          title: `${guide.title} | Full Stack Academy`,
+          description: guide.metaDescription,
+          canonicalPath: `/poradniki/${encodeURIComponent(guide.slug)}`,
+        };
+      }
+      return {
+        title: 'Poradnik Ekspercki | Full Stack Academy',
+        description:
+          'Rozbudowany poradnik inżynierski z przykładami kodu, tabelami porównawczymi i sekcją FAQ.',
+        canonicalPath: '/poradniki',
+      };
     case 'knowledge_base':
       return {
         title: 'Otwarta Baza Wiedzy — 96 darmowych lekcji programowania | Full Stack Academy',
@@ -327,9 +391,9 @@ export function getPublicRouteSeoMetadata(
     case 'landing':
     default:
       return {
-        title: 'Full Stack Developer Academy — Interaktywna Akademia Programowania',
+        title: 'Full Stack Developer Academy — Darmowy Kurs Programowania i Poradniki IT',
         description:
-          'Interaktywna platforma edukacyjna do nauki programowania od podstaw do poziomu Full Stack Developera z wbudowanym edytorem kodu, projektami i otwartą bazą 96 lekcji.',
+          'Interaktywna platforma edukacyjna do nauki programowania od podstaw do poziomu Full Stack Developera z edytorem kodu, eksperckimi poradnikami i otwartą bazą 96 lekcji.',
         canonicalPath: '/',
       };
   }

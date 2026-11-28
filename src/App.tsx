@@ -10,6 +10,8 @@ import { SubscriptionModal } from './components/SubscriptionModal';
 import { LandingPageView } from './components/LandingPageView';
 import { KnowledgeBaseView } from './components/KnowledgeBaseView';
 import { PublicLessonView } from './components/PublicLessonView';
+import { GuidesView } from './components/GuidesView';
+import { GuideDetailView } from './components/GuideDetailView';
 import { PublicInfoPageView } from './components/PublicInfoPageView';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { detectEmbeddedWebViewRuntime, isPublicTab } from './utils/publicRoutes';
@@ -35,7 +37,7 @@ const FlashcardsCheatSheetView = React.lazy(() => import('./components/Flashcard
 const CareerBackupView = React.lazy(() => import('./components/CareerBackupView').then(({ CareerBackupView }) => ({ default: CareerBackupView })));
 
 const MainContent: React.FC = () => {
-  const { activeTab, selectedLessonId, allLessons, toast, dismissToast, setActiveTab, isAuthenticated, logout, language } = useApp();
+  const { activeTab, selectedLessonId, selectedGuideSlug, allLessons, toast, dismissToast, setActiveTab, isAuthenticated, logout, language } = useApp();
   const isEn = language === 'en';
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalInitialMode, setAuthModalInitialMode] = useState<AuthModalMode | undefined>(undefined);
@@ -139,6 +141,15 @@ const MainContent: React.FC = () => {
               onOpenAuthModal={() => setIsAuthModalOpen(true)}
             />
           )}
+          {activeTab === 'guides' && (
+            <GuidesView onOpenAuthModal={() => setIsAuthModalOpen(true)} />
+          )}
+          {activeTab === 'guide_detail' && (
+            <GuideDetailView
+              guideSlug={selectedGuideSlug}
+              onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            />
+          )}
           {(activeTab === 'about' ||
             activeTab === 'contact' ||
             activeTab === 'terms' ||
@@ -231,6 +242,17 @@ const MainContent: React.FC = () => {
               className="hover:text-slate-100 transition-colors"
             >
               {isEn ? 'Home' : 'Strona Główna'}
+            </a>
+            <a
+              href="/poradniki"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                setActiveTab('guides');
+              }}
+              className="hover:text-slate-100 transition-colors"
+            >
+              {isEn ? 'Guides' : 'Poradniki'}
             </a>
             <a
               href="/baza-wiedzy"

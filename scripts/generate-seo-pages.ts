@@ -1,6 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { MODULES_DATA } from '../src/data/modulesData';
+import { GUIDES_DATA } from '../src/data/guidesData';
+import {
+  buildGuideJsonLd,
+  estimateGuideReadingMinutes,
+  getGuideBySlug,
+  getGuideWordCount,
+} from '../src/utils/guides';
 import { getBeginnerLessonAid } from '../src/utils/lessonReadability';
 import { getPublicRouteSeoMetadata, SITE_BASE_URL } from '../src/utils/publicRoutes';
 
@@ -58,6 +65,7 @@ function renderHtmlFromTemplate(
     bodyHtml: string;
     robots?: string;
     stripAdSenseScript?: boolean;
+    jsonLd?: Record<string, unknown>;
   }
 ): string {
   const canonicalUrl = `${SITE_BASE_URL}${params.canonicalPath}`;
@@ -87,9 +95,25 @@ function renderHtmlFromTemplate(
     `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`
   );
   out = out.replace(
+    /<meta\s+name="twitter:title"\s+content="[^"]*"\s*\/?>/i,
+    `<meta name="twitter:title" content="${escapeHtml(params.title)}" />`
+  );
+  out = out.replace(
+    /<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/?>/i,
+    `<meta name="twitter:description" content="${escapeHtml(params.description)}" />`
+  );
+  out = out.replace(
     /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/i,
     `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`
   );
+
+  if (params.jsonLd) {
+    const safeJson = JSON.stringify(params.jsonLd).replace(/</g, '\\u003c');
+    out = out.replace(
+      /<\/head>/i,
+      `    <script id="fsda-guide-jsonld" type="application/ld+json">${safeJson}</script>\n  </head>`
+    );
+  }
 
   if (params.stripAdSenseScript) {
     out = out.replace(
@@ -140,6 +164,7 @@ function main() {
   const allLessons = MODULES_DATA.flatMap((m) => m.lessons);
   const sitemapUrls: string[] = [
     `${SITE_BASE_URL}/`,
+    `${SITE_BASE_URL}/poradniki`,
     `${SITE_BASE_URL}/baza-wiedzy`,
     `${SITE_BASE_URL}/o-nas`,
     `${SITE_BASE_URL}/kontakt`,
@@ -148,7 +173,122 @@ function main() {
     `${SITE_BASE_URL}/privacy-policy.html`,
   ];
 
-  // 1. Knowledge Base index (/baza-wiedzy)
+  // 1a. Engineering Guides index (/poradniki)
+  const guidesSeo = getPublicRouteSeoMetadata('guides');
+  const guidesListHtml = GUIDES_DATA.map((guide) => {
+    const readMins = estimateGuideReadingMinutes(guide);
+    const words = getGuideWordCount(guide);
+    return `<article style="margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #334155">
+      <p style="font-size:13px;color:#94a3b8">${escapeHtml(guide.category)} · ${escapeHtml(guide.level)} · ~${readMins} min czytania (${words} słów) · Aktualizacja: ${escapeHtml(guide.updatedAt)}</p>
+      <h2><a href="/poradniki/${escapeHtml(guide.slug)}">${escapeHtml(guide.title)}</a></h2>
+      <p>${escapeHtml(guide.subtitle)}</p>
+    </article>`;
+  }).join('\n');
+
+  writeRoutePage(
+    '/poradniki',
+    renderHtmlFromTemplate(templateHtml, {
+      ...guidesSeo,
+      bodyHtml: `<main style="max-width:920px;margin:0 auto;padding:32px 16px;font-family:sans-serif;line-height:1.7">
+        <nav><a href="/">Strona Główna</a> | <a href="/poradniki">Poradniki Eksperckie</a> | <a href="/baza-wiedzy">Baza Wiedzy</a> | <a href="/o-nas">O Akademii</a> | <a href="/kontakt">Kontakt</a> | <a href="/regulamin">Regulamin</a> | <a href="/polityka-prywatnosci">Polityka Prywatności</a></nav>
+        <h1>Poradniki Eksperckie — Programowanie Full Stack (${GUIDES_DATA.length} przewodników)</h1>
+        <p>${escapeHtml(guidesSeo.description)}</p>
+        ${guidesListHtml}
+      </main>`,
+    })
+  );
+
+  // 1b. All individual Engineering Guide pages (/poradniki/:slug)
+  for (const guide of GUIDES_DATA) {
+    const seo = getPublicRouteSeoMetadata('guide_detail', null, 'pl', guide);
+    const readMins = estimateGuideReadingMinutes(guide);
+    const words = getGuideWordCount(guide);
+    sitemapUrls.push(`${SITE_BASE_URL}${seo.canonicalPath}`);
+
+    const leadHtml = guide.leadParagraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join('\n');
+
+    const sectionsHtml = guide.sections
+      .map((sec) => {
+        const paragraphs = sec.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join('\n');
+        const bullets = sec.bulletPoints?.length
+          ? `<ul>${sec.bulletPoints.map((b) => `<li>${escapeHtml(b)}</li>`).join('\n')}</ul>`
+          : '';
+        const codeBlock = sec.codeSnippet
+          ? `<figure><figcaption><strong>${escapeHtml(sec.codeSnippet.title)}</strong></figcaption><pre><code>${escapeHtml(sec.codeSnippet.code)}</code></pre>${
+              sec.codeSnippet.caption ? `<p>${escapeHtml(sec.codeSnippet.caption)}</p>` : ''
+            }</figure>`
+          : '';
+        const tableBlock = sec.table
+          ? `<table><caption>${escapeHtml(sec.table.caption)}</caption><thead><tr>${sec.table.headers
+              .map((h) => `<th>${escapeHtml(h)}</th>`)
+              .join('')}</tr></thead><tbody>${sec.table.rows
+              .map(
+                (row) =>
+                  `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`
+              )
+              .join('')}</tbody></table>`
+          : '';
+        return `<section id="${escapeHtml(sec.id)}"><h2>${escapeHtml(sec.heading)}</h2>${paragraphs}${bullets}${codeBlock}${tableBlock}</section>`;
+      })
+      .join('\n');
+
+    const takeawaysHtml = guide.keyTakeaways.length
+      ? `<section><h2>Najważniejsze wnioski</h2><ul>${guide.keyTakeaways
+          .map((t) => `<li>${escapeHtml(t)}</li>`)
+          .join('\n')}</ul></section>`
+      : '';
+
+    const faqHtml = guide.faq.length
+      ? `<section><h2>Najczęstsze pytania (FAQ)</h2>${guide.faq
+          .map((item) => `<h3>${escapeHtml(item.question)}</h3><p>${escapeHtml(item.answer)}</p>`)
+          .join('\n')}</section>`
+      : '';
+
+    const relatedLessonsHtml = guide.relatedLessonIds
+      .map((id) => allLessons.find((l) => l.id === id))
+      .filter((l): l is NonNullable<typeof l> => Boolean(l))
+      .map(
+        (l) => `<li><a href="/baza-wiedzy/${escapeHtml(l.id)}">${escapeHtml(l.title)}</a></li>`
+      )
+      .join('\n');
+
+    const relatedGuidesHtml = guide.relatedGuideSlugs
+      .map((slug) => getGuideBySlug(GUIDES_DATA, slug))
+      .filter((g): g is NonNullable<typeof g> => Boolean(g))
+      .map(
+        (g) => `<li><a href="/poradniki/${escapeHtml(g.slug)}">${escapeHtml(g.title)}</a></li>`
+      )
+      .join('\n');
+
+    const guideBodyHtml = `<main style="max-width:860px;margin:0 auto;padding:32px 16px;font-family:sans-serif;line-height:1.75">
+      <nav><a href="/">Strona Główna</a> / <a href="/poradniki">Poradniki Eksperckie</a> / ${escapeHtml(guide.category)}</nav>
+      <article>
+        <header>
+          <p>${escapeHtml(guide.category)} · ${escapeHtml(guide.level)} · ~${readMins} min czytania (${words} słów) · Autor: ${escapeHtml(guide.authorName)} · Aktualizacja: ${escapeHtml(guide.updatedAt)}</p>
+          <h1>${escapeHtml(guide.title)}</h1>
+          <p><strong>${escapeHtml(guide.subtitle)}</strong></p>
+          ${leadHtml}
+        </header>
+        ${sectionsHtml}
+        ${takeawaysHtml}
+        ${faqHtml}
+      </article>
+      ${relatedLessonsHtml ? `<section><h2>Powiązane lekcje w Bazie Wiedzy</h2><ul>${relatedLessonsHtml}</ul></section>` : ''}
+      ${relatedGuidesHtml ? `<section><h2>Przeczytaj także</h2><ul>${relatedGuidesHtml}</ul></section>` : ''}
+      <footer style="margin-top:32px"><a href="/poradniki">Wszystkie poradniki</a> · <a href="/baza-wiedzy">Baza Wiedzy</a> · <a href="/o-nas">O Akademii</a> · <a href="/kontakt">Kontakt</a> · <a href="/regulamin">Regulamin</a> · <a href="/polityka-prywatnosci">Polityka Prywatności</a></footer>
+    </main>`;
+
+    writeRoutePage(
+      seo.canonicalPath,
+      renderHtmlFromTemplate(templateHtml, {
+        ...seo,
+        bodyHtml: guideBodyHtml,
+        jsonLd: buildGuideJsonLd(guide),
+      })
+    );
+  }
+
+  // 2. Knowledge Base index (/baza-wiedzy)
   const kbSeo = getPublicRouteSeoMetadata('knowledge_base');
   const kbListHtml = MODULES_DATA.map((mod) => {
     const items = mod.lessons
@@ -165,7 +305,7 @@ function main() {
     renderHtmlFromTemplate(templateHtml, {
       ...kbSeo,
       bodyHtml: `<main style="max-width:920px;margin:0 auto;padding:32px 16px;font-family:sans-serif;line-height:1.65">
-        <nav><a href="/">Strona Główna</a> | <a href="/baza-wiedzy">Baza Wiedzy</a> | <a href="/o-nas">O Akademii</a> | <a href="/kontakt">Kontakt</a> | <a href="/regulamin">Regulamin</a> | <a href="/polityka-prywatnosci">Polityka Prywatności</a></nav>
+        <nav><a href="/">Strona Główna</a> | <a href="/poradniki">Poradniki</a> | <a href="/baza-wiedzy">Baza Wiedzy</a> | <a href="/o-nas">O Akademii</a> | <a href="/kontakt">Kontakt</a> | <a href="/regulamin">Regulamin</a> | <a href="/polityka-prywatnosci">Polityka Prywatności</a></nav>
         <h1>Otwarta Baza Wiedzy — ${allLessons.length} darmowych lekcji programowania</h1>
         <p>${escapeHtml(kbSeo.description)}</p>
         ${kbListHtml}
@@ -344,7 +484,7 @@ function main() {
       renderHtmlFromTemplate(templateHtml, {
         ...seo,
         bodyHtml: `<main style="max-width:860px;margin:0 auto;padding:32px 16px;font-family:sans-serif;line-height:1.7">
-          <nav><a href="/">Strona Główna</a> | <a href="/baza-wiedzy">Baza Wiedzy</a> | <a href="/o-nas">O Akademii</a> | <a href="/kontakt">Kontakt</a> | <a href="/regulamin">Regulamin</a> | <a href="/polityka-prywatnosci">Polityka Prywatności</a></nav>
+          <nav><a href="/">Strona Główna</a> | <a href="/poradniki">Poradniki</a> | <a href="/baza-wiedzy">Baza Wiedzy</a> | <a href="/o-nas">O Akademii</a> | <a href="/kontakt">Kontakt</a> | <a href="/regulamin">Regulamin</a> | <a href="/polityka-prywatnosci">Polityka Prywatności</a></nav>
           <h1>${escapeHtml(sp.h1)}</h1>
           ${sp.content}
         </main>`,
@@ -365,7 +505,7 @@ function main() {
       bodyHtml: `<main style="max-width:720px;margin:0 auto;padding:48px 16px;font-family:sans-serif;line-height:1.7">
         <h1>Pulpit Kursanta — Full Stack Developer Academy</h1>
         <p>Ta sekcja wymaga aktywnej sesji przeglądarki lub zalogowania na bezpłatne konto ucznia.</p>
-        <p>Jeśli szukasz bezpłatnych materiałów edukacyjnych bez logowania, odwiedź naszą <a href="/baza-wiedzy">Otwartą Bazę Wiedzy (${allLessons.length} lekcji)</a> lub <a href="/">Stronę Główną</a>.</p>
+        <p>Jeśli szukasz bezpłatnych materiałów edukacyjnych bez logowania, odwiedź nasze <a href="/poradniki">Poradniki Eksperckie (${GUIDES_DATA.length} artykułów)</a>, <a href="/baza-wiedzy">Otwartą Bazę Wiedzy (${allLessons.length} lekcji)</a> lub <a href="/">Stronę Główną</a>.</p>
       </main>`,
     })
   );
@@ -375,7 +515,7 @@ function main() {
   const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapUrls
     .map(
       (url, idx) =>
-        `  <url>\n    <loc>${escapeHtml(url)}</loc>\n    <lastmod>${today}</lastmod>\n    <priority>${idx === 0 ? '1.0' : idx < 7 ? '0.9' : '0.8'}</priority>\n  </url>`
+        `  <url>\n    <loc>${escapeHtml(url)}</loc>\n    <lastmod>${today}</lastmod>\n    <priority>${idx === 0 ? '1.0' : idx < 8 || url.includes('/poradniki/') ? '0.9' : '0.8'}</priority>\n  </url>`
     )
     .join('\n')}\n</urlset>\n`;
 
@@ -383,7 +523,7 @@ function main() {
   fs.writeFileSync(path.join(DIST_DIR, 'sitemap.xml'), sitemapXml, 'utf8');
 
   console.log(
-    `Generated ${allLessons.length + staticPages.length + 2} static SEO/app route pages + sitemap.xml (${sitemapUrls.length} URLs).`
+    `Generated ${GUIDES_DATA.length + allLessons.length + staticPages.length + 3} static SEO/app route pages + sitemap.xml (${sitemapUrls.length} URLs).`
   );
 }
 

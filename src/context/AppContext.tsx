@@ -69,6 +69,8 @@ import {
   parsePublicLocation,
   SITE_BASE_URL,
 } from '../utils/publicRoutes';
+import { GUIDES_DATA, GUIDE_SLUGS } from '../data/guidesData';
+import { buildGuideJsonLd, getGuideBySlug } from '../utils/guides';
 import {
   validateEmailFormat,
   authenticateUserCredentials,
@@ -170,6 +172,8 @@ export type AppTab =
   | 'landing'
   | 'knowledge_base'
   | 'public_lesson'
+  | 'guides'
+  | 'guide_detail'
   | 'about'
   | 'contact'
   | 'terms'
@@ -200,6 +204,7 @@ interface AppContextType {
   allUsers: User[];
   activeTab: AppTab;
   selectedLessonId: string | null;
+  selectedGuideSlug: string | null;
   selectedProjectId: string | null;
   announcements: Announcement[];
   localizedAnnouncements: Announcement[];
@@ -562,6 +567,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         'landing',
         'knowledge_base',
         'public_lesson',
+        'guides',
+        'guide_detail',
         'about',
         'contact',
         'terms',
@@ -613,7 +620,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return 'dashboard';
       }
 
-      const parsedPublic = parsePublicLocation(path);
+      const parsedPublic = parsePublicLocation(path, undefined, GUIDE_SLUGS);
       return parsedPublic ? parsedPublic.tab : 'landing';
     } catch {
       return 'landing';
@@ -625,12 +632,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [activeTab]);
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(() => {
     try {
-      const parsedPublic = parsePublicLocation(window.location.pathname || '/');
+      const parsedPublic = parsePublicLocation(window.location.pathname || '/', undefined, GUIDE_SLUGS);
       if (parsedPublic?.lessonId) return parsedPublic.lessonId;
     } catch {
       // ignore window errors
     }
     return 'html-7';
+  });
+  const [selectedGuideSlug, setSelectedGuideSlug] = useState<string | null>(() => {
+    try {
+      const parsedPublic = parsePublicLocation(window.location.pathname || '/', undefined, GUIDE_SLUGS);
+      if (parsedPublic?.guideSlug) return parsedPublic.guideSlug;
+    } catch {
+      // ignore window errors
+    }
+    return GUIDES_DATA[0]?.slug || null;
   });
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>('proj-1');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'badge' | 'danger' } | null>(null);
@@ -1197,7 +1213,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const { visitorId, sessionId, referrerHost, utmSource } = resolveVisitorTokens();
     const rawPath = window.location.pathname || '/';
     const rawSearch = window.location.search || '';
-    const resolvedPublicPath = buildPublicPath(activeTab, selectedLessonId);
+    const resolvedPublicPath = buildPublicPath(
+      activeTab,
+      activeTab === 'guide_detail' ? selectedGuideSlug : selectedLessonId
+    );
     const targetPath = resolvedPublicPath || (isPublicTab(activeTab) ? rawPath : '/app');
     const targetSearch = resolvedPublicPath ? rawSearch : rawSearch || `?tab=${activeTab}`;
     const normalizedPath = normalizeVisitedPath(targetPath, targetSearch);
@@ -1239,7 +1258,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
       void upsertVisitorPresenceToCloud(presencePayload);
     }
-  }, [activeTab, selectedLessonId, language, isAuthenticated]);
+  }, [activeTab, selectedLessonId, selectedGuideSlug, language, isAuthenticated]);
 
   // Automatically sync currentUser changes to Cloud Firestore when connected via Firebase Auth
   useEffect(() => {
@@ -1658,6 +1677,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           'landing',
           'knowledge_base',
           'public_lesson',
+          'guides',
+          'guide_detail',
           'about',
           'contact',
           'terms',
@@ -1704,10 +1725,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           return;
         }
 
-        const parsedPublic = parsePublicLocation(path);
+        const parsedPublic = parsePublicLocation(path, undefined, GUIDE_SLUGS);
         if (parsedPublic) {
           setActiveTabState(parsedPublic.tab);
           if (parsedPublic.lessonId) setSelectedLessonId(parsedPublic.lessonId);
+          if (parsedPublic.guideSlug) setSelectedGuideSlug(parsedPublic.guideSlug);
         } else {
           setActiveTabState('landing');
         }
@@ -1746,7 +1768,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       activeTab === 'public_lesson'
         ? allLessons.find((l) => l.id === selectedLessonId) || allLessons[0]
         : null;
-    const seo = getPublicRouteSeoMetadata(activeTab, activeLesson, language);
+    const activeGuide =
+      activeTab === 'guide_detail'
+        ? getGuideBySlug(GUIDES_DATA, selectedGuideSlug) || GUIDES_DATA[0]
+        : null;
+    const seo = getPublicRouteSeoMetadata(activeTab, activeLesson, language, activeGuide);
     document.title = seo.title;
 
     const descMeta = document.querySelector('meta[name="description"]');
@@ -1763,9 +1789,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (canonicalLink) canonicalLink.setAttribute('href', canonicalUrl);
     const ogUrl = document.querySelector('meta[property="og:url"]');
     if (ogUrl) ogUrl.setAttribute('content', canonicalUrl);
-  }, [activeTab, selectedLessonId, language, allLessons]);
 
-  const setActiveTab = (tab: AppTab, lessonId?: string, projectId?: string) => {
+    const existingGuideJsonLd = document.getElementById('fsda-guide-jsonld');
+    if (activeGuide) {
+      const jsonLdString = JSON.stringify(buildGuideJsonLd(activeGuide));
+      if (existingGuideJsonLd) {
+        existingGuideJsonLd.textContent = jsonLdString;
+      } else {
+        const scriptEl = document.createElement('script');
+        scriptEl.id = 'fsda-guide-jsonld';
+        scriptEl.type = 'application/ld+json';
+        scriptEl.textContent = jsonLdString;
+        document.head.appendChild(scriptEl);
+      }
+    } else if (existingGuideJsonLd) {
+      existingGuideJsonLd.remove();
+    }
+  }, [activeTab, selectedLessonId, selectedGuideSlug, language, allLessons]);
+
+  const setActiveTab = (tab: AppTab, lessonOrGuideId?: string, projectId?: string) => {
     const isEn = languageRef.current === 'en';
     if (tab === 'admin' && (!isAuthenticated || currentUser.role !== 'admin')) {
       const isGuest = !isAuthenticated || currentUser.id === 'user-guest';
@@ -1791,15 +1833,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       );
     }
     setActiveTabState(tab);
-    if (lessonId) setSelectedLessonId(lessonId);
+    if (tab === 'guide_detail') {
+      if (lessonOrGuideId) setSelectedGuideSlug(lessonOrGuideId);
+    } else if (lessonOrGuideId) {
+      setSelectedLessonId(lessonOrGuideId);
+    }
     if (projectId) setSelectedProjectId(projectId);
 
     if (!detectEmbeddedWebViewRuntime()) {
       try {
         const host = (window.location.hostname || '').toLowerCase();
         const isAppSubdomain = host.startsWith('app.') || host.startsWith('app-');
-        const resolvedLessonId = lessonId || selectedLessonId;
-        const publicPath = buildPublicPath(tab, resolvedLessonId);
+        const resolvedPublicId =
+          tab === 'guide_detail'
+            ? lessonOrGuideId || selectedGuideSlug
+            : lessonOrGuideId || selectedLessonId;
+        const publicPath = buildPublicPath(tab, resolvedPublicId);
         let nextUrl = '/';
         if (isAppSubdomain) {
           nextUrl = tab === 'dashboard' ? '/' : `/?tab=${tab}`;
@@ -1811,7 +1860,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           nextUrl = `/app?tab=${tab}`;
         }
         if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
-          window.history.pushState({ tab, lessonId: resolvedLessonId }, '', nextUrl);
+          window.history.pushState({ tab, lessonId: resolvedPublicId }, '', nextUrl);
         }
       } catch {
         // ignore history API errors in sandboxed iframes
@@ -3475,6 +3524,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         allUsers,
         activeTab,
         selectedLessonId,
+        selectedGuideSlug,
         selectedProjectId,
         announcements: localizedAnnouncements,
         localizedAnnouncements,

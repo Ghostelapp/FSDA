@@ -202,19 +202,19 @@ export const SubscriptionModal: React.FC = () => {
             </div>
           </div>
 
-          {/* PRO Planned Notice */}
+          {/* Open Education Funding Note */}
           <div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-500/30 flex items-start gap-3">
             <Clock className="h-5 w-5 text-indigo-400 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <div className="text-xs font-bold text-indigo-300">
                 {isEn
-                  ? 'Optional Full Stack PRO plan (ad-free) — coming soon'
-                  : 'Opcjonalny pakiet Full Stack PRO (bez reklam) — w przygotowaniu'}
+                  ? '100% Open Educational Model — Zero Paywalls'
+                  : '100% Otwarty Model Edukacyjny — Zero Paywalli'}
               </div>
               <p className="text-[11px] text-slate-300 leading-relaxed">
                 {isEn
-                  ? 'We will launch the paid PRO package (removing Google AdSense ads and unlimited quiz hearts) in the next phase of the platform. Until then, all features remain open to everyone for free.'
-                  : 'Sprzedaż płatnego pakietu PRO (usunięcie reklam Google AdSense i brak limitu serc w quizach) uruchomimy w kolejnym etapie rozwoju platformy. Do tego czasu wszystkie funkcje pozostają otwarte dla każdego za darmo.'}
+                  ? 'All engineering guides, 96 lessons, 6 simulators, and 12 portfolio projects are unlocked for every student at $0. Server infrastructure and curriculum maintenance are supported by Google AdSense.'
+                  : 'Wszystkie poradniki eksperckie, 96 lekcji, 6 symulatorów i 12 projektów do portfolio są odblokowane dla każdego kursanta za 0 zł. Utrzymanie serwerów i rozwój materiałów wspierane są przez Google AdSense.'}
               </p>
             </div>
           </div>

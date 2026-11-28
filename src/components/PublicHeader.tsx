@@ -36,13 +36,15 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({ onOpenAuthModal, act
   const navItems: { tab: PublicTab; label: string }[] = isEn
     ? [
         { tab: 'landing', label: 'Home' },
-        { tab: 'knowledge_base', label: `Knowledge Base (${allLessons.length} lessons)` },
+        { tab: 'guides', label: 'Guides' },
+        { tab: 'knowledge_base', label: `Knowledge Base (${allLessons.length})` },
         { tab: 'about', label: 'About' },
         { tab: 'contact', label: 'Contact' },
       ]
     : [
         { tab: 'landing', label: 'Strona główna' },
-        { tab: 'knowledge_base', label: `Baza wiedzy (${allLessons.length} lekcji)` },
+        { tab: 'guides', label: 'Poradniki' },
+        { tab: 'knowledge_base', label: `Baza wiedzy (${allLessons.length})` },
         { tab: 'about', label: 'O Akademii' },
         { tab: 'contact', label: 'Kontakt' },
       ];
@@ -67,7 +69,8 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({ onOpenAuthModal, act
             const href = buildPublicPath(item.tab) || '/';
             const isActive =
               activeTab === item.tab ||
-              (activeTab === 'public_lesson' && item.tab === 'knowledge_base');
+              (activeTab === 'public_lesson' && item.tab === 'knowledge_base') ||
+              (activeTab === 'guide_detail' && item.tab === 'guides');
             return (
               <a
                 key={item.tab}
@@ -86,6 +89,13 @@ export const PublicHeader: React.FC<PublicHeaderProps> = ({ onOpenAuthModal, act
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <LanguageToggle variant="compact" />
           <ThemeToggle variant="compact" />
+          <a
+            href="/poradniki"
+            onClick={(e) => handleLinkClick(e, 'guides')}
+            className="hidden sm:inline-flex md:hidden px-2 py-1.5 text-[11px] font-semibold text-[#CBD5E1] border border-white/15 rounded-lg hover:text-white whitespace-nowrap"
+          >
+            {isEn ? 'Guides' : 'Poradniki'}
+          </a>
           <a
             href="/baza-wiedzy"
             onClick={(e) => handleLinkClick(e, 'knowledge_base')}

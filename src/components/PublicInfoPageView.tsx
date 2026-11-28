@@ -22,7 +22,7 @@ export const PublicInfoPageView: React.FC<PublicInfoPageViewProps> = ({
 
   const handleLink = (
     e: React.MouseEvent<HTMLAnchorElement>,
-    target: 'landing' | 'knowledge_base' | 'about' | 'contact' | 'terms' | 'privacy'
+    target: 'landing' | 'knowledge_base' | 'guides' | 'about' | 'contact' | 'terms' | 'privacy'
   ) => {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     e.preventDefault();
@@ -138,12 +138,19 @@ export const PublicInfoPageView: React.FC<PublicInfoPageViewProps> = ({
               </p>
               <div className="pt-2 flex flex-wrap gap-3">
                 <a
-                  href="/baza-wiedzy"
-                  onClick={(e) => handleLink(e, 'knowledge_base')}
+                  href="/poradniki"
+                  onClick={(e) => handleLink(e, 'guides')}
                   className="inline-flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-colors"
                 >
-                  <span>{isEn ? `Browse all ${allLessons.length} lessons` : `Przeglądaj wszystkie ${allLessons.length} lekcji`}</span>
+                  <span>{isEn ? 'Read Engineering Guides' : 'Czytaj Poradniki Eksperckie'}</span>
                   <ArrowRight className="h-4 w-4" />
+                </a>
+                <a
+                  href="/baza-wiedzy"
+                  onClick={(e) => handleLink(e, 'knowledge_base')}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#CBD5E1] border border-white/15 hover:border-white/30 rounded-xl transition-colors"
+                >
+                  <span>{isEn ? `Browse all ${allLessons.length} lessons` : `Przeglądaj wszystkie ${allLessons.length} lekcji`}</span>
                 </a>
                 <a
                   href="/kontakt"
@@ -365,8 +372,8 @@ export const PublicInfoPageView: React.FC<PublicInfoPageViewProps> = ({
                 </h2>
                 <p>
                   {isEn
-                    ? 'The Open Knowledge Base containing lesson theory and annotated code examples is free and requires no login. Creating a free student account enables cloud progress sync, the live code editor, simulators, 12 hands-on projects, GitHub sync, and verified certificates — all currently 100% free thanks to Google AdSense support. An optional ad-free Full Stack PRO tier is planned for a future release.'
-                    : 'Otwarta Baza Wiedzy zawierająca teorię lekcji i przykłady kodu jest dostępna bez logowania i bezpłatnie. Założenie bezpłatnego konta kursanta umożliwia zapis postępów w chmurze, korzystanie z edytora kodu, symulatorów, 12 projektów praktycznych, integracji GitHub oraz uzyskanie certyfikatu — wszystkie te funkcje są obecnie w 100% bezpłatne dzięki wsparciu reklam Google AdSense. Opcjonalny pakiet Full Stack PRO bez reklam planowany jest w kolejnym etapie rozwoju.'}
+                    ? 'The Open Knowledge Base and Engineering Guides are free and require no login. Creating a free student account enables cloud progress sync, the live code editor, 6 simulators, 12 hands-on projects, GitHub sync, and verified completion certificates — all 100% free and supported by Google AdSense.'
+                    : 'Otwarta Baza Wiedzy oraz Poradniki Eksperckie są dostępne bez logowania i bezpłatnie. Założenie bezpłatnego konta kursanta umożliwia zapis postępów w chmurze, korzystanie z edytora kodu, 6 symulatorów, 12 projektów praktycznych, integracji GitHub oraz uzyskanie certyfikatu ukończenia — wszystkie te funkcje są w 100% bezpłatne dzięki wsparciu reklam Google AdSense.'}
                 </p>
               </section>
 

@@ -37,6 +37,15 @@ import portfolioDeskImage from '../assets/images/dark_portfolio_desk_17946805850
 import { BrandLogo } from './BrandLogo';
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageToggle } from './LanguageToggle';
+import { GUIDES_DATA } from '../data/guidesData';
+import { estimateGuideReadingMinutes } from '../utils/guides';
+
+const FEATURED_GUIDE_SLUGS = [
+  'jak-zostac-full-stack-developerem-plan-nauki',
+  'javascript-event-loop-async-await-kompendium',
+  'react-19-architektura-stanu-i-wydajnosc',
+  'postgresql-indeksy-join-optymalizacja-zapytan',
+] as const;
 
 const HERO_DARK_STUDIO_IMAGE = heroDarkStudioImage;
 const PORTFOLIO_DESK_IMAGE = portfolioDeskImage;
@@ -330,9 +339,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
   };
 
   const handleOpenLesson = (lessonId: string) => {
-    setActiveTab('lesson', lessonId);
-    if (!isAuthenticated) {
-      onOpenAuthModal();
+    if (isAuthenticated) {
+      setActiveTab('lesson', lessonId);
+    } else {
+      setActiveTab('public_lesson', lessonId);
     }
   };
 
@@ -447,18 +457,22 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
             </button>
             <button
               type="button"
-              onClick={() => scrollToSection('kalkulator-sciezki')}
-              className="hover:text-[#F8FAFC] hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
-            >
-              {isEn ? 'Calculator' : 'Kalkulator'}
-            </button>
-            <button
-              type="button"
               onClick={() => scrollToSection('plany-dostepu')}
               className="hover:text-[#F8FAFC] hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
             >
               {isEn ? 'Free Access' : 'Darmowy dostęp'}
             </button>
+            <a
+              href="/poradniki"
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                setActiveTab('guides');
+              }}
+              className="text-indigo-300 hover:text-white hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
+            >
+              {isEn ? 'Guides' : 'Poradniki'}
+            </a>
             <a
               href="/baza-wiedzy"
               onClick={(e) => {
@@ -466,7 +480,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 e.preventDefault();
                 setActiveTab('knowledge_base');
               }}
-              className="text-indigo-300 hover:text-white hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
+              className="hover:text-[#F8FAFC] hover:underline underline-offset-8 decoration-indigo-500 transition-colors whitespace-nowrap shrink-0"
             >
               {isEn ? 'Knowledge Base' : 'Baza wiedzy'}
             </a>
@@ -912,13 +926,17 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                           {activeSample.ruleLabel}
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleOpenLesson(activeSample.lessonRef)}
+                      <a
+                        href={`/baza-wiedzy/${encodeURIComponent(activeSample.lessonRef)}`}
+                        onClick={(e) => {
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                          e.preventDefault();
+                          handleOpenLesson(activeSample.lessonRef);
+                        }}
                         className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 whitespace-nowrap shrink-0 transition-colors"
                       >
                         {isEn ? 'Open lesson →' : 'Otwórz lekcję →'}
-                      </button>
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -1602,7 +1620,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                         <span className="text-indigo-400 font-semibold font-sans">
                           {isEn ? 'Module' : 'Moduł'} {String(lesson.moduleId).padStart(2, '0')}
                         </span>
-                        <span>~{lesson.durationMinutes} min</span>
+                        <span className="tabular-nums">~{lesson.durationMinutes} min</span>
                       </div>
                       <h4 className="text-sm sm:text-base font-bold text-[#F8FAFC] leading-snug group-hover:text-indigo-300 transition-colors">
                         <a
@@ -1638,6 +1656,95 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     </a>
                   </article>
                 ))}
+            </div>
+          </RevealBlock>
+
+          {/* Deep Engineering Guides Showcase (/poradniki) */}
+          <RevealBlock delayMs={100} className="pt-12 border-t border-white/[0.08] space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-indigo-400">
+                  {isEn
+                    ? `Editorial Guides · ${GUIDES_DATA.length} long-form articles · No sign-in required`
+                    : `Poradniki Eksperckie · ${GUIDES_DATA.length} długich artykułów · Bez logowania`}
+                </p>
+                <h3 className="font-display text-xl sm:text-2xl font-extrabold text-[#F8FAFC]">
+                  {isEn
+                    ? 'In-depth engineering guides with production code'
+                    : 'Pogłębione poradniki inżynierskie z kodem produkcyjnym'}
+                </h3>
+              </div>
+              <a
+                href="/poradniki"
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                  e.preventDefault();
+                  setActiveTab('guides');
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-indigo-300 hover:text-white border border-indigo-500/40 bg-indigo-950/40 rounded-xl transition-colors whitespace-nowrap shrink-0 self-start"
+              >
+                <span>
+                  {isEn
+                    ? `All ${GUIDES_DATA.length} engineering guides`
+                    : `Wszystkie ${GUIDES_DATA.length} poradników`}
+                </span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </a>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {FEATURED_GUIDE_SLUGS.map((slug) => GUIDES_DATA.find((g) => g.slug === slug))
+                .filter((g): g is NonNullable<typeof g> => Boolean(g))
+                .map((guide) => {
+                  const readMins = estimateGuideReadingMinutes(guide);
+                  return (
+                    <article
+                      key={guide.slug}
+                      className="group rounded-2xl border border-white/[0.08] bg-[#0B101B] hover:border-indigo-500/50 p-6 flex flex-col justify-between gap-4 transition-all"
+                    >
+                      <div className="space-y-2.5">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#94A3B8]">
+                          <span className="font-semibold text-indigo-400">
+                            {isEn ? guide.categoryEn : guide.category}
+                          </span>
+                          <span aria-hidden="true">·</span>
+                          <span className="font-mono tabular-nums">{readMins} min</span>
+                          <span aria-hidden="true">·</span>
+                          <span>{isEn ? guide.levelEn : guide.level}</span>
+                        </div>
+                        <h4 className="font-display text-base sm:text-lg font-bold text-[#F8FAFC] leading-snug group-hover:text-indigo-300 transition-colors">
+                          <a
+                            href={`/poradniki/${encodeURIComponent(guide.slug)}`}
+                            onClick={(e) => {
+                              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)
+                                return;
+                              e.preventDefault();
+                              setActiveTab('guide_detail', guide.slug);
+                            }}
+                          >
+                            {isEn ? guide.titleEn : guide.title}
+                          </a>
+                        </h4>
+                        <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed line-clamp-3">
+                          {isEn ? guide.subtitleEn : guide.subtitle}
+                        </p>
+                      </div>
+                      <a
+                        href={`/poradniki/${encodeURIComponent(guide.slug)}`}
+                        onClick={(e) => {
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)
+                            return;
+                          e.preventDefault();
+                          setActiveTab('guide_detail', guide.slug);
+                        }}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-400 group-hover:text-indigo-300"
+                      >
+                        <span>{isEn ? 'Read full guide' : 'Czytaj pełny poradnik'}</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </a>
+                    </article>
+                  );
+                })}
             </div>
           </RevealBlock>
         </div>
@@ -2086,7 +2193,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
       </section>
 
       {/* =====================================================================
-          6. ACCESS PLANS (100% Free Launch + AdSense, PRO Planned Later)
+          6. ACCESS MODES (100% Free Open Reading + Free Student Account)
       ===================================================================== */}
       <section id="plany-dostepu" className="bg-[#090D16] py-20 lg:py-24 border-b border-white/[0.08]">
         <div className="mx-auto max-w-5xl px-4 sm:px-8 space-y-10">
@@ -2094,13 +2201,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
             <div className="space-y-2.5">
               <div className="flex items-center gap-2 text-xs font-medium text-[#94A3B8]">
                 <span className="font-semibold text-emerald-400">
-                  {isEn ? '100% Open Edition at Launch' : '100% Edycja Otwarta na Start'}
+                  {isEn ? '100% Free Educational Platform' : '100% Bezpłatna Platforma Edukacyjna'}
                 </span>
                 <span aria-hidden="true">·</span>
                 <span>
                   {isEn
-                    ? 'Zero hidden fees, supported by Google AdSense'
-                    : 'Zero ukrytych opłat, finansowanie przez Google AdSense'}
+                    ? 'Zero paywalls, zero credit cards'
+                    : 'Zero paywalli, bez karty płatniczej'}
                 </span>
               </div>
               <h2
@@ -2108,33 +2215,28 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-[#F8FAFC]"
               >
                 {isEn
-                  ? 'Full access for free. Optional PRO plan coming soon.'
-                  : 'Pełny dostęp za darmo. Opcjonalny plan PRO wkrótce.'}
+                  ? 'Learn openly right now or save your progress with a free account.'
+                  : 'Czytaj otwarcie bez logowania albo zapisuj postępy na darmowym koncie.'}
               </h2>
             </div>
 
-            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-semibold text-emerald-300 shrink-0 self-start">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-300 shrink-0 self-start">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-              <span>{isEn ? 'No credit card required' : 'Bez karty płatniczej'}</span>
+              <span>{isEn ? 'Every module unlocked today' : 'Wszystkie moduły odblokowane od razu'}</span>
             </div>
           </RevealBlock>
 
           <RevealBlock delayMs={80} className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-            {/* Open Edition — 100% Free */}
-            <div className="rounded-2xl border border-emerald-500/60 bg-[#0D1526] p-6 sm:p-8 flex flex-col justify-between space-y-6">
+            {/* Mode 1: Open Knowledge Base & Guides — No Sign-in */}
+            <div className="rounded-2xl border border-white/10 bg-[#0B101B] p-6 sm:p-8 flex flex-col justify-between space-y-6">
               <div className="space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold text-emerald-400">
-                      {isEn ? 'Available Immediately' : 'Dostępny Od Zaraz'}
-                    </p>
-                    <h3 className="font-display text-xl font-bold text-[#F8FAFC] mt-1">
-                      {isEn ? 'Open Edition (Full Course)' : 'Edycja Otwarta (Pełny Kurs)'}
-                    </h3>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-bold text-emerald-300 whitespace-nowrap shrink-0">
-                    {isEn ? 'Active' : 'Aktywny'}
-                  </span>
+                <div>
+                  <p className="text-xs font-semibold text-indigo-400">
+                    {isEn ? 'No Sign-In Required' : 'Bez Logowania i Rejestracji'}
+                  </p>
+                  <h3 className="font-display text-xl font-bold text-[#F8FAFC] mt-1">
+                    {isEn ? 'Open Knowledge Base & Guides' : 'Otwarta Baza Wiedzy i Poradniki'}
+                  </h3>
                 </div>
 
                 <div className="flex items-baseline gap-2">
@@ -2142,14 +2244,90 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     {isEn ? '0 PLN' : '0 zł'}
                   </span>
                   <span className="text-xs text-[#94A3B8]">
-                    {isEn ? '/ full access (with AdSense ads)' : '/ pełny dostęp (z reklamami AdSense)'}
+                    {isEn ? '/ instant browser reading' : '/ natychmiastowy dostęp w przeglądarce'}
                   </span>
                 </div>
 
                 <p className="text-sm text-[#CBD5E1] leading-relaxed">
                   {isEn
-                    ? 'The complete Full Stack track with zero paywalls: all lessons, 6 simulators, 12 projects with complete source code, GitHub integration, and career tools for free.'
-                    : 'Kompletna ścieżka Full Stack bez paywalla: wszystkie lekcje, 6 symulatorów, 12 projektów z pełnym kodem, integracja GitHub oraz narzędzia rekrutacyjne za darmo.'}
+                    ? 'Browse every editorial engineering guide and all lesson walkthroughs directly in your browser without creating an account.'
+                    : 'Przeglądaj wszystkie eksperckie poradniki inżynierskie oraz pełną teorię lekcji bezpośrednio w przeglądarce bez zakładania konta.'}
+                </p>
+
+                <ul className="space-y-2.5 pt-3 border-t border-white/[0.08] text-xs sm:text-sm text-[#CBD5E1]">
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
+                    <span>
+                      {isEn
+                        ? `${GUIDES_DATA.length} long-form engineering guides with production code & FAQs`
+                        : `${GUIDES_DATA.length} długich poradników eksperckich z kodem produkcyjnym i FAQ`}
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
+                    <span>
+                      {isEn
+                        ? `All ${allLessons.length} open lessons across ${allModules.length} Full Stack modules`
+                        : `Wszystkie ${allLessons.length} otwartych lekcji w ${allModules.length} modułach Full Stack`}
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
+                    <span>
+                      {isEn
+                        ? 'Plain-language analogies, glossaries, and common-mistakes checklists'
+                        : 'Analogie z życia codziennego, słowniczki pojęć i listy najczęstszych błędów'}
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
+                    <span>
+                      {isEn
+                        ? 'Full-text search and category filters available immediately'
+                        : 'Wyszukiwarka i filtry kategorii dostępne natychmiast bez konta'}
+                    </span>
+                  </li>
+                </ul>
+              </div>
+
+              <a
+                href="/poradniki"
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                  e.preventDefault();
+                  setActiveTab('guides');
+                }}
+                className="w-full py-3.5 px-5 text-sm font-bold text-center text-[#F8FAFC] bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 rounded-xl transition-colors whitespace-nowrap"
+              >
+                {isEn ? 'Read guides without signing up →' : 'Czytaj poradniki bez logowania →'}
+              </a>
+            </div>
+
+            {/* Mode 2: Free Student Account — Interactive Workspace */}
+            <div className="rounded-2xl border border-emerald-500/60 bg-[#0D1526] p-6 sm:p-8 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-semibold text-emerald-400">
+                    {isEn ? 'Interactive Practice & Cloud Sync' : 'Interaktywna Praktyka i Zapis w Chmurze'}
+                  </p>
+                  <h3 className="font-display text-xl font-bold text-[#F8FAFC] mt-1">
+                    {isEn ? 'Free Student Account' : 'Bezpłatne Konto Kursanta'}
+                  </h3>
+                </div>
+
+                <div className="flex items-baseline gap-2">
+                  <span className="font-display text-4xl font-extrabold text-[#F8FAFC] tabular-nums">
+                    {isEn ? '0 PLN' : '0 zł'}
+                  </span>
+                  <span className="text-xs text-[#94A3B8]">
+                    {isEn ? '/ full interactive course' : '/ pełny interaktywny kurs'}
+                  </span>
+                </div>
+
+                <p className="text-sm text-[#CBD5E1] leading-relaxed">
+                  {isEn
+                    ? 'The complete hands-on Full Stack workspace with zero paywalls: live code verification, 6 simulators, 12 portfolio projects, GitHub sync, and verified certificates.'
+                    : 'Kompletny warsztat programistyczny bez paywalla: automatyczne sprawdzanie kodu, 6 symulatorów, 12 projektów do portfolio, synchronizacja GitHub oraz certyfikat.'}
                 </p>
 
                 <ul className="space-y-2.5 pt-3 border-t border-white/[0.08] text-xs sm:text-sm text-[#CBD5E1]">
@@ -2157,32 +2335,32 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                     <span>
                       {isEn
-                        ? `All ${allModules.length} modules and ${allLessons.length} interactive lessons`
-                        : `Wszystkie ${allModules.length} modułów i ${allLessons.length} interaktywnych lekcji`}
+                        ? `Live browser code editor + automated tests for all ${allLessons.length} lessons`
+                        : `Edytor kodu w przeglądarce + automatyczne testy dla wszystkich ${allLessons.length} lekcji`}
                     </span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                     <span>
                       {isEn
-                        ? '12 commercial projects + GitHub submission & 6 simulators'
-                        : '12 projektów komercyjnych + przesyłanie z GitHuba i 6 symulatorów'}
+                        ? '6 interactive simulators (Bash/Git Terminal, SQL JOIN, REST API, Event Loop)'
+                        : '6 symulatorów (Terminal Bash/Git, SQL JOIN, REST API, Event Loop)'}
                     </span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                     <span>
                       {isEn
-                        ? 'Live Coding Simulator, ATS CV Builder, SM-2 Flashcards & Certificate'
-                        : 'Symulator Live Coding, Kreator CV ATS, Fiszki SM-2 i Certyfikat'}
+                        ? '12 portfolio projects with GitHub submission, ATS CV Builder & Certificate'
+                        : '12 projektów do portfolio z podpięciem GitHuba, Kreator CV ATS i Certyfikat'}
                     </span>
                   </li>
                   <li className="flex items-start gap-2.5">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                     <span>
                       {isEn
-                        ? '5 auto-refilling quiz hearts (15-min recharge + smart reviews)'
-                        : '5 odnawiających się serc w quizach (odnowa co 15 min + powtórki)'}
+                        ? 'Cloud progress sync across desktop & mobile + SM-2 spaced repetition'
+                        : 'Synchronizacja postępów między komputerem i telefonem + fiszki SM-2'}
                     </span>
                   </li>
                 </ul>
@@ -2200,86 +2378,6 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onOpenAuthModa
                   : isEn
                   ? 'Create free account (0 PLN)'
                   : 'Załóż darmowe konto (0 zł)'}
-              </button>
-            </div>
-
-            {/* Plan PRO — Coming Soon */}
-            <div className="rounded-2xl border border-white/10 bg-[#0B101B] p-6 sm:p-8 flex flex-col justify-between space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold text-indigo-300">
-                      {isEn ? 'Next Roadmap Stage' : 'Kolejny Etap Rozwoju'}
-                    </p>
-                    <h3 className="font-display text-xl font-bold text-[#F8FAFC] mt-1">
-                      {isEn ? 'Full Stack PRO (Ad-Free)' : 'Full Stack PRO (Bez Reklam)'}
-                    </h3>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/15 text-[11px] font-semibold text-[#CBD5E1] whitespace-nowrap shrink-0">
-                    {isEn ? 'Coming Soon' : 'Wkrótce'}
-                  </span>
-                </div>
-
-                <div className="flex items-baseline gap-2">
-                  <span className="font-display text-3xl sm:text-4xl font-extrabold text-[#CBD5E1]">
-                    {isEn ? 'In Development' : 'W przygotowaniu'}
-                  </span>
-                </div>
-
-                <p className="text-sm text-[#94A3B8] leading-relaxed">
-                  {isEn
-                    ? 'An optional tier for students who wish to support platform growth in the future and learn without Google AdSense ads or heart cooldowns.'
-                    : 'Opcjonalny pakiet dla kursantów, którzy w przyszłości zechcą wesprzeć rozwój platformy i uczyć się bez reklam Google AdSense oraz bez odnawiania serc.'}
-                </p>
-
-                <ul className="space-y-2.5 pt-3 border-t border-white/[0.08] text-xs sm:text-sm text-[#94A3B8]">
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-indigo-400/80 shrink-0 mt-0.5" />
-                    <span>
-                      {isEn
-                        ? '0% Google AdSense ads across the entire student workspace'
-                        : '0% reklam Google AdSense w całym panelu kursanta'}
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-indigo-400/80 shrink-0 mt-0.5" />
-                    <span>
-                      {isEn
-                        ? 'Unlimited energy hearts during checkpoint quizzes and reviews'
-                        : 'Nielimitowane serca energii podczas quizów i powtórek'}
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-indigo-400/80 shrink-0 mt-0.5" />
-                    <span>
-                      {isEn
-                        ? 'Automatic learning streak protection (Auto-Streak Freeze)'
-                        : 'Automatyczna ochrona passy nauki (Auto-Streak Freeze)'}
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-indigo-400/80 shrink-0 mt-0.5" />
-                    <span>
-                      {isEn
-                        ? 'No payments right now — every single feature is already unlocked for free'
-                        : 'Brak płatności teraz — wszystkie funkcje są już odblokowane za darmo'}
-                    </span>
-                  </li>
-                </ul>
-              </div>
-
-              <button
-                type="button"
-                onClick={handlePrimaryAction}
-                className="w-full py-3.5 px-5 text-sm font-bold text-[#F8FAFC] bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 rounded-xl transition-colors whitespace-nowrap"
-              >
-                {isAuthenticated
-                  ? isEn
-                    ? 'You are learning in the Free Edition'
-                    : 'Uczysz się już w Darmowej Edycji'
-                  : isEn
-                  ? 'Start now in the Free Edition'
-                  : 'Zacznij teraz w Darmowej Edycji'}
               </button>
             </div>
           </RevealBlock>

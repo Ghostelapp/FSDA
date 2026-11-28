@@ -666,7 +666,7 @@ export function getLandingFaqItems(language: AppLanguage, totalLessonsCount: num
       {
         id: 'faq-4',
         question: 'Is the platform truly 100% free, and how is it funded?',
-        answer: `Yes. All 15 modules, ${totalLessonsCount} lessons, 6 simulators, 12 commercial projects with full starter code, GitHub sync, ATS CV Builder, and the completion certificate are available for 0 PLN. We fund the platform via Google AdSense ads, with an optional ad-free PRO tier planned later.`,
+        answer: `Yes. All 15 modules, ${totalLessonsCount} lessons, 13 in-depth engineering guides, 6 simulators, 12 commercial projects with full starter code, GitHub sync, ATS CV Builder, and the completion certificate are available for 0 PLN. We maintain servers and curriculum updates via Google AdSense.`,
       },
       {
         id: 'faq-5',
@@ -699,7 +699,7 @@ export function getLandingFaqItems(language: AppLanguage, totalLessonsCount: num
     {
       id: 'faq-4',
       question: 'Czy platforma jest naprawdę w 100% darmowa i jak jest utrzymywana?',
-      answer: `Tak. Wszystkie 15 modułów, ${totalLessonsCount} lekcji, 6 symulatorów, 12 projektów z pełnym kodem, synchronizacja GitHub, Kreator CV ATS oraz certyfikat ukończenia są dostępne za 0 zł. Utrzymujemy serwis dzięki reklamom Google AdSense, a opcjonalny płatny pakiet PRO (bez reklam i z nielimitowanymi sercami) planujemy dodać w kolejnym etapie.`,
+      answer: `Tak. Wszystkie 15 modułów, ${totalLessonsCount} lekcji, 13 rozbudowanych poradników eksperckich, 6 symulatorów, 12 projektów z pełnym kodem, synchronizacja GitHub, Kreator CV ATS oraz certyfikat ukończenia są dostępne za 0 zł. Utrzymanie serwerów i rozwój materiałów finansujemy poprzez Google AdSense.`,
     },
     {
       id: 'faq-5',
